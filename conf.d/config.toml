@@ -1,0 +1,70 @@
+[log]
+# support stdout, file
+output = "stdout"
+# log level: DEBUG INFO WARNING ERROR FATAL
+level = "DEBUG"
+# log write directory
+path = "logs"
+# rotate by time
+keepHours = 4
+# rotate by size
+rotateNum = 3
+# unit: MB
+rotateSize = 256
+
+[http]
+host = "0.0.0.0"
+port = 8080
+contextPath = "/api/v1/"
+# unit: second
+heartbeat = 60
+# enable pprof or not
+pprof = false
+exposeMetrics = true
+readTimeout = 60
+writeTimeout = 60
+idleTimeout = 60
+shutdownTimeout = 10
+
+[http.tls]
+certFile = ""
+keyFile = ""
+
+[http.auth]
+accessExpire = 3600
+refreshExpire = 7200
+redisKey = "auth"
+
+[mysql]
+host = "0.0.0.0"
+port = 3306
+user = "root"
+password = "123456"
+db = "test"
+# max open connections
+# unit: second
+maxOpenConns = 10
+# max idle connections
+# unit: second
+maxIdleConns = 5
+# enable auto migrate or not
+enableAutoMigrate = false
+
+[redis]
+# support single, cluster, sentinel
+mode = "single"
+host = "0.0.0.0"
+port = 6379
+password = ""
+db = 0
+poolSize = 50
+#useTLS = false
+#tlsMinVersion = "1.0"
+#masterName = ""
+#sentinels = [
+#    "127.0.0:26379",
+#    "127.0.0:26380",
+#    "127.0.0:26381"
+#]
+#sentinelUsername = ""
+#sentinelPassword = ""
