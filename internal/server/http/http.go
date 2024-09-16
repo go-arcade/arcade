@@ -21,6 +21,7 @@ import (
 type HTTP struct {
 	Host            string
 	Port            int
+	Mode            string
 	contextPath     string
 	Heartbeat       string
 	PProf           bool
@@ -44,16 +45,16 @@ type Auth struct {
 	RedisKeyPrefix string
 }
 
-func NewHTTPEngine(cfg HTTP, mode string) *gin.Engine {
+func NewHTTPEngine(cfg HTTP) *gin.Engine {
 
-	gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(cfg.Mode)
 
 	r := gin.New()
 
 	r.Group(cfg.contextPath)
 
 	if cfg.PProf {
-		pprof.Register(r, "debug/pprof")
+		pprof.Register(r, "/debug/pprof")
 	}
 
 	if cfg.ExposeMetrics {
@@ -82,7 +83,7 @@ func NewHTTP(cfg HTTP, handler http.Handler) func() {
 	}
 
 	go func() {
-		fmt.Println("http server listening on:", addr)
+		fmt.Println("[Init] http server listening on:", addr)
 
 		if cfg.TLS.CertFile != "" && cfg.TLS.KeyFile != "" {
 			if err := srv.ListenAndServeTLS(cfg.TLS.CertFile, cfg.TLS.KeyFile); err != nil {
@@ -108,7 +109,7 @@ func NewHTTP(cfg HTTP, handler http.Handler) func() {
 		case <-ctx.Done():
 			fmt.Println("server shutdown timeout of ", cfg.ShutdownTimeout, " seconds")
 		default:
-			fmt.Println("http exit")
+			fmt.Println("[Done] http exit...")
 		}
 	}
 }

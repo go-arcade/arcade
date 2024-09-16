@@ -5,6 +5,7 @@ package main
 
 import (
 	"github.com/go-kratos/kratos/v2"
+	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/wire"
 )
 
@@ -15,6 +16,6 @@ import (
  * @description:
  */
 
-func initApp() (*kratos.App, func(), error) {
-	panic(wire.Build())
+func initApp(logger log.Logger) (*kratos.App, func(), error) {
+	panic(wire.Build(logger))
 }
