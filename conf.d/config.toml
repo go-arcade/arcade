@@ -1,5 +1,5 @@
 [log]
-# support stdout, file
+# support stdout, file, kafka
 output = "stdout"
 # log level: DEBUG INFO WARNING ERROR FATAL
 level = "DEBUG"
@@ -11,6 +11,14 @@ keepHours = 4
 rotateNum = 3
 # unit: MB
 rotateSize = 256
+# kafka brokers
+#kafkaBrokers = [
+#    "127.0.0.1:9092",
+#    "127.0.0.1:9093",
+#    "127.0.0.1:9094"
+#]
+# kafka topic
+# kafkaTopic = ""
 
 [http]
 host = "0.0.0.0"
@@ -24,12 +32,15 @@ heartbeat = 60
 pprof = false
 # enable metrics, false or true
 exposeMetrics = true
+# access log, false or true
+accessLog = true
 # read timeout
 # unit: second
 readTimeout = 60
 writeTimeout = 60
 idleTimeout = 60
 shutdownTimeout = 10
+
 
 [http.tls]
 certFile = ""
@@ -40,15 +51,15 @@ accessExpire = 3600
 refreshExpire = 7200
 redisKey = "auth"
 
-[mysql]
-host = "0.0.0.0"
-port = 3306
+[database]
+host = "127.0.0.1"
+port = "3306"
 user = "root"
 password = "123456"
-db = "test"
+db = "alert-service"
 # max open connections
 # unit: second
-maxOpenConns = 10
+maxOpenConns = 500
 # max idle connections
 # unit: second
 maxIdleConns = 5

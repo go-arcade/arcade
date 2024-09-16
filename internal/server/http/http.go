@@ -26,6 +26,7 @@ type HTTP struct {
 	Heartbeat       string
 	PProf           bool
 	ExposeMetrics   bool
+	AccessLog       bool
 	ReadTimeout     int
 	WriteTimeout    int
 	IdleTimeout     int
@@ -50,6 +51,11 @@ func NewHTTPEngine(cfg HTTP) *gin.Engine {
 	gin.SetMode(cfg.Mode)
 
 	r := gin.New()
+	r.Use(gin.Recovery())
+
+	if cfg.AccessLog {
+		r.Use(gin.Logger())
+	}
 
 	r.Group(cfg.contextPath)
 
@@ -83,7 +89,7 @@ func NewHTTP(cfg HTTP, handler http.Handler) func() {
 	}
 
 	go func() {
-		fmt.Println("[Init] http server listening on:", addr)
+		fmt.Println("[Init] http server start at:", addr)
 
 		if cfg.TLS.CertFile != "" && cfg.TLS.KeyFile != "" {
 			if err := srv.ListenAndServeTLS(cfg.TLS.CertFile, cfg.TLS.KeyFile); err != nil {

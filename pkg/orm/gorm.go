@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
-	"log"
+	"sync"
 	"time"
 )
 
@@ -17,39 +17,47 @@ import (
  * @description: gorm orm
  */
 
-var db *gorm.DB
-
 type Database struct {
-	Host              string
-	Port              int
-	Username          string
-	Password          string
-	DB                string
-	MaxOpenConns      int
-	MaxIdleConns      int
-	MaxLifetime       int
-	MaxIdleTime       int
-	EnableAutoMigrate bool
+	Host         string
+	Port         string
+	User         string
+	Password     string
+	DB           string
+	MaxOpenConns int
+	MaxIdleConns int
+	MaxLifetime  int
+	MaxIdleTime  int
+	PrintSQL     bool
 }
+
+var conn *gorm.DB
+var mu sync.Mutex
 
 func NewDatabase(cfg Database) *gorm.DB {
 
-	gormLogger := logger.New(
-		log.New(log.Writer(), "\r\n", log.LstdFlags), // io writer
-		logger.Config{
-			SlowThreshold:             time.Second, // 慢 SQL 阈值
-			LogLevel:                  logger.Info, // Log level
-			Colorful:                  false,       // 禁用彩色打印
-			IgnoreRecordNotFoundError: true,        // 忽略ErrRecordNotFound（记录未找到）错误
-			ParameterizedQueries:      true,        // 启用参数化查询
-		},
-	)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.DB)
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.DB)
+	conf := logger.Config{
+		SlowThreshold:             time.Second, // 慢 SQL 阈值
+		LogLevel:                  logger.Info, // Log level
+		Colorful:                  false,       // 禁用彩色打印
+		IgnoreRecordNotFoundError: true,        // 忽略ErrRecordNotFound（记录未找到）错误
+		ParameterizedQueries:      true,        // 启用参数化查询
+	}
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger: gormLogger,
+		Logger: NewGormLogger(conf, logger.Info),
+		//Logger: logger.New(
+		//	log.New(log.Writer(), "\r\n", log.LstdFlags), // io writer
+		//	logger.Config{
+		//		SlowThreshold:             time.Second, // 慢 SQL 阈值
+		//		LogLevel:                  logger.Info, // Log level
+		//		Colorful:                  false,       // 禁用彩色打印
+		//		IgnoreRecordNotFoundError: true,        // 忽略ErrRecordNotFound（记录未找到）错误
+		//		ParameterizedQueries:      true,        // 启用参数化查询
+		//	},
+		//),
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true,
 		},
@@ -73,15 +81,19 @@ func NewDatabase(cfg Database) *gorm.DB {
 		panic(err)
 	}
 
-	var result int
-	err = db.Raw("SELECT 1").Scan(&result).Error
+	var version string
+	err = db.Raw("SELECT VERSION()").Scan(&version).Error
 	if err != nil {
-		panic(err)
+		return nil
 	}
+
+	fmt.Println("[Init] mysql version:", version)
 
 	return db
 }
 
-func GetConnection() *gorm.DB {
-	return db
+func GetConn() *gorm.DB {
+	mu.Lock()
+	defer mu.Unlock()
+	return conn
 }
