@@ -2,8 +2,8 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/go-kratos/kratos/v2/log"
-	"github.com/rakyll/statik/fs"
+	_ "github.com/go-kratos/kratos/v2/log"
+	_ "github.com/rakyll/statik/fs"
 )
 
 /**
@@ -18,9 +18,9 @@ type Router struct {
 
 func NewRouter(r *gin.Engine) {
 
-	staticsFS, err := fs.New()
-	if err != nil {
-		log.Errorf("cannot create statik fs: %v", err)
-	}
-	r.StaticFS("/static", staticsFS)
+	//staticsFS, err := fs.New()
+	//if err != nil {
+	//	log.Errorf("cannot create statik fs: %v", err)
+	//}
+	//r.StaticFS("/static", staticsFS)
 }

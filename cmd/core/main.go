@@ -4,8 +4,12 @@ import (
 	"flag"
 	"fmt"
 	"github.com/arcade/arcade/internal/app/basic/config"
+	"github.com/arcade/arcade/internal/router"
 	"github.com/arcade/arcade/internal/server/http"
 	"github.com/arcade/arcade/pkg/conf"
+	"github.com/arcade/arcade/pkg/log"
+	"github.com/arcade/arcade/pkg/orm"
+	"github.com/arcade/arcade/pkg/runner"
 	"os"
 	"os/signal"
 	"syscall"
@@ -28,20 +32,31 @@ func init() {
 
 func main() {
 	flag.Parse()
+	printRunner()
 
 	var appConf config.AppConfig
 	if err := conf.LoadConfigFile(configFile, &appConf); err != nil {
 		panic(err)
 	}
 
-	r := http.NewHTTPEngine(appConf.Http)
-
-	httpClean := http.NewHTTP(appConf.Http, r)
+	log.NewLog(&appConf.Log)
 
 	//_, err := cache.NewRedis(appConf.Redis)
 	//if err != nil {
 	//	panic(err)
 	//}
+
+	// db
+	orm.NewDatabase(appConf.Database)
+
+	// http server
+	r := http.NewHTTPEngine(appConf.Http)
+
+	// router
+	router.NewRouter(r)
+
+	// http server clean
+	httpClean := http.NewHTTP(appConf.Http, r)
 
 	code := 1
 	sc := make(chan os.Signal, 1)
@@ -65,4 +80,9 @@ EXIT:
 	httpClean()
 	fmt.Println("[Done] server exit...")
 	os.Exit(code)
+}
+
+func printRunner() {
+	fmt.Println("runner.pwd:", runner.Pwd)
+	fmt.Println("runner.hostname:", runner.Hostname)
 }

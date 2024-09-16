@@ -15,7 +15,7 @@ import (
  */
 
 type AppConfig struct {
-	Log      log.Log
+	Log      log.LogConfig
 	Http     http.HTTP
 	Database orm.Database
 	Redis    cache.Redis
