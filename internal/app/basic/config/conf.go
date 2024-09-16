@@ -4,6 +4,7 @@ import (
 	"github.com/arcade/arcade/internal/server/http"
 	"github.com/arcade/arcade/pkg/cache"
 	"github.com/arcade/arcade/pkg/log"
+	"github.com/arcade/arcade/pkg/orm"
 )
 
 /**
@@ -13,9 +14,9 @@ import (
  * @description:
  */
 
-type Config struct {
-	Log  log.Log
-	Http http.HTTP
-
-	Redis cache.RedisConf
+type AppConfig struct {
+	Log      log.Log
+	Http     http.HTTP
+	Database orm.Database
+	Redis    cache.Redis
 }

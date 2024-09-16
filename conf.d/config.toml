@@ -15,12 +15,17 @@ rotateSize = 256
 [http]
 host = "0.0.0.0"
 port = 8080
+# debug, release
+mode = "release"
 contextPath = "/api/v1/"
 # unit: second
 heartbeat = 60
-# enable pprof or not
+# enable pprof, false or true
 pprof = false
+# enable metrics, false or true
 exposeMetrics = true
+# read timeout
+# unit: second
 readTimeout = 60
 writeTimeout = 60
 idleTimeout = 60
@@ -47,8 +52,12 @@ maxOpenConns = 10
 # max idle connections
 # unit: second
 maxIdleConns = 5
-# enable auto migrate or not
-enableAutoMigrate = false
+# max life time
+# unit: second
+maxLifeTime = 300
+# max Idle Time
+# unit: second
+maxIdleTime = 60
 
 [redis]
 # support single, cluster, sentinel

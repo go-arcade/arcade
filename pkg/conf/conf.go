@@ -1,12 +1,10 @@
 package conf
 
 import (
-	"errors"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/spf13/viper"
-	"reflect"
 	"time"
 )
 
@@ -21,36 +19,35 @@ func init() {
 	viper.AutomaticEnv()
 }
 
-func LoadConfigFile(confDir string, cfg interface{}) (interface{}, error) {
+// LoadConfigFile load config file
+func LoadConfigFile(confDir string, cfg interface{}) error {
+
+	var err error
+
 	vCfg := viper.New()
 	vCfg.AddConfigPath(confDir)
 	vCfg.SetConfigName("config")
 	vCfg.SetConfigType("toml")
 
 	if err := vCfg.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("failed to read configuration file: %v", err)
+		return fmt.Errorf("failed to read config file: %v", err)
 	}
 
 	// 配置动态改变时，回调函数
 	vCfg.WatchConfig()
 	vCfg.OnConfigChange(func(e fsnotify.Event) {
-		log.Infof("The configuration changes, re -analyze the configuration file: %s", e.Name)
+		log.Infof("The config file changes, re -analyze the config file: %s", e.Name)
 		if err := vCfg.Unmarshal(&cfg); err != nil {
-			_ = fmt.Errorf("failed to unmarshal configuration file: %v", err)
+			_ = fmt.Errorf("failed to unmarshal config file: %v", err)
 		}
 	})
 	if err := vCfg.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal configuration file: %v", err)
+		return fmt.Errorf("failed to unmarshal config file: %v", err)
 	}
 
-	cfgValue := reflect.ValueOf(cfg)
-	if cfgValue.Kind() != reflect.Ptr || cfgValue.IsNil() {
-		return nil, errors.New("cfg must be a pointer")
-	}
+	fmt.Println("[Init] config file path:", confDir)
 
-	log.Infof("configuration file path: %s", confDir)
-
-	return cfgValue.Interface(), nil
+	return err
 }
 
 func GetString(key string) string {

@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"github.com/arcade/arcade/internal/app/basic/config"
 	"github.com/arcade/arcade/internal/server/http"
-	"github.com/arcade/arcade/pkg/cache"
 	"github.com/arcade/arcade/pkg/conf"
-	_ "github.com/arcade/arcade/pkg/conf"
 	"os"
 	"os/signal"
 	"syscall"
@@ -21,33 +19,29 @@ import (
  */
 
 var (
-	configFile  string
-	releaseMode string
+	configFile string
 )
 
 func init() {
 	flag.StringVar(&configFile, "conf", "conf.d", "config file path, e.g. -conf ./conf.d")
-
-	flag.StringVar(&releaseMode, "mode", "release", "http run mode")
 }
 
 func main() {
 	flag.Parse()
-	cfg := config.Config{}
 
-	c, err := conf.LoadConfigFile(configFile, cfg)
-	if err != nil {
+	var appConf config.AppConfig
+	if err := conf.LoadConfigFile(configFile, &appConf); err != nil {
 		panic(err)
 	}
 
-	r := http.NewHTTPEngine(c.(config.Config).Http, releaseMode)
+	r := http.NewHTTPEngine(appConf.Http)
 
-	httpClean := http.NewHTTP(c.(config.Config).Http, r)
+	httpClean := http.NewHTTP(appConf.Http, r)
 
-	_, err = cache.NewRedis(c.(config.Config).Redis)
-	if err != nil {
-		panic(err)
-	}
+	//_, err := cache.NewRedis(appConf.Redis)
+	//if err != nil {
+	//	panic(err)
+	//}
 
 	code := 1
 	sc := make(chan os.Signal, 1)
@@ -56,7 +50,7 @@ func main() {
 EXIT:
 	for {
 		sig := <-sc
-		fmt.Println("received signal:", sig.String())
+		fmt.Println("[Done] received signal:", sig.String())
 		switch sig {
 		case syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT:
 			code = 0
@@ -69,6 +63,6 @@ EXIT:
 	}
 
 	httpClean()
-	fmt.Println("server exit...")
+	fmt.Println("[Done] server exit...")
 	os.Exit(code)
 }

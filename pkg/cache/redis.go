@@ -16,7 +16,7 @@ import (
  * @description: redis
  */
 
-type RedisConf struct {
+type Redis struct {
 	Mode             string
 	Host             string
 	Port             int
@@ -29,11 +29,11 @@ type RedisConf struct {
 	SentinelPassword string
 }
 
-type Redis redis.Cmdable
+type RedisCmd redis.Cmdable
 
-func NewRedis(cfg RedisConf) (Redis, error) {
+func NewRedis(cfg Redis) (RedisCmd, error) {
 
-	var redisClient Redis
+	var redisClient RedisCmd
 	switch cfg.Mode {
 	case "single":
 		redisOptions := &redis.Options{
@@ -80,6 +80,8 @@ func NewRedis(cfg RedisConf) (Redis, error) {
 		fmt.Println("failed to connect redis", err)
 		return nil, err
 	}
+
+	fmt.Println("redis connected, mode: ,version: ", cfg.Mode, redisClient.Ping(context.Background()).Val())
 
 	return redisClient, nil
 }
