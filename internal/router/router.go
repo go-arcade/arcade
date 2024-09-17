@@ -1,6 +1,7 @@
 package router
 
 import (
+	"github.com/arcade/arcade/pkg/httpx/ws"
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-kratos/kratos/v2/log"
 	_ "github.com/rakyll/statik/fs"
@@ -16,11 +17,22 @@ import (
 type Router struct {
 }
 
-func NewRouter(r *gin.Engine) {
+func EngineRouter(r *gin.RouterGroup) {
 
 	//staticsFS, err := fs.New()
 	//if err != nil {
 	//	log.Errorf("cannot create statik fs: %v", err)
 	//}
 	//r.StaticFS("/static", staticsFS)
+
+	r.POST("/ws", ws.Handle)
+
+	route := r.Group("/agent")
+	{
+		route.POST("/add", addAgent)
+		//r.POST("delete", deleteAgent)
+		//r.POST("update", updateAgent)
+		route.GET("/list", listAgent)
+	}
+
 }
