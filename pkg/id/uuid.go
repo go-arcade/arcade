@@ -2,6 +2,7 @@ package id
 
 import (
 	"strings"
+	"sync"
 
 	"github.com/google/uuid"
 )
@@ -9,18 +10,23 @@ import (
 /**
  * @author: HuaiAn xu
  * @date: 2024-05-02 00:34:31
- * @file: id.go
+ * @file: uuid.go
  * @description: id util
  */
 
+var mu = &sync.Mutex{}
+
 // GetUUID generates a new UUID
 func GetUUID() string {
-	return uuid.New().String()
+	mu.Lock()
+	defer mu.Unlock()
+	return uuid.NewString()
 }
 
 // GetUUIDWithoutDashes generates a new UUID not horizontal line
 func GetUUIDWithoutDashes() string {
-	u := uuid.New().String()
+	mu.Lock()
+	defer mu.Unlock()
 
-	return strings.Replace(u, "-", "", -1)
+	return strings.Replace(uuid.NewString(), "-", "", -1)
 }
