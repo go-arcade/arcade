@@ -35,3 +35,7 @@ func (eb *EventBus) Publish(event Event) {
 		}
 	}
 }
+
+func (eb *EventBus) Consume(event Event) {
+	eb.Publish(event)
+}

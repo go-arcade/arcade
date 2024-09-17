@@ -8,8 +8,16 @@ package plugin
  */
 
 type Plugin interface {
+	// Name plugin name
 	Name() string
+	// Description plugin description
+	Description() string
+	// Version plugin version
 	Version() string
-	Init() error
+	// Register plugin init
+	Register() error
+	// AntiRegister plugin remove
+	AntiRegister() error
+	// Run plugin run
 	Run() string
 }

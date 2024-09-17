@@ -24,7 +24,7 @@ rotateSize = 256
 host = "0.0.0.0"
 port = 8080
 # debug, release
-mode = "release"
+mode = "debug"
 contextPath = "/api/v1/"
 # unit: second
 heartbeat = 60
@@ -41,14 +41,19 @@ writeTimeout = 60
 idleTimeout = 60
 shutdownTimeout = 10
 
-
 [http.tls]
 certFile = ""
 keyFile = ""
 
 [http.auth]
+# jwt access token expire time
+# unit: second
 accessExpire = 3600
+# jwt refresh token expire time
+# unit: second
 refreshExpire = 7200
+secretKey = "bf284d03-ba65-42d4-a9fe-0d2fbfe61060"
+# redis in token prefix
 redisKey = "auth"
 
 [database]
@@ -56,7 +61,9 @@ host = "127.0.0.1"
 port = "3306"
 user = "root"
 password = "123456"
-db = "alert-service"
+db = "arcade"
+# sql print, false or true
+output = false
 # max open connections
 # unit: second
 maxOpenConns = 500
