@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"github.com/arcade/arcade/internal/app/basic/config"
-	"github.com/arcade/arcade/internal/router"
 	"github.com/arcade/arcade/internal/server/http"
 	"github.com/arcade/arcade/pkg/conf"
 	"github.com/arcade/arcade/pkg/log"
@@ -18,8 +17,8 @@ import (
 /**
  * @author: gagral.x@gmail.com
  * @time: 2024/9/4 19:51
- * @file: core.go
- * @description: core program
+ * @file: engine.go
+ * @description: engine program
  */
 
 var (
@@ -49,13 +48,10 @@ func main() {
 	// db
 	orm.NewDatabase(appConf.Database)
 
-	// http server
+	// httpx server
 	r := http.NewHTTPEngine(appConf.Http)
 
-	// router
-	router.NewRouter(r)
-
-	// http server clean
+	// httpx server clean
 	httpClean := http.NewHTTP(appConf.Http, r)
 
 	code := 1
