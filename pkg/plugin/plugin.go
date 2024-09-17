@@ -17,7 +17,7 @@ func NewPlugin() interface{} {
 
 	manager.ListPlugins()
 
-	if _, err := manager.RunPlugin("plugin"); err != nil {
+	if _, err := manager.Run("plugin"); err != nil {
 		panic(err)
 	}
 

@@ -16,12 +16,32 @@ type Manager struct {
 	plugins map[string]Plugin
 }
 
+var (
+	name        string = "plugin"
+	description string = "plugin manager"
+	version     string = "1.0"
+)
+
 func NewManager() *Manager {
 	return &Manager{
 		plugins: make(map[string]Plugin),
 	}
 }
 
+func (m *Manager) Name() string {
+	return name
+}
+
+func (m *Manager) Description() string {
+	return description
+}
+
+func (m *Manager) Version() string {
+	return version
+}
+
+// Register plugin
+// @param path plugin path
 func (m *Manager) Register(path string) error {
 
 	plug, err := plugin.Open(path)
@@ -56,6 +76,8 @@ func (m *Manager) Register(path string) error {
 	return nil
 }
 
+// AntiRegister anti register plugin
+// @param name plugin name
 func (m *Manager) AntiRegister(name string) error {
 	if _, exists := m.plugins[name]; !exists {
 		return errors.New("plugin does not exist")
@@ -66,7 +88,9 @@ func (m *Manager) AntiRegister(name string) error {
 	return nil
 }
 
-func (m *Manager) RunPlugin(name string) (string, error) {
+// Run run plugin
+// @param name plugin name
+func (m *Manager) Run(name string) (string, error) {
 	if _, exists := m.plugins[name]; !exists {
 		return "", errors.New("plugin does not exist")
 	}
@@ -74,6 +98,7 @@ func (m *Manager) RunPlugin(name string) (string, error) {
 	return m.plugins[name].Run(), nil
 }
 
+// ListPlugins list all plugins
 func (m *Manager) ListPlugins() []string {
 	var list []string
 	for k := range m.plugins {

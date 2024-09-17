@@ -3,6 +3,9 @@ package http
 import (
 	"context"
 	"fmt"
+	"github.com/arcade/arcade/internal/router"
+	"github.com/arcade/arcade/pkg/httpx"
+	"github.com/arcade/arcade/pkg/httpx/interceptor"
 	"github.com/arcade/arcade/pkg/version"
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
@@ -14,7 +17,7 @@ import (
 /**
  * @author: gagral.x@gmail.com
  * @time: 2024/9/8 15:38
- * @file: http.go
+ * @file: httpx.go
  * @description: http server
  */
 
@@ -22,7 +25,7 @@ type HTTP struct {
 	Host            string
 	Port            int
 	Mode            string
-	contextPath     string
+	ContextPath     string
 	Heartbeat       string
 	PProf           bool
 	ExposeMetrics   bool
@@ -51,13 +54,15 @@ func NewHTTPEngine(cfg HTTP) *gin.Engine {
 	gin.SetMode(cfg.Mode)
 
 	r := gin.New()
+	// panic recover
 	r.Use(gin.Recovery())
 
-	if cfg.AccessLog {
-		r.Use(gin.Logger())
-	}
+	// response interceptor
+	r.Use(interceptor.UnifiedResponseInterceptor())
 
-	r.Group(cfg.contextPath)
+	if cfg.AccessLog {
+		r.Use(gin.LoggerWithFormatter(httpx.AccessLogFormat))
+	}
 
 	if cfg.PProf {
 		pprof.Register(r, "/debug/pprof")
@@ -75,6 +80,12 @@ func NewHTTPEngine(cfg HTTP) *gin.Engine {
 		c.JSON(http.StatusOK, version.GetVersion())
 	})
 
+	core := r.Group(cfg.ContextPath)
+	{
+		// engine router
+		router.EngineRouter(core)
+	}
+
 	return r
 }
 
@@ -89,7 +100,7 @@ func NewHTTP(cfg HTTP, handler http.Handler) func() {
 	}
 
 	go func() {
-		fmt.Println("[Init] http server start at:", addr)
+		fmt.Println("[Init] httpx server start at:", addr)
 
 		if cfg.TLS.CertFile != "" && cfg.TLS.KeyFile != "" {
 			if err := srv.ListenAndServeTLS(cfg.TLS.CertFile, cfg.TLS.KeyFile); err != nil {
@@ -115,7 +126,7 @@ func NewHTTP(cfg HTTP, handler http.Handler) func() {
 		case <-ctx.Done():
 			fmt.Println("server shutdown timeout of ", cfg.ShutdownTimeout, " seconds")
 		default:
-			fmt.Println("[Done] http exit...")
+			fmt.Println("[Done] httpx exit...")
 		}
 	}
 }

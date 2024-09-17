@@ -23,6 +23,7 @@ type Database struct {
 	User         string
 	Password     string
 	DB           string
+	OutPut       bool
 	MaxOpenConns int
 	MaxIdleConns int
 	MaxLifetime  int
@@ -46,22 +47,24 @@ func NewDatabase(cfg Database) *gorm.DB {
 		ParameterizedQueries:      true,        // 启用参数化查询
 	}
 
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger: NewGormLogger(conf, logger.Info),
-		//Logger: logger.New(
-		//	log.New(log.Writer(), "\r\n", log.LstdFlags), // io writer
-		//	logger.Config{
-		//		SlowThreshold:             time.Second, // 慢 SQL 阈值
-		//		LogLevel:                  logger.Info, // Log level
-		//		Colorful:                  false,       // 禁用彩色打印
-		//		IgnoreRecordNotFoundError: true,        // 忽略ErrRecordNotFound（记录未找到）错误
-		//		ParameterizedQueries:      true,        // 启用参数化查询
-		//	},
-		//),
-		NamingStrategy: schema.NamingStrategy{
-			SingularTable: true,
-		},
-	})
+	var db *gorm.DB
+	var err error
+
+	if cfg.OutPut {
+		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
+			Logger: NewGormLogger(conf, logger.Info),
+			NamingStrategy: schema.NamingStrategy{
+				SingularTable: true,
+			},
+		})
+	} else {
+		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Silent),
+			NamingStrategy: schema.NamingStrategy{
+				SingularTable: true,
+			},
+		})
+	}
 	if err != nil {
 		panic(err)
 	}
@@ -88,7 +91,7 @@ func NewDatabase(cfg Database) *gorm.DB {
 	}
 
 	fmt.Println("[Init] mysql version:", version)
-
+	conn = db
 	return db
 }
 
