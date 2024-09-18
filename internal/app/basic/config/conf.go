@@ -1,10 +1,10 @@
 package config
 
 import (
-	"github.com/arcade/arcade/internal/server/http"
-	"github.com/arcade/arcade/pkg/cache"
-	"github.com/arcade/arcade/pkg/log"
-	"github.com/arcade/arcade/pkg/orm"
+	"github.com/go-arcade/arcade/internal/server/http"
+	"github.com/go-arcade/arcade/pkg/cache"
+	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/orm"
 )
 
 /**

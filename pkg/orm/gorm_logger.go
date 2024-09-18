@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/arcade/arcade/pkg/runner"
+	"github.com/go-arcade/arcade/pkg/runner"
 	"gorm.io/gorm/logger"
 	"log"
 	"os"

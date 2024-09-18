@@ -1,10 +1,10 @@
 package ws
 
 import (
-	httpx "github.com/arcade/arcade/pkg/httpx"
-	"github.com/arcade/arcade/pkg/log"
 	"github.com/bytedance/sonic"
 	"github.com/gin-gonic/gin"
+	httpx "github.com/go-arcade/arcade/pkg/httpx"
+	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/gorilla/websocket"
 	"net/http"
 )

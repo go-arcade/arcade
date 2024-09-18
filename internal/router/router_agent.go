@@ -1,11 +1,11 @@
 package router
 
 import (
-	"github.com/arcade/arcade/internal/app/basic/logic"
-	"github.com/arcade/arcade/internal/app/basic/models"
-	"github.com/arcade/arcade/pkg/httpx"
 	"github.com/cnlesscode/gotool/gintool"
 	"github.com/gin-gonic/gin"
+	"github.com/go-arcade/arcade/internal/app/basic/logic"
+	"github.com/go-arcade/arcade/internal/app/basic/models"
+	"github.com/go-arcade/arcade/pkg/httpx"
 )
 
 /**

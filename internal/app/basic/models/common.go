@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/arcade/arcade/pkg/orm"
+	"github.com/go-arcade/arcade/pkg/orm"
 	"gorm.io/gorm"
 )
 
