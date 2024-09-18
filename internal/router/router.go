@@ -1,8 +1,8 @@
 package router
 
 import (
-	"github.com/arcade/arcade/pkg/httpx/ws"
 	"github.com/gin-gonic/gin"
+	"github.com/go-arcade/arcade/pkg/httpx/ws"
 	_ "github.com/go-kratos/kratos/v2/log"
 	_ "github.com/rakyll/statik/fs"
 )

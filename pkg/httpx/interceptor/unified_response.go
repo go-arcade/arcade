@@ -1,8 +1,8 @@
 package interceptor
 
 import (
-	"github.com/arcade/arcade/pkg/httpx"
 	"github.com/gin-gonic/gin"
+	"github.com/go-arcade/arcade/pkg/httpx"
 	"net/http"
 )
 

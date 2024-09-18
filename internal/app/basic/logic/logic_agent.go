@@ -1,8 +1,8 @@
 package logic
 
 import (
-	"github.com/arcade/arcade/internal/app/basic/models"
-	"github.com/arcade/arcade/pkg/id"
+	"github.com/go-arcade/arcade/internal/app/basic/models"
+	"github.com/go-arcade/arcade/pkg/id"
 	"time"
 )
 

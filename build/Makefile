@@ -8,10 +8,10 @@ GIT_COMMIT = $(shell git rev-parse HEAD)
 BUILD_TIME = $(shell date +"%Y-%m-%d %H:%M:%S")
 
 define ldflags
-"-X 'github.com/arcade/arcade/pkg/version.Version=${VERSION}' \
- -X 'github.com/arcade/arcade/pkg/version.GitBranch=${GIT_BRANCH}' \
- -X 'github.com/arcade/arcade/pkg/version.GitCommit=${GIT_COMMIT}' \
- -X 'github.com/arcade/arcade/pkg/version.BuildTime=${BUILD_TIME}'"
+"-X 'github.com/go-arcade/arcade/pkg/version.Version=${VERSION}' \
+ -X 'github.com/go-arcade/arcade/pkg/version.GitBranch=${GIT_BRANCH}' \
+ -X 'github.com/go-arcade/arcade/pkg/version.GitCommit=${GIT_COMMIT}' \
+ -X 'github.com/go-arcade/arcade/pkg/version.BuildTime=${BUILD_TIME}'"
 endef
 
 all: prebuild build

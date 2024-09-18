@@ -1,9 +1,9 @@
 package minio
 
 import (
-	"github.com/arcade/arcade/pkg/httpx"
-	"github.com/arcade/arcade/pkg/log"
 	"github.com/gin-gonic/gin"
+	"github.com/go-arcade/arcade/pkg/httpx"
+	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 
