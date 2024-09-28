@@ -18,8 +18,7 @@ import (
 
 type Redis struct {
 	Mode             string
-	Host             string
-	Port             int
+	Address          string
 	Password         string
 	DB               int
 	PoolSize         int
@@ -37,7 +36,7 @@ func NewRedis(cfg Redis) (RedisCmd, error) {
 	switch cfg.Mode {
 	case "single":
 		redisOptions := &redis.Options{
-			Addr:     fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
+			Addr:     cfg.Address,
 			Password: cfg.Password,
 			DB:       cfg.DB,
 			PoolSize: cfg.PoolSize,
@@ -48,7 +47,7 @@ func NewRedis(cfg Redis) (RedisCmd, error) {
 		redisClient = redis.NewClient(redisOptions)
 	case "cluster":
 		redisOptions := &redis.ClusterOptions{
-			Addrs:    strings.Split(cfg.Host, ","),
+			Addrs:    strings.Split(cfg.Address, ","),
 			Password: cfg.Password,
 			PoolSize: cfg.PoolSize,
 		}
@@ -59,7 +58,7 @@ func NewRedis(cfg Redis) (RedisCmd, error) {
 	case "sentinel":
 		redisOptions := &redis.FailoverOptions{
 			MasterName:       cfg.MasterName,
-			SentinelAddrs:    strings.Split(cfg.Host, ","),
+			SentinelAddrs:    strings.Split(cfg.Address, ","),
 			Password:         cfg.Password,
 			DB:               cfg.DB,
 			PoolSize:         cfg.PoolSize,

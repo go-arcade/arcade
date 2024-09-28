@@ -14,7 +14,7 @@ var (
 	AuthorizationIncorrect = failed(4002, "The auth format in the request header is incorrect")
 	AuthorizationEmpty     = failed(4003, "Authorization is empty")
 	TokenInvalid           = failed(4004, "Token is invalid")
-	TokenEmpty             = failed(4005, "Token is empty")
+	TokenEmpty             = failed(405, "Token is empty")
 
 	ErrUserPhone = failed(10001, "用户手机号不合法")
 	ErrSignParam = failed(10002, "签名参数有误")
