@@ -2,7 +2,7 @@ package conf
 
 import (
 	"fmt"
-	"github.com/go-arcade/arcade/internal/app/engine/server"
+	"github.com/go-arcade/arcade/pkg/server"
 	"path/filepath"
 	"sync"
 

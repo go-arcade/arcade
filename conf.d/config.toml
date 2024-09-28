@@ -59,7 +59,7 @@ accessExpire = 3600
 refreshExpire = 7200
 secretKey = "bf284d03-ba65-42d4-a9fe-0d2fbfe61060"
 # redis in token prefix
-redisKey = "auth"
+redisKey = "token"
 
 [database]
 # support mysql
@@ -70,7 +70,7 @@ user = "root"
 password = "123456"
 db = "arcade_meta"
 # sql print, false or true
-output = false
+output = true
 # max open connections
 # unit: second
 maxOpenConns = 500
