@@ -1,23 +1,25 @@
-package orm
+package database
 
 import (
 	"fmt"
+	"sync"
+	"time"
+
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
-	"sync"
-	"time"
 )
 
 /**
  * @author: gagral.x@gmail.com
  * @time: 2024/9/16 11:29
- * @file: gorm.go
- * @description: gorm orm
+ * @file: mysql.go
+ * @description: gorm database
  */
 
 type Database struct {
+	Type         string
 	Host         string
 	Port         string
 	User         string
@@ -29,12 +31,17 @@ type Database struct {
 	MaxLifetime  int
 	MaxIdleTime  int
 	PrintSQL     bool
+	MongoDB      MongoDB
 }
 
 var conn *gorm.DB
 var mu sync.Mutex
 
 func NewDatabase(cfg Database) *gorm.DB {
+
+	if cfg.Type != "mysql" {
+		panic("Database type is not supported")
+	}
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.DB)
@@ -90,7 +97,6 @@ func NewDatabase(cfg Database) *gorm.DB {
 		return nil
 	}
 
-	fmt.Println("[Init] mysql version:", version)
 	conn = db
 	return db
 }
