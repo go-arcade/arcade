@@ -1,4 +1,4 @@
-package model
+package repo
 
 import (
 	"github.com/go-arcade/arcade/pkg/ctx"
@@ -7,12 +7,12 @@ import (
 
 /**
  * @author: gagral.x@gmail.com
- * @time: 2024/9/16 20:42
- * @file: common.go
+ * @time: 2024/9/28 21:58
+ * @file: repo.go
  * @description:
  */
 
-func Count(ctx ctx.Context, tx *gorm.DB) (int64, error) {
+func Count(tx *gorm.DB) (int64, error) {
 	var count int64
 	if err := tx.Count(&count).Error; err != nil {
 		return 0, err
@@ -20,12 +20,12 @@ func Count(ctx ctx.Context, tx *gorm.DB) (int64, error) {
 	return count, nil
 }
 
-func Exist(ctx ctx.Context, tx *gorm.DB, where interface{}) bool {
-	num, err := Count(ctx, tx)
-	if err != nil {
+func Exist(tx *gorm.DB, where interface{}) bool {
+	var one interface{}
+	if err := tx.Where(where).First(&one).Error; err != nil {
 		return false
 	}
-	return num > 0
+	return true
 }
 
 func Insert(ctx ctx.Context, obj interface{}) error {

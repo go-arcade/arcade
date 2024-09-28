@@ -38,7 +38,7 @@ pprof = false
 # enable metrics, false or true
 exposeMetrics = true
 # access log, false or true
-accessLog = true
+accessLog = false
 # read timeout
 # unit: second
 readTimeout = 60
@@ -84,13 +84,13 @@ maxLifeTime = 300
 # unit: second
 maxIdleTime = 60
 
-[database.mongo]
+[database.mongodb]
 # cluster, standalone
 # cluster: uri = "mongodb://localhost:27017,localhost:27018,localhost:27019"
 # auth: uri = "mongodb://username:password@localhost:27017"
-uri = "mongodb://localhost:27017"
+uri = "mongodb://127.0.0.1:27017"
 compressors = ["snappy", "zstd", "zlib"]
-db = "arcade_meta"
+db = "job_log"
 poolSize = 100
 
 [redis]
