@@ -1,7 +1,5 @@
 package model
 
-import "time"
-
 /**
  * @author: gagral.x@gmail.com
  * @time: 2024/9/16 20:19
@@ -10,17 +8,15 @@ import "time"
  */
 
 type User struct {
-	ID       int       `gorm:"primaryKey" json:"id"`
-	UserId   string    `gorm:"column:user_id" json:"userId"`
-	Username string    `gorm:"column:username" json:"username"`
-	Password string    `gorm:"column:password" json:"password"`
-	Nickname string    `gorm:"column:nickname" json:"nickname"`
-	Email    string    `gorm:"column:email" json:"email"`
-	Phone    string    `gorm:"column:phone" json:"phone"`
-	IsEnable int       `gorm:"column:enable" json:"isEnable"`
-	UserRole string    `gorm:"column:user_role" json:"userRole"`
-	CreatAt  time.Time `gorm:"column:creat_time" json:"creatAt"`
-	UpdateAt time.Time `gorm:"column:update_time" json:"updateAt"`
+	BaseModel
+	UserId   string `gorm:"column:user_id" json:"userId"`
+	Username string `gorm:"column:user_name" json:"username"`
+	Nickname string `gorm:"column:nick_name" json:"nickname"`
+	Password string `gorm:"column:password" json:"password"`
+	Avatar   string `gorm:"column:avatar" json:"avatar"`
+	Email    string `gorm:"column:email" json:"email"`
+	Phone    string `gorm:"column:phone" json:"phone"`
+	IsEnable int    `gorm:"column:is_enable" json:"is_enable"`
 }
 
 func (User) TableName() string {

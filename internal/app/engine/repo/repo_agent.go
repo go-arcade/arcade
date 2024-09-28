@@ -31,7 +31,7 @@ func NewAgentRepo(ctx *ctx.Context) *AgentRepo {
 func (ar *AgentRepo) AddAgent(addAgentReq *model.AddAgentReq) error {
 
 	addAgentReq.AgentId = id.GetUild()
-	addAgentReq.IsEnable = 1
+	addAgentReq.IsEnabled = 1
 	addAgentReq.CreatAt = time.Now()
 	var err error
 	if err = ar.Ctx.GetMySQLIns().Table(ar.AgentModel.TableName()).Create(addAgentReq).Error; err != nil {
@@ -52,13 +52,15 @@ func (ar *AgentRepo) ListAgent(pageNum, pageSize int) ([]model.Agent, int64, err
 
 	var agents []model.Agent
 	var count int64
+	var err error
 	offset := (pageNum - 1) * pageSize
 
-	if err := ar.Ctx.GetMySQLIns().Table(ar.AgentModel.TableName()).Count(&count).Error; err != nil {
+	if err = ar.Ctx.GetMySQLIns().Table(ar.AgentModel.TableName()).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := ar.Ctx.GetMySQLIns().Table(ar.AgentModel.TableName()).Offset(offset).Limit(pageSize).Find(&agents).Error; err != nil {
+	if err = ar.Ctx.GetMySQLIns().Select("id, agent_id, agent_name, address, port, username, auth_type, is_enabled").Table(ar.AgentModel.TableName()).
+		Offset(offset).Limit(pageSize).Find(&agents).Error; err != nil {
 		return nil, 0, err
 	}
 	return agents, count, nil

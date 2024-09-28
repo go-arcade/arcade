@@ -12,19 +12,17 @@ import (
  */
 
 type Agent struct {
-	Id        int    `gorm:"primaryKey" json:"id"`
+	BaseModel
 	AgentId   string `gorm:"column:agent_id" json:"agentId"`
 	AgentName string `gorm:"column:agent_name" json:"agentName"`
 	// todo: type? proxy?
-	Address   string    `gorm:"column:address" json:"address"`
-	Port      string    `gorm:"column:port" json:"port"`
-	Username  string    `gorm:"column:username" json:"username"`
-	Password  string    `gorm:"column:password" json:"password"`
-	PublicKey string    `gorm:"column:public_key" json:"publicKey"`
-	AuthType  int       `gorm:"column:auth_type" json:"authType"` // 0: password, 1: key
-	IsEnable  int       `gorm:"column:is_enable" json:"isEnable"` // 0: disable, 1: enable
-	CreatAt   time.Time `gorm:"column:creat_time" json:"creatAt"`
-	UpdateAt  time.Time `gorm:"column:update_time" json:"updateAt"`
+	Address   string `gorm:"column:address" json:"address"`
+	Port      string `gorm:"column:port" json:"port"`
+	Username  string `gorm:"column:username" json:"username"`
+	Password  string `gorm:"column:password" json:"password,omitempty"`
+	PublicKey string `gorm:"column:public_key" json:"publicKey,omitempty"`
+	AuthType  int    `gorm:"column:auth_type" json:"authType"`   // 0: password, 1: key
+	IsEnabled int    `gorm:"column:is_enabled" json:"isEnabled"` // 0: disable, 1: enable
 }
 
 func (a *Agent) TableName() string {
@@ -40,6 +38,6 @@ type AddAgentReq struct {
 	Password  string    `gorm:"column:password" json:"password"`
 	PublicKey string    `gorm:"column:public_key" json:"publicKey"`
 	AuthType  int       `gorm:"column:auth_type" json:"authType"`
-	IsEnable  int       `gorm:"column:is_enable" json:"isEnable"`
+	IsEnabled int       `gorm:"column:is_enabled" json:"isEnabled"`
 	CreatAt   time.Time `gorm:"column:creat_time" json:"creatAt"`
 }
