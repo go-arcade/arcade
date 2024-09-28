@@ -33,7 +33,7 @@ func NewGormLogger(config logger.Config, logLevel logger.LogLevel) *GormLogger {
 	return &GormLogger{
 		Config: config,
 		Level:  logLevel,
-		log:    log.New(os.Stdout, "\r\n", log.LstdFlags),
+		log:    log.New(os.Stdout, "", log.LstdFlags),
 		//Log:    log,
 	}
 }
