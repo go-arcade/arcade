@@ -2,6 +2,7 @@ package interceptor
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/go-arcade/arcade/internal/app/engine/consts"
 	"github.com/go-arcade/arcade/pkg/httpx"
 	"net/http"
 )
@@ -33,11 +34,21 @@ func UnifiedResponseInterceptor() gin.HandlerFunc {
 		}
 		c.Next()
 
-		// 业务逻辑正确
+		// 业务逻辑正确, 设置响应数据
 		if c.Writer.Status() >= http.StatusOK && c.Writer.Status() < http.StatusMultipleChoices {
-			detail, exists := c.Get("detail")
+			detail, exists := c.Get(consts.DETAIL)
 			if exists && detail != nil {
 				httpx.WithRepJSON(c, detail)
+				return
+			}
+		}
+		c.Next()
+
+		// 业务逻辑正确, 无响应数据, 只返回结果
+		if c.Writer.Status() >= http.StatusOK && c.Writer.Status() < http.StatusMultipleChoices {
+			detail, exists := c.Get(consts.OPERATION)
+			if exists && detail != nil {
+				httpx.WithRepNotDetail(c)
 				return
 			}
 		}
