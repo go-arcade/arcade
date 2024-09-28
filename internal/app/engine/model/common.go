@@ -1,7 +1,7 @@
 package model
 
 import (
-	"github.com/go-arcade/arcade/pkg/orm"
+	"github.com/go-arcade/arcade/pkg/ctx"
 	"gorm.io/gorm"
 )
 
@@ -12,11 +12,7 @@ import (
  * @description:
  */
 
-func DB() *gorm.DB {
-	return orm.GetConn()
-}
-
-func Count(tx *gorm.DB) (int64, error) {
+func Count(ctx ctx.Context, tx *gorm.DB) (int64, error) {
 	var count int64
 	if err := tx.Count(&count).Error; err != nil {
 		return 0, err
@@ -24,14 +20,14 @@ func Count(tx *gorm.DB) (int64, error) {
 	return count, nil
 }
 
-func Exist(tx *gorm.DB, where interface{}) bool {
-	num, err := Count(tx)
+func Exist(ctx ctx.Context, tx *gorm.DB, where interface{}) bool {
+	num, err := Count(ctx, tx)
 	if err != nil {
 		return false
 	}
 	return num > 0
 }
 
-func Insert(obj interface{}) error {
-	return DB().Create(obj).Error
+func Insert(ctx ctx.Context, obj interface{}) error {
+	return ctx.MySQLIns.Create(obj).Error
 }

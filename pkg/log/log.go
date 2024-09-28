@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/google/wire"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -12,8 +14,9 @@ import (
 const key = iota
 
 var (
-	logger *zap.Logger
-	sugar  *zap.SugaredLogger
+	logger      *zap.Logger
+	sugar       *zap.SugaredLogger
+	ProviderSet = wire.NewSet(NewLog)
 )
 
 // LogConfig holds LogConfig configuration options.
@@ -29,7 +32,7 @@ type LogConfig struct {
 }
 
 type Logger struct {
-	log  *zap.SugaredLogger
+	Log  *zap.SugaredLogger
 	conf *LogConfig
 }
 

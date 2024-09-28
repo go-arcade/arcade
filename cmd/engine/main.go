@@ -1,17 +1,16 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
-	"github.com/go-arcade/arcade/internal/app/basic/config"
-	"github.com/go-arcade/arcade/internal/server/http"
-	"github.com/go-arcade/arcade/pkg/conf"
+	"github.com/go-arcade/arcade/internal/app/engine/conf"
+	"github.com/go-arcade/arcade/internal/app/engine/server"
+	"github.com/go-arcade/arcade/internal/router"
+	"github.com/go-arcade/arcade/pkg/ctx"
+	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/go-arcade/arcade/pkg/log"
-	"github.com/go-arcade/arcade/pkg/orm"
 	"github.com/go-arcade/arcade/pkg/runner"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 /**
@@ -26,19 +25,17 @@ var (
 )
 
 func init() {
-	flag.StringVar(&configFile, "conf", "conf.d", "config file path, e.g. -conf ./conf.d")
+	flag.StringVar(&configFile, "conf", "conf.d/config.toml", "conf file path, e.g. -conf ./conf.d")
 }
 
 func main() {
 	flag.Parse()
 	printRunner()
 
-	var appConf config.AppConfig
-	if err := conf.LoadConfigFile(configFile, &appConf); err != nil {
-		panic(err)
-	}
+	var appConf conf.AppConfig
+	appConf = conf.NewConf(configFile)
 
-	log.NewLog(&appConf.Log)
+	logger := log.NewLog(&appConf.Log)
 
 	//_, err := cache.NewRedis(appConf.Redis)
 	//if err != nil {
@@ -46,36 +43,19 @@ func main() {
 	//}
 
 	// db
-	orm.NewDatabase(appConf.Database)
+	db := database.NewDatabase(appConf.Database)
 
-	// httpx server
-	r := http.NewHTTPEngine(appConf.Http)
+	Ctx := ctx.NewContext(context.Background(), db, logger)
 
-	// httpx server clean
-	httpClean := http.NewHTTP(appConf.Http, r)
+	// repo.NewAgentRepo(db)
 
-	code := 1
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	route := router.NewRouter(&appConf.Http, Ctx)
 
-EXIT:
-	for {
-		sig := <-sc
-		fmt.Println("[Done] received signal:", sig.String())
-		switch sig {
-		case syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT:
-			code = 0
-			break EXIT
-		case syscall.SIGHUP:
-			// todo: reload? or other?
-		default:
-			break EXIT
-		}
-	}
+	// httpx srv
+	http := server.NewHttp(appConf.Http)
+	httpClean := http.Server(route.Router())
 
 	httpClean()
-	fmt.Println("[Done] server exit...")
-	os.Exit(code)
 }
 
 func printRunner() {
