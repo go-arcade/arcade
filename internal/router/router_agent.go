@@ -3,8 +3,10 @@ package router
 import (
 	"github.com/cnlesscode/gotool/gintool"
 	"github.com/gin-gonic/gin"
-	"github.com/go-arcade/arcade/internal/app/basic/logic"
-	"github.com/go-arcade/arcade/internal/app/basic/models"
+	"github.com/go-arcade/arcade/internal/app/engine/consts"
+	"github.com/go-arcade/arcade/internal/app/engine/logic"
+	"github.com/go-arcade/arcade/internal/app/engine/model"
+	"github.com/go-arcade/arcade/internal/app/engine/repo"
 	"github.com/go-arcade/arcade/pkg/httpx"
 )
 
@@ -15,30 +17,32 @@ import (
  * @description: agent router
  */
 
-func addAgent(r *gin.Context) {
+func (ar *Router) addAgent(r *gin.Context) {
+	var addAgentReq *model.AddAgentReq
+	agentRepo := repo.NewAgentRepo(ar.Ctx)
+	agentLogic := logic.NewAgentLogic(agentRepo, addAgentReq)
 
-	var agent *models.AddAgentReq
-
-	if err := r.BindJSON(&agent); err != nil {
+	if err := r.BindJSON(&addAgentReq); err != nil {
 		httpx.WithRepErrMsg(r, httpx.Failed.Code, httpx.Failed.Msg, r.Request.URL.Path)
 		return
 	}
 
-	if err := logic.AddAgent(agent); err != nil {
+	if err := agentLogic.AddAgent(addAgentReq); err != nil {
 		httpx.WithRepErrMsg(r, httpx.Failed.Code, httpx.Failed.Msg, r.Request.URL.Path)
 		return
 	}
 
-	httpx.WithRepJSON(r, nil)
-
+	r.Set(consts.OPERATION, "")
 }
 
-func listAgent(r *gin.Context) {
+func (ar *Router) listAgent(r *gin.Context) {
+	var agentReq *model.AddAgentReq
+	agentRepo := repo.NewAgentRepo(ar.Ctx)
+	agentLogic := logic.NewAgentLogic(agentRepo, agentReq)
 
-	pageNum, _ := gintool.QueryInt(r, "pageNum")   // default 1
-	pageSize, _ := gintool.QueryInt(r, "pageSize") // default 10
-
-	agents, count, err := logic.ListAgent(pageNum, pageSize)
+	pageNum := queryInt(r, "pageNum")   // default 1
+	pageSize := queryInt(r, "pageSize") // default 10
+	agents, count, err := agentLogic.ListAgent(pageNum, pageSize)
 	if err != nil {
 		httpx.WithRepErrMsg(r, httpx.Failed.Code, httpx.Failed.Msg, r.Request.URL.Path)
 		return
@@ -47,6 +51,13 @@ func listAgent(r *gin.Context) {
 	result := make(map[string]interface{})
 	result["agents"] = agents
 	result["count"] = count
-	httpx.WithRepJSON(r, result)
+	r.Set(consts.DETAIL, result)
+}
 
+func queryInt(r *gin.Context, key string) int {
+	value, ok := gintool.QueryInt(r, key)
+	if !ok {
+		return 0
+	}
+	return value
 }

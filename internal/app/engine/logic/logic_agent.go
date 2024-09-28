@@ -2,9 +2,8 @@ package logic
 
 import (
 	"github.com/go-arcade/arcade/internal/app/engine/model"
-	"github.com/go-arcade/arcade/pkg/ctx"
-	"github.com/go-arcade/arcade/pkg/id"
-	"time"
+	"github.com/go-arcade/arcade/internal/app/engine/repo"
+	"github.com/go-arcade/arcade/pkg/log"
 )
 
 /**
@@ -15,35 +14,44 @@ import (
  */
 
 type AgentLogic struct {
-	Ctx ctx.Context
+	agentRepo *repo.AgentRepo
+	agentReq  *model.AddAgentReq
 }
 
-func AddAgent(agent *model.AddAgentReq) error {
-	a := model.Agent{}
-	agent.AgentId = id.GetUild()
-	agent.IsEnable = 1
-	agent.CreatAt = time.Now()
+func NewAgentLogic(agentRepo *repo.AgentRepo, agentReq *model.AddAgentReq) *AgentLogic {
+	return &AgentLogic{
+		agentRepo: agentRepo,
+		agentReq:  agentReq,
+	}
+}
+
+func (al *AgentLogic) AddAgent(addAgentReq *model.AddAgentReq) error {
+
 	var err error
-	if err = a.Add(agent); err != nil {
+
+	if err = al.agentRepo.AddAgent(addAgentReq); err != nil {
+		log.Errorf("add agent err: %v", err)
 		return err
 	}
 	return err
 }
 
-func UpdateAgent(agent *model.Agent) error {
+func (al *AgentLogic) UpdateAgent() error {
+
 	var err error
-	if err = agent.Update(); err != nil {
+	if err = al.agentRepo.UpdateAgent(&al.agentRepo.AgentModel); err != nil {
 		return err
 	}
 	return err
 }
 
-func ListAgent(pageNum, pageSize int) ([]model.Agent, int64, error) {
-	a := model.Agent{}
+func (al *AgentLogic) ListAgent(pageNum, pageSize int) ([]model.Agent, int64, error) {
 
 	offset := (pageNum - 1) * pageSize
-	agents, count, err := a.List(offset, pageSize)
+	agents, count, err := al.agentRepo.ListAgent(offset, pageSize)
+
 	if err != nil {
+		log.Errorf("list agent err: %v", err)
 		return nil, 0, err
 	}
 	return agents, count, err

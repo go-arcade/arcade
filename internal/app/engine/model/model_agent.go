@@ -22,42 +22,13 @@ type Agent struct {
 	Password  string    `gorm:"column:password" json:"password"`
 	PublicKey string    `gorm:"column:public_key" json:"publicKey"`
 	AuthType  int       `gorm:"column:auth_type" json:"authType"` // 0: password, 1: key
-	IsEnable  int       `gorm:"column:enable" json:"isEnable"`    // 0: disable, 1: enable
+	IsEnable  int       `gorm:"column:is_enable" json:"isEnable"` // 0: disable, 1: enable
 	CreatAt   time.Time `gorm:"column:creat_time" json:"creatAt"`
 	UpdateAt  time.Time `gorm:"column:update_time" json:"updateAt"`
 }
 
 func (a *Agent) TableName() string {
 	return "agent"
-}
-
-func (a *Agent) Add(agent *AddAgentReq) error {
-	return DB().Table(a.TableName()).Create(agent).Error
-}
-
-func (a *Agent) Update() error {
-	return DB().Model(a).Updates(a).Error
-}
-
-func (a *Agent) Del() error {
-	return DB().Where("id=?", a.Id).Delete(a).Error
-}
-
-func (a *Agent) Get() error {
-	return DB().Where("id=?", a.Id).Find(a).Error
-}
-
-func (a *Agent) List(offset, pageSize int) ([]Agent, int64, error) {
-	var agents []Agent
-	var count int64
-
-	countResult := DB().Table(a.TableName()).Count(&count).Error
-	if countResult != nil {
-		return nil, 0, countResult
-	}
-
-	err := DB().Table(a.TableName()).Offset(offset).Limit(pageSize).Find(&agents).Error
-	return agents, count, err
 }
 
 type AddAgentReq struct {
@@ -69,6 +40,6 @@ type AddAgentReq struct {
 	Password  string    `gorm:"column:password" json:"password"`
 	PublicKey string    `gorm:"column:public_key" json:"publicKey"`
 	AuthType  int       `gorm:"column:auth_type" json:"authType"`
-	IsEnable  int       `gorm:"column:enable" json:"isEnable"`
+	IsEnable  int       `gorm:"column:is_enable" json:"isEnable"`
 	CreatAt   time.Time `gorm:"column:creat_time" json:"creatAt"`
 }

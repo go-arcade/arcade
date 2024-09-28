@@ -1,6 +1,7 @@
 package ctx
 
 import (
+	"go.uber.org/zap"
 	"golang.org/x/net/context"
 	"gorm.io/gorm"
 )
@@ -13,14 +14,16 @@ import (
  */
 
 type Context struct {
-	DB  *gorm.DB
-	Ctx context.Context
+	MySQLIns *gorm.DB
+	Ctx      context.Context
+	Log      *zap.SugaredLogger
 }
 
-func NewContext(ctx context.Context, db *gorm.DB) *Context {
+func NewContext(ctx context.Context, db *gorm.DB, log *zap.SugaredLogger) *Context {
 	return &Context{
-		DB:  db,
-		Ctx: ctx,
+		MySQLIns: db,
+		Ctx:      ctx,
+		Log:      log,
 	}
 }
 
@@ -29,9 +32,9 @@ func (c *Context) GetCtx() context.Context {
 }
 
 func (c *Context) SetDB(db *gorm.DB) {
-	c.DB = db
+	c.MySQLIns = db
 }
 
 func (c *Context) GetDB() *gorm.DB {
-	return c.DB
+	return c.MySQLIns
 }

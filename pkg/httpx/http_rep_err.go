@@ -13,36 +13,33 @@ import (
  */
 
 type ResponseErr struct {
-	Code int    `json:"code"`
-	Msg  string `json:"msg"`
-	Err  any    `json:"err,omitempty"`
-	Path string `json:"path,omitempty"`
+	ErrCode int    `json:"code"`
+	ErrMsg  any    `json:"errMsg"`
+	Path    string `json:"path,omitempty"`
 }
 
-// WithRepErr 只返回json数据
-func WithRepErr(c *gin.Context, code int, msg string, err any, path string) {
+// WithRepErr 返回操作结果，返回结构体有path字段
+func WithRepErr(c *gin.Context, code int, errMsg any, path string) {
 	c.JSON(http.StatusOK, ResponseErr{
-		Code: code,
-		Msg:  msg,
-		Err:  err,
-		Path: path,
+		ErrCode: code,
+		ErrMsg:  errMsg,
+		Path:    path,
 	})
 }
 
 // WithRepErrMsg 只返回json数据
-func WithRepErrMsg(c *gin.Context, code int, msg string, path string) {
+func WithRepErrMsg(c *gin.Context, code int, errMsg any, path string) {
 	c.JSON(http.StatusOK, ResponseErr{
-		Code: code,
-		Msg:  msg,
-		Path: path,
+		ErrCode: code,
+		ErrMsg:  errMsg,
+		Path:    path,
 	})
 }
 
 // WithRepErrNotData 只失败的返回操作结果，返回结构体没有path字段
-func WithRepErrNotData(c *gin.Context, err string) {
+func WithRepErrNotData(c *gin.Context, errMsg any) {
 	c.JSON(http.StatusOK, ResponseErr{
-		Code: Success.Code,
-		Msg:  Success.Msg,
-		Err:  err,
+		ErrCode: Success.Code,
+		ErrMsg:  errMsg,
 	})
 }

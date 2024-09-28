@@ -19,7 +19,7 @@ var (
 	ErrUserPhone = failed(10001, "用户手机号不合法")
 	ErrSignParam = failed(10002, "签名参数有误")
 
-	InternalError = failed(5000, "internal error")
+	InternalError = failed(500, "internal error, please contact the administrator")
 )
 
 var (
