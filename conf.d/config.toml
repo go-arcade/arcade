@@ -22,10 +22,15 @@ rotateSize = 256
 
 [http]
 host = "0.0.0.0"
-port = 8080
+port = 10086
 # debug, release
 mode = "debug"
-contextPath = "/api/v1/"
+# internal context path
+# web api context path
+internalContextPath = "/v1/"
+# external context path
+# external api context path
+externalContextPath = "/api/"
 # unit: second
 heartbeat = 60
 # enable pprof, false or true
@@ -42,8 +47,8 @@ idleTimeout = 60
 shutdownTimeout = 10
 
 [http.tls]
-certFile = ""
-keyFile = ""
+certFile = ''
+keyFile = ''
 
 [http.auth]
 # jwt access token expire time
@@ -56,12 +61,30 @@ secretKey = "bf284d03-ba65-42d4-a9fe-0d2fbfe61060"
 # redis in token prefix
 redisKey = "auth"
 
+#[database]
+## sql print, false or true
+#output = false
+## max open connections
+## unit: second
+#maxOpenConns = 500
+## max idle connections
+## unit: second
+#maxIdleConns = 5
+## max life time
+## unit: second
+#maxLifeTime = 300
+## max Idle Time
+## unit: second
+#maxIdleTime = 60
+
 [database]
+# support mysql
+type = "mysql"
 host = "127.0.0.1"
 port = "3306"
 user = "root"
 password = "123456"
-db = "arcade"
+db = "arcade_meta"
 # sql print, false or true
 output = false
 # max open connections
@@ -77,6 +100,15 @@ maxLifeTime = 300
 # unit: second
 maxIdleTime = 60
 
+[database.mongo]
+# cluster, standalone
+# cluster: uri = "mongodb://localhost:27017,localhost:27018,localhost:27019"
+# auth: uri = "mongodb://username:password@localhost:27017"
+uri = "mongodb://localhost:27017"
+compressors = ["snappy", "zstd", "zlib"]
+db = "arcade_meta"
+poolSize = 100
+
 [redis]
 # support single, cluster, sentinel
 mode = "single"
@@ -89,9 +121,18 @@ poolSize = 50
 #tlsMinVersion = "1.0"
 #masterName = ""
 #sentinels = [
-#    "127.0.0:26379",
-#    "127.0.0:26380",
-#    "127.0.0:26381"
+#    "127.0.0.1:26379",
+#    "127.0.0.1:26380",
+#    "127.0.0.1:26381"
 #]
 #sentinelUsername = ""
 #sentinelPassword = ""
+
+[minio]
+# Tips: Do not use minio user for client authentication, instead create access keys
+# https://min.io/docs/minio/container/administration/console/security-and-access.html
+accessKeyId = ""
+secretAccessKey = ""
+endpoint = ""
+bucket = ""
+useSSL = false
