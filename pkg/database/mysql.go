@@ -31,7 +31,7 @@ type Database struct {
 	MaxLifetime  int
 	MaxIdleTime  int
 	PrintSQL     bool
-	MongoDB      MongoDB
+	MongoDB      MongoDB `toml:"mongodb"`
 }
 
 var conn *gorm.DB
