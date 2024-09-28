@@ -1,6 +1,7 @@
 package ctx
 
 import (
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 	"gorm.io/gorm"
@@ -15,13 +16,15 @@ import (
 
 type Context struct {
 	MySQLIns *gorm.DB
+	MongoIns *mongo.Client
 	Ctx      context.Context
 	Log      *zap.SugaredLogger
 }
 
-func NewContext(ctx context.Context, db *gorm.DB, log *zap.SugaredLogger) *Context {
+func NewContext(ctx context.Context, mongodb *mongo.Client, mysql *gorm.DB, log *zap.SugaredLogger) *Context {
 	return &Context{
-		MySQLIns: db,
+		MySQLIns: mysql,
+		MongoIns: mongodb,
 		Ctx:      ctx,
 		Log:      log,
 	}
@@ -31,10 +34,18 @@ func (c *Context) GetCtx() context.Context {
 	return c.Ctx
 }
 
-func (c *Context) SetDB(db *gorm.DB) {
+func (c *Context) SetMySQLIns(db *gorm.DB) {
 	c.MySQLIns = db
 }
 
-func (c *Context) GetDB() *gorm.DB {
+func (c *Context) GetMySQLIns() *gorm.DB {
 	return c.MySQLIns
+}
+
+func (c *Context) SetMongoIns(client *mongo.Client) {
+	c.MongoIns = client
+}
+
+func (c *Context) GetMongoIns() *mongo.Client {
+	return c.MongoIns
 }

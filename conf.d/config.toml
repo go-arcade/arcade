@@ -61,22 +61,6 @@ secretKey = "bf284d03-ba65-42d4-a9fe-0d2fbfe61060"
 # redis in token prefix
 redisKey = "auth"
 
-#[database]
-## sql print, false or true
-#output = false
-## max open connections
-## unit: second
-#maxOpenConns = 500
-## max idle connections
-## unit: second
-#maxIdleConns = 5
-## max life time
-## unit: second
-#maxLifeTime = 300
-## max Idle Time
-## unit: second
-#maxIdleTime = 60
-
 [database]
 # support mysql
 type = "mysql"
@@ -112,19 +96,14 @@ poolSize = 100
 [redis]
 # support single, cluster, sentinel
 mode = "single"
-host = "0.0.0.0"
-port = 6379
+# address, ip:port or ip1:port,ip2:port for cluster and sentinel(SentinelAddrs)
+address = "0.0.0.0:6379"
 password = ""
 db = 0
 poolSize = 50
 #useTLS = false
 #tlsMinVersion = "1.0"
 #masterName = ""
-#sentinels = [
-#    "127.0.0.1:26379",
-#    "127.0.0.1:26380",
-#    "127.0.0.1:26381"
-#]
 #sentinelUsername = ""
 #sentinelPassword = ""
 
