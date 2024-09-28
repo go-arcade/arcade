@@ -44,8 +44,12 @@ func main() {
 
 	// db
 	db := database.NewDatabase(appConf.Database)
-
-	Ctx := ctx.NewContext(context.Background(), db, logger)
+	mongodb := database.NewMongoDB(appConf.Database.MongoDB)
+	mongoIns, err := mongodb.Connect(context.Background())
+	if err != nil {
+		panic(err)
+	}
+	Ctx := ctx.NewContext(context.Background(), mongoIns, db, logger)
 
 	// repo.NewAgentRepo(db)
 
