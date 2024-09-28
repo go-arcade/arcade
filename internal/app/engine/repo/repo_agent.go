@@ -34,7 +34,7 @@ func (ar *AgentRepo) AddAgent(addAgentReq *model.AddAgentReq) error {
 	addAgentReq.IsEnable = 1
 	addAgentReq.CreatAt = time.Now()
 	var err error
-	if err = ar.Ctx.GetDB().Table(ar.AgentModel.TableName()).Create(addAgentReq).Error; err != nil {
+	if err = ar.Ctx.GetMySQLIns().Table(ar.AgentModel.TableName()).Create(addAgentReq).Error; err != nil {
 		return err
 	}
 	return err
@@ -42,7 +42,7 @@ func (ar *AgentRepo) AddAgent(addAgentReq *model.AddAgentReq) error {
 
 func (ar *AgentRepo) UpdateAgent(agent *model.Agent) error {
 	var err error
-	if err = ar.Ctx.GetDB().Model(agent).Updates(agent).Error; err != nil {
+	if err = ar.Ctx.GetMySQLIns().Model(agent).Updates(agent).Error; err != nil {
 		return err
 	}
 	return err
@@ -54,11 +54,11 @@ func (ar *AgentRepo) ListAgent(pageNum, pageSize int) ([]model.Agent, int64, err
 	var count int64
 	offset := (pageNum - 1) * pageSize
 
-	if err := ar.Ctx.GetDB().Table(ar.AgentModel.TableName()).Count(&count).Error; err != nil {
+	if err := ar.Ctx.GetMySQLIns().Table(ar.AgentModel.TableName()).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := ar.Ctx.GetDB().Table(ar.AgentModel.TableName()).Offset(offset).Limit(pageSize).Find(&agents).Error; err != nil {
+	if err := ar.Ctx.GetMySQLIns().Table(ar.AgentModel.TableName()).Offset(offset).Limit(pageSize).Find(&agents).Error; err != nil {
 		return nil, 0, err
 	}
 	return agents, count, nil
