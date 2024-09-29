@@ -33,7 +33,11 @@ var (
 
 func NewConf(confDir string) AppConfig {
 	once.Do(func() {
-		cfg, _ = LoadConfigFile(confDir)
+		var err error
+		cfg, err = LoadConfigFile(confDir)
+		if err != nil {
+			panic(fmt.Sprintf("load conf file error: %s", err))
+		}
 	})
 	return cfg
 }
