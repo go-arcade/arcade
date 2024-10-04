@@ -19,7 +19,7 @@ func ExceptionInterceptor(c *gin.Context) {
 	defer func() {
 		if err := recover(); err != nil {
 			httpx.WithRepErr(c, httpx.InternalError.Code, errorToString(err), c.Request.URL.Path)
-			log.Errorf("panic: %v", err)
+			//log.Errorf("panic: %v", err)
 			c.Abort()
 		}
 	}()
@@ -31,14 +31,20 @@ func errorToString(err interface{}) string {
 	switch v := err.(type) {
 	case httpx.ResponseErr:
 		// 符合预期的错误，可以直接返回给客户端
-		return (v.ErrMsg).(string)
+		if errMsg, ok := v.ErrMsg.(string); ok {
+			return errMsg
+		}
+		// 如果 ErrMsg 不是字符串类型，则返回默认错误消息
+		return "internal server error"
 	case error:
 		// 一律返回服务器错误，避免返回堆栈错误给客户端，实际还可以针对系统错误做其他处理
 		debug.PrintStack()
-		log.Errorf("panic: %v", v.Error())
+		log.Errorf("panic: %v\n%s", v, debug.Stack())
 		return "internal server error"
 	default:
-		// 同上
-		return err.(string)
+		if errMsg, ok := v.(string); ok {
+			return errMsg
+		}
+		return "internal server error"
 	}
 }
