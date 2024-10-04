@@ -35,16 +35,16 @@ func errorToString(err interface{}) string {
 			return errMsg
 		}
 		// 如果 ErrMsg 不是字符串类型，则返回默认错误消息
-		return "internal server error"
+		return httpx.InternalError.Msg
 	case error:
 		// 一律返回服务器错误，避免返回堆栈错误给客户端，实际还可以针对系统错误做其他处理
 		debug.PrintStack()
 		log.Errorf("panic: %v\n%s", v, debug.Stack())
-		return "internal server error"
+		return httpx.InternalError.Msg
 	default:
 		if errMsg, ok := v.(string); ok {
 			return errMsg
 		}
-		return "internal server error"
+		return httpx.InternalError.Msg
 	}
 }
