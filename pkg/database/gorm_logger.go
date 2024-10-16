@@ -76,43 +76,46 @@ func (l *GormLogger) Trace(ctx context.Context, begin time.Time, fc func() (stri
 	case err != nil && l.Config.LogLevel >= logger.Error && (!errors.Is(err, logger.ErrRecordNotFound) || !l.Config.IgnoreRecordNotFoundError):
 		sql, rows := fc()
 		if rows == -1 {
-			l.log.Printf("%s [%s] %s %s", elapsed, FileWithLineNum(), sql, err)
+			l.log.Printf("%s [%s] %s %s", elapsed, fileWithLineNum(), sql, err)
 		} else {
-			l.log.Printf("%s [%s] %s %v %s", elapsed, FileWithLineNum(), sql, rows, err)
+			l.log.Printf("%s [%s] %s %v %s", elapsed, fileWithLineNum(), sql, rows, err)
 		}
 	case elapsed > l.Config.SlowThreshold && l.Config.SlowThreshold != 0 && l.Config.LogLevel >= logger.Warn:
 		sql, rows := fc()
 		slowLog := fmt.Sprintf("SLOW SQL >= %v", l.Config.SlowThreshold)
 		if rows == -1 {
-			l.log.Printf("%s [%s] %s [%s]", elapsed, FileWithLineNum(), slowLog, sql)
+			l.log.Printf("%s [%s] %s [%s]", elapsed, fileWithLineNum(), slowLog, sql)
 		} else {
-			l.log.Printf("%s [%s] %s [%s] %v", elapsed, FileWithLineNum(), slowLog, sql, rows)
+			l.log.Printf("%s [%s] %s [%s] %v", elapsed, fileWithLineNum(), slowLog, sql, rows)
 		}
 	case l.Config.LogLevel == logger.Info:
 		sql, rows := fc()
 		if rows == -1 {
-			l.log.Printf("%s [%s] `%s`", elapsed, FileWithLineNum(), sql)
+			l.log.Printf("%s [%s] `%s`", elapsed, fileWithLineNum(), sql)
 		} else {
-			l.log.Printf("%s [%s] `%s` %v", elapsed, FileWithLineNum(), sql, rows)
+			l.log.Printf("%s [%s] `%s` %v", elapsed, fileWithLineNum(), sql, rows)
 		}
 	default:
 		return
 	}
 }
 
-func FileWithLineNum() string {
+func fileWithLineNum() string {
 
 	absBaseDir, err := filepath.Abs(runner.Pwd)
 	if err != nil {
 		return ""
 	}
+	// 遍历调用栈，找到不在 gorm.io 中的调用者
 	for i := 3; i < 15; i++ {
 		_, file, line, ok := runtime.Caller(i)
 		if ok && !strings.Contains(file, "gorm.io") {
+			// 获取相对于基准目录的相对路径
 			relFile, err := filepath.Rel(absBaseDir, file)
 			if err != nil {
 				return ""
 			}
+			relFile = filepath.ToSlash(relFile)
 			return relFile + ":" + strconv.Itoa(line)
 		}
 	}
