@@ -38,12 +38,18 @@ pprof = false
 # enable metrics, false or true
 exposeMetrics = true
 # access log, false or true
-accessLog = false
+accessLog = true
 # read timeout
 # unit: second
 readTimeout = 60
+# write timeout
+# unit: second
 writeTimeout = 60
+# idle timeout
+# unit: second
 idleTimeout = 60
+# shutdown timeout
+# unit: second
 shutdownTimeout = 10
 
 [http.tls]
@@ -52,14 +58,15 @@ keyFile = ''
 
 [http.auth]
 # jwt access token expire time
-# unit: second
+# unit: minute
 accessExpire = 3600
 # jwt refresh token expire time
-# unit: second
+# unit: minute
 refreshExpire = 7200
+# jwt secret key
 secretKey = "bf284d03-ba65-42d4-a9fe-0d2fbfe61060"
 # redis in token prefix
-redisKey = "token"
+redisKeyPrefix = "token:"
 
 [database]
 # support mysql
@@ -98,7 +105,7 @@ poolSize = 100
 mode = "single"
 # address, ip:port or ip1:port,ip2:port for cluster and sentinel(SentinelAddrs)
 address = "0.0.0.0:6379"
-password = ""
+password = "1qaz@WSX."
 db = 0
 poolSize = 50
 #useTLS = false
@@ -106,6 +113,15 @@ poolSize = 50
 #masterName = ""
 #sentinelUsername = ""
 #sentinelPassword = ""
+# dialTimeout
+# unit: second
+dialTimeout = 10
+# read timeout
+# unit: second
+readTimeout = 10
+# write timeout
+# unit: second
+writeTimeout = 10
 
 [minio]
 # Tips: Do not use minio user for client authentication, instead create access keys
