@@ -1,7 +1,7 @@
 package ws
 
 import (
-	"github.com/bytedance/sonic"
+	"encoding/json"
 	"github.com/gin-gonic/gin"
 	httpx "github.com/go-arcade/arcade/pkg/httpx"
 	"github.com/go-arcade/arcade/pkg/log"
@@ -56,7 +56,7 @@ func Handle(r *gin.Context) {
 		}
 
 		var msg Message
-		err = sonic.Unmarshal(p, &msg)
+		err = json.Unmarshal(p, &msg)
 
 		switch msg.Type {
 		case Heartbeat:
