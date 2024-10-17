@@ -49,19 +49,16 @@ func (ur *UserRepo) GetUserByUsername(username string) (string, error) {
 
 func (ur *UserRepo) Login(login *model.Login) (*model.User, error) {
 	var user = &model.User{}
-	// 使用GORM的Scopes功能来创建一个可以复用的查询范围
 	scope := func(db *gorm.DB) *gorm.DB {
-		return db.Table(ur.userModel.TableName()).Select("user_id, username, email, password")
+		return db.Table(ur.userModel.TableName()).Select("user_id, username, nick_name, avatar, email, phone, password")
 	}
 
-	// 根据提供的用户名或电子邮件地址进行查询
 	err := ur.Context.GetDB().Scopes(scope).Where(
 		"(username = ? OR email = ?)",
 		login.Username, login.Email,
 	).First(&user).Error
 
 	if err != nil {
-		// 如果没有找到用户，则返回错误
 		return nil, errors.New(httpx.UserNotExist.Msg)
 	}
 	return user, err

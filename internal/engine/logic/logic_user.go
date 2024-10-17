@@ -74,10 +74,19 @@ func (ul *UserLogic) Login(login *model.Login, auth server.Auth) (*model.LoginRe
 
 	// 返回包含访问令牌和刷新令牌的响应
 	return &model.LoginResp{
+		UserInfo: model.UserInfo{
+			UserId:   user.UserId,
+			Username: user.Username,
+			Nickname: user.Nickname,
+			Avatar:   user.Avatar,
+			Email:    user.Email,
+			Phone:    user.Phone,
+		},
 		Token: map[string]string{
 			"accessToken":  aToken,
 			"refreshToken": rToken,
 		},
+		Role: map[string]string{},
 	}, nil
 }
 
