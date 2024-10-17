@@ -14,7 +14,7 @@ import (
 
 func AccessLogFormat(param gin.LogFormatterParams) string {
 
-	return fmt.Sprintf("%s %s [%s %s] %s %s %v %s %s",
+	return fmt.Sprintf("%s %s [%s %s] %s %s %v %s %s\n",
 		param.TimeStamp.Format("2006/01/02 15:04:05"), // 2024/09/16 22:57:40
 		param.Latency,
 		param.Method,
