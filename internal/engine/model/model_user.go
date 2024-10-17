@@ -44,8 +44,18 @@ type Login struct {
 }
 
 type LoginResp struct {
-	Token map[string]string `json:"token"`
-	Role  map[string]string `json:"role"`
+	UserInfo UserInfo          `json:"userInfo"`
+	Token    map[string]string `json:"token"`
+	Role     map[string]string `json:"role"`
+}
+
+type UserInfo struct {
+	UserId   string `json:"userId"`
+	Username string `json:"username"`
+	Nickname string `json:"nickname"`
+	Avatar   string `json:"avatar"`
+	Email    string `json:"email"`
+	Phone    string `json:"phone"`
 }
 
 type AddUserReq struct {
