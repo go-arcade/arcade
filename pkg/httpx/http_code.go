@@ -14,12 +14,13 @@ var (
 	AuthorizationIncorrect = failed(4002, "The auth format in the request header is incorrect")
 	AuthorizationEmpty     = failed(4003, "Authorization is empty")
 	TokenInvalid           = failed(4004, "Token is invalid")
-	TokenEmpty             = failed(405, "Token is empty")
-
-	ErrUserPhone = failed(10001, "用户手机号不合法")
-	ErrSignParam = failed(10002, "签名参数有误")
+	TokenBeEmpty           = failed(405, "Token cannot be empty")
 
 	InternalError = failed(500, "internal error, please contact the administrator")
+
+	UserNotExist          = failed(404, "user does not exist")
+	UserAlreadyExist      = failed(405, "user already exists")
+	UserIncorrectPassword = failed(405, "user incorrect password")
 )
 
 var (
