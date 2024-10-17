@@ -1,8 +1,6 @@
 package model
 
-import (
-	"time"
-)
+import "time"
 
 /**
  * @author: gagral.x@gmail.com
@@ -30,14 +28,18 @@ func (a *Agent) TableName() string {
 }
 
 type AddAgentReq struct {
-	AgentId   string    `json:"agentId"`
-	AgentName string    `json:"agentName"`
-	Address   string    `json:"address"`
-	Port      string    `json:"port"`
-	Username  string    `json:"username"`
-	Password  string    `gorm:"column:password" json:"password"`
-	PublicKey string    `gorm:"column:public_key" json:"publicKey"`
-	AuthType  int       `gorm:"column:auth_type" json:"authType"`
-	IsEnabled int       `gorm:"column:is_enabled" json:"isEnabled"`
-	CreatAt   time.Time `gorm:"column:creat_time" json:"creatAt"`
+	AgentName string `json:"agentName"`
+	Address   string `json:"address"`
+	Port      string `json:"port"`
+	Username  string `json:"username"`
+	Password  string `gorm:"column:password" json:"password"`
+	PublicKey string `gorm:"column:public_key" json:"publicKey"`
+	AuthType  int    `gorm:"column:auth_type" json:"authType"`
+}
+
+type AddAgentReqRepo struct {
+	AgentId string `json:"agentId"`
+	*AddAgentReq
+	IsEnabled  int       `gorm:"column:is_enabled" json:"isEnabled"`
+	CreateTime time.Time `gorm:"column:create_time" json:"creatAt"`
 }

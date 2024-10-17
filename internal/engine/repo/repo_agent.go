@@ -1,11 +1,8 @@
 package repo
 
 import (
+	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/pkg/ctx"
-	"time"
-
-	"github.com/go-arcade/arcade/internal/app/engine/model"
-	"github.com/go-arcade/arcade/pkg/id"
 )
 
 /**
@@ -21,20 +18,16 @@ type AgentRepo struct {
 }
 
 func NewAgentRepo(ctx *ctx.Context) *AgentRepo {
-
 	return &AgentRepo{
 		Ctx:        ctx,
 		AgentModel: model.Agent{},
 	}
 }
 
-func (ar *AgentRepo) AddAgent(addAgentReq *model.AddAgentReq) error {
+func (ar *AgentRepo) AddAgent(addAgentReqRepo *model.AddAgentReqRepo) error {
 
-	addAgentReq.AgentId = id.GetUild()
-	addAgentReq.IsEnabled = 1
-	addAgentReq.CreatAt = time.Now()
 	var err error
-	if err = ar.Ctx.GetMySQLIns().Table(ar.AgentModel.TableName()).Create(addAgentReq).Error; err != nil {
+	if err = ar.Ctx.GetDB().Table(ar.AgentModel.TableName()).Create(addAgentReqRepo).Error; err != nil {
 		return err
 	}
 	return err
@@ -42,7 +35,7 @@ func (ar *AgentRepo) AddAgent(addAgentReq *model.AddAgentReq) error {
 
 func (ar *AgentRepo) UpdateAgent(agent *model.Agent) error {
 	var err error
-	if err = ar.Ctx.GetMySQLIns().Model(agent).Updates(agent).Error; err != nil {
+	if err = ar.Ctx.GetDB().Model(agent).Updates(agent).Error; err != nil {
 		return err
 	}
 	return err
@@ -55,11 +48,11 @@ func (ar *AgentRepo) ListAgent(pageNum, pageSize int) ([]model.Agent, int64, err
 	var err error
 	offset := (pageNum - 1) * pageSize
 
-	if err = ar.Ctx.GetMySQLIns().Table(ar.AgentModel.TableName()).Count(&count).Error; err != nil {
+	if err = ar.Ctx.GetDB().Table(ar.AgentModel.TableName()).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err = ar.Ctx.GetMySQLIns().Select("id, agent_id, agent_name, address, port, username, auth_type, is_enabled").Table(ar.AgentModel.TableName()).
+	if err = ar.Ctx.GetDB().Select("id, agent_id, agent_name, address, port, username, auth_type, is_enabled").Table(ar.AgentModel.TableName()).
 		Offset(offset).Limit(pageSize).Find(&agents).Error; err != nil {
 		return nil, 0, err
 	}

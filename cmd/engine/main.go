@@ -4,8 +4,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/go-arcade/arcade/internal/app/engine/conf"
-	"github.com/go-arcade/arcade/internal/router"
+	"github.com/go-arcade/arcade/internal/engine/conf"
+	"github.com/go-arcade/arcade/internal/engine/router"
+	"github.com/go-arcade/arcade/pkg/cache"
 	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/go-arcade/arcade/pkg/log"
@@ -37,10 +38,10 @@ func main() {
 
 	logger := log.NewLog(&appConf.Log)
 
-	//_, err := cache.NewRedis(appConf.Redis)
-	//if err != nil {
-	//	panic(err)
-	//}
+	redis, err := cache.NewRedis(appConf.Redis)
+	if err != nil {
+		panic(err)
+	}
 
 	// db
 	db := database.NewDatabase(appConf.Database)
@@ -49,9 +50,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	Ctx := ctx.NewContext(context.Background(), mongoIns, db, logger)
-
-	// repo.NewAgentRepo(db)
+	Ctx := ctx.NewContext(context.Background(), mongoIns, redis, db, logger)
 
 	route := router.NewRouter(&appConf.Http, Ctx)
 

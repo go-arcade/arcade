@@ -1,12 +1,11 @@
 package router
 
 import (
-	"github.com/cnlesscode/gotool/gintool"
 	"github.com/gin-gonic/gin"
-	"github.com/go-arcade/arcade/internal/app/engine/consts"
-	"github.com/go-arcade/arcade/internal/app/engine/logic"
-	"github.com/go-arcade/arcade/internal/app/engine/model"
-	"github.com/go-arcade/arcade/internal/app/engine/repo"
+	"github.com/go-arcade/arcade/internal/engine/consts"
+	"github.com/go-arcade/arcade/internal/engine/logic"
+	"github.com/go-arcade/arcade/internal/engine/model"
+	"github.com/go-arcade/arcade/internal/engine/repo"
 	"github.com/go-arcade/arcade/pkg/httpx"
 )
 
@@ -17,9 +16,9 @@ import (
  * @description: agent router
  */
 
-func (ar *Router) addAgent(r *gin.Context) {
+func (rt *Router) addAgent(r *gin.Context) {
 	var addAgentReq *model.AddAgentReq
-	agentRepo := repo.NewAgentRepo(ar.Ctx)
+	agentRepo := repo.NewAgentRepo(rt.Ctx)
 	agentLogic := logic.NewAgentLogic(agentRepo, addAgentReq)
 
 	if err := r.BindJSON(&addAgentReq); err != nil {
@@ -35,9 +34,9 @@ func (ar *Router) addAgent(r *gin.Context) {
 	r.Set(consts.OPERATION, "")
 }
 
-func (ar *Router) listAgent(r *gin.Context) {
+func (rt *Router) listAgent(r *gin.Context) {
 	var agentReq *model.AddAgentReq
-	agentRepo := repo.NewAgentRepo(ar.Ctx)
+	agentRepo := repo.NewAgentRepo(rt.Ctx)
 	agentLogic := logic.NewAgentLogic(agentRepo, agentReq)
 
 	pageNum := queryInt(r, "pageNum")   // default 1
@@ -52,12 +51,4 @@ func (ar *Router) listAgent(r *gin.Context) {
 	result["agents"] = agents
 	result["count"] = count
 	r.Set(consts.DETAIL, result)
-}
-
-func queryInt(r *gin.Context, key string) int {
-	value, ok := gintool.QueryInt(r, key)
-	if !ok {
-		return 0
-	}
-	return value
 }

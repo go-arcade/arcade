@@ -2,6 +2,7 @@ package router
 
 import (
 	"embed"
+	"github.com/cnlesscode/gotool/gintool"
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
@@ -19,7 +20,8 @@ import (
  * @author: gagral.x@gmail.com
  * @time: 2024/9/8 15:48
  * @file: router.go
- * @description: router
+ * @description: setup router
+ *  		     internal api router, use by web
  */
 
 type Router struct {
@@ -30,16 +32,16 @@ type Router struct {
 //go:embed static
 var web embed.FS
 
-func NewRouter(cfg *server.Http, ctx *ctx.Context) *Router {
+func NewRouter(httpConf *server.Http, ctx *ctx.Context) *Router {
 	return &Router{
-		Http: cfg,
+		Http: httpConf,
 		Ctx:  ctx,
 	}
 }
 
-func (ar *Router) Router() *gin.Engine {
+func (rt *Router) Router() *gin.Engine {
 
-	gin.SetMode(ar.Http.Mode)
+	gin.SetMode(rt.Http.Mode)
 
 	r := gin.New()
 
@@ -49,21 +51,24 @@ func (ar *Router) Router() *gin.Engine {
 	// unified response interceptor
 	r.Use(interceptor.UnifiedResponseInterceptor())
 
+	// authorization interceptor
+	//r.Use(interceptor.AuthorizationInterceptor(time.Duration(rt.Http.Auth.AccessExpire), time.Duration(rt.Http.Auth.AccessExpire), rt.Http.Auth.SecretKey))
+
 	// web static resource
 	r.Use(static.Serve("/", static.EmbedFolder(web, "static")))
 	r.NoRoute(func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, "/")
 	})
 
-	if ar.Http.AccessLog {
+	if rt.Http.AccessLog {
 		r.Use(gin.LoggerWithFormatter(httpx.AccessLogFormat))
 	}
 
-	if ar.Http.PProf {
+	if rt.Http.PProf {
 		pprof.Register(r, "/debug/pprof")
 	}
 
-	if ar.Http.ExposeMetrics {
+	if rt.Http.ExposeMetrics {
 		r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	}
 
@@ -75,27 +80,51 @@ func (ar *Router) Router() *gin.Engine {
 		c.JSON(http.StatusOK, version.GetVersion())
 	})
 
-	// core router, internal api router
-	core := r.Group(ar.Http.InternalContextPath)
+	// engine router, internal api router
+	engine := r.Group(rt.Http.InternalContextPath)
 	{
-		// engine router
-		ar.RouterGroup(core)
+		// ws
+		engine.POST("/ws", ws.Handle)
+
+		// core
+		rt.routerGroup(engine)
 	}
 
 	return r
 }
 
-func (ar *Router) RouterGroup(r *gin.RouterGroup) *gin.RouterGroup {
+func (rt *Router) routerGroup(r *gin.RouterGroup) *gin.RouterGroup {
 
-	r.POST("/ws", ws.Handle)
+	// user
+	routeUser := r.Group("/user")
+	{
+		routeUser.POST("/login", rt.login)
+		routeUser.POST("/register", rt.register)
+		routeUser.POST("/logout", rt.logout)
+		routeUser.POST("/redirect", rt.redirect)
 
+		routeUser.POST("/invite", rt.addUser)
+		routeUser.POST("/revise", rt.updateUser)
+		routeUser.GET("/getUserById/:userId", rt.getUserById)
+		//routeUser.GET("/getUserList", rt.getUserList)
+	}
+
+	// agent
 	route := r.Group("/agent")
 	{
-		route.POST("/add", ar.addAgent)
+		route.POST("/add", rt.addAgent)
 		//r.POST("delete", deleteAgent)
 		//r.POST("update", updateAgent)
-		route.GET("/list", ar.listAgent)
+		route.GET("/list", rt.listAgent)
 	}
 
 	return route
+}
+
+func queryInt(r *gin.Context, key string) int {
+	value, ok := gintool.QueryInt(r, key)
+	if !ok {
+		return 0
+	}
+	return value
 }

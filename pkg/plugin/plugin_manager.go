@@ -41,7 +41,6 @@ func (m *Manager) Version() string {
 }
 
 // Register plugin
-// @param path plugin path
 func (m *Manager) Register(path string) error {
 
 	plug, err := plugin.Open(path)
@@ -77,7 +76,6 @@ func (m *Manager) Register(path string) error {
 }
 
 // AntiRegister anti register plugin
-// @param name plugin name
 func (m *Manager) AntiRegister(name string) error {
 	if _, exists := m.plugins[name]; !exists {
 		return errors.New("plugin does not exist")
@@ -88,8 +86,7 @@ func (m *Manager) AntiRegister(name string) error {
 	return nil
 }
 
-// Run run plugin
-// @param name plugin name
+// Run plugin
 func (m *Manager) Run(name string) (string, error) {
 	if _, exists := m.plugins[name]; !exists {
 		return "", errors.New("plugin does not exist")

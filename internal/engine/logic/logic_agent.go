@@ -1,9 +1,11 @@
 package logic
 
 import (
-	"github.com/go-arcade/arcade/internal/app/engine/model"
-	"github.com/go-arcade/arcade/internal/app/engine/repo"
+	"github.com/go-arcade/arcade/internal/engine/model"
+	"github.com/go-arcade/arcade/internal/engine/repo"
+	"github.com/go-arcade/arcade/pkg/id"
 	"github.com/go-arcade/arcade/pkg/log"
+	"time"
 )
 
 /**
@@ -14,22 +16,28 @@ import (
  */
 
 type AgentLogic struct {
-	agentRepo *repo.AgentRepo
-	agentReq  *model.AddAgentReq
+	agentRepo       *repo.AgentRepo
+	addAgentReq     *model.AddAgentReq
+	addAgentReqRepo *model.AddAgentReqRepo
 }
 
 func NewAgentLogic(agentRepo *repo.AgentRepo, agentReq *model.AddAgentReq) *AgentLogic {
 	return &AgentLogic{
-		agentRepo: agentRepo,
-		agentReq:  agentReq,
+		agentRepo:   agentRepo,
+		addAgentReq: agentReq,
 	}
 }
 
 func (al *AgentLogic) AddAgent(addAgentReq *model.AddAgentReq) error {
 
 	var err error
-
-	if err = al.agentRepo.AddAgent(addAgentReq); err != nil {
+	addAgentReqRepo := &model.AddAgentReqRepo{
+		AddAgentReq: addAgentReq,
+		AgentId:     id.GetUild(),
+		IsEnabled:   1,
+		CreateTime:  time.Now(),
+	}
+	if err = al.agentRepo.AddAgent(addAgentReqRepo); err != nil {
 		log.Errorf("add agent err: %v", err)
 		return err
 	}
