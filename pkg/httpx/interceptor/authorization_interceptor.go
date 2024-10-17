@@ -7,6 +7,7 @@ import (
 	"github.com/go-arcade/arcade/pkg/log"
 	"net/http"
 	"strings"
+	"time"
 )
 
 /**
@@ -18,11 +19,11 @@ import (
 
 // AuthorizationInterceptor 鉴权拦截器
 // This function is used as the middleware of gin.
-func AuthorizationInterceptor() gin.HandlerFunc {
+func AuthorizationInterceptor(accessExpired, refreshExpired time.Duration, secretKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		aToken := c.Request.Header.Get("Authorization")
 		if aToken == "" {
-			httpx.WithRepErrMsg(c, httpx.TokenEmpty.Code, httpx.TokenEmpty.Msg, c.Request.URL.Path)
+			httpx.WithRepErrMsg(c, httpx.TokenBeEmpty.Code, httpx.TokenBeEmpty.Msg, c.Request.URL.Path)
 			c.Abort()
 			return
 		}
@@ -30,7 +31,7 @@ func AuthorizationInterceptor() gin.HandlerFunc {
 		// 按空格分割
 		parts := strings.SplitN(aToken, " ", 2)
 		if !(len(parts) == 2 && parts[0] == "Bearer") {
-			httpx.WithRepErrMsg(c, httpx.TokenEmpty.Code, httpx.TokenEmpty.Msg, c.Request.URL.Path)
+			httpx.WithRepErrMsg(c, httpx.TokenBeEmpty.Code, httpx.TokenBeEmpty.Msg, c.Request.URL.Path)
 			c.Abort()
 			return
 		}

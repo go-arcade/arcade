@@ -29,5 +29,5 @@ func Exist(tx *gorm.DB, where interface{}) bool {
 }
 
 func Insert(ctx ctx.Context, obj interface{}) error {
-	return ctx.MySQLIns.Create(obj).Error
+	return ctx.DB.Create(obj).Error
 }
