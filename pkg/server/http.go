@@ -24,7 +24,7 @@ type Http struct {
 	Host                string
 	Port                int
 	Mode                string
-	InternalContextPath string
+	InternalContextPath string `mapstructure:"internalContextPath"`
 	ExternalContextPath string
 	Heartbeat           int64
 	PProf               bool
@@ -45,8 +45,9 @@ type TLS struct {
 }
 
 type Auth struct {
-	AccessExpire   int64
-	RefreshExpire  int64
+	SecretKey      string
+	AccessExpire   time.Duration
+	RefreshExpire  time.Duration
 	RedisKeyPrefix string
 }
 
@@ -83,7 +84,7 @@ func (h *Http) Server(engine *gin.Engine) func() {
 	}
 
 	go func() {
-		fmt.Println("[Init] http server start at:", addr)
+		fmt.Printf("[Init] http server start at: %s\n", addr)
 
 		if h.TLS.CertFile != "" && h.TLS.KeyFile != "" {
 			if err := srv.ListenAndServeTLS(h.TLS.CertFile, h.TLS.KeyFile); err != nil {
