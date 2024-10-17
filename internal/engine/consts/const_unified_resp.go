@@ -9,7 +9,7 @@ package consts
 
 // UnifiedResponse 统一响应
 const (
-	// DETAIL Detail 用于设置响应数据，例如查询，分页等，需要返回数
+	// DETAIL Detail 用于设置响应数据，例如查询，分页等，需要返回数据
 	// e.g: c.Set(DETAIL, value)
 	DETAIL = "detail"
 
