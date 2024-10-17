@@ -2,3 +2,4 @@
 .vscode
 /bin
 /internal/engine/router/static/*
+!/internal/engine/router/static/.gitkeep
