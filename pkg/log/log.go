@@ -79,7 +79,7 @@ func NewLog(conf *LogConfig) *zap.SugaredLogger {
 	}
 
 	logger = zap.New(core, zap.AddCallerSkip(1), zap.AddCaller())
-	fmt.Println("[Init] log output:", conf.Output)
+	fmt.Printf("[Init] log output: %s\n", conf.Output)
 
 	sugar = logger.Sugar()
 
