@@ -7,6 +7,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"os"
 	"strings"
+	"time"
 )
 
 /**
@@ -26,35 +27,29 @@ type Redis struct {
 	MasterName       string
 	SentinelUsername string
 	SentinelPassword string
+	DialTimeout      time.Duration // 连接超时
+	ReadTimeout      time.Duration // 读超时
+	WriteTimeout     time.Duration // 写超时
 }
 
-type RedisCmd redis.Cmdable
+func NewRedis(cfg Redis) (*redis.Client, error) {
 
-func NewRedis(cfg Redis) (RedisCmd, error) {
-
-	var redisClient RedisCmd
+	var redisClient *redis.Client
 	switch cfg.Mode {
 	case "single":
 		redisOptions := &redis.Options{
-			Addr:     cfg.Address,
-			Password: cfg.Password,
-			DB:       cfg.DB,
-			PoolSize: cfg.PoolSize,
+			Addr:         cfg.Address,
+			Password:     cfg.Password,
+			DB:           cfg.DB,
+			PoolSize:     cfg.PoolSize,
+			DialTimeout:  cfg.DialTimeout * time.Second,
+			ReadTimeout:  cfg.ReadTimeout * time.Second,
+			WriteTimeout: cfg.WriteTimeout * time.Second,
 		}
 		if cfg.UseTLS {
 			redisOptions.TLSConfig = &tls.Config{}
 		}
 		redisClient = redis.NewClient(redisOptions)
-	case "cluster":
-		redisOptions := &redis.ClusterOptions{
-			Addrs:    strings.Split(cfg.Address, ","),
-			Password: cfg.Password,
-			PoolSize: cfg.PoolSize,
-		}
-		if cfg.UseTLS {
-			redisOptions.TLSConfig = &tls.Config{}
-		}
-		redisClient = redis.NewClusterClient(redisOptions)
 	case "sentinel":
 		redisOptions := &redis.FailoverOptions{
 			MasterName:       cfg.MasterName,
@@ -64,6 +59,9 @@ func NewRedis(cfg Redis) (RedisCmd, error) {
 			PoolSize:         cfg.PoolSize,
 			SentinelUsername: cfg.SentinelUsername,
 			SentinelPassword: cfg.SentinelPassword,
+			DialTimeout:      cfg.DialTimeout * time.Second,
+			ReadTimeout:      cfg.ReadTimeout * time.Second,
+			WriteTimeout:     cfg.WriteTimeout * time.Second,
 		}
 		if cfg.UseTLS {
 			redisOptions.TLSConfig = &tls.Config{}
