@@ -6,7 +6,7 @@ import (
 	"github.com/go-arcade/arcade/internal/engine/logic"
 	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/pkg/httpx"
+	"github.com/go-arcade/arcade/pkg/http"
 )
 
 /**
@@ -23,13 +23,13 @@ func (rt *Router) login(r *gin.Context) {
 	userLogic := logic.NewUserLogic(rt.Ctx, userRepo)
 
 	if err := r.BindJSON(&login); err != nil {
-		httpx.WithRepErrMsg(r, httpx.Failed.Code, err.Error(), r.Request.URL.Path)
+		http.WithRepErrMsg(r, http.Failed.Code, err.Error(), r.Request.URL.Path)
 		return
 	}
 
 	user, err := userLogic.Login(login, rt.Http.Auth)
 	if err != nil {
-		httpx.WithRepErrMsg(r, httpx.Failed.Code, err.Error(), r.Request.URL.Path)
+		http.WithRepErrMsg(r, http.Failed.Code, err.Error(), r.Request.URL.Path)
 		return
 	}
 
@@ -53,12 +53,12 @@ func (rt *Router) register(r *gin.Context) {
 	userLogic := logic.NewUserLogic(rt.Ctx, userRepo)
 	if err := r.BindJSON(&register); err != nil {
 		//todo: 统一拦截
-		httpx.WithRepErrMsg(r, httpx.Failed.Code, err.Error(), r.Request.URL.Path)
+		http.WithRepErrMsg(r, http.Failed.Code, err.Error(), r.Request.URL.Path)
 		return
 	}
 
 	if err := userLogic.Register(register); err != nil {
-		httpx.WithRepErrMsg(r, httpx.Failed.Code, err.Error(), r.Request.URL.Path)
+		http.WithRepErrMsg(r, http.Failed.Code, err.Error(), r.Request.URL.Path)
 		return
 	}
 
@@ -73,7 +73,7 @@ func (rt *Router) refresh(r *gin.Context) {
 
 	token, err := userLogic.Refresh(userId, rt.Http.Auth)
 	if err != nil {
-		httpx.WithRepErrMsg(r, httpx.Failed.Code, err.Error(), r.Request.URL.Path)
+		http.WithRepErrMsg(r, http.Failed.Code, err.Error(), r.Request.URL.Path)
 		return
 	}
 
@@ -90,12 +90,12 @@ func (rt *Router) addUser(r *gin.Context) {
 	userRepo := repo.NewUserRepo(rt.Ctx)
 	userLogic := logic.NewUserLogic(rt.Ctx, userRepo)
 	if err := r.BindJSON(&addUserReq); err != nil {
-		httpx.WithRepErrMsg(r, httpx.Failed.Code, httpx.Failed.Msg, r.Request.URL.Path)
+		http.WithRepErrMsg(r, http.Failed.Code, http.Failed.Msg, r.Request.URL.Path)
 		return
 	}
 
 	if err := userLogic.AddUser(*addUserReq); err != nil {
-		httpx.WithRepErrMsg(r, httpx.Failed.Code, httpx.Failed.Msg, r.Request.URL.Path)
+		http.WithRepErrMsg(r, http.Failed.Code, http.Failed.Msg, r.Request.URL.Path)
 		return
 	}
 
@@ -108,13 +108,13 @@ func (rt *Router) updateUser(r *gin.Context) {
 	userRepo := repo.NewUserRepo(rt.Ctx)
 	userLogic := logic.NewUserLogic(rt.Ctx, userRepo)
 	if err := r.BindJSON(&user); err != nil {
-		httpx.WithRepErrMsg(r, httpx.Failed.Code, httpx.Failed.Msg, r.Request.URL.Path)
+		http.WithRepErrMsg(r, http.Failed.Code, http.Failed.Msg, r.Request.URL.Path)
 		return
 	}
 
 	userId := r.Param("userId")
 	if err := userLogic.UpdateUser(userId, user); err != nil {
-		httpx.WithRepErrMsg(r, httpx.Failed.Code, httpx.Failed.Msg, r.Request.URL.Path)
+		http.WithRepErrMsg(r, http.Failed.Code, http.Failed.Msg, r.Request.URL.Path)
 		return
 	}
 
@@ -130,7 +130,7 @@ func (rt *Router) getUserById(r *gin.Context) {
 	userId := r.Param("userId")
 	user, err := userLogic.GetUserById(userId)
 	if err != nil {
-		httpx.WithRepErrMsg(r, httpx.Failed.Code, httpx.Failed.Msg, r.Request.URL.Path)
+		http.WithRepErrMsg(r, http.Failed.Code, http.Failed.Msg, r.Request.URL.Path)
 		return
 	}
 
@@ -146,7 +146,7 @@ func (rt *Router) getUserById(r *gin.Context) {
 //	pageSize := queryInt(r, "pageSize") // default 10
 //	users, count, err := userLogic.GetUserList(pageNum, pageSize)
 //	if err != nil {
-//		httpx.WithRepErrMsg(r, httpx.Failed.Code, httpx.Failed.Msg, r.Request.URL.Path)
+//		http.WithRepErrMsg(r, http.Failed.Code, http.Failed.Msg, r.Request.URL.Path)
 //		return
 //	}
 //

@@ -1,4 +1,4 @@
-package server
+package http
 
 import (
 	"context"
@@ -24,7 +24,7 @@ type Http struct {
 	Host                string
 	Port                int
 	Mode                string
-	InternalContextPath string `mapstructure:"internalContextPath"`
+	InternalContextPath string
 	ExternalContextPath string
 	Heartbeat           int64
 	PProf               bool

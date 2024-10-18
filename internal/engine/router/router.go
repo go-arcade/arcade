@@ -7,10 +7,9 @@ import (
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/go-arcade/arcade/pkg/ctx"
-	"github.com/go-arcade/arcade/pkg/httpx"
-	"github.com/go-arcade/arcade/pkg/httpx/interceptor"
-	"github.com/go-arcade/arcade/pkg/httpx/ws"
-	"github.com/go-arcade/arcade/pkg/server"
+	httpx "github.com/go-arcade/arcade/pkg/http"
+	"github.com/go-arcade/arcade/pkg/http/interceptor"
+	"github.com/go-arcade/arcade/pkg/http/ws"
 	"github.com/go-arcade/arcade/pkg/version"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net/http"
@@ -25,14 +24,14 @@ import (
  */
 
 type Router struct {
-	Http *server.Http
+	Http *httpx.Http
 	Ctx  *ctx.Context
 }
 
 //go:embed static
 var web embed.FS
 
-func NewRouter(httpConf *server.Http, ctx *ctx.Context) *Router {
+func NewRouter(httpConf *httpx.Http, ctx *ctx.Context) *Router {
 	return &Router{
 		Http: httpConf,
 		Ctx:  ctx,

@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/pkg/ctx"
-	"github.com/go-arcade/arcade/pkg/httpx"
-	"github.com/go-arcade/arcade/pkg/server"
+	"github.com/go-arcade/arcade/pkg/http"
 	"gorm.io/gorm"
 	"time"
 )
@@ -62,7 +61,7 @@ func (ur *UserRepo) Login(login *model.Login) (*model.User, error) {
 	).First(&user).Error
 
 	if err != nil {
-		return nil, errors.New(httpx.UserNotExist.Msg)
+		return nil, errors.New(http.UserNotExist.Msg)
 	}
 	return user, err
 }
@@ -71,7 +70,7 @@ func (ur *UserRepo) Register(register *model.Register) error {
 	var user model.User
 	err := ur.Context.GetDB().Table(ur.userModel.TableName()).Select("username").Where("username = ?", register.Username).First(&user).Error
 	if err == nil {
-		return errors.New(httpx.UserAlreadyExist.Msg)
+		return errors.New(http.UserAlreadyExist.Msg)
 	}
 	return ur.Context.GetDB().Table(ur.userModel.TableName()).Create(register).Error
 }
@@ -87,7 +86,7 @@ func (ur *UserRepo) GetUserList(offset int, pageSize int) ([]model.User, int64, 
 	return users, count, err
 }
 
-func (ur *UserRepo) SetToken(userId, aToken string, auth server.Auth) (string, error) {
+func (ur *UserRepo) SetToken(userId, aToken string, auth http.Auth) (string, error) {
 
 	key := auth.RedisKeyPrefix + userId
 	if err := ur.GetRedis().Set(ur.Ctx, key, aToken, auth.AccessExpire*time.Second).Err(); err != nil {

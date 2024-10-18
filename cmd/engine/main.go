@@ -9,9 +9,9 @@ import (
 	"github.com/go-arcade/arcade/pkg/cache"
 	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/database"
+	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/runner"
-	"github.com/go-arcade/arcade/pkg/server"
 )
 
 /**
@@ -54,8 +54,8 @@ func main() {
 
 	route := router.NewRouter(&appConf.Http, Ctx)
 
-	// httpx srv
-	http := server.NewHttp(appConf.Http)
+	// http srv
+	http := http.NewHttp(appConf.Http)
 	httpClean := http.Server(route.Router())
 
 	httpClean()

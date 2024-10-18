@@ -3,7 +3,7 @@ package conf
 import (
 	"fmt"
 	"github.com/fsnotify/fsnotify"
-	"github.com/go-arcade/arcade/pkg/server"
+	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/spf13/viper"
 	"sync"
 
@@ -21,7 +21,7 @@ import (
 
 type AppConfig struct {
 	Log      log.LogConfig
-	Http     server.Http
+	Http     http.Http
 	Database database.Database
 	Redis    cache.Redis
 }
