@@ -35,7 +35,6 @@ func NewUserLogic(ctx *ctx.Context, userRepo *repo.UserRepo) *UserLogic {
 }
 
 func (ul *UserLogic) Login(login *model.Login, auth server.Auth) (*model.LoginResp, error) {
-	// 解码Base64编码的密码
 	pwd, err := base64.StdEncoding.DecodeString(login.Password)
 	if err != nil {
 		log.Errorf("failed to decode password: %v", err)
@@ -59,7 +58,6 @@ func (ul *UserLogic) Login(login *model.Login, auth server.Auth) (*model.LoginRe
 		return nil, errors.New(httpx.UserIncorrectPassword.Msg)
 	}
 
-	// 生成JWT令牌
 	aToken, rToken, err := jwt.GenToken(user.UserId, []byte(auth.SecretKey), auth.AccessExpire*time.Minute, auth.RefreshExpire*time.Minute)
 	if err != nil {
 		log.Errorf("failed to generate tokens: %v", err)
@@ -69,7 +67,12 @@ func (ul *UserLogic) Login(login *model.Login, auth server.Auth) (*model.LoginRe
 	// 将刷新令牌存储在Redis中
 	go func() {
 		key := auth.RedisKeyPrefix + user.UserId
-		ul.ctx.GetRedis().Set(ul.ctx.Ctx, key, aToken, auth.AccessExpire*time.Minute)
+		k, err := ul.userRepo.SetToken(user.UserId, key, auth)
+		log.Debugf("token key: %v", k)
+		if err != nil {
+			log.Errorf("failed to set token in Redis: %v", err)
+			return
+		}
 	}()
 
 	// 返回包含访问令牌和刷新令牌的响应
@@ -88,6 +91,30 @@ func (ul *UserLogic) Login(login *model.Login, auth server.Auth) (*model.LoginRe
 		},
 		Role: map[string]string{},
 	}, nil
+}
+
+func (ul *UserLogic) Refresh(userId string, auth server.Auth) (map[string]string, error) {
+	var err error
+	aToken, rToken, err := jwt.GenToken(userId, []byte(auth.SecretKey), auth.AccessExpire*time.Minute, auth.RefreshExpire*time.Minute)
+	if err != nil {
+		log.Errorf("failed to generate tokens: %v", err)
+		return nil, err
+	}
+
+	token := make(map[string]string)
+	token["accessToken"] = aToken
+	token["refreshToken"] = rToken
+
+	go func() {
+		k, err := ul.userRepo.SetToken(userId, aToken, auth)
+		log.Debugf("token key: %v", k)
+		if err != nil {
+			log.Errorf("failed to set token in Redis: %v", err)
+			return
+		}
+	}()
+
+	return token, err
 }
 
 func (ul *UserLogic) Register(register *model.Register) error {

@@ -2,10 +2,13 @@ package repo
 
 import (
 	"errors"
+	"fmt"
 	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/httpx"
+	"github.com/go-arcade/arcade/pkg/server"
 	"gorm.io/gorm"
+	"time"
 )
 
 /**
@@ -82,4 +85,13 @@ func (ur *UserRepo) GetUserList(offset int, pageSize int) ([]model.User, int64, 
 	}
 	err = ur.Context.GetDB().Model(&model.User{}).Count(&count).Error
 	return users, count, err
+}
+
+func (ur *UserRepo) SetToken(userId, aToken string, auth server.Auth) (string, error) {
+
+	key := auth.RedisKeyPrefix + userId
+	if err := ur.GetRedis().Set(ur.Ctx, key, aToken, auth.AccessExpire*time.Second).Err(); err != nil {
+		return "", fmt.Errorf("failed to set token in Redis: %w", err)
+	}
+	return key, nil
 }
