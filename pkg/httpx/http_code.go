@@ -20,7 +20,7 @@ var (
 
 	UserNotExist          = failed(404, "user does not exist")
 	UserAlreadyExist      = failed(405, "user already exists")
-	UserIncorrectPassword = failed(405, "user incorrect password")
+	UserIncorrectPassword = failed(406, "user incorrect password")
 )
 
 var (
