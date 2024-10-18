@@ -30,6 +30,7 @@ type Http struct {
 	PProf               bool
 	ExposeMetrics       bool
 	AccessLog           bool
+	UseFileAssets       bool
 	ReadTimeout         int
 	WriteTimeout        int
 	IdleTimeout         int

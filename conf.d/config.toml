@@ -39,6 +39,8 @@ pprof = false
 exposeMetrics = true
 # access log, false or true
 accessLog = true
+# use file assets, false or true
+UseFileAssets = false
 # read timeout
 # unit: second
 readTimeout = 60

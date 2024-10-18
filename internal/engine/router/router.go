@@ -54,10 +54,12 @@ func (rt *Router) Router() *gin.Engine {
 	//r.Use(interceptor.AuthorizationInterceptor(time.Duration(rt.Http.Auth.AccessExpire), time.Duration(rt.Http.Auth.AccessExpire), rt.Http.Auth.SecretKey))
 
 	// web static resource
-	r.Use(static.Serve("/", static.EmbedFolder(web, "static")))
-	r.NoRoute(func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, "/")
-	})
+	if rt.Http.UseFileAssets {
+		r.Use(static.Serve("/", static.EmbedFolder(web, "static")))
+		r.NoRoute(func(c *gin.Context) {
+			c.Redirect(http.StatusMovedPermanently, "/")
+		})
+	}
 
 	if rt.Http.AccessLog {
 		r.Use(gin.LoggerWithFormatter(httpx.AccessLogFormat))
