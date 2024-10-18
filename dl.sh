@@ -1,6 +1,6 @@
 #!/bin/bash
 
-target_dir="./internal/router/static"
+target_dir="./internal/engine/router/static"
 
 if [ ! -d $target_dir ]; then
     mkdir -p $target_dir
