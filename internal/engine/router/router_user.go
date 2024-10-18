@@ -65,6 +65,21 @@ func (rt *Router) register(r *gin.Context) {
 	r.Set(consts.OPERATION, "")
 }
 
+func (rt *Router) refresh(r *gin.Context) {
+
+	userRepo := repo.NewUserRepo(rt.Ctx)
+	userLogic := logic.NewUserLogic(rt.Ctx, userRepo)
+	userId := r.Query("userId")
+
+	token, err := userLogic.Refresh(userId, rt.Http.Auth)
+	if err != nil {
+		httpx.WithRepErrMsg(r, httpx.Failed.Code, err.Error(), r.Request.URL.Path)
+		return
+	}
+
+	r.Set(consts.DETAIL, token)
+}
+
 func (rt *Router) redirect(r *gin.Context) {
 	r.Set(consts.OPERATION, "")
 }

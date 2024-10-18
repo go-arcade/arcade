@@ -101,6 +101,7 @@ func (rt *Router) routerGroup(r *gin.RouterGroup) *gin.RouterGroup {
 		routeUser.POST("/login", rt.login)
 		routeUser.POST("/register", rt.register)
 		routeUser.POST("/logout", rt.logout)
+		routeUser.GET("/refresh", rt.refresh)
 		routeUser.POST("/redirect", rt.redirect)
 
 		routeUser.POST("/invite", rt.addUser)
