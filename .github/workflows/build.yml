@@ -1,0 +1,73 @@
+name: Build Go Project
+
+on:
+  push:
+    branches:
+      - develop  # 监听 `develop` 分支上的 push 事件
+  pull_request:
+    branches:
+      - develop  # 监听 PR 合并到 `develop` 分支的事件
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Go environment
+      - name: Set up Go Version
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21.0'  # 指定 Go 的特定版本
+
+      # Step 3: Cache Go modules (optional)
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      # Step 4: Build the project using go build
+      - name: Build project
+        run: go build -o arcade cmd/engine/main.go
+
+      # Step 5: Upload Build Artifacts (optional)
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: go-build-output
+          path: arcade
+
+      # Step 6: Set up SSH key
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # Step 7: Upload binary to remote server via SSH
+      - name: Upload arcade to remote server
+        run: |
+          echo "StrictHostKeyChecking no" >> ~/.ssh/config  # 禁用主机密钥检查
+
+          # stop server
+          ssh root@${{ secrets.SERVER_IP }} "supervisorctl stop arcade" || true
+
+          # update config
+          rsync -av conf.d root@${{ secrets.SERVER_IP }}:/opt/arcade/
+
+          # update binary
+          rsync -av arcade root@${{ secrets.SERVER_IP }}:/opt/arcade/bin/
+
+          # start server
+          ssh root@${{ secrets.SERVER_IP }} "supervisorctl reload"
+          ssh root@${{ secrets.SERVER_IP }} "supervisorctl start arcade"
+
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
