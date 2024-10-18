@@ -8,7 +8,7 @@ fi
 
 tag=$(curl -sX GET https://api.github.com/repos/go-arcade/docs/releases/latest | awk '/tag_name/{print $4;exit}' FS='[""]')
 
-if ! curl -o dist.zip -L "https://github.com/go-arcade/docs/releases/download/${TAG}/dist.zip"; then
+if ! curl -o dist.zip -L "https://github.com/go-arcade/docs/releases/download/${tag}/dist.zip"; then
     echo "Failed to download ${tag} dist.zip"
     exit 1
 fi
