@@ -6,11 +6,10 @@ import (
 	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/internal/engine/repo"
 	"github.com/go-arcade/arcade/pkg/ctx"
-	"github.com/go-arcade/arcade/pkg/httpx"
-	"github.com/go-arcade/arcade/pkg/httpx/auth/jwt"
+	"github.com/go-arcade/arcade/pkg/http"
+	"github.com/go-arcade/arcade/pkg/http/auth/jwt"
 	"github.com/go-arcade/arcade/pkg/id"
 	"github.com/go-arcade/arcade/pkg/log"
-	"github.com/go-arcade/arcade/pkg/server"
 	"golang.org/x/crypto/bcrypt"
 	"time"
 )
@@ -34,11 +33,11 @@ func NewUserLogic(ctx *ctx.Context, userRepo *repo.UserRepo) *UserLogic {
 	}
 }
 
-func (ul *UserLogic) Login(login *model.Login, auth server.Auth) (*model.LoginResp, error) {
+func (ul *UserLogic) Login(login *model.Login, auth http.Auth) (*model.LoginResp, error) {
 	pwd, err := base64.StdEncoding.DecodeString(login.Password)
 	if err != nil {
 		log.Errorf("failed to decode password: %v", err)
-		return nil, errors.New(httpx.UserIncorrectPassword.Msg)
+		return nil, errors.New(http.UserIncorrectPassword.Msg)
 	}
 
 	// 尝试通过用户名和密码登录
@@ -49,13 +48,13 @@ func (ul *UserLogic) Login(login *model.Login, auth server.Auth) (*model.LoginRe
 	}
 	if user == nil || user.Username == "" || user.Username != login.Username {
 		log.Error("user not found")
-		return nil, errors.New(httpx.UserNotExist.Msg)
+		return nil, errors.New(http.UserNotExist.Msg)
 	}
 
 	// 比较存储的密码哈希与提供的密码
 	if !comparePassword(user.Password, string(pwd)) {
 		log.Error("incorrect password provided")
-		return nil, errors.New(httpx.UserIncorrectPassword.Msg)
+		return nil, errors.New(http.UserIncorrectPassword.Msg)
 	}
 
 	aToken, rToken, err := jwt.GenToken(user.UserId, []byte(auth.SecretKey), auth.AccessExpire*time.Minute, auth.RefreshExpire*time.Minute)
@@ -93,7 +92,7 @@ func (ul *UserLogic) Login(login *model.Login, auth server.Auth) (*model.LoginRe
 	}, nil
 }
 
-func (ul *UserLogic) Refresh(userId string, auth server.Auth) (map[string]string, error) {
+func (ul *UserLogic) Refresh(userId string, auth http.Auth) (map[string]string, error) {
 	var err error
 	aToken, rToken, err := jwt.GenToken(userId, []byte(auth.SecretKey), auth.AccessExpire*time.Minute, auth.RefreshExpire*time.Minute)
 	if err != nil {

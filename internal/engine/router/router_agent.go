@@ -6,7 +6,7 @@ import (
 	"github.com/go-arcade/arcade/internal/engine/logic"
 	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/pkg/httpx"
+	"github.com/go-arcade/arcade/pkg/http"
 )
 
 /**
@@ -22,12 +22,12 @@ func (rt *Router) addAgent(r *gin.Context) {
 	agentLogic := logic.NewAgentLogic(agentRepo, addAgentReq)
 
 	if err := r.BindJSON(&addAgentReq); err != nil {
-		httpx.WithRepErrMsg(r, httpx.Failed.Code, httpx.Failed.Msg, r.Request.URL.Path)
+		http.WithRepErrMsg(r, http.Failed.Code, http.Failed.Msg, r.Request.URL.Path)
 		return
 	}
 
 	if err := agentLogic.AddAgent(addAgentReq); err != nil {
-		httpx.WithRepErrMsg(r, httpx.Failed.Code, httpx.Failed.Msg, r.Request.URL.Path)
+		http.WithRepErrMsg(r, http.Failed.Code, http.Failed.Msg, r.Request.URL.Path)
 		return
 	}
 
@@ -43,7 +43,7 @@ func (rt *Router) listAgent(r *gin.Context) {
 	pageSize := queryInt(r, "pageSize") // default 10
 	agents, count, err := agentLogic.ListAgent(pageNum, pageSize)
 	if err != nil {
-		httpx.WithRepErrMsg(r, httpx.Failed.Code, httpx.Failed.Msg, r.Request.URL.Path)
+		http.WithRepErrMsg(r, http.Failed.Code, http.Failed.Msg, r.Request.URL.Path)
 		return
 	}
 

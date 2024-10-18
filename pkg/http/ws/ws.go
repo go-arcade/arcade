@@ -3,7 +3,7 @@ package ws
 import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
-	httpx "github.com/go-arcade/arcade/pkg/httpx"
+	httpx "github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/gorilla/websocket"
 	"net/http"

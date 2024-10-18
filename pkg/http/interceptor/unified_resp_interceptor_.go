@@ -3,7 +3,7 @@ package interceptor
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-arcade/arcade/internal/engine/consts"
-	"github.com/go-arcade/arcade/pkg/httpx"
+	httpx "github.com/go-arcade/arcade/pkg/http"
 	"net/http"
 )
 

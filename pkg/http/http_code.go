@@ -1,4 +1,4 @@
-package httpx
+package http
 
 /**
  * @author: gagral.x@gmail.com

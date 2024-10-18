@@ -2,7 +2,7 @@ package minio
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/go-arcade/arcade/pkg/httpx"
+	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -65,7 +65,7 @@ func (m *Minio) Upload(objectName string, file *multipart.FileHeader, contentTyp
 		ContentType: contentType,
 	})
 	if err != nil {
-		httpx.WithRepErrNotData(ctx, err.Error())
+		http.WithRepErrNotData(ctx, err.Error())
 		return minio.UploadInfo{}, err
 	}
 
@@ -76,7 +76,7 @@ func (m *Minio) Download(objectName string, client minio.Client, ctx *gin.Contex
 	isExistBucket(ctx, client, m.Bucket)
 	obj, err := client.GetObject(ctx, m.Bucket, objectName, minio.GetObjectOptions{})
 	if err != nil {
-		httpx.WithRepErrNotData(ctx, err.Error())
+		http.WithRepErrNotData(ctx, err.Error())
 		return nil, err
 	}
 	return obj, nil
@@ -88,7 +88,7 @@ func isExistBucket(ctx *gin.Context, client minio.Client, bucket string) {
 		return
 	}
 	if !exists {
-		httpx.WithRepErrNotData(ctx, "bucket not exists")
+		http.WithRepErrNotData(ctx, "bucket not exists")
 		return
 	}
 }

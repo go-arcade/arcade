@@ -2,10 +2,9 @@ package interceptor
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/go-arcade/arcade/pkg/httpx"
-	"github.com/go-arcade/arcade/pkg/httpx/auth/jwt"
+	httpx "github.com/go-arcade/arcade/pkg/http"
+	"github.com/go-arcade/arcade/pkg/http/auth/jwt"
 	"github.com/go-arcade/arcade/pkg/log"
-	"net/http"
 	"strings"
 	"time"
 )
@@ -44,14 +43,14 @@ func AuthorizationInterceptor(accessExpired, refreshExpired time.Duration, secre
 		}
 		mc, err := jwt.ParseToken(parts[1], secret.(string))
 		if err != nil {
-			httpx.WithRepErrMsg(c, httpx.TokenInvalid.Code, httpx.Unauthorized.Msg, c.Request.URL.Path)
+			httpx.WithRepErrMsg(c, httpx.TokenInvalid.Code, httpx.TokenInvalid.Msg, c.Request.URL.Path)
 			c.Abort()
 			return
 		}
 
 		aToken, rToken, err := jwt.RefreshToken(parts[1], parts[2])
 		if err != nil {
-			httpx.WithRepErr(c, http.StatusUnauthorized, httpx.Unauthorized.Msg, c.Request.URL.Path)
+			httpx.WithRepErr(c, httpx.Unauthorized.Code, httpx.Unauthorized.Msg, c.Request.URL.Path)
 			c.Abort()
 			return
 		} else {
