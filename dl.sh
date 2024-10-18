@@ -13,7 +13,7 @@ if ! curl -o dist.zip -L "https://github.com/go-arcade/docs/releases/download/${
     exit 1
 fi
 
-if ! unzip -d "target_dir" dist.zip; then
+if ! unzip -o -d "$target_dir" dist.zip; then
     echo "Failed to unzip ${tag} dist.zip into ${target_dir}"
     exit 2
 fi
