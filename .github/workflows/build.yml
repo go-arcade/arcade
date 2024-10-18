@@ -67,7 +67,6 @@ jobs:
 
           # start server
           ssh root@${{ secrets.SERVER_IP }} "supervisorctl reload"
-          ssh root@${{ secrets.SERVER_IP }} "supervisorctl start arcade"
 
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
