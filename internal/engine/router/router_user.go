@@ -70,8 +70,9 @@ func (rt *Router) refresh(r *gin.Context) {
 	userRepo := repo.NewUserRepo(rt.Ctx)
 	userLogic := logic.NewUserLogic(rt.Ctx, userRepo)
 	userId := r.Query("userId")
+	refreshToken := r.Query("refreshToken")
 
-	token, err := userLogic.Refresh(userId, rt.Http.Auth)
+	token, err := userLogic.Refresh(userId, refreshToken, &rt.Http.Auth)
 	if err != nil {
 		http.WithRepErrMsg(r, http.Failed.Code, err.Error(), r.Request.URL.Path)
 		return

@@ -57,7 +57,7 @@ func (ul *UserLogic) Login(login *model.Login, auth http.Auth) (*model.LoginResp
 		return nil, errors.New(http.UserIncorrectPassword.Msg)
 	}
 
-	aToken, rToken, err := jwt.GenToken(user.UserId, []byte(auth.SecretKey), auth.AccessExpire*time.Minute, auth.RefreshExpire*time.Minute)
+	aToken, rToken, err := jwt.GenToken(user.UserId, []byte(auth.SecretKey), auth.AccessExpire, auth.RefreshExpire)
 	if err != nil {
 		log.Errorf("failed to generate tokens: %v", err)
 		return nil, err
@@ -65,9 +65,8 @@ func (ul *UserLogic) Login(login *model.Login, auth http.Auth) (*model.LoginResp
 
 	// 将刷新令牌存储在Redis中
 	go func() {
-		key := auth.RedisKeyPrefix + user.UserId
-		k, err := ul.userRepo.SetToken(user.UserId, key, auth)
-		log.Debugf("token key: %v", k)
+		key, err := ul.userRepo.SetToken(user.UserId, aToken, auth)
+		log.Debugf("token key: %v", key)
 		if err != nil {
 			log.Errorf("failed to set token in Redis: %v", err)
 			return
@@ -92,26 +91,16 @@ func (ul *UserLogic) Login(login *model.Login, auth http.Auth) (*model.LoginResp
 	}, nil
 }
 
-func (ul *UserLogic) Refresh(userId string, auth http.Auth) (map[string]string, error) {
+func (ul *UserLogic) Refresh(userId, rToken string, auth *http.Auth) (map[string]string, error) {
 	var err error
-	aToken, rToken, err := jwt.GenToken(userId, []byte(auth.SecretKey), auth.AccessExpire*time.Minute, auth.RefreshExpire*time.Minute)
+	token, err := jwt.RefreshToken(auth, userId, rToken)
+
+	k, err := ul.userRepo.SetToken(userId, token["accessToken"], *auth)
+	log.Debugf("token key: %v", k)
 	if err != nil {
-		log.Errorf("failed to generate tokens: %v", err)
-		return nil, err
+		log.Errorf("failed to set token in Redis: %v", err)
+		return token, err
 	}
-
-	token := make(map[string]string)
-	token["accessToken"] = aToken
-	token["refreshToken"] = rToken
-
-	go func() {
-		k, err := ul.userRepo.SetToken(userId, aToken, auth)
-		log.Debugf("token key: %v", k)
-		if err != nil {
-			log.Errorf("failed to set token in Redis: %v", err)
-			return
-		}
-	}()
 
 	return token, err
 }
