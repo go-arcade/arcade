@@ -16,7 +16,7 @@ var (
 	InvalidToken           = failed(4004, "Invalid token")
 	InValidAccessToken     = failed(4005, "Invalid access token")
 	InValidRefreshToken    = failed(4006, "Invalid refresh token")
-	TokenBeEmpty           = failed(405, "Token cannot be empty")
+	TokenBeEmpty           = failed(405, "token cannot be empty")
 
 	InternalError = failed(500, "internal error, please contact the administrator")
 

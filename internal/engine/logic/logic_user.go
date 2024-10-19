@@ -123,6 +123,26 @@ func (ul *UserLogic) Register(register *model.Register) error {
 	return err
 }
 
+func (ul *UserLogic) Logout(keyPrefix, userId string) error {
+	var key = keyPrefix + userId
+
+	result, err := ul.userRepo.GetToken(key)
+	if err != nil {
+		log.Errorf("failed to get token from Redis: %v", err)
+		return errors.New(http.TokenBeEmpty.Msg)
+	}
+	if result == "" {
+		log.Error("token not found")
+		return errors.New(http.TokenBeEmpty.Msg)
+	}
+
+	if err = ul.userRepo.DelToken(key); err != nil {
+		log.Errorf("failed to logout: %v", err)
+		return errors.New(http.TokenBeEmpty.Msg)
+	}
+	return err
+}
+
 func (ul *UserLogic) AddUser(addUserReq model.AddUserReq) error {
 
 	var err error
