@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"errors"
+	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/golang-jwt/jwt/v5"
 	"time"
@@ -15,11 +16,7 @@ import (
  */
 
 type AuthClaims struct {
-	Id string `json:"id"`
-	//Name           string        `json:"name"`
-	//AccessExpired  time.Duration `json:"accessExpired"`
-	//RefreshExpired time.Duration `json:"refreshExpired"`
-	//SecretKey      string        `json:"secretKey"`
+	UserId string `json:"userId"`
 	jwt.RegisteredClaims
 }
 
@@ -31,8 +28,8 @@ var (
 	issUser = "arcade"
 )
 
-func keyFunc(token *jwt.Token) (interface{}, error) {
-	return "secretKey", nil
+func keyFunc(auth http.Auth) (interface{}, error) {
+	return auth.SecretKey, nil
 }
 
 // GenToken 生成 access_token 和 refresh_token
@@ -40,10 +37,10 @@ func GenToken(userId string, secretKey []byte, accessExpired, refreshExpired tim
 
 	// aToken
 	aClaims := &AuthClaims{
-		Id: userId,
+		UserId: userId,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    issUser, // 签发人
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(accessExpired)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(accessExpired * time.Minute)),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 		},
 	}
@@ -56,7 +53,7 @@ func GenToken(userId string, secretKey []byte, accessExpired, refreshExpired tim
 	// rToken
 	rClaims := jwt.RegisteredClaims{
 		Issuer:    issUser,
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(refreshExpired)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(refreshExpired * time.Minute)),
 	}
 	rToken, rErr := jwt.NewWithClaims(jwt.SigningMethodHS256, rClaims).SignedString(secretKey)
 	if rErr != nil {
@@ -85,24 +82,33 @@ func ParseToken(aToken, secretKey string) (claims *AuthClaims, err error) {
 }
 
 // RefreshToken 刷新 access_token
-func RefreshToken(aToken, rToken string) (aTokenNew, rTokenNew string, err error) {
+func RefreshToken(auth *http.Auth, userId, rToken string) (map[string]string, error) {
+	newToken := make(map[string]string)
 
-	if _, err := jwt.Parse(rToken, func(token *jwt.Token) (interface{}, error) {
-		return []byte("secret"), nil
-	}); err != nil {
-		return "", "", err
-	}
-
-	var claims AuthClaims
-	//var v *jwt.ClaimsValidator
-	_, err = jwt.ParseWithClaims(aToken, &claims, keyFunc)
+	// 解析刷新令牌
+	var refreshClaims jwt.RegisteredClaims
+	_, err := jwt.ParseWithClaims(rToken, &refreshClaims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(auth.SecretKey), nil
+	})
 	if err != nil {
-		return "", "", err
+		log.Errorf("jwt.ParseWithClaims err: %v", err)
+		return newToken, errors.New(http.InValidRefreshToken.Msg)
 	}
-	//errors.As(err, &v)
-	//if v.Valid() != nil {
-	//	return "", "", err
-	//}
 
-	return "", "", err
+	// 检查刷新令牌是否有效且未过期
+	if refreshClaims.ExpiresAt == nil || time.Now().After(refreshClaims.ExpiresAt.Time) {
+		log.Errorf("jwt.ParseWithClaims err: %v", err)
+		return newToken, errors.New(http.InValidRefreshToken.Msg)
+	}
+
+	// 生成新地访问令牌和刷新令牌
+	newAToken, newRToken, err := GenToken(userId, []byte(auth.SecretKey), auth.AccessExpire, auth.RefreshExpire)
+	if err != nil {
+		return newToken, err
+	}
+
+	newToken["accessToken"] = newAToken
+	newToken["refreshToken"] = newRToken
+
+	return newToken, nil
 }

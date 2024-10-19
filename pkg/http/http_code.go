@@ -13,7 +13,9 @@ var (
 	Unauthorized           = failed(4001, "unauthorized")
 	AuthorizationIncorrect = failed(4002, "The auth format in the request header is incorrect")
 	AuthorizationEmpty     = failed(4003, "Authorization is empty")
-	TokenInvalid           = failed(4004, "Token is invalid")
+	InvalidToken           = failed(4004, "Invalid token")
+	InValidAccessToken     = failed(4005, "Invalid access token")
+	InValidRefreshToken    = failed(4006, "Invalid refresh token")
 	TokenBeEmpty           = failed(405, "Token cannot be empty")
 
 	InternalError = failed(500, "internal error, please contact the administrator")
