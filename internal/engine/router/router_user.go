@@ -40,10 +40,6 @@ func (rt *Router) login(r *gin.Context) {
 	r.Set(consts.DETAIL, user)
 }
 
-func (rt *Router) logout(r *gin.Context) {
-	r.Set(consts.OPERATION, "")
-}
-
 func (rt *Router) register(r *gin.Context) {
 
 	//todo: 实现注册开关
@@ -79,6 +75,18 @@ func (rt *Router) refresh(r *gin.Context) {
 	}
 
 	r.Set(consts.DETAIL, token)
+}
+
+func (rt *Router) logout(r *gin.Context) {
+	userRepo := repo.NewUserRepo(rt.Ctx)
+	userLogic := logic.NewUserLogic(rt.Ctx, userRepo)
+	userId := r.PostForm("userId")
+	if err := userLogic.Logout(rt.Http.Auth.RedisKeyPrefix, userId); err != nil {
+		http.WithRepErrMsg(r, http.Failed.Code, err.Error(), r.Request.URL.Path)
+		return
+	}
+
+	r.Set(consts.OPERATION, "")
 }
 
 func (rt *Router) redirect(r *gin.Context) {

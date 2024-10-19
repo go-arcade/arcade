@@ -75,6 +75,11 @@ func (ur *UserRepo) Register(register *model.Register) error {
 	return ur.Context.GetDB().Table(ur.userModel.TableName()).Create(register).Error
 }
 
+func (ur *UserRepo) Logout(userKey string) error {
+
+	return ur.Context.GetRedis().Del(ur.Ctx, userKey).Err()
+}
+
 func (ur *UserRepo) GetUserList(offset int, pageSize int) ([]model.User, int64, error) {
 	var users []model.User
 	var count int64
@@ -93,4 +98,19 @@ func (ur *UserRepo) SetToken(userId, aToken string, auth http.Auth) (string, err
 		return "", fmt.Errorf("failed to set token in Redis: %w", err)
 	}
 	return key, nil
+}
+
+func (ur *UserRepo) GetToken(key string) (string, error) {
+	token, err := ur.GetRedis().Get(ur.Ctx, key).Result()
+	if err != nil {
+		return "", fmt.Errorf("failed to get token from Redis: %w", err)
+	}
+	return token, nil
+}
+
+func (ur *UserRepo) DelToken(key string) error {
+	if err := ur.GetRedis().Del(ur.Ctx, key).Err(); err != nil {
+		return fmt.Errorf("failed to delete token from Redis: %w", err)
+	}
+	return nil
 }
