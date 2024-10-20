@@ -65,8 +65,6 @@ func LoadConfigFile(confDir string) (AppConfig, error) {
 		return cfg, fmt.Errorf("failed to unmarshal configuration file: %v", err)
 	}
 	fmt.Printf("[Init] config file path: %s\n", confDir)
-	t := config.GetString("http.mode")
-	fmt.Printf("test: %s\n", t)
 
 	return cfg, nil
 }
