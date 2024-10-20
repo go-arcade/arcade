@@ -98,7 +98,7 @@ func (rt *Router) Router() *gin.Engine {
 
 func (rt *Router) routerGroup(r *gin.RouterGroup) *gin.RouterGroup {
 
-	auth := interceptor.AuthorizationInterceptor(rt.Http.Auth.SecretKey, rt.Http.Auth)
+	//auth := interceptor.AuthorizationInterceptor(rt.Http.Auth.SecretKey, rt.Http.Auth)
 
 	// user
 	routeUser := r.Group("/user")
@@ -111,7 +111,7 @@ func (rt *Router) routerGroup(r *gin.RouterGroup) *gin.RouterGroup {
 
 		routeUser.POST("/invite", rt.addUser)
 		routeUser.POST("/revise", rt.updateUser)
-		routeUser.GET("/getUserInfo", rt.getUserInfo, auth)
+		//routeUser.GET("/getUserInfo", rt.getUserInfo, auth)
 		//routeUser.GET("/getUserList", rt.getUserList)
 	}
 
