@@ -22,7 +22,7 @@ rotateSize = 256
 
 [http]
 host = "0.0.0.0"
-port = 10086
+port = 8080
 # debug, release
 mode = "debug"
 # internal context path
