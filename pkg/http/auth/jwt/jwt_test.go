@@ -48,3 +48,24 @@ func TestRefreshToken(t *testing.T) {
 	}
 	t.Logf("newRefeshToken: %s", newRefreshToken)
 }
+
+func TestParseToken(t *testing.T) {
+
+	token := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." +
+		"eyJ1c2VySWQiOiIxYjhiZTgyMDE3YmE0ZDQ5ODJkOWU2ZTQyOTQzOGNmOSIsImlzcyI6ImFyY2FkZSIsImV4cCI6MTcyOTYy" +
+		"MjU2MywibmJmIjoxNzI5NDA2NTYzfQ." +
+		"RfnTfjtvgy2j7GfYpAwW1nG1FWS-m-aW8z_DEK817TY"
+	secretKey := "bf284d03-ba65-42d4-a9fe-0d2fbfe61060"
+	claims, err := ParseToken(token, secretKey)
+	if err != nil {
+		t.Errorf("ParseToken error: %v", err)
+	}
+	t.Logf("claims: %v", claims)
+	t.Logf("userId: %s", claims.UserId)
+	t.Logf("Issuer: %s", claims.Issuer)
+	t.Logf("ExpiresAt: %v", claims.ExpiresAt)
+	t.Logf("NotBefore: %v", claims.NotBefore)
+	t.Logf("IssuedAt: %v", claims.IssuedAt)
+	t.Logf("Subject: %s", claims.Subject)
+	t.Logf("Audience: %s", claims.Audience)
+}

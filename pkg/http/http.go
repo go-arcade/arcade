@@ -85,7 +85,7 @@ func (h *Http) Server(engine *gin.Engine) func() {
 	}
 
 	go func() {
-		fmt.Printf("[Init] http server start at: %s\n", addr)
+		fmt.Printf("[Init] http server start at: %s\n", srv.Addr)
 
 		if h.TLS.CertFile != "" && h.TLS.KeyFile != "" {
 			if err := srv.ListenAndServeTLS(h.TLS.CertFile, h.TLS.KeyFile); err != nil {

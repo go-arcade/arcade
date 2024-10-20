@@ -66,19 +66,18 @@ func GenToken(userId string, secretKey []byte, accessExpired, refreshExpired tim
 
 // ParseToken 校验 access_token
 func ParseToken(aToken, secretKey string) (claims *AuthClaims, err error) {
-	token, err := jwt.ParseWithClaims(aToken, &AuthClaims{}, func(token *jwt.Token) (i interface{}, err error) {
-		// 直接使用标准的Claim则可以直接使用Parse方法
-		//token, err := jwt.Parse(tokenString, func(token *jwt.Token) (i interface{}, err error) {
-		return secretKey, nil
+	var token *jwt.Token
+	claims = new(AuthClaims)
+	token, err = jwt.ParseWithClaims(aToken, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(secretKey), nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	// 对token对象中的Claim进行类型断言
-	if authClaims, ok := token.Claims.(*AuthClaims); ok && token.Valid { // 校验token
-		return authClaims, nil
+	if !token.Valid { // token 是否有效
+		err = errors.New("invalid token")
 	}
-	return nil, errors.New("invalid token")
+	return claims, nil
 }
 
 // RefreshToken 刷新 access_token
@@ -92,13 +91,13 @@ func RefreshToken(auth *http.Auth, userId, rToken string) (map[string]string, er
 	})
 	if err != nil {
 		log.Errorf("jwt.ParseWithClaims err: %v", err)
-		return newToken, errors.New(http.InValidRefreshToken.Msg)
+		return newToken, errors.New(http.InvalidToken.Msg)
 	}
 
 	// 检查刷新令牌是否有效且未过期
 	if refreshClaims.ExpiresAt == nil || time.Now().After(refreshClaims.ExpiresAt.Time) {
 		log.Errorf("jwt.ParseWithClaims err: %v", err)
-		return newToken, errors.New(http.InValidRefreshToken.Msg)
+		return newToken, errors.New(http.InvalidToken.Msg)
 	}
 
 	// 生成新地访问令牌和刷新令牌

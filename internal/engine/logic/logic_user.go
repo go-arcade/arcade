@@ -1,8 +1,8 @@
 package logic
 
 import (
-	"encoding/base64"
 	"errors"
+	"github.com/go-arcade/arcade/internal/engine/common"
 	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/internal/engine/repo"
 	"github.com/go-arcade/arcade/pkg/ctx"
@@ -34,7 +34,7 @@ func NewUserLogic(ctx *ctx.Context, userRepo *repo.UserRepo) *UserLogic {
 }
 
 func (ul *UserLogic) Login(login *model.Login, auth http.Auth) (*model.LoginResp, error) {
-	pwd, err := base64.StdEncoding.DecodeString(login.Password)
+	pwd, err := common.DecodeBase64(login.Password)
 	if err != nil {
 		log.Errorf("failed to decode password: %v", err)
 		return nil, errors.New(http.UserIncorrectPassword.Msg)
@@ -62,16 +62,6 @@ func (ul *UserLogic) Login(login *model.Login, auth http.Auth) (*model.LoginResp
 		log.Errorf("failed to generate tokens: %v", err)
 		return nil, err
 	}
-
-	// 将刷新令牌存储在Redis中
-	//go func() {
-	//	key, err := ul.userRepo.SetToken(user.UserId, aToken, auth)
-	//	log.Debugf("token key: %v", key)
-	//	if err != nil {
-	//		log.Errorf("failed to set token in Redis: %v", err)
-	//		return
-	//	}
-	//}()
 
 	resp := &model.LoginResp{
 		UserInfo: model.UserInfo{
@@ -128,6 +118,7 @@ func (ul *UserLogic) Register(register *model.Register) error {
 	if err = ul.userRepo.Register(register); err != nil {
 		return err
 	}
+
 	return err
 }
 
@@ -172,9 +163,9 @@ func (ul *UserLogic) UpdateUser(userId string, user *model.User) error {
 	return err
 }
 
-func (ul *UserLogic) GetUserById(userId string) (*model.User, error) {
+func (ul *UserLogic) GetUserInfo(userId string) (*model.UserInfo, error) {
 
-	user, err := ul.userRepo.GetUserById(userId)
+	user, err := ul.userRepo.GetUserInfo(userId)
 	if err != nil {
 		return nil, err
 	}
