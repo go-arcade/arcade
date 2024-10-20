@@ -110,7 +110,7 @@ func (rt *Router) routerGroup(r *gin.RouterGroup) *gin.RouterGroup {
 	{
 		user.POST("/login", rt.login)
 		user.POST("/register", rt.register)
-		user.POST("/logout", rt.logout)
+		user.POST("/logout", rt.logout, auth)
 		user.GET("/refresh", rt.refresh, auth)
 		user.POST("/redirect", rt.redirect)
 
