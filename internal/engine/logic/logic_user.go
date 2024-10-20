@@ -64,17 +64,16 @@ func (ul *UserLogic) Login(login *model.Login, auth http.Auth) (*model.LoginResp
 	}
 
 	// 将刷新令牌存储在Redis中
-	go func() {
-		key, err := ul.userRepo.SetToken(user.UserId, aToken, auth)
-		log.Debugf("token key: %v", key)
-		if err != nil {
-			log.Errorf("failed to set token in Redis: %v", err)
-			return
-		}
-	}()
+	//go func() {
+	//	key, err := ul.userRepo.SetToken(user.UserId, aToken, auth)
+	//	log.Debugf("token key: %v", key)
+	//	if err != nil {
+	//		log.Errorf("failed to set token in Redis: %v", err)
+	//		return
+	//	}
+	//}()
 
-	// 返回包含访问令牌和刷新令牌的响应
-	return &model.LoginResp{
+	resp := &model.LoginResp{
 		UserInfo: model.UserInfo{
 			UserId:   user.UserId,
 			Username: user.Username,
@@ -88,7 +87,16 @@ func (ul *UserLogic) Login(login *model.Login, auth http.Auth) (*model.LoginResp
 			"refreshToken": rToken,
 		},
 		Role: map[string]string{},
-	}, nil
+	}
+
+	go func() {
+		if err = ul.userRepo.SetLoginRespInfo(auth.RedisKeyPrefix, auth.AccessExpire, resp); err != nil {
+			log.Errorf("failed to set login response info: %v", err)
+			return
+		}
+	}()
+
+	return resp, nil
 }
 
 func (ul *UserLogic) Refresh(userId, rToken string, auth *http.Auth) (map[string]string, error) {

@@ -100,6 +100,37 @@ func (ur *UserRepo) SetToken(userId, aToken string, auth http.Auth) (string, err
 	return key, nil
 }
 
+func (ur *UserRepo) SetLoginRespInfo(tokenKeyPrefix string, accessExpire time.Duration, loginResp *model.LoginResp) error {
+
+	pipe := ur.GetRedis().Pipeline()
+
+	if err := pipe.Set(ur.Ctx, tokenKeyPrefix+loginResp.UserInfo.UserId, loginResp.Token["accessToken"], accessExpire*time.Minute).Err(); err != nil {
+		return fmt.Errorf("failed to set refresh token in Redis: %w", err)
+	}
+
+	userInfoKey := "userInfo:" + loginResp.UserInfo.UserId
+	userInfoMap := map[string]interface{}{
+		"username": loginResp.UserInfo.Username,
+		"email":    loginResp.UserInfo.Email,
+		"nickname": loginResp.UserInfo.Nickname,
+		"avatar":   loginResp.UserInfo.Avatar,
+		"phone":    loginResp.UserInfo.Phone,
+	}
+	if err := pipe.HSet(ur.Ctx, userInfoKey, userInfoMap).Err(); err != nil {
+		return fmt.Errorf("failed to set user info in Redis: %w", err)
+	}
+
+	// 设置用户信息过期时间
+	if err := pipe.Expire(ur.Ctx, userInfoKey, accessExpire*time.Minute).Err(); err != nil {
+		return fmt.Errorf("failed to set user info expire time in Redis: %w", err)
+	}
+
+	if _, err := pipe.Exec(ur.Ctx); err != nil {
+		return fmt.Errorf("failed to execute Redis pipeline: %w", err)
+	}
+	return nil
+}
+
 func (ur *UserRepo) GetToken(key string) (string, error) {
 	token, err := ur.GetRedis().Get(ur.Ctx, key).Result()
 	if err != nil {
