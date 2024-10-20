@@ -27,10 +27,10 @@ port = 10086
 mode = "debug"
 # internal context path
 # web api context path
-internalContextPath = "/v1/"
+internalContextPath = "/api/v1/"
 # external context path
 # external api context path
-externalContextPath = "/api/"
+externalContextPath = "/api/v1/arcade/"
 # unit: second
 heartbeat = 60
 # enable pprof, false or true
