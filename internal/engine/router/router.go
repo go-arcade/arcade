@@ -44,14 +44,16 @@ func (rt *Router) Router() *gin.Engine {
 
 	r := gin.New()
 
+	// cors interceptor
+	r.Use(interceptor.CorsInterceptor())
+
 	// panic recover
 	r.Use(interceptor.ExceptionInterceptor)
 
 	// unified response interceptor
 	r.Use(interceptor.UnifiedResponseInterceptor())
 
-	// authorization interceptor
-	//r.Use(interceptor.AuthorizationInterceptor(time.Duration(rt.Http.Auth.AccessExpire), time.Duration(rt.Http.Auth.AccessExpire), rt.Http.Auth.SecretKey))
+	// r.Use(interceptor.AuthorizationInterceptor(rt.Http.Auth.SecretKey, rt.Http.Auth))
 
 	// web static resource
 	if rt.Http.UseFileAssets {
@@ -96,6 +98,8 @@ func (rt *Router) Router() *gin.Engine {
 
 func (rt *Router) routerGroup(r *gin.RouterGroup) *gin.RouterGroup {
 
+	auth := interceptor.AuthorizationInterceptor(rt.Http.Auth.SecretKey, rt.Http.Auth)
+
 	// user
 	routeUser := r.Group("/user")
 	{
@@ -107,7 +111,7 @@ func (rt *Router) routerGroup(r *gin.RouterGroup) *gin.RouterGroup {
 
 		routeUser.POST("/invite", rt.addUser)
 		routeUser.POST("/revise", rt.updateUser)
-		routeUser.GET("/getUserById/:userId", rt.getUserById)
+		routeUser.GET("/getUserInfo", rt.getUserInfo, auth)
 		//routeUser.GET("/getUserList", rt.getUserList)
 	}
 
