@@ -2,6 +2,7 @@ package router
 
 import (
 	"embed"
+	"fmt"
 	"github.com/cnlesscode/gotool/gintool"
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-contrib/static"
@@ -43,6 +44,10 @@ func (rt *Router) Router() *gin.Engine {
 	gin.SetMode(rt.Http.Mode)
 
 	r := gin.New()
+
+	gin.DebugPrintRouteFunc = func(httpMethod, absolutePath, handlerName string, nuHandlers int) {
+		fmt.Printf("[Arcade] %-6s %-25s --> %s (%d handlers) \n", httpMethod, absolutePath, handlerName, nuHandlers)
+	}
 
 	// cors interceptor
 	r.Use(interceptor.CorsInterceptor())
@@ -98,25 +103,25 @@ func (rt *Router) Router() *gin.Engine {
 
 func (rt *Router) routerGroup(r *gin.RouterGroup) *gin.RouterGroup {
 
-	//auth := interceptor.AuthorizationInterceptor(rt.Http.Auth.SecretKey, rt.Http.Auth)
+	auth := interceptor.AuthorizationInterceptor(rt.Http.Auth.SecretKey, rt.Http.Auth)
 
 	// user
-	routeUser := r.Group("/user")
+	user := r.Group("/user")
 	{
-		routeUser.POST("/login", rt.login)
-		routeUser.POST("/register", rt.register)
-		routeUser.POST("/logout", rt.logout)
-		routeUser.GET("/refresh", rt.refresh)
-		routeUser.POST("/redirect", rt.redirect)
+		user.POST("/login", rt.login)
+		user.POST("/register", rt.register)
+		user.POST("/logout", rt.logout)
+		user.GET("/refresh", rt.refresh, auth)
+		user.POST("/redirect", rt.redirect)
 
-		routeUser.POST("/invite", rt.addUser)
-		routeUser.POST("/revise", rt.updateUser)
-		//routeUser.GET("/getUserInfo", rt.getUserInfo, auth)
-		//routeUser.GET("/getUserList", rt.getUserList)
+		user.POST("/invite", rt.addUser)
+		user.POST("/revise", rt.updateUser)
+		user.GET("/getUserInfo", rt.getUserInfo, auth)
+		//user.GET("/getUserList", rt.getUserList)
 	}
 
 	// agent
-	route := r.Group("/agent")
+	route := r.Group("/agent", auth)
 	{
 		route.POST("/add", rt.addAgent)
 		//r.POST("delete", deleteAgent)

@@ -2,6 +2,7 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/go-arcade/arcade/internal/engine/common"
 	"github.com/go-arcade/arcade/internal/engine/consts"
 	"github.com/go-arcade/arcade/internal/engine/logic"
 	"github.com/go-arcade/arcade/internal/engine/model"
@@ -130,16 +131,20 @@ func (rt *Router) updateUser(r *gin.Context) {
 	r.Set(consts.OPERATION, "")
 }
 
-func (rt *Router) getUserById(r *gin.Context) {
+func (rt *Router) getUserInfo(r *gin.Context) {
 
-	var user *model.User
+	var user *model.UserInfo
 	userRepo := repo.NewUserRepo(rt.Ctx)
 	userLogic := logic.NewUserLogic(rt.Ctx, userRepo)
 
-	userId := r.Param("userId")
-	user, err := userLogic.GetUserById(userId)
+	claims, err := common.ParseAuthorizationToken(r, rt.Http.Auth.SecretKey)
 	if err != nil {
-		http.WithRepErrMsg(r, http.Failed.Code, http.Failed.Msg, r.Request.URL.Path)
+		http.WithRepErrMsg(r, http.Failed.Code, err.Error(), r.Request.URL.Path)
+	}
+
+	user, err = userLogic.GetUserInfo(claims.UserId)
+	if err != nil {
+		http.WithRepErrMsg(r, http.Failed.Code, err.Error(), r.Request.URL.Path)
 		return
 	}
 

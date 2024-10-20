@@ -6,6 +6,7 @@ import (
 	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/http"
+	"github.com/go-arcade/arcade/pkg/log"
 	"gorm.io/gorm"
 	"time"
 )
@@ -37,15 +38,51 @@ func (ur *UserRepo) UpdateUser(userId string, user *model.User) error {
 	return ur.Context.GetDB().Where("user_id = ?", userId).Model(user).Updates(user).Error
 }
 
-func (ur *UserRepo) GetUserById(userId string) (*model.User, error) {
-	user := &model.User{}
-	err := ur.Context.GetDB().Where("user_id = ?", userId).First(user).Error
-	return user, err
+func (ur *UserRepo) GetUserInfo(userId string) (*model.UserInfo, error) {
+
+	userKey := "userInfo:" + userId
+	user := &model.UserInfo{UserId: userId}
+
+	userInfo, err := ur.GetRedis().HGetAll(ur.Ctx, userKey).Result()
+	if err != nil {
+		log.Errorf("failed to get user info from Redis: %v", err)
+	} else if len(userInfo) > 0 {
+		user.Username = userInfo["username"]
+		user.Nickname = userInfo["nickname"]
+		user.Avatar = userInfo["avatar"]
+		user.Email = userInfo["email"]
+		user.Phone = userInfo["phone"]
+		return user, nil
+	}
+
+	err = ur.Context.GetDB().Table(ur.userModel.TableName()).
+		Select("user_id, username, nick_name AS nickname, avatar, email, phone").
+		Where("user_id = ?", userId).First(user).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user info: %w", err)
+	}
+
+	userInfoMap := map[string]interface{}{
+		"username": user.Username,
+		"nickname": user.Nickname,
+		"avatar":   user.Avatar,
+		"email":    user.Email,
+		"phone":    user.Phone,
+	}
+	err = ur.GetRedis().HMSet(ur.Ctx, userKey, userInfoMap).Err()
+	if err != nil {
+		log.Errorf("failed to cache user info: %v", err)
+	} else {
+		ur.GetRedis().Expire(ur.Ctx, userKey, time.Hour)
+	}
+
+	return user, nil
 }
 
 func (ur *UserRepo) GetUserByUsername(username string) (string, error) {
 	var user = &model.User{}
-	err := ur.Context.GetDB().Table(ur.userModel.TableName()).Select("user_id").Where("username = ?", username).First(user).Error
+	err := ur.Context.GetDB().Table(ur.userModel.TableName()).Select("user_id").Where("username = ?", username).
+		First(user).Error
 	return user.UserId, err
 }
 
@@ -68,7 +105,9 @@ func (ur *UserRepo) Login(login *model.Login) (*model.User, error) {
 
 func (ur *UserRepo) Register(register *model.Register) error {
 	var user model.User
-	err := ur.Context.GetDB().Table(ur.userModel.TableName()).Select("username").Where("username = ?", register.Username).First(&user).Error
+	err := ur.Context.GetDB().Table(ur.userModel.TableName()).Select("username").
+		Where("username = ?", register.Username).
+		First(&user).Error
 	if err == nil {
 		return errors.New(http.UserAlreadyExist.Msg)
 	}
@@ -104,7 +143,9 @@ func (ur *UserRepo) SetLoginRespInfo(tokenKeyPrefix string, accessExpire time.Du
 
 	pipe := ur.GetRedis().Pipeline()
 
-	if err := pipe.Set(ur.Ctx, tokenKeyPrefix+loginResp.UserInfo.UserId, loginResp.Token["accessToken"], accessExpire*time.Minute).Err(); err != nil {
+	if err := pipe.
+		Set(ur.Ctx, tokenKeyPrefix+loginResp.UserInfo.UserId, loginResp.Token["accessToken"], accessExpire*time.Minute).
+		Err(); err != nil {
 		return fmt.Errorf("failed to set refresh token in Redis: %w", err)
 	}
 
