@@ -30,37 +30,44 @@ type Database struct {
 	MaxIdleConns int
 	MaxLifetime  int
 	MaxIdleTime  int
-	PrintSQL     bool
 	MongoDB      MongoDB `toml:"mongodb"`
 }
 
-var conn *gorm.DB
+const (
+	defaultTablePrefix = "t_"
+	defaultLogLevel    = logger.Info
+	defaultSlowSQL     = time.Second
+)
+
+var dbConnection *gorm.DB
 var mu sync.Mutex
 
-func NewDatabase(cfg Database) *gorm.DB {
+// NewDatabase initializes and returns a new Gorm database instance.
+func NewDatabase(cfg Database) (*gorm.DB, error) {
 
 	if cfg.Type != "mysql" {
-		panic("Database type is not supported")
+		return nil, fmt.Errorf("unsupported database type: %s", cfg.Type)
 	}
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.DB)
 
-	conf := logger.Config{
-		SlowThreshold:             time.Second, // 慢 SQL 阈值
-		LogLevel:                  logger.Info, // Log level
-		Colorful:                  false,       // 禁用彩色打印
-		IgnoreRecordNotFoundError: true,        // 忽略ErrRecordNotFound（记录未找到）错误
-		ParameterizedQueries:      true,        // 启用参数化查询
-	}
-
 	var db *gorm.DB
 	var err error
 
+	logConfig := logger.Config{
+		SlowThreshold:             defaultSlowSQL,
+		LogLevel:                  defaultLogLevel,
+		Colorful:                  false,
+		IgnoreRecordNotFoundError: true,
+		ParameterizedQueries:      true,
+	}
+
 	if cfg.OutPut {
 		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
-			Logger: NewGormLogger(conf, logger.Info),
+			Logger: NewGormLogger(logConfig, logger.Info),
 			NamingStrategy: schema.NamingStrategy{
+				TablePrefix:   defaultTablePrefix,
 				SingularTable: true,
 			},
 		})
@@ -68,17 +75,18 @@ func NewDatabase(cfg Database) *gorm.DB {
 		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
 			Logger: logger.Default.LogMode(logger.Silent),
 			NamingStrategy: schema.NamingStrategy{
+				TablePrefix:   defaultTablePrefix,
 				SingularTable: true,
 			},
 		})
 	}
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to open database connection: %w", err)
 	}
 
 	sqlDB, err := db.DB()
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to get underlying sql.DB handle: %w", err)
 	}
 
 	sqlDB.SetMaxOpenConns(cfg.MaxOpenConns)
@@ -86,23 +94,17 @@ func NewDatabase(cfg Database) *gorm.DB {
 	sqlDB.SetConnMaxLifetime(time.Duration(cfg.MaxLifetime) * time.Second)
 	sqlDB.SetConnMaxIdleTime(time.Duration(cfg.MaxIdleTime) * time.Second)
 
-	err = sqlDB.Ping()
-	if err != nil {
-		panic(err)
+	if err := sqlDB.Ping(); err != nil {
+		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	var version string
-	err = db.Raw("SELECT VERSION()").Scan(&version).Error
-	if err != nil {
-		return nil
-	}
-
-	conn = db
-	return db
+	dbConnection = db
+	return db, nil
 }
 
+// GetConn returns the global database connection.
 func GetConn() *gorm.DB {
 	mu.Lock()
 	defer mu.Unlock()
-	return conn
+	return dbConnection
 }

@@ -77,7 +77,7 @@ host = "127.0.0.1"
 port = "3306"
 user = "root"
 password = "1qaz@WSX."
-db = "arcade_meta"
+db = "arcade_ci_meta"
 # sql print, false or true
 output = true
 # max open connections

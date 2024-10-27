@@ -44,7 +44,10 @@ func main() {
 	}
 
 	// db
-	db := database.NewDatabase(appConf.Database)
+	db, err := database.NewDatabase(appConf.Database)
+	if err != nil {
+		panic(err)
+	}
 	mongodb := database.NewMongoDB(appConf.Database.MongoDB)
 	mongoIns, err := mongodb.Connect(context.Background())
 	if err != nil {
