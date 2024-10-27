@@ -3,8 +3,8 @@ package model
 /**
  * @author: gagral.x@gmail.com
  * @time: 2024/10/20 12:16
- * @file: config_system_items.go
- * @description: config system items
+ * @file: model_config_secure_items.go
+ * @description: config secure items
  */
 
 type ConfigSystemItems struct {
@@ -16,5 +16,5 @@ type ConfigSystemItems struct {
 }
 
 func (s *ConfigSystemItems) TableName() string {
-	return "config_system_items"
+	return "t_config_system_items"
 }
