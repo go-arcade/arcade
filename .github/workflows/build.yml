@@ -60,7 +60,7 @@ jobs:
           ssh root@${{ secrets.SERVER_IP }} "supervisorctl stop arcade" || true
 
           # update config
-          rsync -av conf.d root@${{ secrets.SERVER_IP }}:/opt/arcade/
+          # rsync -av conf.d root@${{ secrets.SERVER_IP }}:/opt/arcade/
 
           # update binary
           rsync -av arcade root@${{ secrets.SERVER_IP }}:/opt/arcade/bin/
