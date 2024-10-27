@@ -24,7 +24,7 @@ type User struct {
 }
 
 func (User) TableName() string {
-	return "user"
+	return "t_user"
 }
 
 type Register struct {
