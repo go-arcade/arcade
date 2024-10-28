@@ -10,8 +10,7 @@ RUN make -f build/Makefile all
 
 FROM alpine:latest
 
-
-RUN apk add --no-cache tzdata && \
+RUN apk add --no-cache tzdata unzip&& \
 mkdir -p /opt/arcade/bin /opt/arcade/conf.d
 
 COPY --from=builder /app/arcade /opt/arcade/bin
