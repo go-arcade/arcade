@@ -1,8 +1,20 @@
+FROM golang:1.20 AS builder
+
+# 设置工作目录
+WORKDIR /app
+
+COPY ./ /app/
+
+RUN make -f build/Makefile all
+
+
 FROM alpine:latest
 
-RUN mkdir -p /opt/arcade/bin /opt/arcade/conf.d
 
-COPY ./arcade /opt/arcade/bin
+RUN apk add --no-cache tzdata && \
+mkdir -p /opt/arcade/bin /opt/arcade/conf.d
+
+COPY --from=builder /app/arcade /opt/arcade/bin
 
 EXPOSE 8080
 
