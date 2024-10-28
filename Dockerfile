@@ -5,12 +5,13 @@ WORKDIR /app
 
 COPY ./ /app/
 
-RUN make -f build/Makefile all
-
+RUN RUN apt-get update && \
+apt-get install -y unzip && \
+make -f build/Makefile all
 
 FROM alpine:latest
 
-RUN apk add --no-cache tzdata unzip&& \
+RUN apk add --no-cache tzdata && \
 mkdir -p /opt/arcade/bin /opt/arcade/conf.d
 
 COPY --from=builder /app/arcade /opt/arcade/bin
