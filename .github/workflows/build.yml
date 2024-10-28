@@ -55,7 +55,6 @@ jobs:
       - name: Build and push streampark
         id: build-image
         run: |
-          ls -lah
           BUILD_TIME=$(date +'%Y%m%d')
           IMAGE_TAG=${IMAGE_REPO_NAME}/${SERVICE_NAME}:$(git rev-parse --short HEAD)_$BUILD_TIME
           docker build -t ${IMAGE_TAG} .
