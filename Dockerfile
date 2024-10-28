@@ -2,7 +2,7 @@ FROM alpine:latest
 
 RUN mkdir -p /opt/arcade/bin /opt/arcade/conf.d
 
-COPY arcade /opt/arcade/bin
+COPY ./arcade /opt/arcade/bin
 
 EXPOSE 8080
 
