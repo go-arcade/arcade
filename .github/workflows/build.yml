@@ -44,27 +44,6 @@ jobs:
     outputs:
       build_time: ${{ steps.build-image.outputs.build_time }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      # Step 2: Set up Go environment
-      - name: Set up Go Version
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.21.0' # 指定 Go 的特定版本
-        # Step 3: Cache Go modules (optional)
-      - name: Cache Go modules
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-        # Step 4: Build the project using go build
-      - name: Build project
-        run: make -f build/Makefile all
-
       - uses: actions/checkout@v4
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
