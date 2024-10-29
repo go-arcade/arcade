@@ -7,7 +7,7 @@ COPY ./ /app/
 
 RUN apt-get update && \
 apt-get install -y unzip && \
-make -f build/Makefile all
+make -f build/Makefile build
 
 FROM alpine:latest
 
