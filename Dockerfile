@@ -7,6 +7,7 @@ COPY ./ /app/
 
 RUN apt-get update && \
 apt-get install -y unzip && \
+mkdir ./internal/engine/router/static && \
 make -f build/Makefile build
 
 FROM alpine:latest
