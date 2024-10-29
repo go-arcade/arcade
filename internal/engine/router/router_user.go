@@ -90,7 +90,7 @@ func (rt *Router) logout(r *gin.Context) {
 	r.Set(consts.OPERATION, "")
 }
 
-func (rt *Router) redirect(r *gin.Context) {
+func (rt *Router) oauth(r *gin.Context) {
 	r.Set(consts.OPERATION, "")
 }
 
