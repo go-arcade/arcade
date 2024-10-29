@@ -1,12 +1,15 @@
 package interceptor
 
 import (
+	"context"
 	"errors"
 	"github.com/gin-gonic/gin"
+	"github.com/go-arcade/arcade/internal/engine/common"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/auth/jwt"
 	"github.com/go-arcade/arcade/pkg/log"
-	jwt2 "github.com/golang-jwt/jwt/v5"
+	goJwt "github.com/golang-jwt/jwt/v5"
+	"github.com/redis/go-redis/v9"
 	"strings"
 )
 
@@ -19,7 +22,7 @@ import (
 
 // AuthorizationInterceptor 鉴权拦截器
 // This function is used as the middleware of gin.
-func AuthorizationInterceptor(secretKey string, auth http.Auth) gin.HandlerFunc {
+func AuthorizationInterceptor(secretKey, tokenPrefix string, client redis.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		aToken := c.Request.Header.Get("Authorization")
 		if aToken == "" {
@@ -39,7 +42,7 @@ func AuthorizationInterceptor(secretKey string, auth http.Auth) gin.HandlerFunc 
 		claims, err := jwt.ParseToken(parts[1], secretKey)
 		if err != nil {
 			// 检查是否是令牌过期错误
-			if errors.Is(err, jwt2.ErrTokenExpired) {
+			if errors.Is(err, goJwt.ErrTokenExpired) {
 				http.WithRepErrMsg(c, http.TokenExpired.Code, http.TokenExpired.Msg, c.Request.URL.Path)
 				c.Abort()
 				return
@@ -51,7 +54,32 @@ func AuthorizationInterceptor(secretKey string, auth http.Auth) gin.HandlerFunc 
 			return
 		}
 
+		token, err := common.ParseAuthorizationToken(c, secretKey)
+		if err != nil {
+			return
+		}
+
+		isTokenExist(c, client, tokenPrefix+token.UserId)
+
 		c.Set("claims", claims)
 		c.Next()
+	}
+}
+
+// isTokenExist 检查 Token 是否存在
+func isTokenExist(c *gin.Context, client redis.Client, token string) {
+	exists, err := client.Exists(context.Background(), token).Result()
+	if err != nil {
+		// Redis 出错
+		http.WithRepErrMsg(c, http.InternalError.Code, http.InternalError.Msg, c.Request.URL.Path)
+		log.Errorf("redis check token exists failed: %v", err)
+		c.Abort()
+		return
+	}
+	if exists == 0 {
+		// Token 不存在
+		http.WithRepErrMsg(c, http.TokenExpired.Code, http.TokenExpired.Msg, c.Request.URL.Path)
+		c.Abort()
+		return
 	}
 }

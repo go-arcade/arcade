@@ -103,19 +103,21 @@ func (rt *Router) Router() *gin.Engine {
 
 func (rt *Router) routerGroup(r *gin.RouterGroup) *gin.RouterGroup {
 
-	auth := interceptor.AuthorizationInterceptor(rt.Http.Auth.SecretKey, rt.Http.Auth)
+	auth := interceptor.AuthorizationInterceptor(rt.Http.Auth.SecretKey, rt.Http.Auth.RedisKeyPrefix, *rt.Ctx.GetRedis())
 
 	// user
 	user := r.Group("/user")
 	{
+		// not auth
 		user.POST("/login", rt.login)
 		user.POST("/register", rt.register)
+		user.POST("/oauth", rt.oauth)
+
+		// auth
 		user.POST("/logout", rt.logout, auth)
 		user.GET("/refresh", rt.refresh, auth)
-		user.POST("/redirect", rt.redirect)
-
-		user.POST("/invite", rt.addUser)
-		user.POST("/revise", rt.updateUser)
+		user.POST("/invite", rt.addUser, auth)
+		user.POST("/revise", rt.updateUser, auth)
 		user.GET("/getUserInfo", rt.getUserInfo, auth)
 		//user.GET("/getUserList", rt.getUserList)
 	}
