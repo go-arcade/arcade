@@ -10,9 +10,9 @@ apt-get install -y unzip && \
 touch ./internal/engine/router/static/arcade.js && \
 make -f build/Makefile build
 
-FROM alpine:latest
+FROM golang:1.23
 
-RUN apk add --no-cache tzdata && \
+RUN apt-get install -y tzdata && \
 mkdir -p /opt/arcade/bin /opt/arcade/conf.d
 
 COPY --from=builder /app/arcade /opt/arcade/bin

@@ -37,8 +37,12 @@ spec:
               value: ${SERVICE_NAME}
           image: ${IMAGE_NAME}
           volumeMounts:
-          - name: config-volume
-            mountPath: /opt/arcade/conf.d
+          - mountPath: /opt/arcade/conf.d/config.toml
+            name: config-volume
+            subPath: config.toml
+          - mountPath: /opt/arcade/conf.d/model.conf
+            name: config-volume
+            subPath: model.conf
           imagePullPolicy: Always
           livenessProbe:
             failureThreshold: 5
