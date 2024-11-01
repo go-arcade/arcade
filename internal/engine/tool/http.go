@@ -1,4 +1,4 @@
-package common
+package tool
 
 import (
 	ginI18n "github.com/gin-contrib/i18n"
@@ -10,7 +10,7 @@ import (
  * @author: gagral.x@gmail.com
  * @time: 2024/10/22 23:03
  * @file: http.go
- * @description: http common
+ * @description: http tool
  */
 
 // GetLocalizedMessage 获取本地化消息

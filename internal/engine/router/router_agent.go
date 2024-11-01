@@ -2,7 +2,7 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/go-arcade/arcade/internal/engine/consts"
+	"github.com/go-arcade/arcade/internal/engine/constant"
 	"github.com/go-arcade/arcade/internal/engine/logic"
 	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/internal/engine/repo"
@@ -31,7 +31,7 @@ func (rt *Router) addAgent(r *gin.Context) {
 		return
 	}
 
-	r.Set(consts.OPERATION, "")
+	r.Set(constant.OPERATION, "")
 }
 
 func (rt *Router) listAgent(r *gin.Context) {
@@ -50,5 +50,5 @@ func (rt *Router) listAgent(r *gin.Context) {
 	result := make(map[string]interface{})
 	result["agents"] = agents
 	result["count"] = count
-	r.Set(consts.DETAIL, result)
+	r.Set(constant.DETAIL, result)
 }

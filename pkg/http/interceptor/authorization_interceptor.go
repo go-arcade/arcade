@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/gin-gonic/gin"
-	"github.com/go-arcade/arcade/internal/engine/common"
+	"github.com/go-arcade/arcade/internal/engine/tool"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/auth/jwt"
 	"github.com/go-arcade/arcade/pkg/log"
@@ -54,7 +54,7 @@ func AuthorizationInterceptor(secretKey, tokenPrefix string, client redis.Client
 			return
 		}
 
-		token, err := common.ParseAuthorizationToken(c, secretKey)
+		token, err := tool.ParseAuthorizationToken(c, secretKey)
 		if err != nil {
 			return
 		}

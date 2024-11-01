@@ -1,4 +1,4 @@
-package consts
+package constant
 
 /**
  * @author: gagral.x@gmail.com

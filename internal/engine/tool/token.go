@@ -1,4 +1,4 @@
-package common
+package tool
 
 import (
 	"errors"
@@ -12,7 +12,7 @@ import (
  * @author: gagral.x@gmail.com
  * @time: 2024/10/20 19:51
  * @file: token.go
- * @description: token common
+ * @description: token tool
  */
 
 func ParseAuthorizationToken(r *gin.Context, secretKey string) (*jwt.AuthClaims, error) {
