@@ -1,4 +1,4 @@
-package common
+package tool
 
 import "encoding/base64"
 

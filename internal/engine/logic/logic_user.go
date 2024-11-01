@@ -2,9 +2,9 @@ package logic
 
 import (
 	"errors"
-	"github.com/go-arcade/arcade/internal/engine/common"
 	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/internal/engine/repo"
+	"github.com/go-arcade/arcade/internal/engine/tool"
 	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/auth/jwt"
@@ -34,7 +34,7 @@ func NewUserLogic(ctx *ctx.Context, userRepo *repo.UserRepo) *UserLogic {
 }
 
 func (ul *UserLogic) Login(login *model.Login, auth http.Auth) (*model.LoginResp, error) {
-	pwd, err := common.DecodeBase64(login.Password)
+	pwd, err := tool.DecodeBase64(login.Password)
 	if err != nil {
 		log.Errorf("failed to decode password: %v", err)
 		return nil, errors.New(http.UserIncorrectPassword.Msg)
