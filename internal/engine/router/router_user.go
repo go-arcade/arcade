@@ -2,11 +2,11 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/go-arcade/arcade/internal/engine/common"
-	"github.com/go-arcade/arcade/internal/engine/consts"
+	"github.com/go-arcade/arcade/internal/engine/constant"
 	"github.com/go-arcade/arcade/internal/engine/logic"
 	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/internal/engine/repo"
+	"github.com/go-arcade/arcade/internal/engine/tool"
 	"github.com/go-arcade/arcade/pkg/http"
 )
 
@@ -38,7 +38,7 @@ func (rt *Router) login(r *gin.Context) {
 	result["token"] = user.Token
 	result["role"] = nil
 
-	r.Set(consts.DETAIL, user)
+	r.Set(constant.DETAIL, user)
 }
 
 func (rt *Router) register(r *gin.Context) {
@@ -59,7 +59,7 @@ func (rt *Router) register(r *gin.Context) {
 		return
 	}
 
-	r.Set(consts.OPERATION, "")
+	r.Set(constant.OPERATION, "")
 }
 
 func (rt *Router) refresh(r *gin.Context) {
@@ -75,7 +75,7 @@ func (rt *Router) refresh(r *gin.Context) {
 		return
 	}
 
-	r.Set(consts.DETAIL, token)
+	r.Set(constant.DETAIL, token)
 }
 
 func (rt *Router) logout(r *gin.Context) {
@@ -87,11 +87,11 @@ func (rt *Router) logout(r *gin.Context) {
 		return
 	}
 
-	r.Set(consts.OPERATION, "")
+	r.Set(constant.OPERATION, "")
 }
 
 func (rt *Router) oauth(r *gin.Context) {
-	r.Set(consts.OPERATION, "")
+	r.Set(constant.OPERATION, "")
 }
 
 func (rt *Router) addUser(r *gin.Context) {
@@ -109,7 +109,7 @@ func (rt *Router) addUser(r *gin.Context) {
 		return
 	}
 
-	r.Set(consts.OPERATION, "")
+	r.Set(constant.OPERATION, "")
 }
 
 func (rt *Router) updateUser(r *gin.Context) {
@@ -128,7 +128,7 @@ func (rt *Router) updateUser(r *gin.Context) {
 		return
 	}
 
-	r.Set(consts.OPERATION, "")
+	r.Set(constant.OPERATION, "")
 }
 
 func (rt *Router) getUserInfo(r *gin.Context) {
@@ -137,7 +137,7 @@ func (rt *Router) getUserInfo(r *gin.Context) {
 	userRepo := repo.NewUserRepo(rt.Ctx)
 	userLogic := logic.NewUserLogic(rt.Ctx, userRepo)
 
-	claims, err := common.ParseAuthorizationToken(r, rt.Http.Auth.SecretKey)
+	claims, err := tool.ParseAuthorizationToken(r, rt.Http.Auth.SecretKey)
 	if err != nil {
 		http.WithRepErrMsg(r, http.Failed.Code, err.Error(), r.Request.URL.Path)
 	}
@@ -148,7 +148,7 @@ func (rt *Router) getUserInfo(r *gin.Context) {
 		return
 	}
 
-	r.Set(consts.DETAIL, user)
+	r.Set(constant.DETAIL, user)
 }
 
 //func (rt *Router) getUserList(r *gin.Context) {
@@ -167,5 +167,5 @@ func (rt *Router) getUserInfo(r *gin.Context) {
 //	result := make(map[string]interface{})
 //	result["users"] = users
 //	result["count"] = count
-//	r.Set(consts.DETAIL, result)
+//	r.Set(constant.DETAIL, result)
 //}
