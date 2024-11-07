@@ -1,6 +1,6 @@
 module github.com/go-arcade/arcade
 
-go 1.23
+go 1.23.0
 
 require (
 	github.com/IBM/sarama v1.43.3
@@ -75,8 +75,6 @@ require (
 	github.com/klauspost/cpuid/v2 v2.2.8 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
-	github.com/marmotedu/addlicense v1.0.0 // indirect
-	github.com/marmotedu/errors v1.0.2 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/minio/md5-simd v1.1.2 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
