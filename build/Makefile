@@ -22,7 +22,7 @@ prebuild:
 	echo "web file download and embedding completed."
 
 build:
-	go build -ldflags ${ldflags} -o arcade ./cmd/engine/main.go
+	go build -ldflags ${ldflags} -o arcade ./cmd/arcade/main.go
 
 build-cli:
 	go build -ldflags ${ldflags} -o arcade-cli ./cmd/cli/
