@@ -17,8 +17,8 @@ import (
 /**
  * @author: gagral.x@gmail.com
  * @time: 2024/9/4 19:51
- * @file: engine.go
- * @description: engine program
+ * @file: main.go
+ * @description: arcade program
  */
 
 var (
@@ -48,20 +48,16 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	mongodb := database.NewMongoDB(appConf.Database.MongoDB)
-	mongoIns, err := mongodb.Connect(context.Background())
+	mongo, err := database.NewMongoDB(appConf.Database.MongoDB, context.Background())
 	if err != nil {
 		panic(err)
 	}
-	Ctx := ctx.NewContext(context.Background(), mongoIns, redis, db, logger)
+	Ctx := ctx.NewContext(context.Background(), mongo, redis, db, logger)
 
 	route := router.NewRouter(&appConf.Http, Ctx)
-
 	// http srv
-	http := httpx.NewHttp(appConf.Http)
-	httpClean := http.Server(route.Router())
-
-	httpClean()
+	cleanup := httpx.NewHttp(appConf.Http, route.Router())
+	cleanup()
 }
 
 func printRunner() {

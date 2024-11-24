@@ -1,4 +1,4 @@
-package logic
+package service
 
 import (
 	"errors"
@@ -7,7 +7,7 @@ import (
 	"github.com/go-arcade/arcade/internal/engine/tool"
 	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/http"
-	"github.com/go-arcade/arcade/pkg/http/auth/jwt"
+	"github.com/go-arcade/arcade/pkg/http/jwt"
 	"github.com/go-arcade/arcade/pkg/id"
 	"github.com/go-arcade/arcade/pkg/log"
 	"golang.org/x/crypto/bcrypt"
@@ -17,30 +17,34 @@ import (
 /**
  * @author: gagral.x@gmail.com
  * @time: 2024/10/4 10:37
- * @file: logic_user.go
- * @description: user logic
+ * @file: service_user.go
+ * @description: user service
  */
 
-type UserLogic struct {
+type LoginService interface {
+	Login(login *model.Login, auth http.Auth) (*model.LoginResp, error)
+}
+
+type UserService struct {
 	ctx      *ctx.Context
 	userRepo *repo.UserRepo
 }
 
-func NewUserLogic(ctx *ctx.Context, userRepo *repo.UserRepo) *UserLogic {
-	return &UserLogic{
+func NewUserService(ctx *ctx.Context, userRepo *repo.UserRepo) *UserService {
+	return &UserService{
 		ctx:      ctx,
 		userRepo: userRepo,
 	}
 }
 
-func (ul *UserLogic) Login(login *model.Login, auth http.Auth) (*model.LoginResp, error) {
+func (ul *UserService) Login(login *model.Login, auth http.Auth) (*model.LoginResp, error) {
 	pwd, err := tool.DecodeBase64(login.Password)
 	if err != nil {
 		log.Errorf("failed to decode password: %v", err)
 		return nil, errors.New(http.UserIncorrectPassword.Msg)
 	}
 
-	// 尝试通过用户名和密码登录
+	// 用户名和密码登录
 	user, err := ul.userRepo.Login(login)
 	if err != nil {
 		log.Errorf("login failed for user: %v", err)
@@ -89,7 +93,7 @@ func (ul *UserLogic) Login(login *model.Login, auth http.Auth) (*model.LoginResp
 	return resp, nil
 }
 
-func (ul *UserLogic) Refresh(userId, rToken string, auth *http.Auth) (map[string]string, error) {
+func (ul *UserService) Refresh(userId, rToken string, auth *http.Auth) (map[string]string, error) {
 	var err error
 	token, err := jwt.RefreshToken(auth, userId, rToken)
 
@@ -103,18 +107,17 @@ func (ul *UserLogic) Refresh(userId, rToken string, auth *http.Auth) (map[string
 	return token, err
 }
 
-func (ul *UserLogic) Register(register *model.Register) error {
+func (ul *UserService) Register(register *model.Register) error {
 
 	var err error
 	register.UserId = id.GetUUIDWithoutDashes()
 	register.Nickname = register.Username
+	register.CreateTime = time.Now()
 	password, err := getPassword(register.Password)
 	if err != nil {
 		return err
 	}
 	register.Password = string(password)
-	register.IsEnabled = 1
-	register.CreateTime = time.Now()
 	if err = ul.userRepo.Register(register); err != nil {
 		return err
 	}
@@ -122,7 +125,7 @@ func (ul *UserLogic) Register(register *model.Register) error {
 	return err
 }
 
-func (ul *UserLogic) Logout(keyPrefix, userId string) error {
+func (ul *UserService) Logout(keyPrefix, userId string) error {
 	var key = keyPrefix + userId
 
 	result, err := ul.userRepo.GetToken(key)
@@ -142,7 +145,7 @@ func (ul *UserLogic) Logout(keyPrefix, userId string) error {
 	return err
 }
 
-func (ul *UserLogic) AddUser(addUserReq model.AddUserReq) error {
+func (ul *UserService) AddUser(addUserReq model.AddUserReq) error {
 
 	var err error
 	addUserReq.UserId = id.GetUUIDWithoutDashes()
@@ -154,7 +157,7 @@ func (ul *UserLogic) AddUser(addUserReq model.AddUserReq) error {
 	return err
 }
 
-func (ul *UserLogic) UpdateUser(userId string, user *model.User) error {
+func (ul *UserService) UpdateUser(userId string, user *model.User) error {
 
 	var err error
 	if err = ul.userRepo.UpdateUser(userId, user); err != nil {
@@ -163,7 +166,7 @@ func (ul *UserLogic) UpdateUser(userId string, user *model.User) error {
 	return err
 }
 
-func (ul *UserLogic) GetUserInfo(userId string) (*model.UserInfo, error) {
+func (ul *UserService) GetUserInfo(userId string) (*model.UserInfo, error) {
 
 	user, err := ul.userRepo.GetUserInfo(userId)
 	if err != nil {
@@ -172,7 +175,7 @@ func (ul *UserLogic) GetUserInfo(userId string) (*model.UserInfo, error) {
 	return user, err
 }
 
-//func (ul *UserLogic) GetUserList(pageNum, pageSize int) ([]model.User, int64, error) {
+//func (ul *UserService) GetUserList(pageNum, pageSize int) ([]model.User, int64, error) {
 //
 //	offset := (pageNum - 1) * pageSize
 //	users, count, err := ul.userRepo.GetUserList(offset, pageSize)

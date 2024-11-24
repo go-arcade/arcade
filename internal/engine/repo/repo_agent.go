@@ -52,7 +52,8 @@ func (ar *AgentRepo) ListAgent(pageNum, pageSize int) ([]model.Agent, int64, err
 		return nil, 0, err
 	}
 
-	if err = ar.Ctx.GetDB().Select("id, agent_id, agent_name, address, port, username, auth_type, is_enabled").Table(ar.AgentModel.TableName()).
+	if err = ar.Ctx.GetDB().Select("id, agent_id, agent_name, address, port, username, auth_type, is_enabled").
+		Table(ar.AgentModel.TableName()).
 		Offset(offset).Limit(pageSize).Find(&agents).Error; err != nil {
 		return nil, 0, err
 	}
