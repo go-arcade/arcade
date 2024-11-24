@@ -2,7 +2,6 @@ package router
 
 import (
 	"embed"
-	"fmt"
 	"github.com/cnlesscode/gotool/gintool"
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-contrib/static"
@@ -45,10 +44,6 @@ func (rt *Router) Router() *gin.Engine {
 
 	r := gin.New()
 
-	gin.DebugPrintRouteFunc = func(httpMethod, absolutePath, handlerName string, nuHandlers int) {
-		fmt.Printf("[Arcade] %-6s %-25s --> %s (%d handlers) \n", httpMethod, absolutePath, handlerName, nuHandlers)
-	}
-
 	// cors interceptor
 	r.Use(interceptor.CorsInterceptor())
 
@@ -88,7 +83,7 @@ func (rt *Router) Router() *gin.Engine {
 		c.JSON(http.StatusOK, version.GetVersion())
 	})
 
-	// engine router, internal api router
+	// arcade router, internal api router
 	engine := r.Group(rt.Http.InternalContextPath)
 	{
 		// ws
@@ -108,18 +103,27 @@ func (rt *Router) routerGroup(r *gin.RouterGroup) *gin.RouterGroup {
 	// user
 	user := r.Group("/user")
 	{
-		// not auth
+		// not sso
 		user.POST("/login", rt.login)
 		user.POST("/register", rt.register)
-		user.POST("/oauth", rt.oauth)
 
-		// auth
+		// sso
 		user.POST("/logout", rt.logout, auth)
 		user.GET("/refresh", rt.refresh, auth)
 		user.POST("/invite", rt.addUser, auth)
-		user.POST("/revise", rt.updateUser, auth)
+
 		user.GET("/getUserInfo", rt.getUserInfo, auth)
 		//user.GET("/getUserList", rt.getUserList)
+	}
+
+	// authentication
+	authentication := r.Group("/auth")
+	{
+		authentication.GET("/oauth/:provider", rt.oauth)
+		authentication.GET("/callback/:provider", rt.callback)
+		authentication.POST("/revise", rt.updateUser, auth)
+		authentication.GET("/getProvider/:provider", rt.getOauthProvider, auth)
+		authentication.GET("/getProviderList", rt.getOauthProviderList, auth)
 	}
 
 	// agent

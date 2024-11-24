@@ -78,7 +78,7 @@ func NewRedis(cfg Redis) (*redis.Client, error) {
 		return nil, err
 	}
 
-	fmt.Println("redis connected, mode: ,version: ", cfg.Mode, redisClient.Ping(context.Background()).Val())
+	fmt.Printf("[Init] redis connected, mode: %s\n", cfg.Mode)
 
 	return redisClient, nil
 }

@@ -20,7 +20,7 @@ type User struct {
 	Avatar    string `gorm:"column:avatar" json:"avatar"`
 	Email     string `gorm:"column:email" json:"email"`
 	Phone     string `gorm:"column:phone" json:"phone"`
-	IsEnabled int    `gorm:"column:is_enabled" json:"isEnabled"` // 1: enable, 0: disable，default value is 1
+	IsEnabled int    `gorm:"column:is_enabled" json:"isEnabled"` // 0: enable, 1: disable，default value is 0
 }
 
 func (User) TableName() string {
@@ -32,8 +32,8 @@ type Register struct {
 	Username   string    `json:"username"`
 	Nickname   string    `gorm:"column:nick_name" json:"nickname"`
 	Email      string    `json:"email"`
+	Avatar     string    `gorm:"column:avatar" json:"avatar"`
 	Password   string    `json:"password"`
-	IsEnabled  int       `gorm:"column:is_enabled" json:"isEnabled"`
 	CreateTime time.Time `gorm:"column:create_time" json:"createTime"`
 }
 

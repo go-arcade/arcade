@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -52,43 +53,22 @@ type Auth struct {
 	RedisKeyPrefix string
 }
 
-func NewHttp(cfg Http) *Http {
-	return &Http{
-		Host:                cfg.Host,
-		Port:                cfg.Port,
-		Mode:                cfg.Mode,
-		InternalContextPath: cfg.InternalContextPath,
-		ExternalContextPath: cfg.ExternalContextPath,
-		Heartbeat:           cfg.Heartbeat,
-		PProf:               cfg.PProf,
-		ExposeMetrics:       cfg.ExposeMetrics,
-		AccessLog:           cfg.AccessLog,
-		ReadTimeout:         cfg.ReadTimeout,
-		WriteTimeout:        cfg.WriteTimeout,
-		IdleTimeout:         cfg.IdleTimeout,
-		ShutdownTimeout:     cfg.ShutdownTimeout,
-		TLS:                 cfg.TLS,
-		Auth:                cfg.Auth,
-		Ctx:                 cfg.Ctx,
-	}
-}
-
-func (h *Http) Server(engine *gin.Engine) func() {
-	addr := fmt.Sprintf("%s:%d", h.Host, h.Port)
+func NewHttp(cfg Http, engine *gin.Engine) func() {
+	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 
 	srv := &http.Server{
 		Addr:         addr,
 		Handler:      engine,
-		ReadTimeout:  time.Duration(h.ReadTimeout) * time.Second,
-		WriteTimeout: time.Duration(h.WriteTimeout) * time.Second,
-		IdleTimeout:  time.Duration(h.IdleTimeout) * time.Second,
+		ReadTimeout:  time.Duration(cfg.ReadTimeout) * time.Second,
+		WriteTimeout: time.Duration(cfg.WriteTimeout) * time.Second,
+		IdleTimeout:  time.Duration(cfg.IdleTimeout) * time.Second,
 	}
 
 	go func() {
 		fmt.Printf("[Init] http server start at: %s\n", srv.Addr)
-
-		if h.TLS.CertFile != "" && h.TLS.KeyFile != "" {
-			if err := srv.ListenAndServeTLS(h.TLS.CertFile, h.TLS.KeyFile); err != nil {
+		var err error
+		if cfg.TLS.CertFile != "" && cfg.TLS.KeyFile != "" {
+			if err := srv.ListenAndServeTLS(cfg.TLS.CertFile, cfg.TLS.KeyFile); err != nil {
 				panic(err)
 			}
 		} else {
@@ -96,29 +76,33 @@ func (h *Http) Server(engine *gin.Engine) func() {
 				panic(err)
 			}
 		}
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			fmt.Printf("[Error] HTTP server error: %v\n", err)
+			os.Exit(1)
+		}
 	}()
 
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
+	return createShutdownHook(srv, cfg.ShutdownTimeout, sc)
+}
+
+func createShutdownHook(server *http.Server, shutdownTimeout int, signalChan chan os.Signal) func() {
+	signal.Notify(signalChan, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
 	return func() {
+		<-signalChan
+		fmt.Println("[Shutdown] HTTP server shutting down...")
 
-		<-sc
-		fmt.Println("[shutdown] server is shutting down...")
-
-		c, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(h.ShutdownTimeout))
+		ctx2, cancel := context.WithTimeout(context.Background(), time.Duration(shutdownTimeout)*time.Second)
 		defer cancel()
 
-		srv.SetKeepAlivesEnabled(false)
-		if err := srv.Shutdown(c); err != nil {
-			fmt.Println("[shutdown] server shutdown error: ", err)
-		}
-
-		select {
-		case <-c.Done():
-			fmt.Println("[shutdown] server shutdown timeout of ", h.ShutdownTimeout, " seconds")
-		default:
-			fmt.Println("[shutdown] http exit...")
+		server.SetKeepAlivesEnabled(false)
+		if err := server.Shutdown(ctx2); err != nil {
+			fmt.Printf("[Error] Server shutdown error: %v\n", err)
+		} else {
+			fmt.Println("[Shutdown] HTTP server shut down gracefully.")
 		}
 	}
 }

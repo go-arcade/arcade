@@ -21,22 +21,13 @@ type MongoDB struct {
 	PoolSize    uint64
 }
 
-func NewMongoDB(cfg MongoDB) *MongoDB {
-	return &MongoDB{
-		Uri:         cfg.Uri,
-		DB:          cfg.DB,
-		Compressors: cfg.Compressors,
-		PoolSize:    cfg.PoolSize,
-	}
-}
-
-func (m *MongoDB) Connect(ctx context.Context) (*mongo.Client, error) {
+func NewMongoDB(cfg MongoDB, ctx context.Context) (*mongo.Client, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
 
-	clientOption := options.Client().ApplyURI(m.Uri)
-	clientOption.SetCompressors(m.Compressors)
-	clientOption.SetMaxPoolSize(m.PoolSize)
+	clientOption := options.Client().ApplyURI(cfg.Uri)
+	clientOption.SetCompressors(cfg.Compressors)
+	clientOption.SetMaxPoolSize(cfg.PoolSize)
 	client, err := mongo.Connect(context.Background(), clientOption)
 	if err != nil {
 		return client, err
@@ -53,7 +44,7 @@ func (m *MongoDB) Connect(ctx context.Context) (*mongo.Client, error) {
 		}
 	}()
 
-	client.Database(m.DB)
+	client.Database(cfg.DB)
 
 	return client, nil
 }

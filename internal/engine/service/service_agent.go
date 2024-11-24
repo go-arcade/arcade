@@ -1,4 +1,4 @@
-package logic
+package service
 
 import (
 	"github.com/go-arcade/arcade/internal/engine/model"
@@ -11,24 +11,24 @@ import (
 /**
  * @author: gagral.x@gmail.com
  * @time: 2024/9/16 20:41
- * @file: logic_agent.go
- * @description: agent logic
+ * @file: service_agent.go
+ * @description: agent service
  */
 
-type AgentLogic struct {
+type AgentService struct {
 	agentRepo       *repo.AgentRepo
 	addAgentReq     *model.AddAgentReq
 	addAgentReqRepo *model.AddAgentReqRepo
 }
 
-func NewAgentLogic(agentRepo *repo.AgentRepo, agentReq *model.AddAgentReq) *AgentLogic {
-	return &AgentLogic{
+func NewAgentService(agentRepo *repo.AgentRepo, agentReq *model.AddAgentReq) *AgentService {
+	return &AgentService{
 		agentRepo:   agentRepo,
 		addAgentReq: agentReq,
 	}
 }
 
-func (al *AgentLogic) AddAgent(addAgentReq *model.AddAgentReq) error {
+func (al *AgentService) AddAgent(addAgentReq *model.AddAgentReq) error {
 
 	var err error
 	addAgentReqRepo := &model.AddAgentReqRepo{
@@ -44,7 +44,7 @@ func (al *AgentLogic) AddAgent(addAgentReq *model.AddAgentReq) error {
 	return err
 }
 
-func (al *AgentLogic) UpdateAgent() error {
+func (al *AgentService) UpdateAgent() error {
 
 	var err error
 	if err = al.agentRepo.UpdateAgent(&al.agentRepo.AgentModel); err != nil {
@@ -53,7 +53,7 @@ func (al *AgentLogic) UpdateAgent() error {
 	return err
 }
 
-func (al *AgentLogic) ListAgent(pageNum, pageSize int) ([]model.Agent, int64, error) {
+func (al *AgentService) ListAgent(pageNum, pageSize int) ([]model.Agent, int64, error) {
 
 	offset := (pageNum - 1) * pageSize
 	agents, count, err := al.agentRepo.ListAgent(offset, pageSize)

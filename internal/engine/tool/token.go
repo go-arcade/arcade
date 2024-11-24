@@ -4,7 +4,7 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/go-arcade/arcade/pkg/http"
-	"github.com/go-arcade/arcade/pkg/http/auth/jwt"
+	"github.com/go-arcade/arcade/pkg/http/jwt"
 	"strings"
 )
 
