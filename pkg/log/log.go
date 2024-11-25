@@ -39,7 +39,7 @@ type Logger struct {
 type Option func(*Logger)
 
 // NewLog initializes the LogConfig and returns a sugared LogConfig.
-func NewLog(conf *LogConfig) *zap.SugaredLogger {
+func NewLog(conf *LogConfig) *zap.Logger {
 	var (
 		writeSyncer zapcore.WriteSyncer
 		encoder     zapcore.Encoder
@@ -83,7 +83,7 @@ func NewLog(conf *LogConfig) *zap.SugaredLogger {
 
 	sugar = logger.Sugar()
 
-	return sugar
+	return logger
 }
 
 // getEncoder returns the appropriate encoder based on the mode.

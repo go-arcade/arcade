@@ -44,7 +44,7 @@ func main() {
 	}
 
 	// db
-	db, err := database.NewDatabase(appConf.Database)
+	db, err := database.NewDatabase(appConf.Database, *logger)
 	if err != nil {
 		panic(err)
 	}
@@ -52,11 +52,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	Ctx := ctx.NewContext(context.Background(), mongo, redis, db, logger)
+	Ctx := ctx.NewContext(context.Background(), mongo, redis, db, logger.Sugar())
 
 	route := router.NewRouter(&appConf.Http, Ctx)
 	// http srv
-	cleanup := httpx.NewHttp(appConf.Http, route.Router())
+	cleanup := httpx.NewHttp(appConf.Http, route.Router(*logger))
 	cleanup()
 }
 

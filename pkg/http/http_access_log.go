@@ -1,8 +1,9 @@
 package http
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
+	"time"
 )
 
 /**
@@ -12,17 +13,33 @@ import (
  * @description:
  */
 
-func AccessLogFormat(param gin.LogFormatterParams) string {
+func AccessLogFormat(log zap.Logger) gin.HandlerFunc {
 
-	return fmt.Sprintf("%s %s [%s %s] %s %s %v %s %s\n",
-		param.TimeStamp.Format("2006/01/02 15:04:05"), // 2024/09/16 22:57:40
-		param.Latency,
-		param.Method,
-		param.Path,
-		param.ClientIP,
-		param.Request.Proto,
-		param.StatusCode,
-		param.Request.UserAgent(),
-		param.ErrorMessage,
-	)
+	return func(c *gin.Context) {
+		start := time.Now()
+		path := c.Request.URL.Path
+		query := c.Request.URL.RawQuery
+		correctedLogger := log.WithOptions(zap.AddCallerSkip(1))
+
+		c.Next()
+
+		cost := time.Since(start).Seconds() // 转换为秒
+		correctedLogger.Sugar().Debugf(
+			"[%s %s%s] %s %s %d %.2fs",
+			c.Request.Method,      // HTTP 方法
+			path,                  // 请求路径
+			formatQuery(query),    // 查询参数
+			c.ClientIP(),          // 客户端 IP
+			c.Request.UserAgent(), // User-Agent
+			c.Writer.Status(),     // 响应状态码
+			cost,                  // 请求耗时（秒）
+		)
+	}
+}
+
+func formatQuery(query string) string {
+	if query != "" {
+		return "?" + query
+	}
+	return ""
 }

@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"sync"
 	"time"
 
@@ -43,7 +44,7 @@ var dbConnection *gorm.DB
 var mu sync.Mutex
 
 // NewDatabase initializes and returns a new Gorm database instance.
-func NewDatabase(cfg Database) (*gorm.DB, error) {
+func NewDatabase(cfg Database, zapLogger zap.Logger) (*gorm.DB, error) {
 
 	if cfg.Type != "mysql" {
 		return nil, fmt.Errorf("unsupported database type: %s", cfg.Type)
@@ -65,7 +66,7 @@ func NewDatabase(cfg Database) (*gorm.DB, error) {
 
 	if cfg.OutPut {
 		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
-			Logger: NewGormLogger(logConfig, logger.Info),
+			Logger: NewGormLogger(logConfig, logger.Info, &zapLogger),
 			NamingStrategy: schema.NamingStrategy{
 				TablePrefix:   defaultTablePrefix,
 				SingularTable: true,
