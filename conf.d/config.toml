@@ -1,6 +1,6 @@
 [log]
 # support stdout, file, kafka
-output = "stdout"
+output = "file"
 # log level: DEBUG INFO WARNING ERROR FATAL
 level = "DEBUG"
 # log write directory

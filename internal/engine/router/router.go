@@ -12,6 +12,7 @@ import (
 	"github.com/go-arcade/arcade/pkg/http/ws"
 	"github.com/go-arcade/arcade/pkg/version"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.uber.org/zap"
 	"net/http"
 )
 
@@ -38,7 +39,7 @@ func NewRouter(httpConf *httpx.Http, ctx *ctx.Context) *Router {
 	}
 }
 
-func (rt *Router) Router() *gin.Engine {
+func (rt *Router) Router(log zap.Logger) *gin.Engine {
 
 	gin.SetMode(rt.Http.Mode)
 
@@ -64,7 +65,7 @@ func (rt *Router) Router() *gin.Engine {
 	}
 
 	if rt.Http.AccessLog {
-		r.Use(gin.LoggerWithFormatter(httpx.AccessLogFormat))
+		r.Use(httpx.AccessLogFormat(log))
 	}
 
 	if rt.Http.PProf {
