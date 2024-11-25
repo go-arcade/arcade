@@ -16,12 +16,24 @@ import (
 func AccessLogFormat(log zap.Logger) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
+
+		// exclude api path
+		// tips: 这里的路径是不需要记录日志的路径，url为端口后的全部路径
+		excludedPaths := map[string]bool{
+			"/health": true,
+		}
+
 		start := time.Now()
 		path := c.Request.URL.Path
 		query := c.Request.URL.RawQuery
 		correctedLogger := log.WithOptions(zap.AddCallerSkip(-1), zap.AddCaller())
 
 		c.Next()
+
+		if excludedPaths[path] {
+			c.Next()
+			return
+		}
 
 		cost := time.Since(start).Seconds() // 转换为秒
 		correctedLogger.Sugar().Debugf(
