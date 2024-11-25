@@ -19,7 +19,7 @@ func ExceptionInterceptor(c *gin.Context) {
 	defer func() {
 		if err := recover(); err != nil {
 			http.WithRepErr(c, http.InternalError.Code, errorToString(err), c.Request.URL.Path)
-			//log.Errorf("panic: %v", err)
+			log.Errorf("panic: %v", err)
 			c.Abort()
 		}
 	}()

@@ -19,7 +19,7 @@ func AccessLogFormat(log zap.Logger) gin.HandlerFunc {
 		start := time.Now()
 		path := c.Request.URL.Path
 		query := c.Request.URL.RawQuery
-		correctedLogger := log.WithOptions(zap.AddCallerSkip(1))
+		correctedLogger := log.WithOptions(zap.AddCallerSkip(-1), zap.AddCaller())
 
 		c.Next()
 
