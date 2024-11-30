@@ -17,6 +17,21 @@ import (
  * @description: user router
  */
 
+func (rt *Router) userRouter(r *gin.RouterGroup, auth gin.HandlerFunc) {
+	userGroup := r.Group("/user")
+	{
+		userGroup.POST("/login", rt.login)
+		userGroup.POST("/register", rt.register)
+
+		userGroup.POST("/logout", rt.logout, auth)
+		userGroup.GET("/refresh", rt.refresh, auth)
+		userGroup.POST("/invite", rt.addUser, auth)
+
+		userGroup.GET("/getUserInfo", rt.getUserInfo, auth)
+		//userGroup.GET("/getUserList", rt.getUserList)
+	}
+}
+
 func (rt *Router) login(r *gin.Context) {
 
 	var login *model.Login

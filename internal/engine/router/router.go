@@ -39,20 +39,20 @@ func NewRouter(httpConf *httpx.Http, ctx *ctx.Context) *Router {
 	}
 }
 
-func (rt *Router) Router(log zap.Logger) *gin.Engine {
+func (rt *Router) Router(log *zap.Logger) *gin.Engine {
 
 	gin.SetMode(rt.Http.Mode)
 
 	r := gin.New()
 
-	// cors interceptor
-	r.Use(interceptor.CorsInterceptor())
-
-	// panic recover
-	r.Use(interceptor.ExceptionInterceptor)
-
-	// unified response interceptor
-	r.Use(interceptor.UnifiedResponseInterceptor())
+	r.Use(
+		// cors
+		interceptor.CorsInterceptor(),
+		// recover
+		interceptor.ExceptionInterceptor,
+		// response
+		interceptor.UnifiedResponseInterceptor(),
+	)
 
 	// r.Use(interceptor.AuthorizationInterceptor(rt.Http.Auth.SecretKey, rt.Http.Auth))
 
@@ -97,46 +97,22 @@ func (rt *Router) Router(log zap.Logger) *gin.Engine {
 	return r
 }
 
-func (rt *Router) routerGroup(r *gin.RouterGroup) *gin.RouterGroup {
+func (rt *Router) routerGroup(r *gin.RouterGroup) {
 
-	auth := interceptor.AuthorizationInterceptor(rt.Http.Auth.SecretKey, rt.Http.Auth.RedisKeyPrefix, *rt.Ctx.GetRedis())
+	auth := interceptor.AuthorizationInterceptor(
+		rt.Http.Auth.SecretKey,
+		rt.Http.Auth.RedisKeyPrefix,
+		*rt.Ctx.GetRedis(),
+	)
 
 	// user
-	user := r.Group("/user")
-	{
-		// not sso
-		user.POST("/login", rt.login)
-		user.POST("/register", rt.register)
+	rt.userRouter(r, auth)
 
-		// sso
-		user.POST("/logout", rt.logout, auth)
-		user.GET("/refresh", rt.refresh, auth)
-		user.POST("/invite", rt.addUser, auth)
-
-		user.GET("/getUserInfo", rt.getUserInfo, auth)
-		//user.GET("/getUserList", rt.getUserList)
-	}
-
-	// authentication
-	authentication := r.Group("/auth")
-	{
-		authentication.GET("/oauth/:provider", rt.oauth)
-		authentication.GET("/callback/:provider", rt.callback)
-		authentication.POST("/revise", rt.updateUser, auth)
-		authentication.GET("/getProvider/:provider", rt.getOauthProvider, auth)
-		authentication.GET("/getProviderList", rt.getOauthProviderList, auth)
-	}
+	// auth
+	rt.authRouter(r, auth)
 
 	// agent
-	route := r.Group("/agent", auth)
-	{
-		route.POST("/add", rt.addAgent)
-		//r.POST("delete", deleteAgent)
-		//r.POST("update", updateAgent)
-		route.GET("/list", rt.listAgent)
-	}
-
-	return route
+	rt.agentRouter(r, auth)
 }
 
 func queryInt(r *gin.Context, key string) int {
