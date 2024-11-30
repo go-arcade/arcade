@@ -13,7 +13,7 @@ import (
  * @description:
  */
 
-func AccessLogFormat(log zap.Logger) gin.HandlerFunc {
+func AccessLogFormat(log *zap.Logger) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 

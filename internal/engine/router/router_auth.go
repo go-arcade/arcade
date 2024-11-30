@@ -16,6 +16,18 @@ import (
  * @description: router auth
  */
 
+func (rt *Router) authRouter(r *gin.RouterGroup, auth gin.HandlerFunc) {
+
+	authGroup := r.Group("/auth")
+	{
+		authGroup.GET("/oauth/:provider", rt.oauth)
+		authGroup.GET("/callback/:provider", rt.callback)
+		authGroup.POST("/revise", rt.updateUser, auth)
+		authGroup.GET("/getProvider/:provider", rt.getOauthProvider, auth)
+		authGroup.GET("/getProviderList", rt.getOauthProviderList, auth)
+	}
+}
+
 func (rt *Router) oauth(r *gin.Context) {
 
 	authRepo := repo.NewAuthRepo(rt.Ctx)

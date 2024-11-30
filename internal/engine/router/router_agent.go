@@ -16,6 +16,14 @@ import (
  * @description: agent router
  */
 
+func (rt *Router) agentRouter(r *gin.RouterGroup, auth gin.HandlerFunc) {
+	agentGroup := r.Group("/agent", auth)
+	{
+		agentGroup.POST("/add", rt.addAgent)
+		agentGroup.GET("/list", rt.listAgent)
+	}
+}
+
 func (rt *Router) addAgent(r *gin.Context) {
 	var addAgentReq *model.AddAgentReq
 	agentRepo := repo.NewAgentRepo(rt.Ctx)
