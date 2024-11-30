@@ -1,8 +1,8 @@
 package model
 
 import (
+	"github.com/go-arcade/arcade/pkg/datatype"
 	"golang.org/x/oauth2"
-	"gorm.io/datatypes"
 )
 
 /**
@@ -14,8 +14,8 @@ import (
 
 type OauthProvider struct {
 	BaseModel
-	Name    string         `gorm:"column:name" json:"name"`
-	Content datatypes.JSON `gorm:"column:content" json:"content"`
+	Name    string        `gorm:"column:name" json:"name"`
+	Content datatype.JSON `gorm:"column:content" json:"content"`
 }
 
 func (s *OauthProvider) TableName() string {
