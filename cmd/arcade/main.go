@@ -56,7 +56,7 @@ func main() {
 
 	route := router.NewRouter(&appConf.Http, Ctx)
 	// http srv
-	cleanup := httpx.NewHttp(appConf.Http, route.Router(*logger))
+	cleanup := httpx.NewHttp(appConf.Http, route.Router(logger))
 	cleanup()
 }
 
