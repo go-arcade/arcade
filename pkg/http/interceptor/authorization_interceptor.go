@@ -3,14 +3,14 @@ package interceptor
 import (
 	"context"
 	"errors"
+	"strings"
+
 	"github.com/gin-gonic/gin"
-	"github.com/go-arcade/arcade/internal/engine/tool"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/jwt"
 	"github.com/go-arcade/arcade/pkg/log"
 	goJwt "github.com/golang-jwt/jwt/v5"
 	"github.com/redis/go-redis/v9"
-	"strings"
 )
 
 /**
@@ -47,39 +47,44 @@ func AuthorizationInterceptor(secretKey, tokenPrefix string, client redis.Client
 				c.Abort()
 				return
 			}
-			// 其他令牌无效的情况，返回错误
+			// 其他令牌无效的情况
 			http.WithRepErrMsg(c, http.InvalidToken.Code, http.InvalidToken.Msg, c.Request.URL.Path)
 			log.Errorf("parse token failed: %v", err)
 			c.Abort()
 			return
 		}
 
-		token, err := tool.ParseAuthorizationToken(c, secretKey)
+		// 检查 Redis 中是否存在 Token
+		tokenKey := tokenPrefix + claims.UserId
+		exists, err := client.Exists(context.Background(), tokenKey).Result()
 		if err != nil {
+			http.WithRepErrMsg(c, http.InternalError.Code, http.InternalError.Msg, c.Request.URL.Path)
+			log.Errorf("redis check token exists failed: %v", err)
+			c.Abort()
+			return
+		}
+		if exists == 0 {
+			http.WithRepErrMsg(c, http.TokenExpired.Code, http.TokenExpired.Msg, c.Request.URL.Path)
+			c.Abort()
 			return
 		}
 
-		isTokenExist(c, client, tokenPrefix+token.UserId)
+		// 检查 Redis 中的 Token 是否过期
+		ttl, err := client.TTL(context.Background(), tokenKey).Result()
+		if err != nil {
+			http.WithRepErrMsg(c, http.InternalError.Code, http.InternalError.Msg, c.Request.URL.Path)
+			log.Errorf("redis check token TTL failed: %v", err)
+			c.Abort()
+			return
+		}
+		if ttl <= 0 {
+			http.WithRepErrMsg(c, http.TokenExpired.Code, http.TokenExpired.Msg, c.Request.URL.Path)
+			log.Warnf("token has expired in Redis for user: %s", claims.UserId)
+			c.Abort()
+			return
+		}
 
 		c.Set("claims", claims)
 		c.Next()
-	}
-}
-
-// isTokenExist 检查 Token 是否存在
-func isTokenExist(c *gin.Context, client redis.Client, token string) {
-	exists, err := client.Exists(context.Background(), token).Result()
-	if err != nil {
-		// Redis 出错
-		http.WithRepErrMsg(c, http.InternalError.Code, http.InternalError.Msg, c.Request.URL.Path)
-		log.Errorf("redis check token exists failed: %v", err)
-		c.Abort()
-		return
-	}
-	if exists == 0 {
-		// Token 不存在
-		http.WithRepErrMsg(c, http.TokenExpired.Code, http.TokenExpired.Msg, c.Request.URL.Path)
-		c.Abort()
-		return
 	}
 }

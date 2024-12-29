@@ -21,37 +21,34 @@ func UnifiedResponseInterceptor() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next()
 
+		// 如果已经被中止，说明其他中间件已经处理了响应
+		if c.IsAborted() {
+			return
+		}
+
 		// 业务逻辑错误
 		if len(c.Errors) > 0 && c.Writer.Status() != http.StatusOK {
 			httpx.WithRepErrMsg(c, httpx.Failed.Code, httpx.Failed.Msg, c.Request.URL.Path)
 			return
 		}
-		c.Next()
 
 		// 如果未设置响应状态码，默认将状态码设置为200（OK）
 		if c.Writer.Status() == 0 {
 			c.Writer.WriteHeader(httpx.Success.Code)
 		}
-		c.Next()
 
 		// 业务逻辑正确, 设置响应数据
 		if c.Writer.Status() >= http.StatusOK && c.Writer.Status() < http.StatusMultipleChoices {
-			detail, exists := c.Get(constant.DETAIL)
-			if exists && detail != nil {
+			if detail, exists := c.Get(constant.DETAIL); exists && detail != nil {
 				httpx.WithRepJSON(c, detail)
 				return
 			}
-		}
-		c.Next()
 
-		// 业务逻辑正确, 无响应数据, 只返回结果
-		if c.Writer.Status() >= http.StatusOK && c.Writer.Status() < http.StatusMultipleChoices {
-			detail, exists := c.Get(constant.OPERATION)
-			if exists && detail != nil {
+			// 业务逻辑正确, 无响应数据, 只返回结果
+			if _, exists := c.Get(constant.OPERATION); exists {
 				httpx.WithRepNotDetail(c)
 				return
 			}
 		}
-		c.Next()
 	}
 }
