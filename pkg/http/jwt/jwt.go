@@ -2,10 +2,12 @@ package jwt
 
 import (
 	"errors"
+	"fmt"
+	"time"
+
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/golang-jwt/jwt/v5"
-	"time"
 )
 
 /**
@@ -66,17 +68,27 @@ func GenToken(userId string, secretKey []byte, accessExpired, refreshExpired tim
 
 // ParseToken 校验 access_token
 func ParseToken(aToken, secretKey string) (claims *AuthClaims, err error) {
-	var token *jwt.Token
 	claims = new(AuthClaims)
-	token, err = jwt.ParseWithClaims(aToken, claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(aToken, claims, func(token *jwt.Token) (interface{}, error) {
+		// 验证签名算法
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
 		return []byte(secretKey), nil
 	})
+
 	if err != nil {
-		return nil, err
+		// 细化错误处理
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return nil, jwt.ErrTokenExpired
+		}
+		return nil, fmt.Errorf("invalid token: %w", err)
 	}
-	if !token.Valid { // token 是否有效
-		err = errors.New("invalid token")
+
+	if !token.Valid {
+		return nil, errors.New("invalid token")
 	}
+
 	return claims, nil
 }
 
@@ -86,21 +98,24 @@ func RefreshToken(auth *http.Auth, userId, rToken string) (map[string]string, er
 
 	// 解析刷新令牌
 	var refreshClaims jwt.RegisteredClaims
-	_, err := jwt.ParseWithClaims(rToken, &refreshClaims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(rToken, &refreshClaims, func(token *jwt.Token) (interface{}, error) {
+		// 验证签名算法
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
 		return []byte(auth.SecretKey), nil
 	})
-	if err != nil {
-		log.Errorf("jwt.ParseWithClaims err: %v", err)
+
+	if err != nil || !token.Valid {
 		return newToken, errors.New(http.InvalidToken.Msg)
 	}
 
-	// 检查刷新令牌是否有效且未过期
-	if refreshClaims.ExpiresAt == nil || time.Now().After(refreshClaims.ExpiresAt.Time) {
-		log.Errorf("jwt.ParseWithClaims err: %v", err)
-		return newToken, errors.New(http.InvalidToken.Msg)
+	// 检查刷新令牌是否过期
+	if refreshClaims.ExpiresAt.Before(time.Now()) {
+		return newToken, errors.New(http.TokenExpired.Msg)
 	}
 
-	// 生成新地访问令牌和刷新令牌
+	// 生成新的访问令牌和刷新令牌
 	newAToken, newRToken, err := GenToken(userId, []byte(auth.SecretKey), auth.AccessExpire, auth.RefreshExpire)
 	if err != nil {
 		return newToken, err
