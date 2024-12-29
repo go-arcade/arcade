@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 /**
  * @author: gagral.x@gmail.com
  * @time: 2024/9/28 21:55
@@ -8,7 +10,7 @@ package model
  */
 
 type BaseModel struct {
-	ID         int `gorm:"primaryKey" json:"id"`
-	CreateTime int `gorm:"column:create_time" json:"createTime,omitempty"`
-	UpdateTime int `gorm:"column:update_time" json:"updateTime,omitempty"`
+	ID         int       `gorm:"primaryKey" json:"id"`
+	CreateTime time.Time `gorm:"column:create_time" json:"createTime,omitempty"`
+	UpdateTime time.Time `gorm:"column:update_time" json:"updateTime,omitempty"`
 }
