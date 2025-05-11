@@ -1,4 +1,4 @@
-module github.com/go-arcade/arcade
+module github.com/observabil/arcade
 
 go 1.24.0
 

@@ -3,11 +3,11 @@ package minio
 import (
 	"mime/multipart"
 
-	"github.com/go-arcade/arcade/pkg/http"
-	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/gofiber/fiber/v2"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/observabil/arcade/pkg/http"
+	"github.com/observabil/arcade/pkg/log"
 )
 
 /**

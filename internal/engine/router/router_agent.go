@@ -1,12 +1,12 @@
 package router
 
 import (
-	"github.com/go-arcade/arcade/internal/engine/constant"
-	"github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/internal/engine/service"
-	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/gofiber/fiber/v2"
+	"github.com/observabil/arcade/internal/engine/constant"
+	"github.com/observabil/arcade/internal/engine/model"
+	"github.com/observabil/arcade/internal/engine/repo"
+	"github.com/observabil/arcade/internal/engine/service"
+	"github.com/observabil/arcade/pkg/http"
 )
 
 /**

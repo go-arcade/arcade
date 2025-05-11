@@ -1,9 +1,9 @@
 package interceptor
 
 import (
-	"github.com/go-arcade/arcade/internal/engine/constant"
-	httpx "github.com/go-arcade/arcade/pkg/http"
 	"github.com/gofiber/fiber/v2"
+	"github.com/observabil/arcade/internal/engine/constant"
+	httpx "github.com/observabil/arcade/pkg/http"
 )
 
 /**

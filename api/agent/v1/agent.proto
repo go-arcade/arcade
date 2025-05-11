@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package api.agent.v1;
 
-option go_package = "github.com/go-arcade/arcade/api/agent/v1;v1";
+option go_package = "github.com/observabil/arcade/api/agent/v1;v1";
 
 service Agent {
   rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse) {}

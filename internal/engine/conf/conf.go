@@ -3,13 +3,13 @@ package conf
 import (
 	"fmt"
 	"github.com/fsnotify/fsnotify"
-	"github.com/go-arcade/arcade/pkg/http"
+	"github.com/observabil/arcade/pkg/http"
 	"github.com/spf13/viper"
 	"sync"
 
-	"github.com/go-arcade/arcade/pkg/cache"
-	"github.com/go-arcade/arcade/pkg/database"
-	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/observabil/arcade/pkg/cache"
+	"github.com/observabil/arcade/pkg/database"
+	"github.com/observabil/arcade/pkg/log"
 )
 
 /**

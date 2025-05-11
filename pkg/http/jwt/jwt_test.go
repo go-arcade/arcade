@@ -1,7 +1,7 @@
 package jwt
 
 import (
-	"github.com/go-arcade/arcade/pkg/http"
+	"github.com/observabil/arcade/pkg/http"
 	"testing"
 	"time"
 )

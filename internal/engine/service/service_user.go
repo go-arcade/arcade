@@ -2,14 +2,14 @@ package service
 
 import (
 	"errors"
-	"github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/internal/engine/tool"
-	"github.com/go-arcade/arcade/pkg/ctx"
-	"github.com/go-arcade/arcade/pkg/http"
-	"github.com/go-arcade/arcade/pkg/http/jwt"
-	"github.com/go-arcade/arcade/pkg/id"
-	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/observabil/arcade/internal/engine/model"
+	"github.com/observabil/arcade/internal/engine/repo"
+	"github.com/observabil/arcade/internal/engine/tool"
+	"github.com/observabil/arcade/pkg/ctx"
+	"github.com/observabil/arcade/pkg/http"
+	"github.com/observabil/arcade/pkg/http/jwt"
+	"github.com/observabil/arcade/pkg/id"
+	"github.com/observabil/arcade/pkg/log"
 	"golang.org/x/crypto/bcrypt"
 	"time"
 )
