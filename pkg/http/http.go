@@ -2,16 +2,14 @@ package http
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/go-arcade/arcade/pkg/ctx"
+	"github.com/gofiber/fiber/v2"
 )
 
 /**
@@ -53,42 +51,37 @@ type Auth struct {
 	RedisKeyPrefix string
 }
 
-func NewHttp(cfg Http, engine *gin.Engine) func() {
+func NewHttp(cfg Http, app *fiber.App) func() {
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 
-	srv := &http.Server{
-		Addr:         addr,
-		Handler:      engine,
+	config := fiber.Config{
 		ReadTimeout:  time.Duration(cfg.ReadTimeout) * time.Second,
 		WriteTimeout: time.Duration(cfg.WriteTimeout) * time.Second,
 		IdleTimeout:  time.Duration(cfg.IdleTimeout) * time.Second,
 	}
 
+	app = fiber.New(config)
+
 	go func() {
-		fmt.Printf("[Init] http server start at: %s\n", srv.Addr)
-		var err error
+		fmt.Printf("[Init] http server start at: %s\n", addr)
 		if cfg.TLS.CertFile != "" && cfg.TLS.KeyFile != "" {
-			if err := srv.ListenAndServeTLS(cfg.TLS.CertFile, cfg.TLS.KeyFile); err != nil {
+			if err := app.ListenTLS(addr, cfg.TLS.CertFile, cfg.TLS.KeyFile); err != nil {
 				panic(err)
 			}
 		} else {
-			if err := srv.ListenAndServe(); err != nil {
+			if err := app.Listen(addr); err != nil {
 				panic(err)
 			}
-		}
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			fmt.Printf("[Error] HTTP server error: %v\n", err)
-			os.Exit(1)
 		}
 	}()
 
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
-	return createShutdownHook(srv, cfg.ShutdownTimeout, sc)
+	return createShutdownHook(app, cfg.ShutdownTimeout, sc)
 }
 
-func createShutdownHook(server *http.Server, shutdownTimeout int, signalChan chan os.Signal) func() {
+func createShutdownHook(app *fiber.App, shutdownTimeout int, signalChan chan os.Signal) func() {
 	signal.Notify(signalChan, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	return func() {
@@ -98,8 +91,7 @@ func createShutdownHook(server *http.Server, shutdownTimeout int, signalChan cha
 		ctx2, cancel := context.WithTimeout(context.Background(), time.Duration(shutdownTimeout)*time.Second)
 		defer cancel()
 
-		server.SetKeepAlivesEnabled(false)
-		if err := server.Shutdown(ctx2); err != nil {
+		if err := app.ShutdownWithContext(ctx2); err != nil {
 			fmt.Printf("[Error] Server shutdown error: %v\n", err)
 		} else {
 			fmt.Println("[Shutdown] HTTP server shut down gracefully.")

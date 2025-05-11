@@ -1,13 +1,13 @@
 package minio
 
 import (
-	"github.com/gin-gonic/gin"
+	"mime/multipart"
+
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/gofiber/fiber/v2"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-
-	"mime/multipart"
 )
 
 /**
@@ -46,49 +46,43 @@ func (m *Minio) Client() (*minio.Client, error) {
 	return minioClient, nil
 }
 
-func (m *Minio) Upload(objectName string, file *multipart.FileHeader, contentType string, client minio.Client, ctx *gin.Context) (minio.UploadInfo, error) {
-
+func (m *Minio) Upload(objectName string, file *multipart.FileHeader, contentType string, client minio.Client, ctx *fiber.Ctx) (minio.UploadInfo, error) {
 	isExistBucket(ctx, client, m.Bucket)
 
 	src, err := file.Open()
 	if err != nil {
 		return minio.UploadInfo{}, err
 	}
-	defer func(src multipart.File) {
-		err := src.Close()
-		if err != nil {
-			return
-		}
-	}(src)
+	defer src.Close()
 
-	result, err := client.PutObject(ctx, m.Bucket, objectName, src, file.Size, minio.PutObjectOptions{
+	result, err := client.PutObject(ctx.Context(), m.Bucket, objectName, src, file.Size, minio.PutObjectOptions{
 		ContentType: contentType,
 	})
 	if err != nil {
-		http.WithRepErrNotData(ctx, err.Error())
+		_ = http.WithRepErrNotData(ctx, err.Error())
 		return minio.UploadInfo{}, err
 	}
 
 	return result, nil
 }
 
-func (m *Minio) Download(objectName string, client minio.Client, ctx *gin.Context) (*minio.Object, error) {
+func (m *Minio) Download(objectName string, client minio.Client, ctx *fiber.Ctx) (*minio.Object, error) {
 	isExistBucket(ctx, client, m.Bucket)
-	obj, err := client.GetObject(ctx, m.Bucket, objectName, minio.GetObjectOptions{})
+	obj, err := client.GetObject(ctx.Context(), m.Bucket, objectName, minio.GetObjectOptions{})
 	if err != nil {
-		http.WithRepErrNotData(ctx, err.Error())
+		_ = http.WithRepErrNotData(ctx, err.Error())
 		return nil, err
 	}
 	return obj, nil
 }
 
-func isExistBucket(ctx *gin.Context, client minio.Client, bucket string) {
-	exists, err := client.BucketExists(ctx, bucket)
+func isExistBucket(ctx *fiber.Ctx, client minio.Client, bucket string) {
+	exists, err := client.BucketExists(ctx.Context(), bucket)
 	if err != nil {
 		return
 	}
 	if !exists {
-		http.WithRepErrNotData(ctx, "bucket not exists")
+		_ = http.WithRepErrNotData(ctx, "bucket not exists")
 		return
 	}
 }

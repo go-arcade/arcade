@@ -1,7 +1,9 @@
 package plugin
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"plugin"
 )
 
@@ -13,7 +15,10 @@ import (
  */
 
 type Manager struct {
-	plugins map[string]Plugin
+	ciPlugins       map[string]CIPlugin
+	cdPlugins       map[string]CDPlugin
+	securityPlugins map[string]SecurityPlugin
+	config          *Config
 }
 
 var (
@@ -24,7 +29,9 @@ var (
 
 func NewManager() *Manager {
 	return &Manager{
-		plugins: make(map[string]Plugin),
+		ciPlugins:       make(map[string]CIPlugin),
+		cdPlugins:       make(map[string]CDPlugin),
+		securityPlugins: make(map[string]SecurityPlugin),
 	}
 }
 
@@ -42,7 +49,6 @@ func (m *Manager) Version() string {
 
 // Register plugin
 func (m *Manager) Register(path string) error {
-
 	plug, err := plugin.Open(path)
 	if err != nil {
 		return err
@@ -60,46 +66,174 @@ func (m *Manager) Register(path string) error {
 	}
 
 	p := newPlugin()
-	pluginInstance, ok := p.(Plugin)
-	if !ok {
-		return errors.New("plugin does not implement the Plugin interface")
-	}
 
-	name := pluginInstance.Name()
-	if _, exists := m.plugins[name]; exists {
-		return errors.New("plugin already exists")
+	// 根据插件类型注册到对应的map中
+	switch {
+	case isCIPlugin(p):
+		pluginInstance := p.(CIPlugin)
+		if _, exists := m.ciPlugins[pluginInstance.Name()]; exists {
+			return errors.New("CI plugin already exists")
+		}
+		m.ciPlugins[pluginInstance.Name()] = pluginInstance
+	case isCDPlugin(p):
+		pluginInstance := p.(CDPlugin)
+		if _, exists := m.cdPlugins[pluginInstance.Name()]; exists {
+			return errors.New("CD plugin already exists")
+		}
+		m.cdPlugins[pluginInstance.Name()] = pluginInstance
+	case isSecurityPlugin(p):
+		pluginInstance := p.(SecurityPlugin)
+		if _, exists := m.securityPlugins[pluginInstance.Name()]; exists {
+			return errors.New("Security plugin already exists")
+		}
+		m.securityPlugins[pluginInstance.Name()] = pluginInstance
+	default:
+		return errors.New("unknown plugin type")
 	}
-
-	m.plugins[name] = pluginInstance
 
 	return nil
+}
+
+// 类型检查辅助函数
+func isCIPlugin(p interface{}) bool {
+	_, ok := p.(CIPlugin)
+	return ok
+}
+
+func isCDPlugin(p interface{}) bool {
+	_, ok := p.(CDPlugin)
+	return ok
+}
+
+func isSecurityPlugin(p interface{}) bool {
+	_, ok := p.(SecurityPlugin)
+	return ok
 }
 
 // AntiRegister anti register plugin
 func (m *Manager) AntiRegister(name string) error {
-	if _, exists := m.plugins[name]; !exists {
-		return errors.New("plugin does not exist")
+	if _, exists := m.ciPlugins[name]; !exists {
+		return fmt.Errorf("CI plugin %s does not exist", name)
+	}
+	if _, exists := m.cdPlugins[name]; !exists {
+		return fmt.Errorf("CD plugin %s does not exist", name)
+	}
+	if _, exists := m.securityPlugins[name]; !exists {
+		return fmt.Errorf("Security plugin %s does not exist", name)
 	}
 
-	delete(m.plugins, name)
+	delete(m.ciPlugins, name)
+	delete(m.cdPlugins, name)
+	delete(m.securityPlugins, name)
 
 	return nil
 }
 
-// Run plugin
-func (m *Manager) Run(name string) (string, error) {
-	if _, exists := m.plugins[name]; !exists {
-		return "", errors.New("plugin does not exist")
+// ListPlugins 列出所有插件
+func (m *Manager) ListPlugins() map[PluginType][]string {
+	result := make(map[PluginType][]string)
+
+	// 列出CI插件
+	for name := range m.ciPlugins {
+		result[TypeCI] = append(result[TypeCI], name)
 	}
 
-	return m.plugins[name].Run(), nil
+	// 列出CD插件
+	for name := range m.cdPlugins {
+		result[TypeCD] = append(result[TypeCD], name)
+	}
+
+	// 列出安全插件
+	for name := range m.securityPlugins {
+		result[TypeSecurity] = append(result[TypeSecurity], name)
+	}
+
+	return result
 }
 
-// ListPlugins list all plugins
-func (m *Manager) ListPlugins() []string {
-	var list []string
-	for k := range m.plugins {
-		list = append(list, k)
+// LoadPluginsFromConfig 根据配置加载插件
+func (m *Manager) LoadPluginsFromConfig(configPath string) error {
+	config, err := LoadConfig(configPath)
+	if err != nil {
+		return err
 	}
-	return list
+	m.config = config
+
+	for _, pluginConfig := range config.Plugins {
+		if err := m.Register(pluginConfig.Path); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Init 初始化所有插件
+func (m *Manager) Init(ctx context.Context) error {
+	// 初始化CI插件
+	for _, p := range m.ciPlugins {
+		if err := p.Init(ctx, m.config); err != nil {
+			return err
+		}
+	}
+	// 初始化CD插件
+	for _, p := range m.cdPlugins {
+		if err := p.Init(ctx, m.config); err != nil {
+			return err
+		}
+	}
+	// 初始化安全插件
+	for _, p := range m.securityPlugins {
+		if err := p.Init(ctx, m.config); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Cleanup 清理所有插件
+func (m *Manager) Cleanup() error {
+	// 清理CI插件
+	for _, p := range m.ciPlugins {
+		if err := p.Cleanup(); err != nil {
+			return err
+		}
+	}
+	// 清理CD插件
+	for _, p := range m.cdPlugins {
+		if err := p.Cleanup(); err != nil {
+			return err
+		}
+	}
+	// 清理安全插件
+	for _, p := range m.securityPlugins {
+		if err := p.Cleanup(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// GetCIPlugin 获取CI插件
+func (m *Manager) GetCIPlugin(name string) (CIPlugin, error) {
+	if plugin, exists := m.ciPlugins[name]; exists {
+		return plugin, nil
+	}
+	return nil, errors.New("CI plugin does not exist")
+}
+
+// GetCDPlugin 获取CD插件
+func (m *Manager) GetCDPlugin(name string) (CDPlugin, error) {
+	if plugin, exists := m.cdPlugins[name]; exists {
+		return plugin, nil
+	}
+	return nil, errors.New("CD plugin does not exist")
+}
+
+// GetSecurityPlugin 获取安全插件
+func (m *Manager) GetSecurityPlugin(name string) (SecurityPlugin, error) {
+	if plugin, exists := m.securityPlugins[name]; exists {
+		return plugin, nil
+	}
+	return nil, errors.New("Security plugin does not exist")
 }

@@ -1,9 +1,9 @@
 package http
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"go.uber.org/zap"
-	"time"
 )
 
 /**
@@ -13,45 +13,28 @@ import (
  * @description:
  */
 
-func AccessLogFormat(log *zap.Logger) gin.HandlerFunc {
-
-	return func(c *gin.Context) {
-
-		// exclude api path
-		// tips: 这里的路径是不需要记录日志的路径，url为端口后的全部路径
-		excludedPaths := map[string]bool{
-			"/health": true,
-		}
-
-		start := time.Now()
-		path := c.Request.URL.Path
-		query := c.Request.URL.RawQuery
-		correctedLogger := log.WithOptions(zap.AddCallerSkip(-1), zap.AddCaller())
-
-		c.Next()
-
-		if excludedPaths[path] {
-			c.Next()
-			return
-		}
-
-		cost := time.Since(start).Seconds() // 转换为秒
-		correctedLogger.Sugar().Debugf(
-			"[%s %s%s] %s %s %d %.2fs",
-			c.Request.Method,      // HTTP 方法
-			path,                  // 请求路径
-			formatQuery(query),    // 查询参数
-			c.ClientIP(),          // 客户端 IP
-			c.Request.UserAgent(), // User-Agent
-			c.Writer.Status(),     // 响应状态码
-			cost,                  // 请求耗时（秒）
-		)
+func AccessLogFormat(log *zap.Logger) fiber.Handler {
+	// exclude api path
+	// tips: 这里的路径是不需要记录日志的路径，url为端口后的全部路径
+	excludedPaths := map[string]bool{
+		"/health": true,
 	}
-}
 
-func formatQuery(query string) string {
-	if query != "" {
-		return "?" + query
-	}
-	return ""
+	return logger.New(logger.Config{
+		Format:     "[${method} ${path}${query}] ${ip} ${userAgent} ${status} ${latency}\n",
+		TimeFormat: "2006-01-02 15:04:05",
+		TimeZone:   "Local",
+		CustomTags: map[string]logger.LogFunc{
+			"query": func(output logger.Buffer, c *fiber.Ctx, data *logger.Data, extraParam string) (int, error) {
+				query := c.Context().QueryArgs().String()
+				if query != "" {
+					return output.WriteString("?" + query)
+				}
+				return 0, nil
+			},
+		},
+		Next: func(c *fiber.Ctx) bool {
+			return excludedPaths[c.Path()]
+		},
+	})
 }

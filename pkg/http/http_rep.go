@@ -1,8 +1,7 @@
 package http
 
 import (
-	"github.com/gin-gonic/gin"
-	"net/http"
+	"github.com/gofiber/fiber/v2"
 )
 
 /**
@@ -19,8 +18,8 @@ type Response struct {
 }
 
 // WithRepJSON 只返回json数据
-func WithRepJSON(c *gin.Context, detail interface{}) {
-	c.JSON(http.StatusOK, Response{
+func WithRepJSON(c *fiber.Ctx, detail interface{}) error {
+	return c.JSON(Response{
 		Code:   Success.Code,
 		Detail: detail,
 		Msg:    Success.Msg,
@@ -28,16 +27,16 @@ func WithRepJSON(c *gin.Context, detail interface{}) {
 }
 
 // WithRepMsg 返回自定义code, msg
-func WithRepMsg(c *gin.Context, code int, msg string) {
-	c.JSON(http.StatusOK, Response{
+func WithRepMsg(c *fiber.Ctx, code int, msg string) error {
+	return c.JSON(Response{
 		Code: code,
 		Msg:  msg,
 	})
 }
 
 // WithRepDetail 返回自定义code, msg, detail
-func WithRepDetail(c *gin.Context, code int, msg string, detail interface{}) {
-	c.JSON(http.StatusOK, Response{
+func WithRepDetail(c *fiber.Ctx, code int, msg string, detail interface{}) error {
+	return c.JSON(Response{
 		Code:   code,
 		Detail: detail,
 		Msg:    msg,
@@ -45,8 +44,8 @@ func WithRepDetail(c *gin.Context, code int, msg string, detail interface{}) {
 }
 
 // WithRepNotDetail 只成功的返回操作结果，返回结构体没有detail字段
-func WithRepNotDetail(c *gin.Context) {
-	c.JSON(http.StatusOK, Response{
+func WithRepNotDetail(c *fiber.Ctx) error {
+	return c.JSON(Response{
 		Code: Success.Code,
 		Msg:  Success.Msg,
 	})
