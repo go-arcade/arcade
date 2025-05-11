@@ -1,10 +1,9 @@
 package interceptor
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/go-arcade/arcade/internal/engine/constant"
 	httpx "github.com/go-arcade/arcade/pkg/http"
-	"net/http"
+	"github.com/gofiber/fiber/v2"
 )
 
 /**
@@ -15,40 +14,37 @@ import (
  */
 
 // UnifiedResponseInterceptor 统一响应拦截器
-// c.Set("detail", value) 用于设置响应数据
+// c.Locals("detail", value) 用于设置响应数据
 // 如有其他需要，可自行添加
-func UnifiedResponseInterceptor() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Next()
-
-		// 如果已经被中止，说明其他中间件已经处理了响应
-		if c.IsAborted() {
-			return
+func UnifiedResponseInterceptor() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		err := c.Next()
+		if err != nil {
+			return err
 		}
 
 		// 业务逻辑错误
-		if len(c.Errors) > 0 && c.Writer.Status() != http.StatusOK {
-			httpx.WithRepErrMsg(c, httpx.Failed.Code, httpx.Failed.Msg, c.Request.URL.Path)
-			return
+		if c.Response().StatusCode() != fiber.StatusOK {
+			return httpx.WithRepErrMsg(c, httpx.Failed.Code, httpx.Failed.Msg, c.Path())
 		}
 
 		// 如果未设置响应状态码，默认将状态码设置为200（OK）
-		if c.Writer.Status() == 0 {
-			c.Writer.WriteHeader(httpx.Success.Code)
+		if c.Response().StatusCode() == 0 {
+			c.Status(fiber.StatusOK)
 		}
 
 		// 业务逻辑正确, 设置响应数据
-		if c.Writer.Status() >= http.StatusOK && c.Writer.Status() < http.StatusMultipleChoices {
-			if detail, exists := c.Get(constant.DETAIL); exists && detail != nil {
-				httpx.WithRepJSON(c, detail)
-				return
+		if c.Response().StatusCode() >= fiber.StatusOK && c.Response().StatusCode() < fiber.StatusMultipleChoices {
+			if detail := c.Locals(constant.DETAIL); detail != nil {
+				return httpx.WithRepJSON(c, detail)
 			}
 
 			// 业务逻辑正确, 无响应数据, 只返回结果
-			if _, exists := c.Get(constant.OPERATION); exists {
-				httpx.WithRepNotDetail(c)
-				return
+			if c.Locals(constant.OPERATION) != nil {
+				return httpx.WithRepNotDetail(c)
 			}
 		}
+
+		return nil
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+
 	"github.com/go-arcade/arcade/internal/engine/conf"
 	"github.com/go-arcade/arcade/internal/engine/router"
 	"github.com/go-arcade/arcade/pkg/cache"
@@ -56,7 +57,8 @@ func main() {
 
 	route := router.NewRouter(&appConf.Http, Ctx)
 	// http srv
-	cleanup := httpx.NewHttp(appConf.Http, route.Router(logger))
+	app := route.Router(logger)
+	cleanup := httpx.NewHttp(appConf.Http, app)
 	cleanup()
 }
 

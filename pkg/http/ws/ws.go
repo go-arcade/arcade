@@ -2,11 +2,10 @@ package ws
 
 import (
 	"encoding/json"
-	"github.com/gin-gonic/gin"
-	httpx "github.com/go-arcade/arcade/pkg/http"
+
 	"github.com/go-arcade/arcade/pkg/log"
-	"github.com/gorilla/websocket"
-	"net/http"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/websocket/v2"
 )
 
 /**
@@ -29,48 +28,38 @@ type Message struct {
 	Detail interface{}
 }
 
-var upgrade = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
+func Handle(c *fiber.Ctx) error {
+	return websocket.New(func(c *websocket.Conn) {
+		defer func(c *websocket.Conn) {
+			err := c.Close()
+			if err != nil {
+				log.Errorf("close websocket connection error: %v", err)
+			}
+		}(c)
 
-func Handle(r *gin.Context) {
-	conn, err := upgrade.Upgrade(r.Writer, r.Request, nil)
-	if err != nil {
-		return
-	}
-	defer func(conn *websocket.Conn) {
-		err := conn.Close()
-		if err != nil {
-			log.Errorf("close websocket connection error: %v", err)
+		for {
+			messageType, p, err := c.ReadMessage()
+			if err != nil {
+				break
+			}
+
+			var msg Message
+			err = json.Unmarshal(p, &msg)
+
+			switch msg.Type {
+			case Heartbeat:
+			// do something
+			case Log:
+			// do something
+			default:
+				log.Errorf("unknown message type")
+			}
+
+			err = c.WriteMessage(messageType, []byte("Received"))
+			if err != nil {
+				log.Errorf("write message error: %v", err)
+				break
+			}
 		}
-	}(conn)
-
-	for {
-		messageType, p, err := conn.ReadMessage()
-		if err != nil {
-			break
-		}
-
-		var msg Message
-		err = json.Unmarshal(p, &msg)
-
-		switch msg.Type {
-		case Heartbeat:
-		// do something
-		case Log:
-		// do something
-		default:
-			httpx.WithRepErrMsg(r, http.StatusBadRequest, "unknown message type", r.Request.URL.Path)
-		}
-
-		err = conn.WriteMessage(messageType, []byte("Received"))
-		if err != nil {
-			log.Errorf("write message error: %v", err)
-			break
-		}
-	}
+	})(c)
 }

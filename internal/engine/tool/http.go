@@ -1,9 +1,7 @@
 package tool
 
 import (
-	ginI18n "github.com/gin-contrib/i18n"
-	"github.com/gin-gonic/gin"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"github.com/gofiber/fiber/v2"
 )
 
 /**
@@ -14,16 +12,13 @@ import (
  */
 
 // GetLocalizedMessage 获取本地化消息
-func GetLocalizedMessage(c *gin.Context, messageId string, templateData map[string]string) string {
-	return ginI18n.MustGetMessage(c, &i18n.LocalizeConfig{
-		MessageID:    messageId,
-		TemplateData: templateData,
-	})
+func GetLocalizedMessage(c *fiber.Ctx, messageId string, templateData map[string]string) string {
+	// TODO: 实现Fiber的本地化消息获取
+	return messageId
 }
 
 // GetLocalized 获取本地化消息, 不带模板数据
-func GetLocalized(c *gin.Context, messageId string) string {
-	return ginI18n.MustGetMessage(c, &i18n.LocalizeConfig{
-		MessageID: messageId,
-	})
+func GetLocalized(c *fiber.Ctx, messageId string) string {
+	// TODO: 实现Fiber的本地化消息获取
+	return messageId
 }

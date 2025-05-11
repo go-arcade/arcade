@@ -2,18 +2,21 @@ package router
 
 import (
 	"embed"
-	"github.com/cnlesscode/gotool/gintool"
-	"github.com/gin-contrib/pprof"
-	"github.com/gin-contrib/static"
-	"github.com/gin-gonic/gin"
+	"io/fs"
+	"net/http"
+	"strconv"
+
 	"github.com/go-arcade/arcade/pkg/ctx"
 	httpx "github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/interceptor"
 	"github.com/go-arcade/arcade/pkg/http/ws"
 	"github.com/go-arcade/arcade/pkg/version"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/filesystem"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	"go.uber.org/zap"
-	"net/http"
 )
 
 /**
@@ -39,66 +42,73 @@ func NewRouter(httpConf *httpx.Http, ctx *ctx.Context) *Router {
 	}
 }
 
-func (rt *Router) Router(log *zap.Logger) *gin.Engine {
+func (rt *Router) Router(log *zap.Logger) *fiber.App {
+	app := fiber.New(fiber.Config{
+		AppName: "Arcade",
+	})
 
-	gin.SetMode(rt.Http.Mode)
-
-	r := gin.New()
-
-	r.Use(
-		// cors
-		interceptor.CorsInterceptor(),
-		// recover
-		interceptor.ExceptionInterceptor,
-		// response
+	// 中间件
+	app.Use(
+		recover.New(),
+		cors.New(),
 		interceptor.UnifiedResponseInterceptor(),
 	)
 
-	// r.Use(interceptor.AuthorizationInterceptor(rt.Http.Auth.SecretKey, rt.Http.Auth))
-
-	// web static resource
+	// 静态文件
 	if rt.Http.UseFileAssets {
-		r.Use(static.Serve("/", static.EmbedFolder(web, "static")))
-		r.NoRoute(func(c *gin.Context) {
-			c.Redirect(http.StatusMovedPermanently, "/")
+		staticFS, err := fs.Sub(web, "static")
+		if err != nil {
+			log.Fatal("embed FS subdir error:", zap.Error(err))
+		}
+
+		app.Use("/", filesystem.New(filesystem.Config{
+			Root:   http.FS(staticFS),
+			Index:  "index.html",
+			Browse: false,
+		}))
+
+		app.Use(func(c *fiber.Ctx) error {
+			if c.Method() != fiber.MethodGet {
+				return c.Next()
+			}
+			file, err := staticFS.Open("index.html")
+			if err != nil {
+				return fiber.ErrNotFound
+			}
+			stat, _ := file.Stat()
+			return c.Type("html").Status(fiber.StatusOK).SendStream(file, int(stat.Size()))
 		})
 	}
 
+	// 访问日志
 	if rt.Http.AccessLog {
-		r.Use(httpx.AccessLogFormat(log))
+		app.Use(logger.New())
 	}
 
-	if rt.Http.PProf {
-		pprof.Register(r, "/debug/pprof")
-	}
-
-	if rt.Http.ExposeMetrics {
-		r.GET("/metrics", gin.WrapH(promhttp.Handler()))
-	}
-
-	r.GET("/health", func(c *gin.Context) {
-		c.String(http.StatusOK, "ok")
+	// 健康检查
+	app.Get("/health", func(c *fiber.Ctx) error {
+		return c.SendString("ok")
 	})
 
-	r.GET("/version", func(c *gin.Context) {
-		c.JSON(http.StatusOK, version.GetVersion())
+	// 版本信息
+	app.Get("/version", func(c *fiber.Ctx) error {
+		return c.JSON(version.GetVersion())
 	})
 
-	// arcade router, internal api router
-	engine := r.Group(rt.Http.InternalContextPath)
+	// 内部API路由
+	api := app.Group(rt.Http.InternalContextPath)
 	{
-		// ws
-		engine.POST("/ws", ws.Handle)
+		// WebSocket
+		api.Post("/ws", ws.Handle)
 
-		// core
-		rt.routerGroup(engine)
+		// 核心路由
+		rt.routerGroup(api)
 	}
 
-	return r
+	return app
 }
 
-func (rt *Router) routerGroup(r *gin.RouterGroup) {
-
+func (rt *Router) routerGroup(r fiber.Router) {
 	auth := interceptor.AuthorizationInterceptor(
 		rt.Http.Auth.SecretKey,
 		rt.Http.Auth.RedisKeyPrefix,
@@ -115,10 +125,14 @@ func (rt *Router) routerGroup(r *gin.RouterGroup) {
 	rt.agentRouter(r, auth)
 }
 
-func queryInt(r *gin.Context, key string) int {
-	value, ok := gintool.QueryInt(r, key)
-	if !ok {
+func queryInt(c *fiber.Ctx, key string) int {
+	value := c.Query(key)
+	if value == "" {
 		return 0
 	}
-	return value
+	intValue, err := strconv.Atoi(value)
+	if err != nil {
+		return 0
+	}
+	return intValue
 }

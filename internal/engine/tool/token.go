@@ -2,10 +2,11 @@ package tool
 
 import (
 	"errors"
-	"github.com/gin-gonic/gin"
+	"strings"
+
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/jwt"
-	"strings"
+	"github.com/gofiber/fiber/v2"
 )
 
 /**
@@ -15,8 +16,8 @@ import (
  * @description: token tool
  */
 
-func ParseAuthorizationToken(r *gin.Context, secretKey string) (*jwt.AuthClaims, error) {
-	token := r.GetHeader("Authorization")
+func ParseAuthorizationToken(c *fiber.Ctx, secretKey string) (*jwt.AuthClaims, error) {
+	token := c.Get("Authorization")
 	if token == "" {
 		return nil, errors.New(http.TokenBeEmpty.Msg)
 	}

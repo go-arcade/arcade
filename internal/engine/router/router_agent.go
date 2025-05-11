@@ -1,12 +1,12 @@
 package router
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/go-arcade/arcade/internal/engine/constant"
 	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/internal/engine/repo"
 	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/pkg/http"
+	"github.com/gofiber/fiber/v2"
 )
 
 /**
@@ -16,47 +16,46 @@ import (
  * @description: agent router
  */
 
-func (rt *Router) agentRouter(r *gin.RouterGroup, auth gin.HandlerFunc) {
+func (rt *Router) agentRouter(r fiber.Router, auth fiber.Handler) {
 	agentGroup := r.Group("/agent", auth)
 	{
-		agentGroup.POST("/add", rt.addAgent)
-		agentGroup.GET("/list", rt.listAgent)
+		agentGroup.Post("/add", rt.addAgent)
+		agentGroup.Get("/list", rt.listAgent)
 	}
 }
 
-func (rt *Router) addAgent(r *gin.Context) {
+func (rt *Router) addAgent(c *fiber.Ctx) error {
 	var addAgentReq *model.AddAgentReq
 	agentRepo := repo.NewAgentRepo(rt.Ctx)
 	agentLogic := service.NewAgentService(agentRepo, addAgentReq)
 
-	if err := r.BindJSON(&addAgentReq); err != nil {
-		http.WithRepErrMsg(r, http.Failed.Code, http.Failed.Msg, r.Request.URL.Path)
-		return
+	if err := c.BodyParser(&addAgentReq); err != nil {
+		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
 
 	if err := agentLogic.AddAgent(addAgentReq); err != nil {
-		http.WithRepErrMsg(r, http.Failed.Code, http.Failed.Msg, r.Request.URL.Path)
-		return
+		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
 
-	r.Set(constant.OPERATION, "")
+	c.Locals(constant.OPERATION, "")
+	return nil
 }
 
-func (rt *Router) listAgent(r *gin.Context) {
+func (rt *Router) listAgent(c *fiber.Ctx) error {
 	var agentReq *model.AddAgentReq
 	agentRepo := repo.NewAgentRepo(rt.Ctx)
 	agentLogic := service.NewAgentService(agentRepo, agentReq)
 
-	pageNum := queryInt(r, "pageNum")   // default 1
-	pageSize := queryInt(r, "pageSize") // default 10
+	pageNum := queryInt(c, "pageNum")   // default 1
+	pageSize := queryInt(c, "pageSize") // default 10
 	agents, count, err := agentLogic.ListAgent(pageNum, pageSize)
 	if err != nil {
-		http.WithRepErrMsg(r, http.Failed.Code, http.Failed.Msg, r.Request.URL.Path)
-		return
+		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
 
 	result := make(map[string]interface{})
 	result["agents"] = agents
 	result["count"] = count
-	r.Set(constant.DETAIL, result)
+	c.Locals(constant.DETAIL, result)
+	return nil
 }

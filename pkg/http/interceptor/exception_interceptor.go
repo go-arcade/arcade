@@ -1,10 +1,11 @@
 package interceptor
 
 import (
-	"github.com/gin-gonic/gin"
+	"runtime/debug"
+
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/log"
-	"runtime/debug"
+	"github.com/gofiber/fiber/v2"
 )
 
 /**
@@ -15,16 +16,15 @@ import (
  */
 
 // ExceptionInterceptor 异常拦截器
-func ExceptionInterceptor(c *gin.Context) {
+func ExceptionInterceptor(c *fiber.Ctx) error {
 	defer func() {
 		if err := recover(); err != nil {
-			http.WithRepErr(c, http.InternalError.Code, errorToString(err), c.Request.URL.Path)
+			_ = http.WithRepErr(c, http.InternalError.Code, errorToString(err), c.Path())
 			log.Errorf("panic: %v", err)
-			c.Abort()
 		}
 	}()
-	c.Next()
 
+	return c.Next()
 }
 
 func errorToString(err interface{}) string {
