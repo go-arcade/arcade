@@ -5,14 +5,14 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/go-arcade/arcade/internal/engine/conf"
-	"github.com/go-arcade/arcade/internal/engine/router"
-	"github.com/go-arcade/arcade/pkg/cache"
-	"github.com/go-arcade/arcade/pkg/ctx"
-	"github.com/go-arcade/arcade/pkg/database"
-	httpx "github.com/go-arcade/arcade/pkg/http"
-	"github.com/go-arcade/arcade/pkg/log"
-	"github.com/go-arcade/arcade/pkg/runner"
+	"github.com/observabil/arcade/internal/engine/conf"
+	"github.com/observabil/arcade/internal/engine/router"
+	"github.com/observabil/arcade/pkg/cache"
+	"github.com/observabil/arcade/pkg/ctx"
+	"github.com/observabil/arcade/pkg/database"
+	httpx "github.com/observabil/arcade/pkg/http"
+	"github.com/observabil/arcade/pkg/log"
+	"github.com/observabil/arcade/pkg/runner"
 )
 
 /**

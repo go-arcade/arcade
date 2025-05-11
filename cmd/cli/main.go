@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/go-arcade/arcade/pkg/version"
+	"github.com/observabil/arcade/pkg/version"
 	"github.com/spf13/cobra"
 )
 

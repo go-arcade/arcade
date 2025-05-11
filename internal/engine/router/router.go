@@ -6,16 +6,16 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/go-arcade/arcade/pkg/ctx"
-	httpx "github.com/go-arcade/arcade/pkg/http"
-	"github.com/go-arcade/arcade/pkg/http/interceptor"
-	"github.com/go-arcade/arcade/pkg/http/ws"
-	"github.com/go-arcade/arcade/pkg/version"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/observabil/arcade/pkg/ctx"
+	httpx "github.com/observabil/arcade/pkg/http"
+	"github.com/observabil/arcade/pkg/http/interceptor"
+	"github.com/observabil/arcade/pkg/http/ws"
+	"github.com/observabil/arcade/pkg/version"
 	"go.uber.org/zap"
 )
 

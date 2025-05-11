@@ -1,8 +1,8 @@
 package repo
 
 import (
-	"github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/pkg/ctx"
+	"github.com/observabil/arcade/internal/engine/model"
+	"github.com/observabil/arcade/pkg/ctx"
 )
 
 /**

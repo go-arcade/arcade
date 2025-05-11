@@ -3,11 +3,11 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/pkg/id"
-	"github.com/go-arcade/arcade/pkg/log"
-	"github.com/go-arcade/arcade/pkg/sso/oauth"
+	"github.com/observabil/arcade/internal/engine/model"
+	"github.com/observabil/arcade/internal/engine/repo"
+	"github.com/observabil/arcade/pkg/id"
+	"github.com/observabil/arcade/pkg/log"
+	"github.com/observabil/arcade/pkg/sso/oauth"
 	"golang.org/x/oauth2"
 	"time"
 )

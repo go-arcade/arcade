@@ -5,18 +5,13 @@ import (
 	"os"
 	"time"
 
-	"github.com/google/wire"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-const key = iota
-
 var (
-	logger      *zap.Logger
-	sugar       *zap.SugaredLogger
-	ProviderSet = wire.NewSet(NewLog)
+	logger *zap.Logger
+	sugar  *zap.SugaredLogger
 )
 
 // LogConfig holds LogConfig configuration options.
@@ -32,8 +27,7 @@ type LogConfig struct {
 }
 
 type Logger struct {
-	Log  *zap.SugaredLogger
-	conf *LogConfig
+	Log *zap.SugaredLogger
 }
 
 type Option func(*Logger)
@@ -88,9 +82,7 @@ func NewLog(conf *LogConfig) *zap.Logger {
 
 // getEncoder returns the appropriate encoder based on the mode.
 func getEncoder() zapcore.Encoder {
-	var encoderConfig zapcore.EncoderConfig
-
-	encoderConfig = zap.NewDevelopmentEncoderConfig()
+	encoderConfig := zap.NewDevelopmentEncoderConfig()
 
 	encoderConfig.TimeKey = "time"
 	encoderConfig.LevelKey = "level"

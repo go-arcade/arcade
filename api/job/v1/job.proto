@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package api.job.v1;
 
-option go_package = "github.com/go-arcade/arcade/api/job/v1;v1";
+option go_package = "github.com/observabil/arcade/api/job/v1;v1";
 
 service Job {
   rpc Create(CreateRequest) returns (CreateResponse) {}

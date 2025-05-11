@@ -3,9 +3,9 @@ package ws
 import (
 	"encoding/json"
 
-	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
+	"github.com/observabil/arcade/pkg/log"
 )
 
 /**
@@ -25,7 +25,7 @@ const (
 type Message struct {
 	// message type
 	Type   MessageType
-	Detail interface{}
+	Detail any
 }
 
 func Handle(c *fiber.Ctx) error {
@@ -45,6 +45,10 @@ func Handle(c *fiber.Ctx) error {
 
 			var msg Message
 			err = json.Unmarshal(p, &msg)
+			if err != nil {
+				log.Errorf("unmarshal message error: %v", err)
+				break
+			}
 
 			switch msg.Type {
 			case Heartbeat:

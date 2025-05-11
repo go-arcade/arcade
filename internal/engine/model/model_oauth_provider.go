@@ -1,7 +1,7 @@
 package model
 
 import (
-	"github.com/go-arcade/arcade/pkg/datatype"
+	"github.com/observabil/arcade/pkg/datatype"
 	"golang.org/x/oauth2"
 )
 

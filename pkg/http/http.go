@@ -8,8 +8,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/gofiber/fiber/v2"
+	"github.com/observabil/arcade/pkg/ctx"
 )
 
 /**
