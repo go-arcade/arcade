@@ -296,8 +296,10 @@ go run examples/plugin_autowatch/main.go
 
 ### 更多文档
 
-- [插件自动加载详细文档](./docs/PLUGIN_AUTO_LOAD.md)
-- [插件开发指南](./docs/PLUGIN_DEVELOPMENT.md)
+- [插件快速开始](./docs/PLUGIN_QUICKSTART.md) - 5分钟快速体验
+- [插件开发指南](./docs/PLUGIN_DEVELOPMENT.md) - 完整开发教程
+- [插件快速参考](./docs/PLUGIN_REFERENCE.md) - 代码片段和命令速查
+- [插件自动加载](./docs/PLUGIN_AUTO_LOAD.md) - 自动监控详细说明
 
 ## 代码生成
 
