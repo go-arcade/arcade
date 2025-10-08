@@ -2,14 +2,10 @@ package plugin
 
 import "context"
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/12 22:31
- * @file: plugin_interface.go
- * @description: plugin interface
- */
-
-type Option func(ctx context.Context)
+type Option func(*Options)
+type Options struct {
+	// ctx context.Context
+}
 
 // BasePlugin 基础插件接口
 type BasePlugin interface {

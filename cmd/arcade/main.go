@@ -12,6 +12,7 @@ import (
 	"github.com/observabil/arcade/pkg/database"
 	httpx "github.com/observabil/arcade/pkg/http"
 	"github.com/observabil/arcade/pkg/log"
+	"github.com/observabil/arcade/pkg/plugin"
 	"github.com/observabil/arcade/pkg/runner"
 )
 
@@ -23,19 +24,22 @@ import (
  */
 
 var (
-	configFile string
+	configFile       string
+	pluginConfigFile string
+	pluginDir        string
 )
 
 func init() {
 	flag.StringVar(&configFile, "conf", "conf.d/config.toml", "conf file path, e.g. -conf ./conf.d")
+	flag.StringVar(&pluginConfigFile, "plugin-config", "conf.d/plugins.yaml", "plugin config file path, e.g. -plugin-config ./conf.d")
+	flag.StringVar(&pluginDir, "plugin", "plugins", "plugin dir path, e.g. -plugin ./plugins")
 }
 
 func main() {
 	flag.Parse()
 	printRunner()
 
-	var appConf conf.AppConfig
-	appConf = conf.NewConf(configFile)
+	appConf := conf.NewConf(configFile)
 
 	logger := log.NewLog(&appConf.Log)
 
@@ -54,6 +58,15 @@ func main() {
 		panic(err)
 	}
 	Ctx := ctx.NewContext(context.Background(), mongo, redis, db, logger.Sugar())
+
+	manager := plugin.NewManager()
+	manager.SetContext(context.Background())
+	manager.LoadPluginsFromConfig(pluginConfigFile)
+	manager.Init(context.Background())
+
+	// 启动自动监控
+	manager.StartAutoWatch([]string{pluginDir}, pluginConfigFile)
+	defer manager.StopAutoWatch()
 
 	route := router.NewRouter(&appConf.Http, Ctx)
 	// http srv

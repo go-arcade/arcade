@@ -40,15 +40,13 @@ type Config struct {
 
 // LoadConfig 从文件加载配置
 func LoadConfig(configPath string) (*Config, error) {
-	data, err := os.ReadFile(configPath)
+	var c Config
+	bs, err := os.ReadFile(configPath)
 	if err != nil {
 		return nil, err
 	}
-
-	var config Config
-	if err := yaml.Unmarshal(data, &config); err != nil {
+	if err := yaml.Unmarshal(bs, &c); err != nil {
 		return nil, err
 	}
-
-	return &config, nil
+	return &c, nil
 }
