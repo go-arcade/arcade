@@ -9,7 +9,7 @@ require (
 	github.com/go-resty/resty/v2 v2.15.3
 	github.com/gofiber/fiber/v2 v2.52.9
 	github.com/gofiber/websocket/v2 v2.2.1
-	github.com/golang-jwt/jwt/v5 v5.1.0
+	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/uuid v1.6.0
 	github.com/minio/minio-go/v7 v7.0.76
 	github.com/oklog/ulid/v2 v2.1.0
