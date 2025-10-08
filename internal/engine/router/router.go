@@ -32,7 +32,7 @@ type Router struct {
 	Ctx  *ctx.Context
 }
 
-//go:embed static
+//go:embed all:static
 var web embed.FS
 
 func NewRouter(httpConf *httpx.Http, ctx *ctx.Context) *Router {

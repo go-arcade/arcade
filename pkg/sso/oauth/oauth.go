@@ -4,11 +4,12 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"net/http"
+	"sync"
+
 	"github.com/go-resty/resty/v2"
 	httpx "github.com/observabil/arcade/pkg/http"
 	"golang.org/x/oauth2"
-	"net/http"
-	"sync"
 )
 
 /**
@@ -17,6 +18,14 @@ import (
  * @file: oauth.go
  * @description: oauth2.0
  */
+
+type Provider string
+
+const (
+	ProviderGitHub Provider = "github"
+	ProviderGoogle Provider = "google"
+	ProviderSlack  Provider = "slack"
+)
 
 type UserInfo struct {
 	ID        string `json:"id"`
@@ -36,10 +45,10 @@ type GitHubUserInfo struct {
 
 // GetUserInfoFunc 获取用户信息函数
 // 所有oauth全部在这里定义
-var GetUserInfoFunc = map[string]func(token *oauth2.Token) (*UserInfo, error){
-	"github": getGitHubUserInfo,
-	"google": getGoogleUserInfo,
-	"slack":  getSlackUserInfo,
+var GetUserInfoFunc = map[Provider]func(token *oauth2.Token) (*UserInfo, error){
+	ProviderGitHub: getGitHubUserInfo,
+	ProviderGoogle: getGoogleUserInfo,
+	ProviderSlack:  getSlackUserInfo,
 }
 
 // StateStore 用于存储状态参数
