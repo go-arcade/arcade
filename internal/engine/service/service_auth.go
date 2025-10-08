@@ -3,13 +3,14 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/observabil/arcade/internal/engine/model"
 	"github.com/observabil/arcade/internal/engine/repo"
 	"github.com/observabil/arcade/pkg/id"
 	"github.com/observabil/arcade/pkg/log"
 	"github.com/observabil/arcade/pkg/sso/oauth"
 	"golang.org/x/oauth2"
-	"time"
 )
 
 /**
@@ -84,7 +85,7 @@ func (as *AuthService) Callback(providerName, state, code string) (*model.Regist
 		return nil, fmt.Errorf("token exchange failed: %w", err)
 	}
 
-	getUserInfoFunc, ok := oauth.GetUserInfoFunc[providerName]
+	getUserInfoFunc, ok := oauth.GetUserInfoFunc[oauth.Provider(providerName)]
 	if !ok {
 		log.Errorf("unsupported provider: %s", providerName)
 		return nil, fmt.Errorf("unsupported provider: %s", providerName)

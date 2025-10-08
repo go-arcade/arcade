@@ -1,0 +1,290 @@
+syntax = "proto3";
+
+package api.stream.v1;
+
+import "api/job/v1/job.proto";
+
+option go_package = "github.com/observabil/arcade/api/stream/v1/proto;v1";
+
+// Stream服务 - 实时数据流传输接口
+service Stream {
+  // 实时获取任务日志流 - Server端流式推送日志给客户端
+  rpc StreamJobLog(StreamJobLogRequest) returns (stream StreamJobLogResponse) {}
+  
+  // 上报任务日志流 - Agent端流式上报日志给Server
+  rpc UploadJobLog(stream UploadJobLogRequest) returns (UploadJobLogResponse) {}
+  
+  // 实时获取任务状态流 - Server端流式推送任务状态变化
+  rpc StreamJobStatus(StreamJobStatusRequest) returns (stream StreamJobStatusResponse) {}
+  
+  // 实时获取流水线状态流 - Server端流式推送流水线状态变化
+  rpc StreamPipelineStatus(StreamPipelineStatusRequest) returns (stream StreamPipelineStatusResponse) {}
+  
+  // Agent与Server双向通信流 - 用于实时任务调度和控制
+  rpc AgentChannel(stream AgentChannelRequest) returns (stream AgentChannelResponse) {}
+  
+  // 实时监控Agent状态流 - Server端流式推送Agent状态变化
+  rpc StreamAgentStatus(StreamAgentStatusRequest) returns (stream StreamAgentStatusResponse) {}
+  
+  // 实时事件流 - Server端推送系统事件
+  rpc StreamEvents(StreamEventsRequest) returns (stream StreamEventsResponse) {}
+}
+
+// 注意：JobStatus、PipelineStatus 定义在 job.proto 中
+
+// Agent状态枚举
+enum AgentStatus {
+  AGENT_STATUS_UNKNOWN = 0;
+  AGENT_STATUS_ONLINE = 1;   // 在线
+  AGENT_STATUS_OFFLINE = 2;  // 离线
+  AGENT_STATUS_BUSY = 3;     // 忙碌
+  AGENT_STATUS_IDLE = 4;     // 空闲
+}
+
+// 事件类型枚举
+enum EventType {
+  EVENT_TYPE_UNKNOWN = 0;
+  EVENT_TYPE_JOB_CREATED = 1;       // 任务创建
+  EVENT_TYPE_JOB_STARTED = 2;       // 任务开始
+  EVENT_TYPE_JOB_COMPLETED = 3;     // 任务完成
+  EVENT_TYPE_JOB_FAILED = 4;        // 任务失败
+  EVENT_TYPE_JOB_CANCELLED = 5;     // 任务取消
+  EVENT_TYPE_PIPELINE_STARTED = 6;  // 流水线开始
+  EVENT_TYPE_PIPELINE_COMPLETED = 7; // 流水线完成
+  EVENT_TYPE_PIPELINE_FAILED = 8;   // 流水线失败
+  EVENT_TYPE_AGENT_REGISTERED = 9;  // Agent注册
+  EVENT_TYPE_AGENT_UNREGISTERED = 10; // Agent注销
+  EVENT_TYPE_AGENT_OFFLINE = 11;    // Agent离线
+}
+
+// ============ 任务日志流相关 ============
+
+// 实时获取任务日志流请求
+message StreamJobLogRequest {
+  string job_id = 1;                    // 任务ID
+  int32 from_line = 2;                  // 从第几行开始（0表示从头开始）
+  bool follow = 3;                      // 是否持续跟踪（类似tail -f）
+}
+
+// 实时获取任务日志流响应
+message StreamJobLogResponse {
+  string job_id = 1;
+  LogChunk log_chunk = 2;               // 日志块
+  bool is_complete = 3;                 // 日志是否已完整传输
+}
+
+// 日志块
+message LogChunk {
+  int64 timestamp = 1;                  // 时间戳（毫秒）
+  int32 line_number = 2;                // 行号
+  string level = 3;                     // 日志级别（info、warn、error、debug）
+  string content = 4;                   // 日志内容
+  string stream = 5;                    // 流类型（stdout、stderr）
+}
+
+// 上报任务日志流请求
+message UploadJobLogRequest {
+  string job_id = 1;
+  string agent_id = 2;
+  repeated LogChunk logs = 3;           // 日志块列表
+}
+
+// 上报任务日志流响应
+message UploadJobLogResponse {
+  bool success = 1;
+  string message = 2;
+  int32 received_lines = 3;             // 已接收的日志行数
+}
+
+// ============ 任务状态流相关 ============
+
+// 实时获取任务状态流请求
+message StreamJobStatusRequest {
+  repeated string job_ids = 1;          // 任务ID列表（为空则监控所有任务）
+  string pipeline_id = 2;               // 流水线ID（可选，监控特定流水线的所有任务）
+}
+
+// 实时获取任务状态流响应
+message StreamJobStatusResponse {
+  string job_id = 1;
+  string job_name = 2;
+  api.job.v1.JobStatus status = 3;                 // 任务状态
+  api.job.v1.JobStatus previous_status = 4;        // 之前的状态
+  int64 timestamp = 5;                  // 状态变化时间戳
+  string agent_id = 6;                  // 执行的Agent ID
+  int32 exit_code = 7;                  // 退出码
+  string error_message = 8;             // 错误信息
+  int64 duration = 9;                   // 执行时长（毫秒）
+  map<string, string> metrics = 10;     // 执行指标
+}
+
+// ============ 流水线状态流相关 ============
+
+// 实时获取流水线状态流请求
+message StreamPipelineStatusRequest {
+  repeated string pipeline_ids = 1;     // 流水线ID列表（为空则监控所有流水线）
+}
+
+// 实时获取流水线状态流响应
+message StreamPipelineStatusResponse {
+  string pipeline_id = 1;
+  string run_id = 2;                    // 流水线执行ID
+  string pipeline_name = 3;
+  api.job.v1.PipelineStatus status = 4;            // 流水线状态
+  api.job.v1.PipelineStatus previous_status = 5;   // 之前的状态
+  int64 timestamp = 6;                  // 状态变化时间戳
+  int32 total_jobs = 7;                 // 总任务数
+  int32 completed_jobs = 8;             // 已完成任务数
+  int32 failed_jobs = 9;                // 失败任务数
+  int32 running_jobs = 10;              // 运行中任务数
+  int32 current_stage = 11;             // 当前阶段
+  int32 total_stages = 12;              // 总阶段数
+  int64 duration = 13;                  // 执行时长（毫秒）
+}
+
+// ============ Agent通道相关 ============
+
+// Agent通道请求（双向流）
+message AgentChannelRequest {
+  string agent_id = 1;
+  string request_id = 2;                // 请求ID（用于匹配请求和响应）
+  oneof payload {
+    HeartbeatData heartbeat = 3;        // 心跳数据
+    JobStatusUpdate job_status = 4;     // 任务状态更新
+    LogData log_data = 5;               // 日志数据
+    JobFetchRequest job_fetch = 6;      // 获取任务请求
+    AgentMetrics metrics = 7;           // Agent指标
+  }
+}
+
+// 心跳数据
+message HeartbeatData {
+  int64 timestamp = 1;
+  AgentStatus status = 2;
+  int32 running_jobs_count = 3;
+  int32 max_concurrent_jobs = 4;
+}
+
+// 任务状态更新
+message JobStatusUpdate {
+  string job_id = 1;
+  api.job.v1.JobStatus status = 2;
+  int32 exit_code = 3;
+  string error_message = 4;
+  int64 timestamp = 5;
+}
+
+// 日志数据
+message LogData {
+  string job_id = 1;
+  repeated LogChunk logs = 2;
+}
+
+// 获取任务请求
+message JobFetchRequest {
+  int32 max_jobs = 1;
+  repeated string tags = 2;
+}
+
+// Agent指标
+message AgentMetrics {
+  double cpu_usage = 1;                 // CPU使用率（百分比）
+  double memory_usage = 2;              // 内存使用率（百分比）
+  double disk_usage = 3;                // 磁盘使用率（百分比）
+  int32 running_jobs = 4;               // 运行中的任务数
+  map<string, string> custom_metrics = 5; // 自定义指标
+}
+
+// Agent通道响应（双向流）
+message AgentChannelResponse {
+  string agent_id = 1;
+  string response_id = 2;               // 响应ID（对应请求ID）
+  oneof payload {
+    HeartbeatAck heartbeat_ack = 3;     // 心跳确认
+    JobAssignment job_assignment = 4;   // 任务分配
+    JobCancelCommand cancel_command = 5; // 取消任务命令
+    ConfigUpdate config_update = 6;     // 配置更新
+  }
+}
+
+// 心跳确认
+message HeartbeatAck {
+  int64 server_time = 1;
+  bool success = 2;
+}
+
+// 任务分配
+message JobAssignment {
+  repeated JobInfo jobs = 1;
+}
+
+// 任务信息
+message JobInfo {
+  string job_id = 1;
+  string name = 2;
+  string pipeline_id = 3;
+  int32 stage = 4;
+  repeated string commands = 5;
+  map<string, string> env = 6;
+  string workspace = 7;
+  int32 timeout = 8;
+  repeated string tags = 9;
+  string image = 10;
+  map<string, string> secrets = 11;
+}
+
+// 取消任务命令
+message JobCancelCommand {
+  string job_id = 1;
+  string reason = 2;
+}
+
+// 配置更新
+message ConfigUpdate {
+  int64 heartbeat_interval = 1;         // 心跳间隔
+  int32 max_concurrent_jobs = 2;        // 最大并发任务数
+  map<string, string> config = 3;       // 其他配置
+}
+
+// ============ Agent状态流相关 ============
+
+// 实时监控Agent状态流请求
+message StreamAgentStatusRequest {
+  repeated string agent_ids = 1;        // Agent ID列表（为空则监控所有Agent）
+}
+
+// 实时监控Agent状态流响应
+message StreamAgentStatusResponse {
+  string agent_id = 1;
+  string hostname = 2;
+  string ip = 3;
+  AgentStatus status = 4;               // Agent状态
+  AgentStatus previous_status = 5;      // 之前的状态
+  int64 timestamp = 6;                  // 状态变化时间戳
+  int32 running_jobs_count = 7;         // 运行中的任务数
+  int32 max_concurrent_jobs = 8;        // 最大并发任务数
+  AgentMetrics metrics = 9;             // Agent指标
+  int64 last_heartbeat = 10;            // 最后心跳时间
+  map<string, string> labels = 11;      // Agent标签
+}
+
+// ============ 事件流相关 ============
+
+// 实时事件流请求
+message StreamEventsRequest {
+  repeated EventType event_types = 1;   // 关注的事件类型（为空则接收所有事件）
+  repeated string resource_ids = 2;     // 关注的资源ID（job_id、pipeline_id等）
+}
+
+// 实时事件流响应
+message StreamEventsResponse {
+  string event_id = 1;                  // 事件ID
+  EventType event_type = 2;             // 事件类型
+  int64 timestamp = 3;                  // 事件时间戳
+  string resource_id = 4;               // 资源ID
+  string resource_type = 5;             // 资源类型（job、pipeline、agent等）
+  string title = 6;                     // 事件标题
+  string description = 7;               // 事件描述
+  map<string, string> metadata = 8;     // 事件元数据
+  string user_id = 9;                   // 触发事件的用户ID
+}

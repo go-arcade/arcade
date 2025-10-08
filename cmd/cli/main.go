@@ -13,7 +13,7 @@ import (
  */
 
 var rootCmd = &cobra.Command{
-	Use:   "arcade cli",
+	Use:   "arcade-cli",
 	Short: "arcade cli is a command line tool",
 	Long:  "arcade cli is a command line tool",
 	Run: func(cmd *cobra.Command, args []string) {
