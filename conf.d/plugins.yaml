@@ -1,0 +1,29 @@
+# 插件配置文件
+# 支持自动监控和热重载
+# 修改此文件后，系统会自动重新加载插件配置
+
+plugins:
+  # CI 插件示例
+  - path: ./plugins/ci/golang-ci.so
+    name: golang-ci
+    type: ci
+    version: "1.0.0"
+    config:
+      go_version: "1.22"
+      cache: true
+
+  # 通知插件示例
+  - path: ./plugins/notify/slack.so
+    name: slack
+    type: notify
+    version: "1.0.0"
+    config:
+      webhook: "https://hooks.slack.com/services/xxx/yyy/zzz"
+
+  # Stdout 通知插件（示例）
+  - path: ./plugins/stdout.so
+    name: stdout
+    type: notify
+    version: "1.0.0"
+    config:
+      prefix: "[通知]"
