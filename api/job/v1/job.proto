@@ -1,0 +1,432 @@
+syntax = "proto3";
+
+package api.job.v1;
+
+option go_package = "github.com/observabil/arcade/api/job/v1/proto;v1";
+
+// Job服务 - 任务和流水线管理接口
+service Job {
+  // 创建任务
+  rpc CreateJob(CreateJobRequest) returns (CreateJobResponse) {}
+  
+  // 获取任务详情
+  rpc GetJob(GetJobRequest) returns (GetJobResponse) {}
+  
+  // 列出任务（支持分页和过滤）
+  rpc ListJobs(ListJobsRequest) returns (ListJobsResponse) {}
+  
+  // 更新任务
+  rpc UpdateJob(UpdateJobRequest) returns (UpdateJobResponse) {}
+  
+  // 删除任务
+  rpc DeleteJob(DeleteJobRequest) returns (DeleteJobResponse) {}
+  
+  // 取消任务
+  rpc CancelJob(CancelJobRequest) returns (CancelJobResponse) {}
+  
+  // 重试任务
+  rpc RetryJob(RetryJobRequest) returns (RetryJobResponse) {}
+  
+  // 获取任务日志
+  rpc GetJobLog(GetJobLogRequest) returns (GetJobLogResponse) {}
+  
+  // 获取任务产物列表
+  rpc ListJobArtifacts(ListJobArtifactsRequest) returns (ListJobArtifactsResponse) {}
+  
+  // 创建流水线
+  rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {}
+  
+  // 获取流水线详情
+  rpc GetPipeline(GetPipelineRequest) returns (GetPipelineResponse) {}
+  
+  // 列出流水线
+  rpc ListPipelines(ListPipelinesRequest) returns (ListPipelinesResponse) {}
+  
+  // 触发流水线执行
+  rpc TriggerPipeline(TriggerPipelineRequest) returns (TriggerPipelineResponse) {}
+  
+  // 停止流水线
+  rpc StopPipeline(StopPipelineRequest) returns (StopPipelineResponse) {}
+}
+
+// 任务状态枚举
+enum JobStatus {
+  JOB_STATUS_UNKNOWN = 0;
+  JOB_STATUS_PENDING = 1;       // 等待执行
+  JOB_STATUS_QUEUED = 2;        // 已入队
+  JOB_STATUS_RUNNING = 3;       // 执行中
+  JOB_STATUS_SUCCESS = 4;       // 执行成功
+  JOB_STATUS_FAILED = 5;        // 执行失败
+  JOB_STATUS_CANCELLED = 6;     // 已取消
+  JOB_STATUS_TIMEOUT = 7;       // 超时
+  JOB_STATUS_SKIPPED = 8;       // 已跳过
+}
+
+// 流水线状态枚举
+enum PipelineStatus {
+  PIPELINE_STATUS_UNKNOWN = 0;
+  PIPELINE_STATUS_PENDING = 1;   // 等待执行
+  PIPELINE_STATUS_RUNNING = 2;   // 执行中
+  PIPELINE_STATUS_SUCCESS = 3;   // 执行成功
+  PIPELINE_STATUS_FAILED = 4;    // 执行失败
+  PIPELINE_STATUS_CANCELLED = 5; // 已取消
+  PIPELINE_STATUS_PARTIAL = 6;   // 部分成功
+}
+
+// 触发类型枚举
+enum TriggerType {
+  TRIGGER_TYPE_UNKNOWN = 0;
+  TRIGGER_TYPE_MANUAL = 1;       // 手动触发
+  TRIGGER_TYPE_WEBHOOK = 2;      // Webhook触发
+  TRIGGER_TYPE_SCHEDULE = 3;     // 定时触发
+  TRIGGER_TYPE_API = 4;          // API触发
+}
+
+// 创建任务请求
+message CreateJobRequest {
+  string name = 1;                      // 任务名称
+  string pipeline_id = 2;               // 所属流水线ID
+  int32 stage = 3;                      // 阶段序号
+  repeated string commands = 4;         // 执行命令列表
+  map<string, string> env = 5;          // 环境变量
+  string workspace = 6;                 // 工作目录
+  int32 timeout = 7;                    // 超时时间（秒，默认3600）
+  repeated string tags = 8;             // 任务标签（已废弃，建议使用label_selector）
+  string image = 9;                     // Docker镜像
+  map<string, string> secrets = 10;     // 密钥信息
+  repeated ArtifactConfig artifacts = 11; // 产物配置
+  repeated string depends_on = 12;      // 依赖的任务ID列表
+  bool allow_failure = 13;              // 是否允许失败
+  int32 retry_count = 14;               // 重试次数
+  LabelSelector label_selector = 15;    // 标签选择器（用于匹配Agent）
+}
+
+// 产物配置
+message ArtifactConfig {
+  string name = 1;                      // 产物名称
+  string path = 2;                      // 产物路径（支持glob模式）
+  string destination = 3;               // 目标存储路径
+  bool expire = 4;                      // 是否过期
+  int64 expire_days = 5;                // 过期天数
+}
+
+// 创建任务响应
+message CreateJobResponse {
+  bool success = 1;
+  string message = 2;
+  string job_id = 3;                    // 创建的任务ID
+}
+
+// 获取任务请求
+message GetJobRequest {
+  string job_id = 1;
+}
+
+// 获取任务响应
+message GetJobResponse {
+  bool success = 1;
+  string message = 2;
+  JobDetail job = 3;
+}
+
+// 任务详情
+message JobDetail {
+  string job_id = 1;                    // 任务ID
+  string name = 2;                      // 任务名称
+  string pipeline_id = 3;               // 所属流水线ID
+  int32 stage = 4;                      // 阶段序号
+  JobStatus status = 5;                 // 任务状态
+  repeated string commands = 6;         // 执行命令列表
+  map<string, string> env = 7;          // 环境变量
+  string workspace = 8;                 // 工作目录
+  int32 timeout = 9;                    // 超时时间（秒）
+  repeated string tags = 10;            // 任务标签（已废弃）
+  string image = 11;                    // Docker镜像
+  repeated ArtifactConfig artifacts = 12; // 产物配置
+  repeated string depends_on = 13;      // 依赖的任务ID列表
+  bool allow_failure = 14;              // 是否允许失败
+  int32 retry_count = 15;               // 重试次数
+  int32 retried_times = 16;             // 已重试次数
+  string agent_id = 17;                 // 执行的Agent ID
+  int32 exit_code = 18;                 // 退出码
+  string error_message = 19;            // 错误信息
+  int64 created_at = 20;                // 创建时间
+  int64 started_at = 21;                // 开始时间
+  int64 finished_at = 22;               // 结束时间
+  int64 duration = 23;                  // 执行时长（毫秒）
+  string created_by = 24;               // 创建者
+  LabelSelector label_selector = 25;    // 标签选择器
+  map<string, string> agent_labels = 26; // 执行任务的Agent标签
+}
+
+// 列出任务请求
+message ListJobsRequest {
+  string pipeline_id = 1;               // 流水线ID（可选）
+  JobStatus status = 2;                 // 状态过滤（可选）
+  string agent_id = 3;                  // Agent ID过滤（可选）
+  int32 page = 4;                       // 页码（从1开始）
+  int32 page_size = 5;                  // 每页数量（默认20）
+  string sort_by = 6;                   // 排序字段（created_at、started_at等）
+  bool sort_desc = 7;                   // 是否降序
+}
+
+// 列出任务响应
+message ListJobsResponse {
+  bool success = 1;
+  string message = 2;
+  repeated JobDetail jobs = 3;
+  int32 total = 4;                      // 总数
+  int32 page = 5;                       // 当前页
+  int32 page_size = 6;                  // 每页数量
+}
+
+// 更新任务请求
+message UpdateJobRequest {
+  string job_id = 1;
+  string name = 2;                      // 任务名称（可选）
+  repeated string commands = 3;         // 执行命令列表（可选）
+  map<string, string> env = 4;          // 环境变量（可选）
+  int32 timeout = 5;                    // 超时时间（可选）
+  repeated string tags = 6;             // 任务标签（可选）
+}
+
+// 更新任务响应
+message UpdateJobResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// 删除任务请求
+message DeleteJobRequest {
+  string job_id = 1;
+}
+
+// 删除任务响应
+message DeleteJobResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// 取消任务请求
+message CancelJobRequest {
+  string job_id = 1;
+  string reason = 2;                    // 取消原因
+}
+
+// 取消任务响应
+message CancelJobResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// 重试任务请求
+message RetryJobRequest {
+  string job_id = 1;
+}
+
+// 重试任务响应
+message RetryJobResponse {
+  bool success = 1;
+  string message = 2;
+  string new_job_id = 3;                // 新创建的任务ID
+}
+
+// 获取任务日志请求
+message GetJobLogRequest {
+  string job_id = 1;
+  int32 offset = 2;                     // 日志偏移量（行号）
+  int32 limit = 3;                      // 获取数量（默认1000行）
+}
+
+// 获取任务日志响应
+message GetJobLogResponse {
+  bool success = 1;
+  string message = 2;
+  repeated LogLine logs = 3;
+  int32 total_lines = 4;                // 总行数
+  bool has_more = 5;                    // 是否还有更多日志
+}
+
+// 日志行
+message LogLine {
+  int32 line_number = 1;                // 行号
+  int64 timestamp = 2;                  // 时间戳
+  string level = 3;                     // 日志级别
+  string content = 4;                   // 日志内容
+}
+
+// 列出任务产物请求
+message ListJobArtifactsRequest {
+  string job_id = 1;
+}
+
+// 列出任务产物响应
+message ListJobArtifactsResponse {
+  bool success = 1;
+  string message = 2;
+  repeated Artifact artifacts = 3;
+}
+
+// 产物
+message Artifact {
+  string artifact_id = 1;               // 产物ID
+  string name = 2;                      // 产物名称
+  string path = 3;                      // 产物路径
+  int64 size = 4;                       // 文件大小（字节）
+  string download_url = 5;              // 下载URL
+  int64 created_at = 6;                 // 创建时间
+  int64 expire_at = 7;                  // 过期时间
+}
+
+// 创建流水线请求
+message CreatePipelineRequest {
+  string name = 1;                      // 流水线名称
+  string description = 2;               // 描述
+  string repo_url = 3;                  // 代码仓库URL
+  string branch = 4;                    // 分支
+  repeated Stage stages = 5;            // 阶段配置
+  map<string, string> env = 6;          // 全局环境变量
+  TriggerType trigger_type = 7;         // 触发类型
+  string cron = 8;                      // Cron表达式（定时触发时使用）
+  repeated string webhooks = 9;         // Webhook URL列表
+}
+
+// 阶段配置
+message Stage {
+  int32 order = 1;                      // 阶段序号
+  string name = 2;                      // 阶段名称
+  repeated JobConfig jobs = 3;          // 任务配置列表
+}
+
+// 任务配置
+message JobConfig {
+  string name = 1;                      // 任务名称
+  repeated string commands = 2;         // 执行命令
+  map<string, string> env = 3;          // 环境变量
+  string workspace = 4;                 // 工作目录
+  int32 timeout = 5;                    // 超时时间
+  repeated string tags = 6;             // 任务标签（已废弃，建议使用label_selector）
+  string image = 7;                     // Docker镜像
+  repeated ArtifactConfig artifacts = 8; // 产物配置
+  bool allow_failure = 9;               // 是否允许失败
+  int32 retry_count = 10;               // 重试次数
+  LabelSelector label_selector = 11;    // 标签选择器（用于匹配Agent）
+}
+
+// 创建流水线响应
+message CreatePipelineResponse {
+  bool success = 1;
+  string message = 2;
+  string pipeline_id = 3;               // 创建的流水线ID
+}
+
+// 获取流水线请求
+message GetPipelineRequest {
+  string pipeline_id = 1;
+}
+
+// 获取流水线响应
+message GetPipelineResponse {
+  bool success = 1;
+  string message = 2;
+  PipelineDetail pipeline = 3;
+}
+
+// 流水线详情
+message PipelineDetail {
+  string pipeline_id = 1;               // 流水线ID
+  string name = 2;                      // 流水线名称
+  string description = 3;               // 描述
+  string repo_url = 4;                  // 代码仓库URL
+  string branch = 5;                    // 分支
+  PipelineStatus status = 6;            // 流水线状态
+  repeated Stage stages = 7;            // 阶段配置
+  map<string, string> env = 8;          // 全局环境变量
+  TriggerType trigger_type = 9;         // 触发类型
+  string cron = 10;                     // Cron表达式
+  int64 created_at = 11;                // 创建时间
+  int64 updated_at = 12;                // 更新时间
+  string created_by = 13;               // 创建者
+  int32 total_runs = 14;                // 总执行次数
+  int32 success_runs = 15;              // 成功次数
+  int32 failed_runs = 16;               // 失败次数
+}
+
+// 列出流水线请求
+message ListPipelinesRequest {
+  PipelineStatus status = 1;            // 状态过滤（可选）
+  int32 page = 2;                       // 页码（从1开始）
+  int32 page_size = 3;                  // 每页数量（默认20）
+  string sort_by = 4;                   // 排序字段
+  bool sort_desc = 5;                   // 是否降序
+}
+
+// 列出流水线响应
+message ListPipelinesResponse {
+  bool success = 1;
+  string message = 2;
+  repeated PipelineDetail pipelines = 3;
+  int32 total = 4;                      // 总数
+  int32 page = 5;                       // 当前页
+  int32 page_size = 6;                  // 每页数量
+}
+
+// 触发流水线请求
+message TriggerPipelineRequest {
+  string pipeline_id = 1;
+  string branch = 2;                    // 分支（可选，覆盖默认分支）
+  string commit_sha = 3;                // Commit SHA（可选）
+  map<string, string> env = 4;          // 额外的环境变量（可选）
+  string triggered_by = 5;              // 触发者
+}
+
+// 触发流水线响应
+message TriggerPipelineResponse {
+  bool success = 1;
+  string message = 2;
+  string run_id = 3;                    // 流水线执行ID
+  repeated string job_ids = 4;          // 创建的任务ID列表
+}
+
+// 停止流水线请求
+message StopPipelineRequest {
+  string pipeline_id = 1;
+  string run_id = 2;                    // 流水线执行ID
+  string reason = 3;                    // 停止原因
+}
+
+// 停止流水线响应
+message StopPipelineResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// ============ 标签选择器相关 ============
+
+// 标签选择器 - 用于任务匹配Agent
+message LabelSelector {
+  // 匹配所有指定的标签（AND逻辑）
+  map<string, string> match_labels = 1;
+  
+  // 标签表达式（支持更复杂的匹配规则）
+  repeated LabelSelectorRequirement match_expressions = 2;
+}
+
+// 标签选择器要求
+message LabelSelectorRequirement {
+  string key = 1;                     // 标签key
+  LabelOperator operator = 2;         // 操作符
+  repeated string values = 3;         // 值列表
+}
+
+// 标签操作符
+enum LabelOperator {
+  LABEL_OPERATOR_UNKNOWN = 0;
+  LABEL_OPERATOR_IN = 1;              // 标签值在values列表中
+  LABEL_OPERATOR_NOT_IN = 2;          // 标签值不在values列表中
+  LABEL_OPERATOR_EXISTS = 3;          // 标签key存在
+  LABEL_OPERATOR_NOT_EXISTS = 4;      // 标签key不存在
+  LABEL_OPERATOR_GT = 5;              // 标签值大于指定值（用于数值比较）
+  LABEL_OPERATOR_LT = 6;              // 标签值小于指定值（用于数值比较）
+}
+

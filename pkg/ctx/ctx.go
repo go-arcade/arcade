@@ -1,6 +1,9 @@
 package ctx
 
 import (
+	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.uber.org/zap"
 	"golang.org/x/net/context"
 	"gorm.io/gorm"
 )
@@ -13,14 +16,20 @@ import (
  */
 
 type Context struct {
-	DB  *gorm.DB
-	Ctx context.Context
+	DB    *gorm.DB
+	Mongo *mongo.Client
+	Redis *redis.Client
+	Ctx   context.Context
+	Log   *zap.SugaredLogger
 }
 
-func NewContext(ctx context.Context, db *gorm.DB) *Context {
+func NewContext(ctx context.Context, mongodb *mongo.Client, redis *redis.Client, mysql *gorm.DB, log *zap.SugaredLogger) *Context {
 	return &Context{
-		DB:  db,
-		Ctx: ctx,
+		DB:    mysql,
+		Mongo: mongodb,
+		Redis: redis,
+		Ctx:   ctx,
+		Log:   log,
 	}
 }
 
@@ -34,4 +43,20 @@ func (c *Context) SetDB(db *gorm.DB) {
 
 func (c *Context) GetDB() *gorm.DB {
 	return c.DB
+}
+
+func (c *Context) SetMongoIns(client *mongo.Client) {
+	c.Mongo = client
+}
+
+func (c *Context) GetMongoIns() *mongo.Client {
+	return c.Mongo
+}
+
+func (c *Context) SetRedis(redis *redis.Client) {
+	c.Redis = redis
+}
+
+func (c *Context) GetRedis() *redis.Client {
+	return c.Redis
 }

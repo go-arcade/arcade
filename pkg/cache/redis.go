@@ -7,6 +7,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"os"
 	"strings"
+	"time"
 )
 
 /**
@@ -16,10 +17,9 @@ import (
  * @description: redis
  */
 
-type RedisConf struct {
+type Redis struct {
 	Mode             string
-	Host             string
-	Port             int
+	Address          string
 	Password         string
 	DB               int
 	PoolSize         int
@@ -27,44 +27,41 @@ type RedisConf struct {
 	MasterName       string
 	SentinelUsername string
 	SentinelPassword string
+	DialTimeout      time.Duration // 连接超时
+	ReadTimeout      time.Duration // 读超时
+	WriteTimeout     time.Duration // 写超时
 }
 
-type Redis redis.Cmdable
+func NewRedis(cfg Redis) (*redis.Client, error) {
 
-func NewRedis(cfg RedisConf) (Redis, error) {
-
-	var redisClient Redis
+	var redisClient *redis.Client
 	switch cfg.Mode {
 	case "single":
 		redisOptions := &redis.Options{
-			Addr:     fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
-			Password: cfg.Password,
-			DB:       cfg.DB,
-			PoolSize: cfg.PoolSize,
+			Addr:         cfg.Address,
+			Password:     cfg.Password,
+			DB:           cfg.DB,
+			PoolSize:     cfg.PoolSize,
+			DialTimeout:  cfg.DialTimeout * time.Second,
+			ReadTimeout:  cfg.ReadTimeout * time.Second,
+			WriteTimeout: cfg.WriteTimeout * time.Second,
 		}
 		if cfg.UseTLS {
 			redisOptions.TLSConfig = &tls.Config{}
 		}
 		redisClient = redis.NewClient(redisOptions)
-	case "cluster":
-		redisOptions := &redis.ClusterOptions{
-			Addrs:    strings.Split(cfg.Host, ","),
-			Password: cfg.Password,
-			PoolSize: cfg.PoolSize,
-		}
-		if cfg.UseTLS {
-			redisOptions.TLSConfig = &tls.Config{}
-		}
-		redisClient = redis.NewClusterClient(redisOptions)
 	case "sentinel":
 		redisOptions := &redis.FailoverOptions{
 			MasterName:       cfg.MasterName,
-			SentinelAddrs:    strings.Split(cfg.Host, ","),
+			SentinelAddrs:    strings.Split(cfg.Address, ","),
 			Password:         cfg.Password,
 			DB:               cfg.DB,
 			PoolSize:         cfg.PoolSize,
 			SentinelUsername: cfg.SentinelUsername,
 			SentinelPassword: cfg.SentinelPassword,
+			DialTimeout:      cfg.DialTimeout * time.Second,
+			ReadTimeout:      cfg.ReadTimeout * time.Second,
+			WriteTimeout:     cfg.WriteTimeout * time.Second,
 		}
 		if cfg.UseTLS {
 			redisOptions.TLSConfig = &tls.Config{}
@@ -80,6 +77,8 @@ func NewRedis(cfg RedisConf) (Redis, error) {
 		fmt.Println("failed to connect redis", err)
 		return nil, err
 	}
+
+	fmt.Printf("[Init] redis connected, mode: %s\n", cfg.Mode)
 
 	return redisClient, nil
 }

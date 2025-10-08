@@ -34,13 +34,13 @@ var VersionCmd = &cobra.Command{
 }
 
 type Info struct {
-	Version   string `Json:"Version"`
-	GitBranch string `Json:"GitBranch"`
-	GitCommit string `Json:"GitCommit"`
-	BuildTime string `Json:"BuildTime"`
-	GoVersion string `Json:"GoVersion"`
-	Compiler  string `Json:"Compiler"`
-	Platform  string `Json:"Platform"`
+	Version   string `json:"version"`
+	GitBranch string `json:"gitBranch"`
+	GitCommit string `json:"gitCommit"`
+	BuildTime string `json:"buildTime"`
+	GoVersion string `json:"goVersion"`
+	Compiler  string `json:"compiler"`
+	Platform  string `json:"platform"`
 }
 
 func (v *Info) string() string {
