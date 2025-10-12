@@ -1,8 +1,7 @@
 package ws
 
 import (
-	"encoding/json"
-
+	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	"github.com/observabil/arcade/pkg/log"
@@ -44,7 +43,7 @@ func Handle(c *fiber.Ctx) error {
 			}
 
 			var msg Message
-			err = json.Unmarshal(p, &msg)
+			err = sonic.Unmarshal(p, &msg)
 			if err != nil {
 				log.Errorf("unmarshal message error: %v", err)
 				break

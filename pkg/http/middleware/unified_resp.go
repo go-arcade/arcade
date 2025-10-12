@@ -1,4 +1,4 @@
-package interceptor
+package middleware
 
 import (
 	"github.com/gofiber/fiber/v2"
@@ -6,17 +6,10 @@ import (
 	httpx "github.com/observabil/arcade/pkg/http"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/17 20:44
- * @file: unified_resp_interceptor.go
- * @description: 统一响应拦截器
- */
-
 // UnifiedResponseInterceptor 统一响应拦截器
 // c.Locals("detail", value) 用于设置响应数据
 // 如有其他需要，可自行添加
-func UnifiedResponseInterceptor() fiber.Handler {
+func UnifiedResponseMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		err := c.Next()
 		if err != nil {

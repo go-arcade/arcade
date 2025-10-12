@@ -25,12 +25,6 @@ host = "0.0.0.0"
 port = 8080
 # debug, release
 mode = "debug"
-# internal context path
-# web api context path
-internalContextPath = "/api/v1/"
-# external context path
-# external api context path
-externalContextPath = "/api/v1/arcade/"
 # unit: second
 heartbeat = 60
 # enable pprof, false or true

@@ -12,31 +12,22 @@ import (
 	"github.com/observabil/arcade/pkg/ctx"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/8 15:38
- * @file: http.go
- * @description: http server
- */
-
 type Http struct {
-	Host                string
-	Port                int
-	Mode                string
-	InternalContextPath string
-	ExternalContextPath string
-	Heartbeat           int64
-	PProf               bool
-	ExposeMetrics       bool
-	AccessLog           bool
-	UseFileAssets       bool
-	ReadTimeout         int
-	WriteTimeout        int
-	IdleTimeout         int
-	ShutdownTimeout     int
-	TLS                 TLS
-	Auth                Auth
-	Ctx                 ctx.Context
+	Host            string
+	Port            int
+	Mode            string
+	Heartbeat       int64
+	Pprof           bool
+	ExposeMetrics   bool
+	AccessLog       bool
+	UseFileAssets   bool
+	ReadTimeout     int
+	WriteTimeout    int
+	IdleTimeout     int
+	ShutdownTimeout int
+	TLS             TLS
+	Auth            Auth
+	Ctx             ctx.Context
 }
 
 type TLS struct {
@@ -51,6 +42,7 @@ type Auth struct {
 	RedisKeyPrefix string
 }
 
+// NewHttp 创建并启动 HTTP 服务器
 func NewHttp(cfg Http, app *fiber.App) func() {
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 
@@ -81,6 +73,7 @@ func NewHttp(cfg Http, app *fiber.App) func() {
 	return createShutdownHook(app, cfg.ShutdownTimeout, sc)
 }
 
+// createShutdownHook 创建关闭钩子函数
 func createShutdownHook(app *fiber.App, shutdownTimeout int, signalChan chan os.Signal) func() {
 	signal.Notify(signalChan, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 

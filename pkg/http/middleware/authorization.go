@@ -1,4 +1,4 @@
-package interceptor
+package middleware
 
 import (
 	"context"
@@ -13,16 +13,12 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/28 18:59
- * @file: authorization_interceptor.go
- * @description: authorization interceptor
- */
-
-// AuthorizationInterceptor 鉴权拦截器
+// AuthorizationMiddleware 认证中间件
+// secretKey: 用于验证 JWT 的密钥
+// tokenPrefix: Redis 中存储 Token 的前缀
+// client: Redis 客户端
 // This function is used as the middleware of fiber.
-func AuthorizationInterceptor(secretKey, tokenPrefix string, client redis.Client) fiber.Handler {
+func AuthorizationMiddleware(secretKey, tokenPrefix string, client redis.Client) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		aToken := c.Get("Authorization")
 		if aToken == "" {

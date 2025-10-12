@@ -16,17 +16,19 @@ import (
  * @description: token tool
  */
 
-func ParseAuthorizationToken(c *fiber.Ctx, secretKey string) (*jwt.AuthClaims, error) {
-	token := c.Get("Authorization")
+// ParseAuthorizationToken 解析 Authorization 头中的 Bearer token
+func ParseAuthorizationToken(f *fiber.Ctx, secretKey string) (*jwt.AuthClaims, error) {
+	token := f.Get("Authorization")
 	if token == "" {
 		return nil, errors.New(http.TokenBeEmpty.Msg)
 	}
-	if strings.HasPrefix(token, "Bearer ") {
-		token = strings.TrimPrefix(token, "Bearer ")
+
+	if t, ok := strings.CutPrefix(token, "Bearer "); ok {
+		token = t
 	} else {
-		// 处理令牌格式不正确的情况
 		return nil, errors.New(http.TokenFormatIncorrect.Msg)
 	}
+
 	claims, err := jwt.ParseToken(token, secretKey)
 	if err != nil {
 		return nil, err

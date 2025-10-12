@@ -46,7 +46,9 @@ func (m *Minio) Client() (*minio.Client, error) {
 	return minioClient, nil
 }
 
-func (m *Minio) Upload(objectName string, file *multipart.FileHeader, contentType string, client minio.Client, ctx *fiber.Ctx) (minio.UploadInfo, error) {
+func (m *Minio) Upload(objectName string, file *multipart.FileHeader,
+	contentType string, client minio.Client, ctx *fiber.Ctx) (minio.UploadInfo, error) {
+
 	isExistBucket(ctx, client, m.Bucket)
 
 	src, err := file.Open()
