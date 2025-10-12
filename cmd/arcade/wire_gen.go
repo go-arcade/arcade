@@ -14,6 +14,7 @@ import (
 	"github.com/observabil/arcade/pkg/ctx"
 	"github.com/observabil/arcade/pkg/http"
 	"github.com/observabil/arcade/pkg/plugin"
+	"github.com/observabil/arcade/pkg/storage"
 	"go.uber.org/zap"
 )
 
@@ -26,7 +27,12 @@ func initApp(configPath string, appCtx *ctx.Context, logger *zap.Logger) (*app.A
 	manager := plugin.ProvidePluginManager()
 	grpcConf := provideGrpcConfig(appConfig)
 	serverWrapper := grpc.ProvideGrpcServer(grpcConf)
-	appApp, cleanup, err := app.NewApp(routerRouter, logger, manager, serverWrapper)
+	storageStorage := provideStorageConfig(appConfig, appCtx)
+	storageProvider, err := storage.ProvideStorage(storageStorage)
+	if err != nil {
+		return nil, nil, err
+	}
+	appApp, cleanup, err := app.NewApp(routerRouter, logger, manager, serverWrapper, storageProvider)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -36,6 +42,20 @@ func initApp(configPath string, appCtx *ctx.Context, logger *zap.Logger) (*app.A
 }
 
 // wire.go:
+
+func provideStorageConfig(appConf conf.AppConfig, appCtx *ctx.Context) *storage.Storage {
+	return &storage.Storage{
+		Ctx:       appCtx,
+		Provider:  appConf.Storage.Provider,
+		AccessKey: appConf.Storage.AccessKey,
+		SecretKey: appConf.Storage.SecretKey,
+		Endpoint:  appConf.Storage.Endpoint,
+		Bucket:    appConf.Storage.Bucket,
+		Region:    appConf.Storage.Region,
+		UseTLS:    appConf.Storage.UseTLS,
+		BasePath:  appConf.Storage.BasePath,
+	}
+}
 
 func provideHttpConfig(appConf conf.AppConfig) *http.Http {
 	return &appConf.Http

@@ -127,11 +127,12 @@ readTimeout = 10
 # unit: second
 writeTimeout = 10
 
-[minio]
-# Tips: Do not use minio user for client authentication, instead create access keys
-# https://min.io/docs/minio/container/administration/console/security-and-access.html
-accessKeyId = ""
-secretAccessKey = ""
-endpoint = ""
-bucket = ""
-useSSL = false
+[storage]
+Provider  = "minio"
+AccessKey = ""
+SecretKey = ""
+Endpoint  = ""
+Bucket    = ""
+Region    = ""
+UseTLS    = false
+BasePath  = ""

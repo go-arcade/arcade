@@ -5,6 +5,7 @@ import (
 	"github.com/observabil/arcade/internal/engine/router"
 	"github.com/observabil/arcade/internal/pkg/grpc"
 	"github.com/observabil/arcade/pkg/plugin"
+	"github.com/observabil/arcade/pkg/storage"
 	"go.uber.org/zap"
 )
 
@@ -13,6 +14,7 @@ type App struct {
 	PluginMgr  *plugin.Manager
 	GrpcServer *grpc.ServerWrapper
 	Logger     *zap.Logger
+	Storage    storage.StorageProvider
 }
 
 func NewApp(
@@ -20,6 +22,7 @@ func NewApp(
 	logger *zap.Logger,
 	pluginMgr *plugin.Manager,
 	grpcServer *grpc.ServerWrapper,
+	storage storage.StorageProvider,
 ) (*App, func(), error) {
 	httpApp := rt.Router(logger)
 
@@ -35,6 +38,7 @@ func NewApp(
 		PluginMgr:  pluginMgr,
 		GrpcServer: grpcServer,
 		Logger:     logger,
+		Storage:    storage,
 	}
 	return app, cleanup, nil
 }

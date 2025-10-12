@@ -7,6 +7,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/observabil/arcade/internal/pkg/grpc"
 	"github.com/observabil/arcade/pkg/http"
+	"github.com/observabil/arcade/pkg/storage"
 	"github.com/spf13/viper"
 
 	"github.com/observabil/arcade/pkg/cache"
@@ -20,6 +21,7 @@ type AppConfig struct {
 	Http     http.Http
 	Database database.Database
 	Redis    cache.Redis
+	Storage  storage.Storage
 }
 
 var (
