@@ -20,6 +20,14 @@ rotateSize = 256
 # kafka topic
 # kafkaTopic = ""
 
+[grpc]
+host = "0.0.0.0"
+port = 9090
+maxConnections = 1000
+maxQPS = 1000
+# unit: second
+readWriteTimeout = 5
+
 [http]
 host = "0.0.0.0"
 port = 8080

@@ -2,49 +2,52 @@ syntax = "proto3";
 
 package api.job.v1;
 
-option go_package = "github.com/observabil/arcade/api/job/v1/proto;v1";
+option go_package = "github.com/observabil/arcade/api/job/v1;v1";
 
 // Job服务 - 任务和流水线管理接口
 service Job {
+  // Ping服务健康检查
+  rpc Ping(PingRequest) returns (PingResponse) {}
+
   // 创建任务
   rpc CreateJob(CreateJobRequest) returns (CreateJobResponse) {}
-  
+
   // 获取任务详情
   rpc GetJob(GetJobRequest) returns (GetJobResponse) {}
-  
+
   // 列出任务（支持分页和过滤）
   rpc ListJobs(ListJobsRequest) returns (ListJobsResponse) {}
-  
+
   // 更新任务
   rpc UpdateJob(UpdateJobRequest) returns (UpdateJobResponse) {}
-  
+
   // 删除任务
   rpc DeleteJob(DeleteJobRequest) returns (DeleteJobResponse) {}
-  
+
   // 取消任务
   rpc CancelJob(CancelJobRequest) returns (CancelJobResponse) {}
-  
+
   // 重试任务
   rpc RetryJob(RetryJobRequest) returns (RetryJobResponse) {}
-  
+
   // 获取任务日志
   rpc GetJobLog(GetJobLogRequest) returns (GetJobLogResponse) {}
-  
+
   // 获取任务产物列表
   rpc ListJobArtifacts(ListJobArtifactsRequest) returns (ListJobArtifactsResponse) {}
-  
+
   // 创建流水线
   rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {}
-  
+
   // 获取流水线详情
   rpc GetPipeline(GetPipelineRequest) returns (GetPipelineResponse) {}
-  
+
   // 列出流水线
   rpc ListPipelines(ListPipelinesRequest) returns (ListPipelinesResponse) {}
-  
+
   // 触发流水线执行
   rpc TriggerPipeline(TriggerPipelineRequest) returns (TriggerPipelineResponse) {}
-  
+
   // 停止流水线
   rpc StopPipeline(StopPipelineRequest) returns (StopPipelineResponse) {}
 }
@@ -80,6 +83,15 @@ enum TriggerType {
   TRIGGER_TYPE_WEBHOOK = 2;      // Webhook触发
   TRIGGER_TYPE_SCHEDULE = 3;     // 定时触发
   TRIGGER_TYPE_API = 4;          // API触发
+}
+
+message PingRequest {
+    string message = 1;
+}
+
+message PingResponse {
+    string message = 1;
+    int64 timestamp = 2;
 }
 
 // 创建任务请求
@@ -407,7 +419,7 @@ message StopPipelineResponse {
 message LabelSelector {
   // 匹配所有指定的标签（AND逻辑）
   map<string, string> match_labels = 1;
-  
+
   // 标签表达式（支持更复杂的匹配规则）
   repeated LabelSelectorRequirement match_expressions = 2;
 }
@@ -429,4 +441,3 @@ enum LabelOperator {
   LABEL_OPERATOR_GT = 5;              // 标签值大于指定值（用于数值比较）
   LABEL_OPERATOR_LT = 6;              // 标签值小于指定值（用于数值比较）
 }
-

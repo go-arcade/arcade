@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v6.32.1
-// source: api/stream/v1/stream.proto
+// source: api/stream/v1/proto/stream.proto
 
 package v1
 
@@ -19,6 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	Stream_Ping_FullMethodName                 = "/api.stream.v1.Stream/Ping"
 	Stream_StreamJobLog_FullMethodName         = "/api.stream.v1.Stream/StreamJobLog"
 	Stream_UploadJobLog_FullMethodName         = "/api.stream.v1.Stream/UploadJobLog"
 	Stream_StreamJobStatus_FullMethodName      = "/api.stream.v1.Stream/StreamJobStatus"
@@ -34,6 +35,8 @@ const (
 //
 // Stream服务 - 实时数据流传输接口
 type StreamClient interface {
+	// ping
+	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
 	// 实时获取任务日志流 - Server端流式推送日志给客户端
 	StreamJobLog(ctx context.Context, in *StreamJobLogRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamJobLogResponse], error)
 	// 上报任务日志流 - Agent端流式上报日志给Server
@@ -56,6 +59,16 @@ type streamClient struct {
 
 func NewStreamClient(cc grpc.ClientConnInterface) StreamClient {
 	return &streamClient{cc}
+}
+
+func (c *streamClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PingResponse)
+	err := c.cc.Invoke(ctx, Stream_Ping_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *streamClient) StreamJobLog(ctx context.Context, in *StreamJobLogRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamJobLogResponse], error) {
@@ -185,6 +198,8 @@ type Stream_StreamEventsClient = grpc.ServerStreamingClient[StreamEventsResponse
 //
 // Stream服务 - 实时数据流传输接口
 type StreamServer interface {
+	// ping
+	Ping(context.Context, *PingRequest) (*PingResponse, error)
 	// 实时获取任务日志流 - Server端流式推送日志给客户端
 	StreamJobLog(*StreamJobLogRequest, grpc.ServerStreamingServer[StreamJobLogResponse]) error
 	// 上报任务日志流 - Agent端流式上报日志给Server
@@ -209,6 +224,9 @@ type StreamServer interface {
 // pointer dereference when methods are called.
 type UnimplementedStreamServer struct{}
 
+func (UnimplementedStreamServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
+}
 func (UnimplementedStreamServer) StreamJobLog(*StreamJobLogRequest, grpc.ServerStreamingServer[StreamJobLogResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method StreamJobLog not implemented")
 }
@@ -249,6 +267,24 @@ func RegisterStreamServer(s grpc.ServiceRegistrar, srv StreamServer) {
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&Stream_ServiceDesc, srv)
+}
+
+func _Stream_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StreamServer).Ping(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Stream_Ping_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StreamServer).Ping(ctx, req.(*PingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Stream_StreamJobLog_Handler(srv interface{}, stream grpc.ServerStream) error {
@@ -326,7 +362,12 @@ type Stream_StreamEventsServer = grpc.ServerStreamingServer[StreamEventsResponse
 var Stream_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "api.stream.v1.Stream",
 	HandlerType: (*StreamServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Ping",
+			Handler:    _Stream_Ping_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "StreamJobLog",
@@ -365,5 +406,5 @@ var Stream_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "api/stream/v1/stream.proto",
+	Metadata: "api/stream/v1/proto/stream.proto",
 }

@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v6.32.1
-// source: api/job/v1/job.proto
+// source: api/job/v1/proto/job.proto
 
 package v1
 
@@ -19,6 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	Job_Ping_FullMethodName             = "/api.job.v1.Job/Ping"
 	Job_CreateJob_FullMethodName        = "/api.job.v1.Job/CreateJob"
 	Job_GetJob_FullMethodName           = "/api.job.v1.Job/GetJob"
 	Job_ListJobs_FullMethodName         = "/api.job.v1.Job/ListJobs"
@@ -41,6 +42,8 @@ const (
 //
 // Job服务 - 任务和流水线管理接口
 type JobClient interface {
+	// Ping服务健康检查
+	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
 	// 创建任务
 	CreateJob(ctx context.Context, in *CreateJobRequest, opts ...grpc.CallOption) (*CreateJobResponse, error)
 	// 获取任务详情
@@ -77,6 +80,16 @@ type jobClient struct {
 
 func NewJobClient(cc grpc.ClientConnInterface) JobClient {
 	return &jobClient{cc}
+}
+
+func (c *jobClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PingResponse)
+	err := c.cc.Invoke(ctx, Job_Ping_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *jobClient) CreateJob(ctx context.Context, in *CreateJobRequest, opts ...grpc.CallOption) (*CreateJobResponse, error) {
@@ -225,6 +238,8 @@ func (c *jobClient) StopPipeline(ctx context.Context, in *StopPipelineRequest, o
 //
 // Job服务 - 任务和流水线管理接口
 type JobServer interface {
+	// Ping服务健康检查
+	Ping(context.Context, *PingRequest) (*PingResponse, error)
 	// 创建任务
 	CreateJob(context.Context, *CreateJobRequest) (*CreateJobResponse, error)
 	// 获取任务详情
@@ -263,6 +278,9 @@ type JobServer interface {
 // pointer dereference when methods are called.
 type UnimplementedJobServer struct{}
 
+func (UnimplementedJobServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
+}
 func (UnimplementedJobServer) CreateJob(context.Context, *CreateJobRequest) (*CreateJobResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateJob not implemented")
 }
@@ -324,6 +342,24 @@ func RegisterJobServer(s grpc.ServiceRegistrar, srv JobServer) {
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&Job_ServiceDesc, srv)
+}
+
+func _Job_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(JobServer).Ping(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Job_Ping_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(JobServer).Ping(ctx, req.(*PingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Job_CreateJob_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -586,6 +622,10 @@ var Job_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*JobServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "Ping",
+			Handler:    _Job_Ping_Handler,
+		},
+		{
 			MethodName: "CreateJob",
 			Handler:    _Job_CreateJob_Handler,
 		},
@@ -643,5 +683,5 @@ var Job_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "api/job/v1/job.proto",
+	Metadata: "api/job/v1/proto/job.proto",
 }

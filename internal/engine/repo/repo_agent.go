@@ -5,13 +5,6 @@ import (
 	"github.com/observabil/arcade/pkg/ctx"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/21 20:13
- * @file: repo_agent.go
- * @description: agent repo
- */
-
 type AgentRepo struct {
 	Ctx        *ctx.Context
 	AgentModel model.Agent

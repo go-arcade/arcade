@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.10
 // 	protoc        v6.32.1
-// source: api/job/v1/job.proto
+// source: api/job/v1/proto/job.proto
 
 package v1
 
@@ -73,11 +73,11 @@ func (x JobStatus) String() string {
 }
 
 func (JobStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_job_v1_job_proto_enumTypes[0].Descriptor()
+	return file_api_job_v1_proto_job_proto_enumTypes[0].Descriptor()
 }
 
 func (JobStatus) Type() protoreflect.EnumType {
-	return &file_api_job_v1_job_proto_enumTypes[0]
+	return &file_api_job_v1_proto_job_proto_enumTypes[0]
 }
 
 func (x JobStatus) Number() protoreflect.EnumNumber {
@@ -86,7 +86,7 @@ func (x JobStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use JobStatus.Descriptor instead.
 func (JobStatus) EnumDescriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{0}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{0}
 }
 
 // 流水线状态枚举
@@ -135,11 +135,11 @@ func (x PipelineStatus) String() string {
 }
 
 func (PipelineStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_job_v1_job_proto_enumTypes[1].Descriptor()
+	return file_api_job_v1_proto_job_proto_enumTypes[1].Descriptor()
 }
 
 func (PipelineStatus) Type() protoreflect.EnumType {
-	return &file_api_job_v1_job_proto_enumTypes[1]
+	return &file_api_job_v1_proto_job_proto_enumTypes[1]
 }
 
 func (x PipelineStatus) Number() protoreflect.EnumNumber {
@@ -148,7 +148,7 @@ func (x PipelineStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use PipelineStatus.Descriptor instead.
 func (PipelineStatus) EnumDescriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{1}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{1}
 }
 
 // 触发类型枚举
@@ -191,11 +191,11 @@ func (x TriggerType) String() string {
 }
 
 func (TriggerType) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_job_v1_job_proto_enumTypes[2].Descriptor()
+	return file_api_job_v1_proto_job_proto_enumTypes[2].Descriptor()
 }
 
 func (TriggerType) Type() protoreflect.EnumType {
-	return &file_api_job_v1_job_proto_enumTypes[2]
+	return &file_api_job_v1_proto_job_proto_enumTypes[2]
 }
 
 func (x TriggerType) Number() protoreflect.EnumNumber {
@@ -204,7 +204,7 @@ func (x TriggerType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use TriggerType.Descriptor instead.
 func (TriggerType) EnumDescriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{2}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{2}
 }
 
 // 标签操作符
@@ -253,11 +253,11 @@ func (x LabelOperator) String() string {
 }
 
 func (LabelOperator) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_job_v1_job_proto_enumTypes[3].Descriptor()
+	return file_api_job_v1_proto_job_proto_enumTypes[3].Descriptor()
 }
 
 func (LabelOperator) Type() protoreflect.EnumType {
-	return &file_api_job_v1_job_proto_enumTypes[3]
+	return &file_api_job_v1_proto_job_proto_enumTypes[3]
 }
 
 func (x LabelOperator) Number() protoreflect.EnumNumber {
@@ -266,7 +266,103 @@ func (x LabelOperator) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use LabelOperator.Descriptor instead.
 func (LabelOperator) EnumDescriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{3}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{3}
+}
+
+type PingRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PingRequest) Reset() {
+	*x = PingRequest{}
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PingRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PingRequest) ProtoMessage() {}
+
+func (x *PingRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PingRequest.ProtoReflect.Descriptor instead.
+func (*PingRequest) Descriptor() ([]byte, []int) {
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *PingRequest) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+type PingResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	Timestamp     int64                  `protobuf:"varint,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PingResponse) Reset() {
+	*x = PingResponse{}
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PingResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PingResponse) ProtoMessage() {}
+
+func (x *PingResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PingResponse.ProtoReflect.Descriptor instead.
+func (*PingResponse) Descriptor() ([]byte, []int) {
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *PingResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *PingResponse) GetTimestamp() int64 {
+	if x != nil {
+		return x.Timestamp
+	}
+	return 0
 }
 
 // 创建任务请求
@@ -293,7 +389,7 @@ type CreateJobRequest struct {
 
 func (x *CreateJobRequest) Reset() {
 	*x = CreateJobRequest{}
-	mi := &file_api_job_v1_job_proto_msgTypes[0]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -305,7 +401,7 @@ func (x *CreateJobRequest) String() string {
 func (*CreateJobRequest) ProtoMessage() {}
 
 func (x *CreateJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[0]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -318,7 +414,7 @@ func (x *CreateJobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateJobRequest.ProtoReflect.Descriptor instead.
 func (*CreateJobRequest) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{0}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *CreateJobRequest) GetName() string {
@@ -440,7 +536,7 @@ type ArtifactConfig struct {
 
 func (x *ArtifactConfig) Reset() {
 	*x = ArtifactConfig{}
-	mi := &file_api_job_v1_job_proto_msgTypes[1]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -452,7 +548,7 @@ func (x *ArtifactConfig) String() string {
 func (*ArtifactConfig) ProtoMessage() {}
 
 func (x *ArtifactConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[1]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -465,7 +561,7 @@ func (x *ArtifactConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ArtifactConfig.ProtoReflect.Descriptor instead.
 func (*ArtifactConfig) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{1}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ArtifactConfig) GetName() string {
@@ -515,7 +611,7 @@ type CreateJobResponse struct {
 
 func (x *CreateJobResponse) Reset() {
 	*x = CreateJobResponse{}
-	mi := &file_api_job_v1_job_proto_msgTypes[2]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -527,7 +623,7 @@ func (x *CreateJobResponse) String() string {
 func (*CreateJobResponse) ProtoMessage() {}
 
 func (x *CreateJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[2]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -540,7 +636,7 @@ func (x *CreateJobResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateJobResponse.ProtoReflect.Descriptor instead.
 func (*CreateJobResponse) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{2}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *CreateJobResponse) GetSuccess() bool {
@@ -574,7 +670,7 @@ type GetJobRequest struct {
 
 func (x *GetJobRequest) Reset() {
 	*x = GetJobRequest{}
-	mi := &file_api_job_v1_job_proto_msgTypes[3]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -586,7 +682,7 @@ func (x *GetJobRequest) String() string {
 func (*GetJobRequest) ProtoMessage() {}
 
 func (x *GetJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[3]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -599,7 +695,7 @@ func (x *GetJobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetJobRequest.ProtoReflect.Descriptor instead.
 func (*GetJobRequest) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{3}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetJobRequest) GetJobId() string {
@@ -621,7 +717,7 @@ type GetJobResponse struct {
 
 func (x *GetJobResponse) Reset() {
 	*x = GetJobResponse{}
-	mi := &file_api_job_v1_job_proto_msgTypes[4]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -633,7 +729,7 @@ func (x *GetJobResponse) String() string {
 func (*GetJobResponse) ProtoMessage() {}
 
 func (x *GetJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[4]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -646,7 +742,7 @@ func (x *GetJobResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetJobResponse.ProtoReflect.Descriptor instead.
 func (*GetJobResponse) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{4}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GetJobResponse) GetSuccess() bool {
@@ -705,7 +801,7 @@ type JobDetail struct {
 
 func (x *JobDetail) Reset() {
 	*x = JobDetail{}
-	mi := &file_api_job_v1_job_proto_msgTypes[5]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -717,7 +813,7 @@ func (x *JobDetail) String() string {
 func (*JobDetail) ProtoMessage() {}
 
 func (x *JobDetail) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[5]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -730,7 +826,7 @@ func (x *JobDetail) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JobDetail.ProtoReflect.Descriptor instead.
 func (*JobDetail) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{5}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *JobDetail) GetJobId() string {
@@ -931,7 +1027,7 @@ type ListJobsRequest struct {
 
 func (x *ListJobsRequest) Reset() {
 	*x = ListJobsRequest{}
-	mi := &file_api_job_v1_job_proto_msgTypes[6]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -943,7 +1039,7 @@ func (x *ListJobsRequest) String() string {
 func (*ListJobsRequest) ProtoMessage() {}
 
 func (x *ListJobsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[6]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -956,7 +1052,7 @@ func (x *ListJobsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListJobsRequest.ProtoReflect.Descriptor instead.
 func (*ListJobsRequest) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{6}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ListJobsRequest) GetPipelineId() string {
@@ -1023,7 +1119,7 @@ type ListJobsResponse struct {
 
 func (x *ListJobsResponse) Reset() {
 	*x = ListJobsResponse{}
-	mi := &file_api_job_v1_job_proto_msgTypes[7]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1035,7 +1131,7 @@ func (x *ListJobsResponse) String() string {
 func (*ListJobsResponse) ProtoMessage() {}
 
 func (x *ListJobsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[7]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1048,7 +1144,7 @@ func (x *ListJobsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListJobsResponse.ProtoReflect.Descriptor instead.
 func (*ListJobsResponse) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{7}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ListJobsResponse) GetSuccess() bool {
@@ -1108,7 +1204,7 @@ type UpdateJobRequest struct {
 
 func (x *UpdateJobRequest) Reset() {
 	*x = UpdateJobRequest{}
-	mi := &file_api_job_v1_job_proto_msgTypes[8]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1120,7 +1216,7 @@ func (x *UpdateJobRequest) String() string {
 func (*UpdateJobRequest) ProtoMessage() {}
 
 func (x *UpdateJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[8]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1133,7 +1229,7 @@ func (x *UpdateJobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateJobRequest.ProtoReflect.Descriptor instead.
 func (*UpdateJobRequest) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{8}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *UpdateJobRequest) GetJobId() string {
@@ -1189,7 +1285,7 @@ type UpdateJobResponse struct {
 
 func (x *UpdateJobResponse) Reset() {
 	*x = UpdateJobResponse{}
-	mi := &file_api_job_v1_job_proto_msgTypes[9]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1201,7 +1297,7 @@ func (x *UpdateJobResponse) String() string {
 func (*UpdateJobResponse) ProtoMessage() {}
 
 func (x *UpdateJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[9]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1214,7 +1310,7 @@ func (x *UpdateJobResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateJobResponse.ProtoReflect.Descriptor instead.
 func (*UpdateJobResponse) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{9}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *UpdateJobResponse) GetSuccess() bool {
@@ -1241,7 +1337,7 @@ type DeleteJobRequest struct {
 
 func (x *DeleteJobRequest) Reset() {
 	*x = DeleteJobRequest{}
-	mi := &file_api_job_v1_job_proto_msgTypes[10]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1253,7 +1349,7 @@ func (x *DeleteJobRequest) String() string {
 func (*DeleteJobRequest) ProtoMessage() {}
 
 func (x *DeleteJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[10]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1266,7 +1362,7 @@ func (x *DeleteJobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteJobRequest.ProtoReflect.Descriptor instead.
 func (*DeleteJobRequest) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{10}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *DeleteJobRequest) GetJobId() string {
@@ -1287,7 +1383,7 @@ type DeleteJobResponse struct {
 
 func (x *DeleteJobResponse) Reset() {
 	*x = DeleteJobResponse{}
-	mi := &file_api_job_v1_job_proto_msgTypes[11]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1299,7 +1395,7 @@ func (x *DeleteJobResponse) String() string {
 func (*DeleteJobResponse) ProtoMessage() {}
 
 func (x *DeleteJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[11]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1312,7 +1408,7 @@ func (x *DeleteJobResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteJobResponse.ProtoReflect.Descriptor instead.
 func (*DeleteJobResponse) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{11}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *DeleteJobResponse) GetSuccess() bool {
@@ -1340,7 +1436,7 @@ type CancelJobRequest struct {
 
 func (x *CancelJobRequest) Reset() {
 	*x = CancelJobRequest{}
-	mi := &file_api_job_v1_job_proto_msgTypes[12]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1352,7 +1448,7 @@ func (x *CancelJobRequest) String() string {
 func (*CancelJobRequest) ProtoMessage() {}
 
 func (x *CancelJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[12]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1365,7 +1461,7 @@ func (x *CancelJobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelJobRequest.ProtoReflect.Descriptor instead.
 func (*CancelJobRequest) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{12}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *CancelJobRequest) GetJobId() string {
@@ -1393,7 +1489,7 @@ type CancelJobResponse struct {
 
 func (x *CancelJobResponse) Reset() {
 	*x = CancelJobResponse{}
-	mi := &file_api_job_v1_job_proto_msgTypes[13]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1405,7 +1501,7 @@ func (x *CancelJobResponse) String() string {
 func (*CancelJobResponse) ProtoMessage() {}
 
 func (x *CancelJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[13]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1418,7 +1514,7 @@ func (x *CancelJobResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelJobResponse.ProtoReflect.Descriptor instead.
 func (*CancelJobResponse) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{13}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *CancelJobResponse) GetSuccess() bool {
@@ -1445,7 +1541,7 @@ type RetryJobRequest struct {
 
 func (x *RetryJobRequest) Reset() {
 	*x = RetryJobRequest{}
-	mi := &file_api_job_v1_job_proto_msgTypes[14]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1457,7 +1553,7 @@ func (x *RetryJobRequest) String() string {
 func (*RetryJobRequest) ProtoMessage() {}
 
 func (x *RetryJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[14]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1470,7 +1566,7 @@ func (x *RetryJobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RetryJobRequest.ProtoReflect.Descriptor instead.
 func (*RetryJobRequest) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{14}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *RetryJobRequest) GetJobId() string {
@@ -1492,7 +1588,7 @@ type RetryJobResponse struct {
 
 func (x *RetryJobResponse) Reset() {
 	*x = RetryJobResponse{}
-	mi := &file_api_job_v1_job_proto_msgTypes[15]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1504,7 +1600,7 @@ func (x *RetryJobResponse) String() string {
 func (*RetryJobResponse) ProtoMessage() {}
 
 func (x *RetryJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[15]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1517,7 +1613,7 @@ func (x *RetryJobResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RetryJobResponse.ProtoReflect.Descriptor instead.
 func (*RetryJobResponse) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{15}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *RetryJobResponse) GetSuccess() bool {
@@ -1553,7 +1649,7 @@ type GetJobLogRequest struct {
 
 func (x *GetJobLogRequest) Reset() {
 	*x = GetJobLogRequest{}
-	mi := &file_api_job_v1_job_proto_msgTypes[16]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1565,7 +1661,7 @@ func (x *GetJobLogRequest) String() string {
 func (*GetJobLogRequest) ProtoMessage() {}
 
 func (x *GetJobLogRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[16]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1578,7 +1674,7 @@ func (x *GetJobLogRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetJobLogRequest.ProtoReflect.Descriptor instead.
 func (*GetJobLogRequest) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{16}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *GetJobLogRequest) GetJobId() string {
@@ -1616,7 +1712,7 @@ type GetJobLogResponse struct {
 
 func (x *GetJobLogResponse) Reset() {
 	*x = GetJobLogResponse{}
-	mi := &file_api_job_v1_job_proto_msgTypes[17]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1628,7 +1724,7 @@ func (x *GetJobLogResponse) String() string {
 func (*GetJobLogResponse) ProtoMessage() {}
 
 func (x *GetJobLogResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[17]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1641,7 +1737,7 @@ func (x *GetJobLogResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetJobLogResponse.ProtoReflect.Descriptor instead.
 func (*GetJobLogResponse) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{17}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *GetJobLogResponse) GetSuccess() bool {
@@ -1692,7 +1788,7 @@ type LogLine struct {
 
 func (x *LogLine) Reset() {
 	*x = LogLine{}
-	mi := &file_api_job_v1_job_proto_msgTypes[18]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1704,7 +1800,7 @@ func (x *LogLine) String() string {
 func (*LogLine) ProtoMessage() {}
 
 func (x *LogLine) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[18]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1717,7 +1813,7 @@ func (x *LogLine) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogLine.ProtoReflect.Descriptor instead.
 func (*LogLine) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{18}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *LogLine) GetLineNumber() int32 {
@@ -1758,7 +1854,7 @@ type ListJobArtifactsRequest struct {
 
 func (x *ListJobArtifactsRequest) Reset() {
 	*x = ListJobArtifactsRequest{}
-	mi := &file_api_job_v1_job_proto_msgTypes[19]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1770,7 +1866,7 @@ func (x *ListJobArtifactsRequest) String() string {
 func (*ListJobArtifactsRequest) ProtoMessage() {}
 
 func (x *ListJobArtifactsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[19]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1783,7 +1879,7 @@ func (x *ListJobArtifactsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListJobArtifactsRequest.ProtoReflect.Descriptor instead.
 func (*ListJobArtifactsRequest) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{19}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ListJobArtifactsRequest) GetJobId() string {
@@ -1805,7 +1901,7 @@ type ListJobArtifactsResponse struct {
 
 func (x *ListJobArtifactsResponse) Reset() {
 	*x = ListJobArtifactsResponse{}
-	mi := &file_api_job_v1_job_proto_msgTypes[20]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1817,7 +1913,7 @@ func (x *ListJobArtifactsResponse) String() string {
 func (*ListJobArtifactsResponse) ProtoMessage() {}
 
 func (x *ListJobArtifactsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[20]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1830,7 +1926,7 @@ func (x *ListJobArtifactsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListJobArtifactsResponse.ProtoReflect.Descriptor instead.
 func (*ListJobArtifactsResponse) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{20}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *ListJobArtifactsResponse) GetSuccess() bool {
@@ -1870,7 +1966,7 @@ type Artifact struct {
 
 func (x *Artifact) Reset() {
 	*x = Artifact{}
-	mi := &file_api_job_v1_job_proto_msgTypes[21]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1882,7 +1978,7 @@ func (x *Artifact) String() string {
 func (*Artifact) ProtoMessage() {}
 
 func (x *Artifact) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[21]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1895,7 +1991,7 @@ func (x *Artifact) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Artifact.ProtoReflect.Descriptor instead.
 func (*Artifact) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{21}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *Artifact) GetArtifactId() string {
@@ -1965,7 +2061,7 @@ type CreatePipelineRequest struct {
 
 func (x *CreatePipelineRequest) Reset() {
 	*x = CreatePipelineRequest{}
-	mi := &file_api_job_v1_job_proto_msgTypes[22]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1977,7 +2073,7 @@ func (x *CreatePipelineRequest) String() string {
 func (*CreatePipelineRequest) ProtoMessage() {}
 
 func (x *CreatePipelineRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[22]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1990,7 +2086,7 @@ func (x *CreatePipelineRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreatePipelineRequest.ProtoReflect.Descriptor instead.
 func (*CreatePipelineRequest) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{22}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *CreatePipelineRequest) GetName() string {
@@ -2068,7 +2164,7 @@ type Stage struct {
 
 func (x *Stage) Reset() {
 	*x = Stage{}
-	mi := &file_api_job_v1_job_proto_msgTypes[23]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2080,7 +2176,7 @@ func (x *Stage) String() string {
 func (*Stage) ProtoMessage() {}
 
 func (x *Stage) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[23]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2093,7 +2189,7 @@ func (x *Stage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Stage.ProtoReflect.Descriptor instead.
 func (*Stage) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{23}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *Stage) GetOrder() int32 {
@@ -2137,7 +2233,7 @@ type JobConfig struct {
 
 func (x *JobConfig) Reset() {
 	*x = JobConfig{}
-	mi := &file_api_job_v1_job_proto_msgTypes[24]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2149,7 +2245,7 @@ func (x *JobConfig) String() string {
 func (*JobConfig) ProtoMessage() {}
 
 func (x *JobConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[24]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2162,7 +2258,7 @@ func (x *JobConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JobConfig.ProtoReflect.Descriptor instead.
 func (*JobConfig) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{24}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *JobConfig) GetName() string {
@@ -2254,7 +2350,7 @@ type CreatePipelineResponse struct {
 
 func (x *CreatePipelineResponse) Reset() {
 	*x = CreatePipelineResponse{}
-	mi := &file_api_job_v1_job_proto_msgTypes[25]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2266,7 +2362,7 @@ func (x *CreatePipelineResponse) String() string {
 func (*CreatePipelineResponse) ProtoMessage() {}
 
 func (x *CreatePipelineResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[25]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2279,7 +2375,7 @@ func (x *CreatePipelineResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreatePipelineResponse.ProtoReflect.Descriptor instead.
 func (*CreatePipelineResponse) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{25}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *CreatePipelineResponse) GetSuccess() bool {
@@ -2313,7 +2409,7 @@ type GetPipelineRequest struct {
 
 func (x *GetPipelineRequest) Reset() {
 	*x = GetPipelineRequest{}
-	mi := &file_api_job_v1_job_proto_msgTypes[26]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2325,7 +2421,7 @@ func (x *GetPipelineRequest) String() string {
 func (*GetPipelineRequest) ProtoMessage() {}
 
 func (x *GetPipelineRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[26]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2338,7 +2434,7 @@ func (x *GetPipelineRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPipelineRequest.ProtoReflect.Descriptor instead.
 func (*GetPipelineRequest) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{26}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *GetPipelineRequest) GetPipelineId() string {
@@ -2360,7 +2456,7 @@ type GetPipelineResponse struct {
 
 func (x *GetPipelineResponse) Reset() {
 	*x = GetPipelineResponse{}
-	mi := &file_api_job_v1_job_proto_msgTypes[27]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2372,7 +2468,7 @@ func (x *GetPipelineResponse) String() string {
 func (*GetPipelineResponse) ProtoMessage() {}
 
 func (x *GetPipelineResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[27]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2385,7 +2481,7 @@ func (x *GetPipelineResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPipelineResponse.ProtoReflect.Descriptor instead.
 func (*GetPipelineResponse) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{27}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *GetPipelineResponse) GetSuccess() bool {
@@ -2434,7 +2530,7 @@ type PipelineDetail struct {
 
 func (x *PipelineDetail) Reset() {
 	*x = PipelineDetail{}
-	mi := &file_api_job_v1_job_proto_msgTypes[28]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2446,7 +2542,7 @@ func (x *PipelineDetail) String() string {
 func (*PipelineDetail) ProtoMessage() {}
 
 func (x *PipelineDetail) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[28]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2459,7 +2555,7 @@ func (x *PipelineDetail) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PipelineDetail.ProtoReflect.Descriptor instead.
 func (*PipelineDetail) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{28}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *PipelineDetail) GetPipelineId() string {
@@ -2588,7 +2684,7 @@ type ListPipelinesRequest struct {
 
 func (x *ListPipelinesRequest) Reset() {
 	*x = ListPipelinesRequest{}
-	mi := &file_api_job_v1_job_proto_msgTypes[29]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2600,7 +2696,7 @@ func (x *ListPipelinesRequest) String() string {
 func (*ListPipelinesRequest) ProtoMessage() {}
 
 func (x *ListPipelinesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[29]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2613,7 +2709,7 @@ func (x *ListPipelinesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPipelinesRequest.ProtoReflect.Descriptor instead.
 func (*ListPipelinesRequest) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{29}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *ListPipelinesRequest) GetStatus() PipelineStatus {
@@ -2666,7 +2762,7 @@ type ListPipelinesResponse struct {
 
 func (x *ListPipelinesResponse) Reset() {
 	*x = ListPipelinesResponse{}
-	mi := &file_api_job_v1_job_proto_msgTypes[30]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2678,7 +2774,7 @@ func (x *ListPipelinesResponse) String() string {
 func (*ListPipelinesResponse) ProtoMessage() {}
 
 func (x *ListPipelinesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[30]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2691,7 +2787,7 @@ func (x *ListPipelinesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPipelinesResponse.ProtoReflect.Descriptor instead.
 func (*ListPipelinesResponse) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{30}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *ListPipelinesResponse) GetSuccess() bool {
@@ -2750,7 +2846,7 @@ type TriggerPipelineRequest struct {
 
 func (x *TriggerPipelineRequest) Reset() {
 	*x = TriggerPipelineRequest{}
-	mi := &file_api_job_v1_job_proto_msgTypes[31]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2762,7 +2858,7 @@ func (x *TriggerPipelineRequest) String() string {
 func (*TriggerPipelineRequest) ProtoMessage() {}
 
 func (x *TriggerPipelineRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[31]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2775,7 +2871,7 @@ func (x *TriggerPipelineRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TriggerPipelineRequest.ProtoReflect.Descriptor instead.
 func (*TriggerPipelineRequest) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{31}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *TriggerPipelineRequest) GetPipelineId() string {
@@ -2826,7 +2922,7 @@ type TriggerPipelineResponse struct {
 
 func (x *TriggerPipelineResponse) Reset() {
 	*x = TriggerPipelineResponse{}
-	mi := &file_api_job_v1_job_proto_msgTypes[32]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2838,7 +2934,7 @@ func (x *TriggerPipelineResponse) String() string {
 func (*TriggerPipelineResponse) ProtoMessage() {}
 
 func (x *TriggerPipelineResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[32]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2851,7 +2947,7 @@ func (x *TriggerPipelineResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TriggerPipelineResponse.ProtoReflect.Descriptor instead.
 func (*TriggerPipelineResponse) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{32}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *TriggerPipelineResponse) GetSuccess() bool {
@@ -2894,7 +2990,7 @@ type StopPipelineRequest struct {
 
 func (x *StopPipelineRequest) Reset() {
 	*x = StopPipelineRequest{}
-	mi := &file_api_job_v1_job_proto_msgTypes[33]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2906,7 +3002,7 @@ func (x *StopPipelineRequest) String() string {
 func (*StopPipelineRequest) ProtoMessage() {}
 
 func (x *StopPipelineRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[33]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2919,7 +3015,7 @@ func (x *StopPipelineRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StopPipelineRequest.ProtoReflect.Descriptor instead.
 func (*StopPipelineRequest) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{33}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *StopPipelineRequest) GetPipelineId() string {
@@ -2954,7 +3050,7 @@ type StopPipelineResponse struct {
 
 func (x *StopPipelineResponse) Reset() {
 	*x = StopPipelineResponse{}
-	mi := &file_api_job_v1_job_proto_msgTypes[34]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2966,7 +3062,7 @@ func (x *StopPipelineResponse) String() string {
 func (*StopPipelineResponse) ProtoMessage() {}
 
 func (x *StopPipelineResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[34]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2979,7 +3075,7 @@ func (x *StopPipelineResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StopPipelineResponse.ProtoReflect.Descriptor instead.
 func (*StopPipelineResponse) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{34}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *StopPipelineResponse) GetSuccess() bool {
@@ -3009,7 +3105,7 @@ type LabelSelector struct {
 
 func (x *LabelSelector) Reset() {
 	*x = LabelSelector{}
-	mi := &file_api_job_v1_job_proto_msgTypes[35]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3021,7 +3117,7 @@ func (x *LabelSelector) String() string {
 func (*LabelSelector) ProtoMessage() {}
 
 func (x *LabelSelector) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[35]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3034,7 +3130,7 @@ func (x *LabelSelector) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LabelSelector.ProtoReflect.Descriptor instead.
 func (*LabelSelector) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{35}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *LabelSelector) GetMatchLabels() map[string]string {
@@ -3063,7 +3159,7 @@ type LabelSelectorRequirement struct {
 
 func (x *LabelSelectorRequirement) Reset() {
 	*x = LabelSelectorRequirement{}
-	mi := &file_api_job_v1_job_proto_msgTypes[36]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3075,7 +3171,7 @@ func (x *LabelSelectorRequirement) String() string {
 func (*LabelSelectorRequirement) ProtoMessage() {}
 
 func (x *LabelSelectorRequirement) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_job_proto_msgTypes[36]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3088,7 +3184,7 @@ func (x *LabelSelectorRequirement) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LabelSelectorRequirement.ProtoReflect.Descriptor instead.
 func (*LabelSelectorRequirement) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_job_proto_rawDescGZIP(), []int{36}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *LabelSelectorRequirement) GetKey() string {
@@ -3112,12 +3208,17 @@ func (x *LabelSelectorRequirement) GetValues() []string {
 	return nil
 }
 
-var File_api_job_v1_job_proto protoreflect.FileDescriptor
+var File_api_job_v1_proto_job_proto protoreflect.FileDescriptor
 
-const file_api_job_v1_job_proto_rawDesc = "" +
+const file_api_job_v1_proto_job_proto_rawDesc = "" +
 	"\n" +
-	"\x14api/job/v1/job.proto\x12\n" +
-	"api.job.v1\"\xae\x05\n" +
+	"\x1aapi/job/v1/proto/job.proto\x12\n" +
+	"api.job.v1\"'\n" +
+	"\vPingRequest\x12\x18\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\"F\n" +
+	"\fPingResponse\x12\x18\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\x12\x1c\n" +
+	"\ttimestamp\x18\x02 \x01(\x03R\ttimestamp\"\xae\x05\n" +
 	"\x10CreateJobRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1f\n" +
 	"\vpipeline_id\x18\x02 \x01(\tR\n" +
@@ -3433,8 +3534,9 @@ const file_api_job_v1_job_proto_rawDesc = "" +
 	"\x15LABEL_OPERATOR_EXISTS\x10\x03\x12\x1d\n" +
 	"\x19LABEL_OPERATOR_NOT_EXISTS\x10\x04\x12\x15\n" +
 	"\x11LABEL_OPERATOR_GT\x10\x05\x12\x15\n" +
-	"\x11LABEL_OPERATOR_LT\x10\x062\xef\b\n" +
-	"\x03Job\x12J\n" +
+	"\x11LABEL_OPERATOR_LT\x10\x062\xac\t\n" +
+	"\x03Job\x12;\n" +
+	"\x04Ping\x12\x17.api.job.v1.PingRequest\x1a\x18.api.job.v1.PingResponse\"\x00\x12J\n" +
 	"\tCreateJob\x12\x1c.api.job.v1.CreateJobRequest\x1a\x1d.api.job.v1.CreateJobResponse\"\x00\x12A\n" +
 	"\x06GetJob\x12\x19.api.job.v1.GetJobRequest\x1a\x1a.api.job.v1.GetJobResponse\"\x00\x12G\n" +
 	"\bListJobs\x12\x1b.api.job.v1.ListJobsRequest\x1a\x1c.api.job.v1.ListJobsResponse\"\x00\x12J\n" +
@@ -3448,165 +3550,169 @@ const file_api_job_v1_job_proto_rawDesc = "" +
 	"\vGetPipeline\x12\x1e.api.job.v1.GetPipelineRequest\x1a\x1f.api.job.v1.GetPipelineResponse\"\x00\x12V\n" +
 	"\rListPipelines\x12 .api.job.v1.ListPipelinesRequest\x1a!.api.job.v1.ListPipelinesResponse\"\x00\x12\\\n" +
 	"\x0fTriggerPipeline\x12\".api.job.v1.TriggerPipelineRequest\x1a#.api.job.v1.TriggerPipelineResponse\"\x00\x12S\n" +
-	"\fStopPipeline\x12\x1f.api.job.v1.StopPipelineRequest\x1a .api.job.v1.StopPipelineResponse\"\x00B2Z0github.com/observabil/arcade/api/job/v1/proto;v1b\x06proto3"
+	"\fStopPipeline\x12\x1f.api.job.v1.StopPipelineRequest\x1a .api.job.v1.StopPipelineResponse\"\x00B,Z*github.com/observabil/arcade/api/job/v1;v1b\x06proto3"
 
 var (
-	file_api_job_v1_job_proto_rawDescOnce sync.Once
-	file_api_job_v1_job_proto_rawDescData []byte
+	file_api_job_v1_proto_job_proto_rawDescOnce sync.Once
+	file_api_job_v1_proto_job_proto_rawDescData []byte
 )
 
-func file_api_job_v1_job_proto_rawDescGZIP() []byte {
-	file_api_job_v1_job_proto_rawDescOnce.Do(func() {
-		file_api_job_v1_job_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_api_job_v1_job_proto_rawDesc), len(file_api_job_v1_job_proto_rawDesc)))
+func file_api_job_v1_proto_job_proto_rawDescGZIP() []byte {
+	file_api_job_v1_proto_job_proto_rawDescOnce.Do(func() {
+		file_api_job_v1_proto_job_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_api_job_v1_proto_job_proto_rawDesc), len(file_api_job_v1_proto_job_proto_rawDesc)))
 	})
-	return file_api_job_v1_job_proto_rawDescData
+	return file_api_job_v1_proto_job_proto_rawDescData
 }
 
-var file_api_job_v1_job_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_api_job_v1_job_proto_msgTypes = make([]protoimpl.MessageInfo, 47)
-var file_api_job_v1_job_proto_goTypes = []any{
+var file_api_job_v1_proto_job_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_api_job_v1_proto_job_proto_msgTypes = make([]protoimpl.MessageInfo, 49)
+var file_api_job_v1_proto_job_proto_goTypes = []any{
 	(JobStatus)(0),                   // 0: api.job.v1.JobStatus
 	(PipelineStatus)(0),              // 1: api.job.v1.PipelineStatus
 	(TriggerType)(0),                 // 2: api.job.v1.TriggerType
 	(LabelOperator)(0),               // 3: api.job.v1.LabelOperator
-	(*CreateJobRequest)(nil),         // 4: api.job.v1.CreateJobRequest
-	(*ArtifactConfig)(nil),           // 5: api.job.v1.ArtifactConfig
-	(*CreateJobResponse)(nil),        // 6: api.job.v1.CreateJobResponse
-	(*GetJobRequest)(nil),            // 7: api.job.v1.GetJobRequest
-	(*GetJobResponse)(nil),           // 8: api.job.v1.GetJobResponse
-	(*JobDetail)(nil),                // 9: api.job.v1.JobDetail
-	(*ListJobsRequest)(nil),          // 10: api.job.v1.ListJobsRequest
-	(*ListJobsResponse)(nil),         // 11: api.job.v1.ListJobsResponse
-	(*UpdateJobRequest)(nil),         // 12: api.job.v1.UpdateJobRequest
-	(*UpdateJobResponse)(nil),        // 13: api.job.v1.UpdateJobResponse
-	(*DeleteJobRequest)(nil),         // 14: api.job.v1.DeleteJobRequest
-	(*DeleteJobResponse)(nil),        // 15: api.job.v1.DeleteJobResponse
-	(*CancelJobRequest)(nil),         // 16: api.job.v1.CancelJobRequest
-	(*CancelJobResponse)(nil),        // 17: api.job.v1.CancelJobResponse
-	(*RetryJobRequest)(nil),          // 18: api.job.v1.RetryJobRequest
-	(*RetryJobResponse)(nil),         // 19: api.job.v1.RetryJobResponse
-	(*GetJobLogRequest)(nil),         // 20: api.job.v1.GetJobLogRequest
-	(*GetJobLogResponse)(nil),        // 21: api.job.v1.GetJobLogResponse
-	(*LogLine)(nil),                  // 22: api.job.v1.LogLine
-	(*ListJobArtifactsRequest)(nil),  // 23: api.job.v1.ListJobArtifactsRequest
-	(*ListJobArtifactsResponse)(nil), // 24: api.job.v1.ListJobArtifactsResponse
-	(*Artifact)(nil),                 // 25: api.job.v1.Artifact
-	(*CreatePipelineRequest)(nil),    // 26: api.job.v1.CreatePipelineRequest
-	(*Stage)(nil),                    // 27: api.job.v1.Stage
-	(*JobConfig)(nil),                // 28: api.job.v1.JobConfig
-	(*CreatePipelineResponse)(nil),   // 29: api.job.v1.CreatePipelineResponse
-	(*GetPipelineRequest)(nil),       // 30: api.job.v1.GetPipelineRequest
-	(*GetPipelineResponse)(nil),      // 31: api.job.v1.GetPipelineResponse
-	(*PipelineDetail)(nil),           // 32: api.job.v1.PipelineDetail
-	(*ListPipelinesRequest)(nil),     // 33: api.job.v1.ListPipelinesRequest
-	(*ListPipelinesResponse)(nil),    // 34: api.job.v1.ListPipelinesResponse
-	(*TriggerPipelineRequest)(nil),   // 35: api.job.v1.TriggerPipelineRequest
-	(*TriggerPipelineResponse)(nil),  // 36: api.job.v1.TriggerPipelineResponse
-	(*StopPipelineRequest)(nil),      // 37: api.job.v1.StopPipelineRequest
-	(*StopPipelineResponse)(nil),     // 38: api.job.v1.StopPipelineResponse
-	(*LabelSelector)(nil),            // 39: api.job.v1.LabelSelector
-	(*LabelSelectorRequirement)(nil), // 40: api.job.v1.LabelSelectorRequirement
-	nil,                              // 41: api.job.v1.CreateJobRequest.EnvEntry
-	nil,                              // 42: api.job.v1.CreateJobRequest.SecretsEntry
-	nil,                              // 43: api.job.v1.JobDetail.EnvEntry
-	nil,                              // 44: api.job.v1.JobDetail.AgentLabelsEntry
-	nil,                              // 45: api.job.v1.UpdateJobRequest.EnvEntry
-	nil,                              // 46: api.job.v1.CreatePipelineRequest.EnvEntry
-	nil,                              // 47: api.job.v1.JobConfig.EnvEntry
-	nil,                              // 48: api.job.v1.PipelineDetail.EnvEntry
-	nil,                              // 49: api.job.v1.TriggerPipelineRequest.EnvEntry
-	nil,                              // 50: api.job.v1.LabelSelector.MatchLabelsEntry
+	(*PingRequest)(nil),              // 4: api.job.v1.PingRequest
+	(*PingResponse)(nil),             // 5: api.job.v1.PingResponse
+	(*CreateJobRequest)(nil),         // 6: api.job.v1.CreateJobRequest
+	(*ArtifactConfig)(nil),           // 7: api.job.v1.ArtifactConfig
+	(*CreateJobResponse)(nil),        // 8: api.job.v1.CreateJobResponse
+	(*GetJobRequest)(nil),            // 9: api.job.v1.GetJobRequest
+	(*GetJobResponse)(nil),           // 10: api.job.v1.GetJobResponse
+	(*JobDetail)(nil),                // 11: api.job.v1.JobDetail
+	(*ListJobsRequest)(nil),          // 12: api.job.v1.ListJobsRequest
+	(*ListJobsResponse)(nil),         // 13: api.job.v1.ListJobsResponse
+	(*UpdateJobRequest)(nil),         // 14: api.job.v1.UpdateJobRequest
+	(*UpdateJobResponse)(nil),        // 15: api.job.v1.UpdateJobResponse
+	(*DeleteJobRequest)(nil),         // 16: api.job.v1.DeleteJobRequest
+	(*DeleteJobResponse)(nil),        // 17: api.job.v1.DeleteJobResponse
+	(*CancelJobRequest)(nil),         // 18: api.job.v1.CancelJobRequest
+	(*CancelJobResponse)(nil),        // 19: api.job.v1.CancelJobResponse
+	(*RetryJobRequest)(nil),          // 20: api.job.v1.RetryJobRequest
+	(*RetryJobResponse)(nil),         // 21: api.job.v1.RetryJobResponse
+	(*GetJobLogRequest)(nil),         // 22: api.job.v1.GetJobLogRequest
+	(*GetJobLogResponse)(nil),        // 23: api.job.v1.GetJobLogResponse
+	(*LogLine)(nil),                  // 24: api.job.v1.LogLine
+	(*ListJobArtifactsRequest)(nil),  // 25: api.job.v1.ListJobArtifactsRequest
+	(*ListJobArtifactsResponse)(nil), // 26: api.job.v1.ListJobArtifactsResponse
+	(*Artifact)(nil),                 // 27: api.job.v1.Artifact
+	(*CreatePipelineRequest)(nil),    // 28: api.job.v1.CreatePipelineRequest
+	(*Stage)(nil),                    // 29: api.job.v1.Stage
+	(*JobConfig)(nil),                // 30: api.job.v1.JobConfig
+	(*CreatePipelineResponse)(nil),   // 31: api.job.v1.CreatePipelineResponse
+	(*GetPipelineRequest)(nil),       // 32: api.job.v1.GetPipelineRequest
+	(*GetPipelineResponse)(nil),      // 33: api.job.v1.GetPipelineResponse
+	(*PipelineDetail)(nil),           // 34: api.job.v1.PipelineDetail
+	(*ListPipelinesRequest)(nil),     // 35: api.job.v1.ListPipelinesRequest
+	(*ListPipelinesResponse)(nil),    // 36: api.job.v1.ListPipelinesResponse
+	(*TriggerPipelineRequest)(nil),   // 37: api.job.v1.TriggerPipelineRequest
+	(*TriggerPipelineResponse)(nil),  // 38: api.job.v1.TriggerPipelineResponse
+	(*StopPipelineRequest)(nil),      // 39: api.job.v1.StopPipelineRequest
+	(*StopPipelineResponse)(nil),     // 40: api.job.v1.StopPipelineResponse
+	(*LabelSelector)(nil),            // 41: api.job.v1.LabelSelector
+	(*LabelSelectorRequirement)(nil), // 42: api.job.v1.LabelSelectorRequirement
+	nil,                              // 43: api.job.v1.CreateJobRequest.EnvEntry
+	nil,                              // 44: api.job.v1.CreateJobRequest.SecretsEntry
+	nil,                              // 45: api.job.v1.JobDetail.EnvEntry
+	nil,                              // 46: api.job.v1.JobDetail.AgentLabelsEntry
+	nil,                              // 47: api.job.v1.UpdateJobRequest.EnvEntry
+	nil,                              // 48: api.job.v1.CreatePipelineRequest.EnvEntry
+	nil,                              // 49: api.job.v1.JobConfig.EnvEntry
+	nil,                              // 50: api.job.v1.PipelineDetail.EnvEntry
+	nil,                              // 51: api.job.v1.TriggerPipelineRequest.EnvEntry
+	nil,                              // 52: api.job.v1.LabelSelector.MatchLabelsEntry
 }
-var file_api_job_v1_job_proto_depIdxs = []int32{
-	41, // 0: api.job.v1.CreateJobRequest.env:type_name -> api.job.v1.CreateJobRequest.EnvEntry
-	42, // 1: api.job.v1.CreateJobRequest.secrets:type_name -> api.job.v1.CreateJobRequest.SecretsEntry
-	5,  // 2: api.job.v1.CreateJobRequest.artifacts:type_name -> api.job.v1.ArtifactConfig
-	39, // 3: api.job.v1.CreateJobRequest.label_selector:type_name -> api.job.v1.LabelSelector
-	9,  // 4: api.job.v1.GetJobResponse.job:type_name -> api.job.v1.JobDetail
+var file_api_job_v1_proto_job_proto_depIdxs = []int32{
+	43, // 0: api.job.v1.CreateJobRequest.env:type_name -> api.job.v1.CreateJobRequest.EnvEntry
+	44, // 1: api.job.v1.CreateJobRequest.secrets:type_name -> api.job.v1.CreateJobRequest.SecretsEntry
+	7,  // 2: api.job.v1.CreateJobRequest.artifacts:type_name -> api.job.v1.ArtifactConfig
+	41, // 3: api.job.v1.CreateJobRequest.label_selector:type_name -> api.job.v1.LabelSelector
+	11, // 4: api.job.v1.GetJobResponse.job:type_name -> api.job.v1.JobDetail
 	0,  // 5: api.job.v1.JobDetail.status:type_name -> api.job.v1.JobStatus
-	43, // 6: api.job.v1.JobDetail.env:type_name -> api.job.v1.JobDetail.EnvEntry
-	5,  // 7: api.job.v1.JobDetail.artifacts:type_name -> api.job.v1.ArtifactConfig
-	39, // 8: api.job.v1.JobDetail.label_selector:type_name -> api.job.v1.LabelSelector
-	44, // 9: api.job.v1.JobDetail.agent_labels:type_name -> api.job.v1.JobDetail.AgentLabelsEntry
+	45, // 6: api.job.v1.JobDetail.env:type_name -> api.job.v1.JobDetail.EnvEntry
+	7,  // 7: api.job.v1.JobDetail.artifacts:type_name -> api.job.v1.ArtifactConfig
+	41, // 8: api.job.v1.JobDetail.label_selector:type_name -> api.job.v1.LabelSelector
+	46, // 9: api.job.v1.JobDetail.agent_labels:type_name -> api.job.v1.JobDetail.AgentLabelsEntry
 	0,  // 10: api.job.v1.ListJobsRequest.status:type_name -> api.job.v1.JobStatus
-	9,  // 11: api.job.v1.ListJobsResponse.jobs:type_name -> api.job.v1.JobDetail
-	45, // 12: api.job.v1.UpdateJobRequest.env:type_name -> api.job.v1.UpdateJobRequest.EnvEntry
-	22, // 13: api.job.v1.GetJobLogResponse.logs:type_name -> api.job.v1.LogLine
-	25, // 14: api.job.v1.ListJobArtifactsResponse.artifacts:type_name -> api.job.v1.Artifact
-	27, // 15: api.job.v1.CreatePipelineRequest.stages:type_name -> api.job.v1.Stage
-	46, // 16: api.job.v1.CreatePipelineRequest.env:type_name -> api.job.v1.CreatePipelineRequest.EnvEntry
+	11, // 11: api.job.v1.ListJobsResponse.jobs:type_name -> api.job.v1.JobDetail
+	47, // 12: api.job.v1.UpdateJobRequest.env:type_name -> api.job.v1.UpdateJobRequest.EnvEntry
+	24, // 13: api.job.v1.GetJobLogResponse.logs:type_name -> api.job.v1.LogLine
+	27, // 14: api.job.v1.ListJobArtifactsResponse.artifacts:type_name -> api.job.v1.Artifact
+	29, // 15: api.job.v1.CreatePipelineRequest.stages:type_name -> api.job.v1.Stage
+	48, // 16: api.job.v1.CreatePipelineRequest.env:type_name -> api.job.v1.CreatePipelineRequest.EnvEntry
 	2,  // 17: api.job.v1.CreatePipelineRequest.trigger_type:type_name -> api.job.v1.TriggerType
-	28, // 18: api.job.v1.Stage.jobs:type_name -> api.job.v1.JobConfig
-	47, // 19: api.job.v1.JobConfig.env:type_name -> api.job.v1.JobConfig.EnvEntry
-	5,  // 20: api.job.v1.JobConfig.artifacts:type_name -> api.job.v1.ArtifactConfig
-	39, // 21: api.job.v1.JobConfig.label_selector:type_name -> api.job.v1.LabelSelector
-	32, // 22: api.job.v1.GetPipelineResponse.pipeline:type_name -> api.job.v1.PipelineDetail
+	30, // 18: api.job.v1.Stage.jobs:type_name -> api.job.v1.JobConfig
+	49, // 19: api.job.v1.JobConfig.env:type_name -> api.job.v1.JobConfig.EnvEntry
+	7,  // 20: api.job.v1.JobConfig.artifacts:type_name -> api.job.v1.ArtifactConfig
+	41, // 21: api.job.v1.JobConfig.label_selector:type_name -> api.job.v1.LabelSelector
+	34, // 22: api.job.v1.GetPipelineResponse.pipeline:type_name -> api.job.v1.PipelineDetail
 	1,  // 23: api.job.v1.PipelineDetail.status:type_name -> api.job.v1.PipelineStatus
-	27, // 24: api.job.v1.PipelineDetail.stages:type_name -> api.job.v1.Stage
-	48, // 25: api.job.v1.PipelineDetail.env:type_name -> api.job.v1.PipelineDetail.EnvEntry
+	29, // 24: api.job.v1.PipelineDetail.stages:type_name -> api.job.v1.Stage
+	50, // 25: api.job.v1.PipelineDetail.env:type_name -> api.job.v1.PipelineDetail.EnvEntry
 	2,  // 26: api.job.v1.PipelineDetail.trigger_type:type_name -> api.job.v1.TriggerType
 	1,  // 27: api.job.v1.ListPipelinesRequest.status:type_name -> api.job.v1.PipelineStatus
-	32, // 28: api.job.v1.ListPipelinesResponse.pipelines:type_name -> api.job.v1.PipelineDetail
-	49, // 29: api.job.v1.TriggerPipelineRequest.env:type_name -> api.job.v1.TriggerPipelineRequest.EnvEntry
-	50, // 30: api.job.v1.LabelSelector.match_labels:type_name -> api.job.v1.LabelSelector.MatchLabelsEntry
-	40, // 31: api.job.v1.LabelSelector.match_expressions:type_name -> api.job.v1.LabelSelectorRequirement
+	34, // 28: api.job.v1.ListPipelinesResponse.pipelines:type_name -> api.job.v1.PipelineDetail
+	51, // 29: api.job.v1.TriggerPipelineRequest.env:type_name -> api.job.v1.TriggerPipelineRequest.EnvEntry
+	52, // 30: api.job.v1.LabelSelector.match_labels:type_name -> api.job.v1.LabelSelector.MatchLabelsEntry
+	42, // 31: api.job.v1.LabelSelector.match_expressions:type_name -> api.job.v1.LabelSelectorRequirement
 	3,  // 32: api.job.v1.LabelSelectorRequirement.operator:type_name -> api.job.v1.LabelOperator
-	4,  // 33: api.job.v1.Job.CreateJob:input_type -> api.job.v1.CreateJobRequest
-	7,  // 34: api.job.v1.Job.GetJob:input_type -> api.job.v1.GetJobRequest
-	10, // 35: api.job.v1.Job.ListJobs:input_type -> api.job.v1.ListJobsRequest
-	12, // 36: api.job.v1.Job.UpdateJob:input_type -> api.job.v1.UpdateJobRequest
-	14, // 37: api.job.v1.Job.DeleteJob:input_type -> api.job.v1.DeleteJobRequest
-	16, // 38: api.job.v1.Job.CancelJob:input_type -> api.job.v1.CancelJobRequest
-	18, // 39: api.job.v1.Job.RetryJob:input_type -> api.job.v1.RetryJobRequest
-	20, // 40: api.job.v1.Job.GetJobLog:input_type -> api.job.v1.GetJobLogRequest
-	23, // 41: api.job.v1.Job.ListJobArtifacts:input_type -> api.job.v1.ListJobArtifactsRequest
-	26, // 42: api.job.v1.Job.CreatePipeline:input_type -> api.job.v1.CreatePipelineRequest
-	30, // 43: api.job.v1.Job.GetPipeline:input_type -> api.job.v1.GetPipelineRequest
-	33, // 44: api.job.v1.Job.ListPipelines:input_type -> api.job.v1.ListPipelinesRequest
-	35, // 45: api.job.v1.Job.TriggerPipeline:input_type -> api.job.v1.TriggerPipelineRequest
-	37, // 46: api.job.v1.Job.StopPipeline:input_type -> api.job.v1.StopPipelineRequest
-	6,  // 47: api.job.v1.Job.CreateJob:output_type -> api.job.v1.CreateJobResponse
-	8,  // 48: api.job.v1.Job.GetJob:output_type -> api.job.v1.GetJobResponse
-	11, // 49: api.job.v1.Job.ListJobs:output_type -> api.job.v1.ListJobsResponse
-	13, // 50: api.job.v1.Job.UpdateJob:output_type -> api.job.v1.UpdateJobResponse
-	15, // 51: api.job.v1.Job.DeleteJob:output_type -> api.job.v1.DeleteJobResponse
-	17, // 52: api.job.v1.Job.CancelJob:output_type -> api.job.v1.CancelJobResponse
-	19, // 53: api.job.v1.Job.RetryJob:output_type -> api.job.v1.RetryJobResponse
-	21, // 54: api.job.v1.Job.GetJobLog:output_type -> api.job.v1.GetJobLogResponse
-	24, // 55: api.job.v1.Job.ListJobArtifacts:output_type -> api.job.v1.ListJobArtifactsResponse
-	29, // 56: api.job.v1.Job.CreatePipeline:output_type -> api.job.v1.CreatePipelineResponse
-	31, // 57: api.job.v1.Job.GetPipeline:output_type -> api.job.v1.GetPipelineResponse
-	34, // 58: api.job.v1.Job.ListPipelines:output_type -> api.job.v1.ListPipelinesResponse
-	36, // 59: api.job.v1.Job.TriggerPipeline:output_type -> api.job.v1.TriggerPipelineResponse
-	38, // 60: api.job.v1.Job.StopPipeline:output_type -> api.job.v1.StopPipelineResponse
-	47, // [47:61] is the sub-list for method output_type
-	33, // [33:47] is the sub-list for method input_type
+	4,  // 33: api.job.v1.Job.Ping:input_type -> api.job.v1.PingRequest
+	6,  // 34: api.job.v1.Job.CreateJob:input_type -> api.job.v1.CreateJobRequest
+	9,  // 35: api.job.v1.Job.GetJob:input_type -> api.job.v1.GetJobRequest
+	12, // 36: api.job.v1.Job.ListJobs:input_type -> api.job.v1.ListJobsRequest
+	14, // 37: api.job.v1.Job.UpdateJob:input_type -> api.job.v1.UpdateJobRequest
+	16, // 38: api.job.v1.Job.DeleteJob:input_type -> api.job.v1.DeleteJobRequest
+	18, // 39: api.job.v1.Job.CancelJob:input_type -> api.job.v1.CancelJobRequest
+	20, // 40: api.job.v1.Job.RetryJob:input_type -> api.job.v1.RetryJobRequest
+	22, // 41: api.job.v1.Job.GetJobLog:input_type -> api.job.v1.GetJobLogRequest
+	25, // 42: api.job.v1.Job.ListJobArtifacts:input_type -> api.job.v1.ListJobArtifactsRequest
+	28, // 43: api.job.v1.Job.CreatePipeline:input_type -> api.job.v1.CreatePipelineRequest
+	32, // 44: api.job.v1.Job.GetPipeline:input_type -> api.job.v1.GetPipelineRequest
+	35, // 45: api.job.v1.Job.ListPipelines:input_type -> api.job.v1.ListPipelinesRequest
+	37, // 46: api.job.v1.Job.TriggerPipeline:input_type -> api.job.v1.TriggerPipelineRequest
+	39, // 47: api.job.v1.Job.StopPipeline:input_type -> api.job.v1.StopPipelineRequest
+	5,  // 48: api.job.v1.Job.Ping:output_type -> api.job.v1.PingResponse
+	8,  // 49: api.job.v1.Job.CreateJob:output_type -> api.job.v1.CreateJobResponse
+	10, // 50: api.job.v1.Job.GetJob:output_type -> api.job.v1.GetJobResponse
+	13, // 51: api.job.v1.Job.ListJobs:output_type -> api.job.v1.ListJobsResponse
+	15, // 52: api.job.v1.Job.UpdateJob:output_type -> api.job.v1.UpdateJobResponse
+	17, // 53: api.job.v1.Job.DeleteJob:output_type -> api.job.v1.DeleteJobResponse
+	19, // 54: api.job.v1.Job.CancelJob:output_type -> api.job.v1.CancelJobResponse
+	21, // 55: api.job.v1.Job.RetryJob:output_type -> api.job.v1.RetryJobResponse
+	23, // 56: api.job.v1.Job.GetJobLog:output_type -> api.job.v1.GetJobLogResponse
+	26, // 57: api.job.v1.Job.ListJobArtifacts:output_type -> api.job.v1.ListJobArtifactsResponse
+	31, // 58: api.job.v1.Job.CreatePipeline:output_type -> api.job.v1.CreatePipelineResponse
+	33, // 59: api.job.v1.Job.GetPipeline:output_type -> api.job.v1.GetPipelineResponse
+	36, // 60: api.job.v1.Job.ListPipelines:output_type -> api.job.v1.ListPipelinesResponse
+	38, // 61: api.job.v1.Job.TriggerPipeline:output_type -> api.job.v1.TriggerPipelineResponse
+	40, // 62: api.job.v1.Job.StopPipeline:output_type -> api.job.v1.StopPipelineResponse
+	48, // [48:63] is the sub-list for method output_type
+	33, // [33:48] is the sub-list for method input_type
 	33, // [33:33] is the sub-list for extension type_name
 	33, // [33:33] is the sub-list for extension extendee
 	0,  // [0:33] is the sub-list for field type_name
 }
 
-func init() { file_api_job_v1_job_proto_init() }
-func file_api_job_v1_job_proto_init() {
-	if File_api_job_v1_job_proto != nil {
+func init() { file_api_job_v1_proto_job_proto_init() }
+func file_api_job_v1_proto_job_proto_init() {
+	if File_api_job_v1_proto_job_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_job_v1_job_proto_rawDesc), len(file_api_job_v1_job_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_job_v1_proto_job_proto_rawDesc), len(file_api_job_v1_proto_job_proto_rawDesc)),
 			NumEnums:      4,
-			NumMessages:   47,
+			NumMessages:   49,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_api_job_v1_job_proto_goTypes,
-		DependencyIndexes: file_api_job_v1_job_proto_depIdxs,
-		EnumInfos:         file_api_job_v1_job_proto_enumTypes,
-		MessageInfos:      file_api_job_v1_job_proto_msgTypes,
+		GoTypes:           file_api_job_v1_proto_job_proto_goTypes,
+		DependencyIndexes: file_api_job_v1_proto_job_proto_depIdxs,
+		EnumInfos:         file_api_job_v1_proto_job_proto_enumTypes,
+		MessageInfos:      file_api_job_v1_proto_job_proto_msgTypes,
 	}.Build()
-	File_api_job_v1_job_proto = out.File
-	file_api_job_v1_job_proto_goTypes = nil
-	file_api_job_v1_job_proto_depIdxs = nil
+	File_api_job_v1_proto_job_proto = out.File
+	file_api_job_v1_proto_job_proto_goTypes = nil
+	file_api_job_v1_proto_job_proto_depIdxs = nil
 }

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package api.agent.v1;
 
-option go_package = "github.com/observabil/arcade/api/agent/v1/proto;v1";
+option go_package = "github.com/observabil/arcade/api/agent/v1;v1";
 
 // Agent服务 - Agent端与Server端通信的主要接口
 service Agent {
@@ -65,7 +65,7 @@ message HeartbeatRequest {
 message HeartbeatResponse {
   bool success = 1;
   string message = 2;
-  int64 server_time = 3;              // 服务器时间戳（用于时间同步）
+  int64 timestamp = 3;              // 服务器时间戳（用于时间同步）
 }
 
 // Agent注册请求

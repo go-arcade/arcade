@@ -14,13 +14,6 @@ import (
 	"time"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/10/4 10:37
- * @file: service_user.go
- * @description: user service
- */
-
 type LoginService interface {
 	Login(login *model.Login, auth http.Auth) (*model.LoginResp, error)
 }
