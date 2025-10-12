@@ -2,25 +2,21 @@ package conf
 
 import (
 	"fmt"
+	"sync"
+
 	"github.com/fsnotify/fsnotify"
+	"github.com/observabil/arcade/internal/pkg/grpc"
 	"github.com/observabil/arcade/pkg/http"
 	"github.com/spf13/viper"
-	"sync"
 
 	"github.com/observabil/arcade/pkg/cache"
 	"github.com/observabil/arcade/pkg/database"
 	"github.com/observabil/arcade/pkg/log"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/8 23:20
- * @file: conf.go
- * @description:
- */
-
 type AppConfig struct {
 	Log      log.LogConfig
+	Grpc     grpc.GrpcConf
 	Http     http.Http
 	Database database.Database
 	Redis    cache.Redis

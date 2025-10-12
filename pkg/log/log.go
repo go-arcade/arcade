@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/google/wire"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -13,6 +14,14 @@ var (
 	logger *zap.Logger
 	sugar  *zap.SugaredLogger
 )
+
+// ProviderSet 提供日志相关的依赖
+var ProviderSet = wire.NewSet(ProvideLogger)
+
+// ProvideLogger 提供 Logger 实例
+func ProvideLogger(conf *LogConfig) *Logger {
+	return &Logger{Log: NewLog(conf).Sugar()}
+}
 
 // LogConfig holds LogConfig configuration options.
 type LogConfig struct {

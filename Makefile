@@ -2,7 +2,7 @@ SHELL := /bin/sh
 .ONESHELL:
 .SHELLFLAGS := -eu -o pipefail -c
 
-.PHONY: help prebuild build plugins plugins-clean proto proto-clean proto-install
+.PHONY: help prebuild build plugins plugins-clean proto proto-clean proto-install wire wire-install wire-clean
 
 # git
 VERSION    = $(shell git describe --tags --always)
@@ -21,7 +21,7 @@ PLUGINS_MAIN_DIRS := $(shell go list -f '{{if eq .Name "main"}}{{.Dir}}{{end}}' 
 # proto
 PROTO_DIR := api
 PROTO_OUT_DIR := proto
-PROTO_FILES := $(shell find $(PROTO_DIR) -name '*.proto')
+PROTO_FILES := $(shell find $(PROTO_DIR) -path '*/proto/*.proto')
 PROTOC := protoc
 PROTOC_GEN_GO := $(shell go env GOPATH)/bin/protoc-gen-go
 PROTOC_GEN_GO_GRPC := $(shell go env GOPATH)/bin/protoc-gen-go-grpc
@@ -81,14 +81,14 @@ prebuild: ## 下载并嵌入前端文件
 	sh dl.sh
 	echo "web file download and embedding completed."
 
-build: ## 构建主程序
+build: wire ## 构建主程序
 	go build -ldflags "${LDFLAGS}" -o arcade ./cmd/arcade/main.go
 
 build-cli: ## 构建CLI工具
 	go build -ldflags "${LDFLAGS}" -o arcade-cli ./cmd/cli/
 
-run: ## 后台运行主程序
-	nohup ./arcade > arcade.log 2>&1 &
+run: wire ## 后台运行主程序
+	./arcade
 
 release: ## 创建发布版本
 	goreleaser --skip-validate --skip-publish --snapshot
@@ -106,14 +106,13 @@ proto: proto-check ## 生成proto代码
 	@echo ">> generating proto code from $(PROTO_DIR)"
 	@for proto in $(PROTO_FILES); do \
 		dir=$$(dirname $$proto); \
-		proto_dir=$$dir/proto; \
-		echo "   -> generating $$proto"; \
-		mkdir -p $$proto_dir; \
+		out_dir=$$(dirname $$dir); \
+		echo "   -> generating $$proto to $$out_dir"; \
 		$(PROTOC) --go_out=. --go_opt=paths=source_relative \
 			--go-grpc_out=. --go-grpc_opt=paths=source_relative \
 			-I. $$proto; \
-		mkdir -p $$proto_dir; \
-		mv $$dir/*.pb.go $$proto_dir/ 2>/dev/null || true; \
+		mkdir -p $$out_dir; \
+		mv $$dir/*.pb.go $$out_dir/ 2>/dev/null || true; \
 	done
 	@echo ">> proto code generation done."
 
@@ -142,5 +141,21 @@ proto-check: ## 检查proto工具是否已安装
 
 proto-clean: ## 清理生成的proto代码
 	@echo ">> cleaning generated proto files..."
-	@find $(PROTO_DIR) -type d -name "proto" -exec rm -rf {} + 2>/dev/null || true
+	@find $(PROTO_DIR) -type f -name "*.pb.go" ! -path "*/proto/*" -delete 2>/dev/null || true
 	@echo ">> proto files cleaned."
+
+# wire依赖注入代码生成
+wire-install: ## 安装wire工具
+	@echo ">> installing wire..."
+	@go install github.com/google/wire/cmd/wire@latest
+	@echo ">> wire installed: $$(which wire)"
+
+wire: ## 生成wire依赖注入代码
+	@echo ">> generating wire code..."
+	@cd cmd/arcade && wire
+	@echo ">> wire code generation done."
+
+wire-clean: ## 清理wire生成的代码
+	@echo ">> cleaning wire generated files..."
+	@find . -name "wire_gen.go" -type f -delete
+	@echo ">> wire files cleaned."

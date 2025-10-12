@@ -13,13 +13,6 @@ import (
 	"golang.org/x/oauth2"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/11/9 16:14
- * @file: service_auth.go
- * @description: service auth
- */
-
 type AuthService struct {
 	authRepo *repo.AuthRepo
 	userRepo *repo.UserRepo

@@ -5,16 +5,9 @@ import (
 	"github.com/observabil/arcade/internal/engine/constant"
 	"github.com/observabil/arcade/internal/engine/model"
 	"github.com/observabil/arcade/internal/engine/repo"
-	"github.com/observabil/arcade/internal/engine/service"
+	"github.com/observabil/arcade/internal/engine/service/agent"
 	"github.com/observabil/arcade/pkg/http"
 )
-
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/16 20:41
- * @file: router_agent.go
- * @description: agent router
- */
 
 func (rt *Router) agentRouter(r fiber.Router, auth fiber.Handler) {
 	agentGroup := r.Group("/agent", auth)
@@ -27,7 +20,7 @@ func (rt *Router) agentRouter(r fiber.Router, auth fiber.Handler) {
 func (rt *Router) addAgent(c *fiber.Ctx) error {
 	var addAgentReq *model.AddAgentReq
 	agentRepo := repo.NewAgentRepo(rt.Ctx)
-	agentLogic := service.NewAgentService(agentRepo, addAgentReq)
+	agentLogic := agent.NewAgentService(agentRepo, addAgentReq)
 
 	if err := c.BodyParser(&addAgentReq); err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
@@ -44,7 +37,7 @@ func (rt *Router) addAgent(c *fiber.Ctx) error {
 func (rt *Router) listAgent(c *fiber.Ctx) error {
 	var agentReq *model.AddAgentReq
 	agentRepo := repo.NewAgentRepo(rt.Ctx)
-	agentLogic := service.NewAgentService(agentRepo, agentReq)
+	agentLogic := agent.NewAgentService(agentRepo, agentReq)
 
 	pageNum := queryInt(c, "pageNum")   // default 1
 	pageSize := queryInt(c, "pageSize") // default 10
@@ -53,7 +46,7 @@ func (rt *Router) listAgent(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
 
-	result := make(map[string]interface{})
+	result := make(map[string]any)
 	result["agents"] = agents
 	result["count"] = count
 	c.Locals(constant.DETAIL, result)

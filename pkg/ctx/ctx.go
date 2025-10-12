@@ -1,6 +1,7 @@
 package ctx
 
 import (
+	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
@@ -8,12 +9,24 @@ import (
 	"gorm.io/gorm"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/9 0:12
- * @file: ctx.go
- * @description: Global context
- */
+// ProviderSet 提供上下文相关的依赖
+var ProviderSet = wire.NewSet(ProvideContext, ProvideBaseContext)
+
+// ProvideBaseContext 提供基础 context.Context
+func ProvideBaseContext() context.Context {
+	return context.Background()
+}
+
+// ProvideContext 提供应用上下文
+func ProvideContext(
+	baseCtx context.Context,
+	mongodb *mongo.Database,
+	redis *redis.Client,
+	db *gorm.DB,
+	logger *zap.SugaredLogger,
+) *Context {
+	return NewContext(baseCtx, mongodb.Client(), redis, db, logger)
+}
 
 type Context struct {
 	DB    *gorm.DB

@@ -3,25 +3,15 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 
 	"github.com/observabil/arcade/internal/engine/conf"
-	"github.com/observabil/arcade/internal/engine/router"
 	"github.com/observabil/arcade/pkg/cache"
 	"github.com/observabil/arcade/pkg/ctx"
 	"github.com/observabil/arcade/pkg/database"
-	httpx "github.com/observabil/arcade/pkg/http"
+	"github.com/observabil/arcade/pkg/http"
 	"github.com/observabil/arcade/pkg/log"
-	"github.com/observabil/arcade/pkg/plugin"
-	"github.com/observabil/arcade/pkg/runner"
+	"go.uber.org/zap"
 )
-
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/4 19:51
- * @file: main.go
- * @description: arcade program
- */
 
 var (
 	configFile       string
@@ -37,18 +27,18 @@ func init() {
 
 func main() {
 	flag.Parse()
-	printRunner()
 
+	// 加载配置
 	appConf := conf.NewConf(configFile)
 
+	// 初始化日志
 	logger := log.NewLog(&appConf.Log)
 
+	// 初始化 Redis、数据库
 	redis, err := cache.NewRedis(appConf.Redis)
 	if err != nil {
 		panic(err)
 	}
-
-	// db
 	db, err := database.NewDatabase(appConf.Database, *logger)
 	if err != nil {
 		panic(err)
@@ -57,25 +47,35 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	Ctx := ctx.NewContext(context.Background(), mongo, redis, db, logger.Sugar())
+	appCtx := ctx.NewContext(context.Background(), mongo, redis, db, logger.Sugar())
 
-	manager := plugin.NewManager()
-	manager.SetContext(context.Background())
-	manager.LoadPluginsFromConfig(pluginConfigFile)
-	manager.Init(context.Background())
+	// Wire 构建 App
+	app, cleanup, err := initApp(configFile, appCtx, logger)
+	if err != nil {
+		panic(err)
+	}
+	defer cleanup()
 
-	// 启动自动监控
-	manager.StartAutoWatch([]string{pluginDir}, pluginConfigFile)
-	defer manager.StopAutoWatch()
+	// 启动插件系统
+	app.PluginMgr.SetContext(context.Background())
+	app.PluginMgr.LoadPluginsFromConfig(pluginConfigFile)
+	app.PluginMgr.Init(context.Background())
+	app.PluginMgr.StartAutoWatch([]string{pluginDir}, pluginConfigFile)
+	defer app.PluginMgr.StopAutoWatch()
 
-	route := router.NewRouter(&appConf.Http, Ctx)
-	// http srv
-	app := route.Router(logger)
-	cleanup := httpx.NewHttp(appConf.Http, app)
-	cleanup()
-}
+	// 启动 gRPC 服务
+	if app.GrpcServer != nil && appConf.Grpc.Port > 0 {
+		go func() {
+			logger.Info("Starting gRPC server...",
+				zap.String("host", appConf.Grpc.Host),
+				zap.Int("port", appConf.Grpc.Port))
+			if err := app.GrpcServer.Start(appConf.Grpc); err != nil {
+				logger.Error("gRPC server failed", zap.Error(err))
+			}
+		}()
+	}
 
-func printRunner() {
-	fmt.Println("runner.pwd:", runner.Pwd)
-	fmt.Println("runner.hostname:", runner.Hostname)
+	// 启动 HTTP 服务
+	httpCleanup := http.NewHttp(appConf.Http, app.HttpApp)
+	httpCleanup()
 }

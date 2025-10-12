@@ -4,18 +4,21 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"github.com/redis/go-redis/v9"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/google/wire"
+	"github.com/redis/go-redis/v9"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/8 23:46
- * @file: redis.go
- * @description: redis
- */
+// ProviderSet 提供缓存相关的依赖
+var ProviderSet = wire.NewSet(ProvideRedis)
+
+// ProvideRedis 提供 Redis 实例
+func ProvideRedis(conf Redis) (*redis.Client, error) {
+	return NewRedis(conf)
+}
 
 type Redis struct {
 	Mode             string

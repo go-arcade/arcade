@@ -7,13 +7,6 @@ import (
 	"errors"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/11/30 11:02
- * @file: json.go
- * @description: gorm json data type
- */
-
 type JSON []byte
 
 // Value implements the driver.Valuer interface

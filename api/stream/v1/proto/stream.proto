@@ -2,30 +2,33 @@ syntax = "proto3";
 
 package api.stream.v1;
 
-import "api/job/v1/job.proto";
+import "api/job/v1/proto/job.proto";
 
-option go_package = "github.com/observabil/arcade/api/stream/v1/proto;v1";
+option go_package = "github.com/observabil/arcade/api/stream/v1;v1";
 
 // Stream服务 - 实时数据流传输接口
 service Stream {
+  // ping
+  rpc Ping(PingRequest) returns (PingResponse) {}
+
   // 实时获取任务日志流 - Server端流式推送日志给客户端
   rpc StreamJobLog(StreamJobLogRequest) returns (stream StreamJobLogResponse) {}
-  
+
   // 上报任务日志流 - Agent端流式上报日志给Server
   rpc UploadJobLog(stream UploadJobLogRequest) returns (UploadJobLogResponse) {}
-  
+
   // 实时获取任务状态流 - Server端流式推送任务状态变化
   rpc StreamJobStatus(StreamJobStatusRequest) returns (stream StreamJobStatusResponse) {}
-  
+
   // 实时获取流水线状态流 - Server端流式推送流水线状态变化
   rpc StreamPipelineStatus(StreamPipelineStatusRequest) returns (stream StreamPipelineStatusResponse) {}
-  
+
   // Agent与Server双向通信流 - 用于实时任务调度和控制
   rpc AgentChannel(stream AgentChannelRequest) returns (stream AgentChannelResponse) {}
-  
+
   // 实时监控Agent状态流 - Server端流式推送Agent状态变化
   rpc StreamAgentStatus(StreamAgentStatusRequest) returns (stream StreamAgentStatusResponse) {}
-  
+
   // 实时事件流 - Server端推送系统事件
   rpc StreamEvents(StreamEventsRequest) returns (stream StreamEventsResponse) {}
 }
@@ -55,6 +58,15 @@ enum EventType {
   EVENT_TYPE_AGENT_REGISTERED = 9;  // Agent注册
   EVENT_TYPE_AGENT_UNREGISTERED = 10; // Agent注销
   EVENT_TYPE_AGENT_OFFLINE = 11;    // Agent离线
+}
+
+message PingRequest {
+    string message = 1;
+}
+
+message PingResponse {
+    string message = 1;
+    int64 timestamp = 2;
 }
 
 // ============ 任务日志流相关 ============
