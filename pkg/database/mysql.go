@@ -2,22 +2,16 @@ package database
 
 import (
 	"fmt"
-	"go.uber.org/zap"
 	"sync"
 	"time"
+
+	"go.uber.org/zap"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
 )
-
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/16 11:29
- * @file: mysql.go
- * @description: gorm database
- */
 
 type Database struct {
 	Type         string

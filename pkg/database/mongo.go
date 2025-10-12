@@ -42,18 +42,18 @@ func NewMongoDB(cfg MongoDB, ctx context.Context) (*mongo.Client, error) {
 	clientOption := options.Client().ApplyURI(cfg.Uri)
 	clientOption.SetCompressors(cfg.Compressors)
 	clientOption.SetMaxPoolSize(cfg.PoolSize)
-	client, err := mongo.Connect(context.Background(), clientOption)
+	client, err := mongo.Connect(ctx, clientOption)
 	if err != nil {
 		return client, err
 	}
 
-	err = client.Ping(context.Background(), nil)
+	err = client.Ping(ctx, nil)
 	if err != nil {
 		return client, err
 	}
 
 	defer func() {
-		if err = client.Disconnect(context.Background()); err != nil {
+		if err = client.Disconnect(ctx); err != nil {
 			panic(err)
 		}
 	}()
