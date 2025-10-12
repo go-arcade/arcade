@@ -2,33 +2,35 @@ syntax = "proto3";
 
 package api.agent.v1;
 
+import "api/job/v1/proto/job.proto";
+
 option go_package = "github.com/observabil/arcade/api/agent/v1;v1";
 
 // Agent服务 - Agent端与Server端通信的主要接口
 service Agent {
-  // 心跳保持 - Agent定期向Server发送心跳
-  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse) {}
-  
-  // Agent注册 - Agent启动时向Server注册
-  rpc Register(RegisterRequest) returns (RegisterResponse) {}
-  
-  // Agent注销 - Agent关闭时向Server注销
-  rpc Unregister(UnregisterRequest) returns (UnregisterResponse) {}
-  
-  // 获取任务 - Agent主动拉取待执行的任务
-  rpc FetchJob(FetchJobRequest) returns (FetchJobResponse) {}
-  
-  // 上报任务状态 - Agent执行任务过程中上报状态变化
-  rpc ReportJobStatus(ReportJobStatusRequest) returns (ReportJobStatusResponse) {}
-  
-  // 上报任务日志 - Agent批量上报任务执行日志
-  rpc ReportJobLog(ReportJobLogRequest) returns (ReportJobLogResponse) {}
-  
-  // 取消任务 - Server通知Agent取消正在执行的任务
-  rpc CancelJob(CancelJobRequest) returns (CancelJobResponse) {}
-  
-  // 更新Agent标签 - 动态更新Agent的labels和tags
-  rpc UpdateLabels(UpdateLabelsRequest) returns (UpdateLabelsResponse) {}
+    // 心跳保持 - Agent定期向Server发送心跳
+    rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse) {}
+
+    // Agent注册 - Agent启动时向Server注册
+    rpc Register(RegisterRequest) returns (RegisterResponse) {}
+
+    // Agent注销 - Agent关闭时向Server注销
+    rpc Unregister(UnregisterRequest) returns (UnregisterResponse) {}
+
+    // 获取任务 - Agent主动拉取待执行的任务
+    rpc FetchJob(FetchJobRequest) returns (FetchJobResponse) {}
+
+    // 上报任务状态 - Agent执行任务过程中上报状态变化
+    rpc ReportJobStatus(ReportJobStatusRequest) returns (ReportJobStatusResponse) {}
+
+    // 上报任务日志 - Agent批量上报任务执行日志
+    rpc ReportJobLog(ReportJobLogRequest) returns (ReportJobLogResponse) {}
+
+    // 取消任务 - Server通知Agent取消正在执行的任务
+    rpc CancelJob(CancelJobRequest) returns (CancelJobResponse) {}
+
+    // 更新Agent标签 - 动态更新Agent的labels和tags
+    rpc UpdateLabels(UpdateLabelsRequest) returns (UpdateLabelsResponse) {}
 }
 
 // Agent状态枚举
@@ -38,17 +40,6 @@ enum AgentStatus {
   AGENT_STATUS_OFFLINE = 2;  // 离线
   AGENT_STATUS_BUSY = 3;     // 忙碌
   AGENT_STATUS_IDLE = 4;     // 空闲
-}
-
-// 任务状态枚举
-enum JobStatus {
-  JOB_STATUS_UNKNOWN = 0;
-  JOB_STATUS_PENDING = 1;    // 等待执行
-  JOB_STATUS_RUNNING = 2;    // 执行中
-  JOB_STATUS_SUCCESS = 3;    // 执行成功
-  JOB_STATUS_FAILED = 4;     // 执行失败
-  JOB_STATUS_CANCELLED = 5;  // 已取消
-  JOB_STATUS_TIMEOUT = 6;    // 超时
 }
 
 // 心跳请求
@@ -144,7 +135,7 @@ message Artifact {
 message ReportJobStatusRequest {
   string agent_id = 1;
   string job_id = 2;
-  JobStatus status = 3;               // 任务状态
+  api.job.v1.JobStatus status = 3;               // 任务状态
   int32 exit_code = 4;                // 退出码
   string error_message = 5;           // 错误信息
   int64 start_time = 6;               // 开始时间（Unix时间戳）
@@ -211,7 +202,7 @@ message UpdateLabelsResponse {
 message LabelSelector {
   // 匹配所有指定的标签（AND逻辑）
   map<string, string> match_labels = 1;
-  
+
   // 标签表达式（支持更复杂的匹配规则）
   repeated LabelSelectorRequirement match_expressions = 2;
 }

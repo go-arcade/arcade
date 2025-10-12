@@ -1,0 +1,175 @@
+syntax = "proto3";
+
+package api.pipeline.v1;
+
+option go_package = "github.com/observabil/arcade/api/pipeline/v1;v1";
+
+service Pipeline {
+  // ping 
+  rpc Ping(PingRequest) returns (PingResponse) {}
+    
+  // 创建流水线
+  rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {}
+
+  // 获取流水线详情
+  rpc GetPipeline(GetPipelineRequest) returns (GetPipelineResponse) {}
+
+  // 列出流水线
+  rpc ListPipelines(ListPipelinesRequest) returns (ListPipelinesResponse) {}
+
+  // 触发流水线执行
+  rpc TriggerPipeline(TriggerPipelineRequest) returns (TriggerPipelineResponse) {}
+
+  // 停止流水线
+  rpc StopPipeline(StopPipelineRequest) returns (StopPipelineResponse) {}
+}
+
+// ping 请求
+message PingRequest {
+  string message = 1;
+}
+
+// ping 响应
+message PingResponse {
+  string message = 1;
+  int64 timestamp = 2;
+}
+
+// 流水线状态枚举
+enum PipelineStatus {
+  PIPELINE_STATUS_UNKNOWN = 0;
+  PIPELINE_STATUS_PENDING = 1;   // 等待执行
+  PIPELINE_STATUS_RUNNING = 2;   // 执行中
+  PIPELINE_STATUS_SUCCESS = 3;   // 执行成功
+  PIPELINE_STATUS_FAILED = 4;    // 执行失败
+  PIPELINE_STATUS_CANCELLED = 5; // 已取消
+  PIPELINE_STATUS_PARTIAL = 6;   // 部分成功
+}
+
+// 触发类型枚举
+enum TriggerType {
+  TRIGGER_TYPE_UNKNOWN = 0;
+  TRIGGER_TYPE_MANUAL = 1;       // 手动触发
+  TRIGGER_TYPE_WEBHOOK = 2;      // Webhook触发
+  TRIGGER_TYPE_SCHEDULE = 3;     // 定时触发
+  TRIGGER_TYPE_API = 4;          // API触发
+}
+
+// 阶段定义
+message Stage {
+  string name = 1;                      // 阶段名称
+  repeated Job jobs = 2;                // 阶段中的任务列表
+  bool parallel = 3;                    // 是否并行执行任务
+}
+
+// 任务定义
+message Job {
+  string name = 1;                      // 任务名称
+  string image = 2;                     // Docker镜像
+  repeated string commands = 3;         // 执行命令
+  map<string, string> env = 4;          // 环境变量
+  repeated string depends_on = 5;       // 依赖的任务
+  int32 timeout = 6;                    // 超时时间（秒）
+  int32 retry = 7;                      // 重试次数
+}
+
+// 创建流水线请求
+message CreatePipelineRequest {
+  string name = 1;                      // 流水线名称
+  string description = 2;               // 描述
+  string repo_url = 3;                  // 代码仓库URL
+  string branch = 4;                    // 分支
+  repeated Stage stages = 5;            // 阶段配置
+  map<string, string> env = 6;          // 全局环境变量
+  TriggerType trigger_type = 7;         // 触发类型
+  string cron = 8;                      // Cron表达式（定时触发时需要）
+  string created_by = 9;                // 创建者
+}
+
+// 创建流水线响应
+message CreatePipelineResponse {
+  bool success = 1;
+  string message = 2;
+  string pipeline_id = 3;               // 创建的流水线ID
+}
+
+// 获取流水线请求
+message GetPipelineRequest {
+  string pipeline_id = 1;
+}
+
+// 获取流水线响应
+message GetPipelineResponse {
+  bool success = 1;
+  string message = 2;
+  PipelineDetail pipeline = 3;
+}
+
+// 流水线详情
+message PipelineDetail {
+  string pipeline_id = 1;               // 流水线ID
+  string name = 2;                      // 流水线名称
+  string description = 3;               // 描述
+  string repo_url = 4;                  // 代码仓库URL
+  string branch = 5;                    // 分支
+  PipelineStatus status = 6;            // 流水线状态
+  repeated Stage stages = 7;            // 阶段配置
+  map<string, string> env = 8;          // 全局环境变量
+  TriggerType trigger_type = 9;         // 触发类型
+  string cron = 10;                     // Cron表达式
+  int64 created_at = 11;                // 创建时间
+  int64 updated_at = 12;                // 更新时间
+  string created_by = 13;               // 创建者
+  int32 total_runs = 14;                // 总执行次数
+  int32 success_runs = 15;              // 成功次数
+  int32 failed_runs = 16;               // 失败次数
+}
+
+// 列出流水线请求
+message ListPipelinesRequest {
+  PipelineStatus status = 1;            // 状态过滤（可选）
+  int32 page = 2;                       // 页码（从1开始）
+  int32 page_size = 3;                  // 每页数量（默认20）
+  string sort_by = 4;                   // 排序字段
+  bool sort_desc = 5;                   // 是否降序
+}
+
+// 列出流水线响应
+message ListPipelinesResponse {
+  bool success = 1;
+  string message = 2;
+  repeated PipelineDetail pipelines = 3;
+  int32 total = 4;                      // 总数
+  int32 page = 5;                       // 当前页
+  int32 page_size = 6;                  // 每页数量
+}
+
+// 触发流水线请求
+message TriggerPipelineRequest {
+  string pipeline_id = 1;
+  string branch = 2;                    // 分支（可选，覆盖默认分支）
+  string commit_sha = 3;                // Commit SHA（可选）
+  map<string, string> env = 4;          // 额外的环境变量（可选）
+  string triggered_by = 5;              // 触发者
+}
+
+// 触发流水线响应
+message TriggerPipelineResponse {
+  bool success = 1;
+  string message = 2;
+  string run_id = 3;                    // 流水线执行ID
+  repeated string job_ids = 4;          // 创建的任务ID列表
+}
+
+// 停止流水线请求
+message StopPipelineRequest {
+  string pipeline_id = 1;
+  string run_id = 2;                    // 流水线执行ID
+  string reason = 3;                    // 停止原因
+}
+
+// 停止流水线响应
+message StopPipelineResponse {
+  bool success = 1;
+  string message = 2;
+}

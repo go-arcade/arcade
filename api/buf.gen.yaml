@@ -1,0 +1,37 @@
+version: v2
+# Buf 代码生成配置
+
+# 管理的目录
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: github.com/observabil/arcade/api
+
+# 插件配置
+plugins:
+  # Go Protocol Buffers 插件
+  - remote: buf.build/protocolbuffers/go
+    out: .
+    opt:
+      - paths=source_relative
+
+  # Go gRPC 插件
+  - remote: buf.build/grpc/go
+    out: .
+    opt:
+      - paths=source_relative
+
+  # 如果需要 grpc-gateway，可以添加以下插件：
+  # - remote: buf.build/grpc-ecosystem/gateway
+  #   out: .
+  #   opt:
+  #     - paths=source_relative
+  #     - generate_unbound_methods=true
+  
+  # - remote: buf.build/grpc-ecosystem/openapiv2
+  #   out: .
+  #   opt:
+  #     - allow_merge=true
+  #     - merge_file_name=api
+

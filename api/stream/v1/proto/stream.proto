@@ -3,6 +3,8 @@ syntax = "proto3";
 package api.stream.v1;
 
 import "api/job/v1/proto/job.proto";
+import "api/agent/v1/proto/agent.proto";
+import "api/pipeline/v1/proto/pipeline.proto";
 
 option go_package = "github.com/observabil/arcade/api/stream/v1;v1";
 
@@ -32,8 +34,6 @@ service Stream {
   // 实时事件流 - Server端推送系统事件
   rpc StreamEvents(StreamEventsRequest) returns (stream StreamEventsResponse) {}
 }
-
-// 注意：JobStatus、PipelineStatus 定义在 job.proto 中
 
 // Agent状态枚举
 enum AgentStatus {
@@ -142,8 +142,8 @@ message StreamPipelineStatusResponse {
   string pipeline_id = 1;
   string run_id = 2;                    // 流水线执行ID
   string pipeline_name = 3;
-  api.job.v1.PipelineStatus status = 4;            // 流水线状态
-  api.job.v1.PipelineStatus previous_status = 5;   // 之前的状态
+  api.pipeline.v1.PipelineStatus status = 4;            // 流水线状态
+  api.pipeline.v1.PipelineStatus previous_status = 5;   // 之前的状态
   int64 timestamp = 6;                  // 状态变化时间戳
   int32 total_jobs = 7;                 // 总任务数
   int32 completed_jobs = 8;             // 已完成任务数
@@ -172,7 +172,7 @@ message AgentChannelRequest {
 // 心跳数据
 message HeartbeatData {
   int64 timestamp = 1;
-  AgentStatus status = 2;
+  api.agent.v1.AgentStatus status = 2;
   int32 running_jobs_count = 3;
   int32 max_concurrent_jobs = 4;
 }
