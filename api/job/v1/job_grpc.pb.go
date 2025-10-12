@@ -29,11 +29,6 @@ const (
 	Job_RetryJob_FullMethodName         = "/api.job.v1.Job/RetryJob"
 	Job_GetJobLog_FullMethodName        = "/api.job.v1.Job/GetJobLog"
 	Job_ListJobArtifacts_FullMethodName = "/api.job.v1.Job/ListJobArtifacts"
-	Job_CreatePipeline_FullMethodName   = "/api.job.v1.Job/CreatePipeline"
-	Job_GetPipeline_FullMethodName      = "/api.job.v1.Job/GetPipeline"
-	Job_ListPipelines_FullMethodName    = "/api.job.v1.Job/ListPipelines"
-	Job_TriggerPipeline_FullMethodName  = "/api.job.v1.Job/TriggerPipeline"
-	Job_StopPipeline_FullMethodName     = "/api.job.v1.Job/StopPipeline"
 )
 
 // JobClient is the client API for Job service.
@@ -62,16 +57,6 @@ type JobClient interface {
 	GetJobLog(ctx context.Context, in *GetJobLogRequest, opts ...grpc.CallOption) (*GetJobLogResponse, error)
 	// 获取任务产物列表
 	ListJobArtifacts(ctx context.Context, in *ListJobArtifactsRequest, opts ...grpc.CallOption) (*ListJobArtifactsResponse, error)
-	// 创建流水线
-	CreatePipeline(ctx context.Context, in *CreatePipelineRequest, opts ...grpc.CallOption) (*CreatePipelineResponse, error)
-	// 获取流水线详情
-	GetPipeline(ctx context.Context, in *GetPipelineRequest, opts ...grpc.CallOption) (*GetPipelineResponse, error)
-	// 列出流水线
-	ListPipelines(ctx context.Context, in *ListPipelinesRequest, opts ...grpc.CallOption) (*ListPipelinesResponse, error)
-	// 触发流水线执行
-	TriggerPipeline(ctx context.Context, in *TriggerPipelineRequest, opts ...grpc.CallOption) (*TriggerPipelineResponse, error)
-	// 停止流水线
-	StopPipeline(ctx context.Context, in *StopPipelineRequest, opts ...grpc.CallOption) (*StopPipelineResponse, error)
 }
 
 type jobClient struct {
@@ -182,56 +167,6 @@ func (c *jobClient) ListJobArtifacts(ctx context.Context, in *ListJobArtifactsRe
 	return out, nil
 }
 
-func (c *jobClient) CreatePipeline(ctx context.Context, in *CreatePipelineRequest, opts ...grpc.CallOption) (*CreatePipelineResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CreatePipelineResponse)
-	err := c.cc.Invoke(ctx, Job_CreatePipeline_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *jobClient) GetPipeline(ctx context.Context, in *GetPipelineRequest, opts ...grpc.CallOption) (*GetPipelineResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetPipelineResponse)
-	err := c.cc.Invoke(ctx, Job_GetPipeline_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *jobClient) ListPipelines(ctx context.Context, in *ListPipelinesRequest, opts ...grpc.CallOption) (*ListPipelinesResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListPipelinesResponse)
-	err := c.cc.Invoke(ctx, Job_ListPipelines_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *jobClient) TriggerPipeline(ctx context.Context, in *TriggerPipelineRequest, opts ...grpc.CallOption) (*TriggerPipelineResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(TriggerPipelineResponse)
-	err := c.cc.Invoke(ctx, Job_TriggerPipeline_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *jobClient) StopPipeline(ctx context.Context, in *StopPipelineRequest, opts ...grpc.CallOption) (*StopPipelineResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(StopPipelineResponse)
-	err := c.cc.Invoke(ctx, Job_StopPipeline_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // JobServer is the server API for Job service.
 // All implementations must embed UnimplementedJobServer
 // for forward compatibility.
@@ -258,16 +193,6 @@ type JobServer interface {
 	GetJobLog(context.Context, *GetJobLogRequest) (*GetJobLogResponse, error)
 	// 获取任务产物列表
 	ListJobArtifacts(context.Context, *ListJobArtifactsRequest) (*ListJobArtifactsResponse, error)
-	// 创建流水线
-	CreatePipeline(context.Context, *CreatePipelineRequest) (*CreatePipelineResponse, error)
-	// 获取流水线详情
-	GetPipeline(context.Context, *GetPipelineRequest) (*GetPipelineResponse, error)
-	// 列出流水线
-	ListPipelines(context.Context, *ListPipelinesRequest) (*ListPipelinesResponse, error)
-	// 触发流水线执行
-	TriggerPipeline(context.Context, *TriggerPipelineRequest) (*TriggerPipelineResponse, error)
-	// 停止流水线
-	StopPipeline(context.Context, *StopPipelineRequest) (*StopPipelineResponse, error)
 	mustEmbedUnimplementedJobServer()
 }
 
@@ -307,21 +232,6 @@ func (UnimplementedJobServer) GetJobLog(context.Context, *GetJobLogRequest) (*Ge
 }
 func (UnimplementedJobServer) ListJobArtifacts(context.Context, *ListJobArtifactsRequest) (*ListJobArtifactsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListJobArtifacts not implemented")
-}
-func (UnimplementedJobServer) CreatePipeline(context.Context, *CreatePipelineRequest) (*CreatePipelineResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreatePipeline not implemented")
-}
-func (UnimplementedJobServer) GetPipeline(context.Context, *GetPipelineRequest) (*GetPipelineResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetPipeline not implemented")
-}
-func (UnimplementedJobServer) ListPipelines(context.Context, *ListPipelinesRequest) (*ListPipelinesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListPipelines not implemented")
-}
-func (UnimplementedJobServer) TriggerPipeline(context.Context, *TriggerPipelineRequest) (*TriggerPipelineResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method TriggerPipeline not implemented")
-}
-func (UnimplementedJobServer) StopPipeline(context.Context, *StopPipelineRequest) (*StopPipelineResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method StopPipeline not implemented")
 }
 func (UnimplementedJobServer) mustEmbedUnimplementedJobServer() {}
 func (UnimplementedJobServer) testEmbeddedByValue()             {}
@@ -524,96 +434,6 @@ func _Job_ListJobArtifacts_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Job_CreatePipeline_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreatePipelineRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(JobServer).CreatePipeline(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Job_CreatePipeline_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(JobServer).CreatePipeline(ctx, req.(*CreatePipelineRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Job_GetPipeline_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetPipelineRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(JobServer).GetPipeline(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Job_GetPipeline_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(JobServer).GetPipeline(ctx, req.(*GetPipelineRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Job_ListPipelines_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListPipelinesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(JobServer).ListPipelines(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Job_ListPipelines_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(JobServer).ListPipelines(ctx, req.(*ListPipelinesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Job_TriggerPipeline_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TriggerPipelineRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(JobServer).TriggerPipeline(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Job_TriggerPipeline_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(JobServer).TriggerPipeline(ctx, req.(*TriggerPipelineRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Job_StopPipeline_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StopPipelineRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(JobServer).StopPipeline(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Job_StopPipeline_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(JobServer).StopPipeline(ctx, req.(*StopPipelineRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // Job_ServiceDesc is the grpc.ServiceDesc for Job service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -660,26 +480,6 @@ var Job_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListJobArtifacts",
 			Handler:    _Job_ListJobArtifacts_Handler,
-		},
-		{
-			MethodName: "CreatePipeline",
-			Handler:    _Job_CreatePipeline_Handler,
-		},
-		{
-			MethodName: "GetPipeline",
-			Handler:    _Job_GetPipeline_Handler,
-		},
-		{
-			MethodName: "ListPipelines",
-			Handler:    _Job_ListPipelines_Handler,
-		},
-		{
-			MethodName: "TriggerPipeline",
-			Handler:    _Job_TriggerPipeline_Handler,
-		},
-		{
-			MethodName: "StopPipeline",
-			Handler:    _Job_StopPipeline_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

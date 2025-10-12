@@ -89,68 +89,6 @@ func (JobStatus) EnumDescriptor() ([]byte, []int) {
 	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{0}
 }
 
-// 流水线状态枚举
-type PipelineStatus int32
-
-const (
-	PipelineStatus_PIPELINE_STATUS_UNKNOWN   PipelineStatus = 0
-	PipelineStatus_PIPELINE_STATUS_PENDING   PipelineStatus = 1 // 等待执行
-	PipelineStatus_PIPELINE_STATUS_RUNNING   PipelineStatus = 2 // 执行中
-	PipelineStatus_PIPELINE_STATUS_SUCCESS   PipelineStatus = 3 // 执行成功
-	PipelineStatus_PIPELINE_STATUS_FAILED    PipelineStatus = 4 // 执行失败
-	PipelineStatus_PIPELINE_STATUS_CANCELLED PipelineStatus = 5 // 已取消
-	PipelineStatus_PIPELINE_STATUS_PARTIAL   PipelineStatus = 6 // 部分成功
-)
-
-// Enum value maps for PipelineStatus.
-var (
-	PipelineStatus_name = map[int32]string{
-		0: "PIPELINE_STATUS_UNKNOWN",
-		1: "PIPELINE_STATUS_PENDING",
-		2: "PIPELINE_STATUS_RUNNING",
-		3: "PIPELINE_STATUS_SUCCESS",
-		4: "PIPELINE_STATUS_FAILED",
-		5: "PIPELINE_STATUS_CANCELLED",
-		6: "PIPELINE_STATUS_PARTIAL",
-	}
-	PipelineStatus_value = map[string]int32{
-		"PIPELINE_STATUS_UNKNOWN":   0,
-		"PIPELINE_STATUS_PENDING":   1,
-		"PIPELINE_STATUS_RUNNING":   2,
-		"PIPELINE_STATUS_SUCCESS":   3,
-		"PIPELINE_STATUS_FAILED":    4,
-		"PIPELINE_STATUS_CANCELLED": 5,
-		"PIPELINE_STATUS_PARTIAL":   6,
-	}
-)
-
-func (x PipelineStatus) Enum() *PipelineStatus {
-	p := new(PipelineStatus)
-	*p = x
-	return p
-}
-
-func (x PipelineStatus) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (PipelineStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_job_v1_proto_job_proto_enumTypes[1].Descriptor()
-}
-
-func (PipelineStatus) Type() protoreflect.EnumType {
-	return &file_api_job_v1_proto_job_proto_enumTypes[1]
-}
-
-func (x PipelineStatus) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use PipelineStatus.Descriptor instead.
-func (PipelineStatus) EnumDescriptor() ([]byte, []int) {
-	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{1}
-}
-
 // 触发类型枚举
 type TriggerType int32
 
@@ -191,11 +129,11 @@ func (x TriggerType) String() string {
 }
 
 func (TriggerType) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_job_v1_proto_job_proto_enumTypes[2].Descriptor()
+	return file_api_job_v1_proto_job_proto_enumTypes[1].Descriptor()
 }
 
 func (TriggerType) Type() protoreflect.EnumType {
-	return &file_api_job_v1_proto_job_proto_enumTypes[2]
+	return &file_api_job_v1_proto_job_proto_enumTypes[1]
 }
 
 func (x TriggerType) Number() protoreflect.EnumNumber {
@@ -204,7 +142,7 @@ func (x TriggerType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use TriggerType.Descriptor instead.
 func (TriggerType) EnumDescriptor() ([]byte, []int) {
-	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{2}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{1}
 }
 
 // 标签操作符
@@ -253,11 +191,11 @@ func (x LabelOperator) String() string {
 }
 
 func (LabelOperator) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_job_v1_proto_job_proto_enumTypes[3].Descriptor()
+	return file_api_job_v1_proto_job_proto_enumTypes[2].Descriptor()
 }
 
 func (LabelOperator) Type() protoreflect.EnumType {
-	return &file_api_job_v1_proto_job_proto_enumTypes[3]
+	return &file_api_job_v1_proto_job_proto_enumTypes[2]
 }
 
 func (x LabelOperator) Number() protoreflect.EnumNumber {
@@ -266,7 +204,7 @@ func (x LabelOperator) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use LabelOperator.Descriptor instead.
 func (LabelOperator) EnumDescriptor() ([]byte, []int) {
-	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{3}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{2}
 }
 
 type PingRequest struct {
@@ -2043,115 +1981,6 @@ func (x *Artifact) GetExpireAt() int64 {
 	return 0
 }
 
-// 创建流水线请求
-type CreatePipelineRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`                                                                         // 流水线名称
-	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`                                                           // 描述
-	RepoUrl       string                 `protobuf:"bytes,3,opt,name=repo_url,json=repoUrl,proto3" json:"repo_url,omitempty"`                                                    // 代码仓库URL
-	Branch        string                 `protobuf:"bytes,4,opt,name=branch,proto3" json:"branch,omitempty"`                                                                     // 分支
-	Stages        []*Stage               `protobuf:"bytes,5,rep,name=stages,proto3" json:"stages,omitempty"`                                                                     // 阶段配置
-	Env           map[string]string      `protobuf:"bytes,6,rep,name=env,proto3" json:"env,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // 全局环境变量
-	TriggerType   TriggerType            `protobuf:"varint,7,opt,name=trigger_type,json=triggerType,proto3,enum=api.job.v1.TriggerType" json:"trigger_type,omitempty"`           // 触发类型
-	Cron          string                 `protobuf:"bytes,8,opt,name=cron,proto3" json:"cron,omitempty"`                                                                         // Cron表达式（定时触发时使用）
-	Webhooks      []string               `protobuf:"bytes,9,rep,name=webhooks,proto3" json:"webhooks,omitempty"`                                                                 // Webhook URL列表
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *CreatePipelineRequest) Reset() {
-	*x = CreatePipelineRequest{}
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[24]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CreatePipelineRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CreatePipelineRequest) ProtoMessage() {}
-
-func (x *CreatePipelineRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[24]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use CreatePipelineRequest.ProtoReflect.Descriptor instead.
-func (*CreatePipelineRequest) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{24}
-}
-
-func (x *CreatePipelineRequest) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *CreatePipelineRequest) GetDescription() string {
-	if x != nil {
-		return x.Description
-	}
-	return ""
-}
-
-func (x *CreatePipelineRequest) GetRepoUrl() string {
-	if x != nil {
-		return x.RepoUrl
-	}
-	return ""
-}
-
-func (x *CreatePipelineRequest) GetBranch() string {
-	if x != nil {
-		return x.Branch
-	}
-	return ""
-}
-
-func (x *CreatePipelineRequest) GetStages() []*Stage {
-	if x != nil {
-		return x.Stages
-	}
-	return nil
-}
-
-func (x *CreatePipelineRequest) GetEnv() map[string]string {
-	if x != nil {
-		return x.Env
-	}
-	return nil
-}
-
-func (x *CreatePipelineRequest) GetTriggerType() TriggerType {
-	if x != nil {
-		return x.TriggerType
-	}
-	return TriggerType_TRIGGER_TYPE_UNKNOWN
-}
-
-func (x *CreatePipelineRequest) GetCron() string {
-	if x != nil {
-		return x.Cron
-	}
-	return ""
-}
-
-func (x *CreatePipelineRequest) GetWebhooks() []string {
-	if x != nil {
-		return x.Webhooks
-	}
-	return nil
-}
-
 // 阶段配置
 type Stage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -2164,7 +1993,7 @@ type Stage struct {
 
 func (x *Stage) Reset() {
 	*x = Stage{}
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[25]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2176,7 +2005,7 @@ func (x *Stage) String() string {
 func (*Stage) ProtoMessage() {}
 
 func (x *Stage) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[25]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2189,7 +2018,7 @@ func (x *Stage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Stage.ProtoReflect.Descriptor instead.
 func (*Stage) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{25}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *Stage) GetOrder() int32 {
@@ -2233,7 +2062,7 @@ type JobConfig struct {
 
 func (x *JobConfig) Reset() {
 	*x = JobConfig{}
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[26]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2245,7 +2074,7 @@ func (x *JobConfig) String() string {
 func (*JobConfig) ProtoMessage() {}
 
 func (x *JobConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[26]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2258,7 +2087,7 @@ func (x *JobConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JobConfig.ProtoReflect.Descriptor instead.
 func (*JobConfig) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{26}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *JobConfig) GetName() string {
@@ -2338,760 +2167,6 @@ func (x *JobConfig) GetLabelSelector() *LabelSelector {
 	return nil
 }
 
-// 创建流水线响应
-type CreatePipelineResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	PipelineId    string                 `protobuf:"bytes,3,opt,name=pipeline_id,json=pipelineId,proto3" json:"pipeline_id,omitempty"` // 创建的流水线ID
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *CreatePipelineResponse) Reset() {
-	*x = CreatePipelineResponse{}
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[27]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CreatePipelineResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CreatePipelineResponse) ProtoMessage() {}
-
-func (x *CreatePipelineResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[27]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use CreatePipelineResponse.ProtoReflect.Descriptor instead.
-func (*CreatePipelineResponse) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{27}
-}
-
-func (x *CreatePipelineResponse) GetSuccess() bool {
-	if x != nil {
-		return x.Success
-	}
-	return false
-}
-
-func (x *CreatePipelineResponse) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
-
-func (x *CreatePipelineResponse) GetPipelineId() string {
-	if x != nil {
-		return x.PipelineId
-	}
-	return ""
-}
-
-// 获取流水线请求
-type GetPipelineRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	PipelineId    string                 `protobuf:"bytes,1,opt,name=pipeline_id,json=pipelineId,proto3" json:"pipeline_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetPipelineRequest) Reset() {
-	*x = GetPipelineRequest{}
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[28]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetPipelineRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetPipelineRequest) ProtoMessage() {}
-
-func (x *GetPipelineRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[28]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetPipelineRequest.ProtoReflect.Descriptor instead.
-func (*GetPipelineRequest) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{28}
-}
-
-func (x *GetPipelineRequest) GetPipelineId() string {
-	if x != nil {
-		return x.PipelineId
-	}
-	return ""
-}
-
-// 获取流水线响应
-type GetPipelineResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	Pipeline      *PipelineDetail        `protobuf:"bytes,3,opt,name=pipeline,proto3" json:"pipeline,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetPipelineResponse) Reset() {
-	*x = GetPipelineResponse{}
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[29]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetPipelineResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetPipelineResponse) ProtoMessage() {}
-
-func (x *GetPipelineResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[29]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetPipelineResponse.ProtoReflect.Descriptor instead.
-func (*GetPipelineResponse) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{29}
-}
-
-func (x *GetPipelineResponse) GetSuccess() bool {
-	if x != nil {
-		return x.Success
-	}
-	return false
-}
-
-func (x *GetPipelineResponse) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
-
-func (x *GetPipelineResponse) GetPipeline() *PipelineDetail {
-	if x != nil {
-		return x.Pipeline
-	}
-	return nil
-}
-
-// 流水线详情
-type PipelineDetail struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	PipelineId    string                 `protobuf:"bytes,1,opt,name=pipeline_id,json=pipelineId,proto3" json:"pipeline_id,omitempty"`                                           // 流水线ID
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`                                                                         // 流水线名称
-	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`                                                           // 描述
-	RepoUrl       string                 `protobuf:"bytes,4,opt,name=repo_url,json=repoUrl,proto3" json:"repo_url,omitempty"`                                                    // 代码仓库URL
-	Branch        string                 `protobuf:"bytes,5,opt,name=branch,proto3" json:"branch,omitempty"`                                                                     // 分支
-	Status        PipelineStatus         `protobuf:"varint,6,opt,name=status,proto3,enum=api.job.v1.PipelineStatus" json:"status,omitempty"`                                     // 流水线状态
-	Stages        []*Stage               `protobuf:"bytes,7,rep,name=stages,proto3" json:"stages,omitempty"`                                                                     // 阶段配置
-	Env           map[string]string      `protobuf:"bytes,8,rep,name=env,proto3" json:"env,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // 全局环境变量
-	TriggerType   TriggerType            `protobuf:"varint,9,opt,name=trigger_type,json=triggerType,proto3,enum=api.job.v1.TriggerType" json:"trigger_type,omitempty"`           // 触发类型
-	Cron          string                 `protobuf:"bytes,10,opt,name=cron,proto3" json:"cron,omitempty"`                                                                        // Cron表达式
-	CreatedAt     int64                  `protobuf:"varint,11,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`                                            // 创建时间
-	UpdatedAt     int64                  `protobuf:"varint,12,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`                                            // 更新时间
-	CreatedBy     string                 `protobuf:"bytes,13,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`                                             // 创建者
-	TotalRuns     int32                  `protobuf:"varint,14,opt,name=total_runs,json=totalRuns,proto3" json:"total_runs,omitempty"`                                            // 总执行次数
-	SuccessRuns   int32                  `protobuf:"varint,15,opt,name=success_runs,json=successRuns,proto3" json:"success_runs,omitempty"`                                      // 成功次数
-	FailedRuns    int32                  `protobuf:"varint,16,opt,name=failed_runs,json=failedRuns,proto3" json:"failed_runs,omitempty"`                                         // 失败次数
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *PipelineDetail) Reset() {
-	*x = PipelineDetail{}
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[30]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PipelineDetail) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PipelineDetail) ProtoMessage() {}
-
-func (x *PipelineDetail) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[30]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PipelineDetail.ProtoReflect.Descriptor instead.
-func (*PipelineDetail) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{30}
-}
-
-func (x *PipelineDetail) GetPipelineId() string {
-	if x != nil {
-		return x.PipelineId
-	}
-	return ""
-}
-
-func (x *PipelineDetail) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *PipelineDetail) GetDescription() string {
-	if x != nil {
-		return x.Description
-	}
-	return ""
-}
-
-func (x *PipelineDetail) GetRepoUrl() string {
-	if x != nil {
-		return x.RepoUrl
-	}
-	return ""
-}
-
-func (x *PipelineDetail) GetBranch() string {
-	if x != nil {
-		return x.Branch
-	}
-	return ""
-}
-
-func (x *PipelineDetail) GetStatus() PipelineStatus {
-	if x != nil {
-		return x.Status
-	}
-	return PipelineStatus_PIPELINE_STATUS_UNKNOWN
-}
-
-func (x *PipelineDetail) GetStages() []*Stage {
-	if x != nil {
-		return x.Stages
-	}
-	return nil
-}
-
-func (x *PipelineDetail) GetEnv() map[string]string {
-	if x != nil {
-		return x.Env
-	}
-	return nil
-}
-
-func (x *PipelineDetail) GetTriggerType() TriggerType {
-	if x != nil {
-		return x.TriggerType
-	}
-	return TriggerType_TRIGGER_TYPE_UNKNOWN
-}
-
-func (x *PipelineDetail) GetCron() string {
-	if x != nil {
-		return x.Cron
-	}
-	return ""
-}
-
-func (x *PipelineDetail) GetCreatedAt() int64 {
-	if x != nil {
-		return x.CreatedAt
-	}
-	return 0
-}
-
-func (x *PipelineDetail) GetUpdatedAt() int64 {
-	if x != nil {
-		return x.UpdatedAt
-	}
-	return 0
-}
-
-func (x *PipelineDetail) GetCreatedBy() string {
-	if x != nil {
-		return x.CreatedBy
-	}
-	return ""
-}
-
-func (x *PipelineDetail) GetTotalRuns() int32 {
-	if x != nil {
-		return x.TotalRuns
-	}
-	return 0
-}
-
-func (x *PipelineDetail) GetSuccessRuns() int32 {
-	if x != nil {
-		return x.SuccessRuns
-	}
-	return 0
-}
-
-func (x *PipelineDetail) GetFailedRuns() int32 {
-	if x != nil {
-		return x.FailedRuns
-	}
-	return 0
-}
-
-// 列出流水线请求
-type ListPipelinesRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Status        PipelineStatus         `protobuf:"varint,1,opt,name=status,proto3,enum=api.job.v1.PipelineStatus" json:"status,omitempty"` // 状态过滤（可选）
-	Page          int32                  `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`                                    // 页码（从1开始）
-	PageSize      int32                  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`            // 每页数量（默认20）
-	SortBy        string                 `protobuf:"bytes,4,opt,name=sort_by,json=sortBy,proto3" json:"sort_by,omitempty"`                   // 排序字段
-	SortDesc      bool                   `protobuf:"varint,5,opt,name=sort_desc,json=sortDesc,proto3" json:"sort_desc,omitempty"`            // 是否降序
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListPipelinesRequest) Reset() {
-	*x = ListPipelinesRequest{}
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[31]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListPipelinesRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListPipelinesRequest) ProtoMessage() {}
-
-func (x *ListPipelinesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[31]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ListPipelinesRequest.ProtoReflect.Descriptor instead.
-func (*ListPipelinesRequest) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{31}
-}
-
-func (x *ListPipelinesRequest) GetStatus() PipelineStatus {
-	if x != nil {
-		return x.Status
-	}
-	return PipelineStatus_PIPELINE_STATUS_UNKNOWN
-}
-
-func (x *ListPipelinesRequest) GetPage() int32 {
-	if x != nil {
-		return x.Page
-	}
-	return 0
-}
-
-func (x *ListPipelinesRequest) GetPageSize() int32 {
-	if x != nil {
-		return x.PageSize
-	}
-	return 0
-}
-
-func (x *ListPipelinesRequest) GetSortBy() string {
-	if x != nil {
-		return x.SortBy
-	}
-	return ""
-}
-
-func (x *ListPipelinesRequest) GetSortDesc() bool {
-	if x != nil {
-		return x.SortDesc
-	}
-	return false
-}
-
-// 列出流水线响应
-type ListPipelinesResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	Pipelines     []*PipelineDetail      `protobuf:"bytes,3,rep,name=pipelines,proto3" json:"pipelines,omitempty"`
-	Total         int32                  `protobuf:"varint,4,opt,name=total,proto3" json:"total,omitempty"`                       // 总数
-	Page          int32                  `protobuf:"varint,5,opt,name=page,proto3" json:"page,omitempty"`                         // 当前页
-	PageSize      int32                  `protobuf:"varint,6,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"` // 每页数量
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListPipelinesResponse) Reset() {
-	*x = ListPipelinesResponse{}
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[32]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListPipelinesResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListPipelinesResponse) ProtoMessage() {}
-
-func (x *ListPipelinesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[32]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ListPipelinesResponse.ProtoReflect.Descriptor instead.
-func (*ListPipelinesResponse) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{32}
-}
-
-func (x *ListPipelinesResponse) GetSuccess() bool {
-	if x != nil {
-		return x.Success
-	}
-	return false
-}
-
-func (x *ListPipelinesResponse) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
-
-func (x *ListPipelinesResponse) GetPipelines() []*PipelineDetail {
-	if x != nil {
-		return x.Pipelines
-	}
-	return nil
-}
-
-func (x *ListPipelinesResponse) GetTotal() int32 {
-	if x != nil {
-		return x.Total
-	}
-	return 0
-}
-
-func (x *ListPipelinesResponse) GetPage() int32 {
-	if x != nil {
-		return x.Page
-	}
-	return 0
-}
-
-func (x *ListPipelinesResponse) GetPageSize() int32 {
-	if x != nil {
-		return x.PageSize
-	}
-	return 0
-}
-
-// 触发流水线请求
-type TriggerPipelineRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	PipelineId    string                 `protobuf:"bytes,1,opt,name=pipeline_id,json=pipelineId,proto3" json:"pipeline_id,omitempty"`
-	Branch        string                 `protobuf:"bytes,2,opt,name=branch,proto3" json:"branch,omitempty"`                                                                     // 分支（可选，覆盖默认分支）
-	CommitSha     string                 `protobuf:"bytes,3,opt,name=commit_sha,json=commitSha,proto3" json:"commit_sha,omitempty"`                                              // Commit SHA（可选）
-	Env           map[string]string      `protobuf:"bytes,4,rep,name=env,proto3" json:"env,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // 额外的环境变量（可选）
-	TriggeredBy   string                 `protobuf:"bytes,5,opt,name=triggered_by,json=triggeredBy,proto3" json:"triggered_by,omitempty"`                                        // 触发者
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *TriggerPipelineRequest) Reset() {
-	*x = TriggerPipelineRequest{}
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[33]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *TriggerPipelineRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*TriggerPipelineRequest) ProtoMessage() {}
-
-func (x *TriggerPipelineRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[33]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use TriggerPipelineRequest.ProtoReflect.Descriptor instead.
-func (*TriggerPipelineRequest) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{33}
-}
-
-func (x *TriggerPipelineRequest) GetPipelineId() string {
-	if x != nil {
-		return x.PipelineId
-	}
-	return ""
-}
-
-func (x *TriggerPipelineRequest) GetBranch() string {
-	if x != nil {
-		return x.Branch
-	}
-	return ""
-}
-
-func (x *TriggerPipelineRequest) GetCommitSha() string {
-	if x != nil {
-		return x.CommitSha
-	}
-	return ""
-}
-
-func (x *TriggerPipelineRequest) GetEnv() map[string]string {
-	if x != nil {
-		return x.Env
-	}
-	return nil
-}
-
-func (x *TriggerPipelineRequest) GetTriggeredBy() string {
-	if x != nil {
-		return x.TriggeredBy
-	}
-	return ""
-}
-
-// 触发流水线响应
-type TriggerPipelineResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	RunId         string                 `protobuf:"bytes,3,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`    // 流水线执行ID
-	JobIds        []string               `protobuf:"bytes,4,rep,name=job_ids,json=jobIds,proto3" json:"job_ids,omitempty"` // 创建的任务ID列表
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *TriggerPipelineResponse) Reset() {
-	*x = TriggerPipelineResponse{}
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[34]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *TriggerPipelineResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*TriggerPipelineResponse) ProtoMessage() {}
-
-func (x *TriggerPipelineResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[34]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use TriggerPipelineResponse.ProtoReflect.Descriptor instead.
-func (*TriggerPipelineResponse) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{34}
-}
-
-func (x *TriggerPipelineResponse) GetSuccess() bool {
-	if x != nil {
-		return x.Success
-	}
-	return false
-}
-
-func (x *TriggerPipelineResponse) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
-
-func (x *TriggerPipelineResponse) GetRunId() string {
-	if x != nil {
-		return x.RunId
-	}
-	return ""
-}
-
-func (x *TriggerPipelineResponse) GetJobIds() []string {
-	if x != nil {
-		return x.JobIds
-	}
-	return nil
-}
-
-// 停止流水线请求
-type StopPipelineRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	PipelineId    string                 `protobuf:"bytes,1,opt,name=pipeline_id,json=pipelineId,proto3" json:"pipeline_id,omitempty"`
-	RunId         string                 `protobuf:"bytes,2,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"` // 流水线执行ID
-	Reason        string                 `protobuf:"bytes,3,opt,name=reason,proto3" json:"reason,omitempty"`            // 停止原因
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *StopPipelineRequest) Reset() {
-	*x = StopPipelineRequest{}
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[35]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *StopPipelineRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*StopPipelineRequest) ProtoMessage() {}
-
-func (x *StopPipelineRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[35]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use StopPipelineRequest.ProtoReflect.Descriptor instead.
-func (*StopPipelineRequest) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{35}
-}
-
-func (x *StopPipelineRequest) GetPipelineId() string {
-	if x != nil {
-		return x.PipelineId
-	}
-	return ""
-}
-
-func (x *StopPipelineRequest) GetRunId() string {
-	if x != nil {
-		return x.RunId
-	}
-	return ""
-}
-
-func (x *StopPipelineRequest) GetReason() string {
-	if x != nil {
-		return x.Reason
-	}
-	return ""
-}
-
-// 停止流水线响应
-type StopPipelineResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *StopPipelineResponse) Reset() {
-	*x = StopPipelineResponse{}
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[36]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *StopPipelineResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*StopPipelineResponse) ProtoMessage() {}
-
-func (x *StopPipelineResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[36]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use StopPipelineResponse.ProtoReflect.Descriptor instead.
-func (*StopPipelineResponse) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{36}
-}
-
-func (x *StopPipelineResponse) GetSuccess() bool {
-	if x != nil {
-		return x.Success
-	}
-	return false
-}
-
-func (x *StopPipelineResponse) GetMessage() string {
-	if x != nil {
-		return x.Message
-	}
-	return ""
-}
-
 // 标签选择器 - 用于任务匹配Agent
 type LabelSelector struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -3105,7 +2180,7 @@ type LabelSelector struct {
 
 func (x *LabelSelector) Reset() {
 	*x = LabelSelector{}
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[37]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3117,7 +2192,7 @@ func (x *LabelSelector) String() string {
 func (*LabelSelector) ProtoMessage() {}
 
 func (x *LabelSelector) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[37]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3130,7 +2205,7 @@ func (x *LabelSelector) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LabelSelector.ProtoReflect.Descriptor instead.
 func (*LabelSelector) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{37}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *LabelSelector) GetMatchLabels() map[string]string {
@@ -3159,7 +2234,7 @@ type LabelSelectorRequirement struct {
 
 func (x *LabelSelectorRequirement) Reset() {
 	*x = LabelSelectorRequirement{}
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[38]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3171,7 +2246,7 @@ func (x *LabelSelectorRequirement) String() string {
 func (*LabelSelectorRequirement) ProtoMessage() {}
 
 func (x *LabelSelectorRequirement) ProtoReflect() protoreflect.Message {
-	mi := &file_api_job_v1_proto_job_proto_msgTypes[38]
+	mi := &file_api_job_v1_proto_job_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3184,7 +2259,7 @@ func (x *LabelSelectorRequirement) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LabelSelectorRequirement.ProtoReflect.Descriptor instead.
 func (*LabelSelectorRequirement) Descriptor() ([]byte, []int) {
-	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{38}
+	return file_api_job_v1_proto_job_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *LabelSelectorRequirement) GetKey() string {
@@ -3382,20 +2457,7 @@ const file_api_job_v1_proto_job_proto_rawDesc = "" +
 	"\fdownload_url\x18\x05 \x01(\tR\vdownloadUrl\x12\x1d\n" +
 	"\n" +
 	"created_at\x18\x06 \x01(\x03R\tcreatedAt\x12\x1b\n" +
-	"\texpire_at\x18\a \x01(\x03R\bexpireAt\"\x8d\x03\n" +
-	"\x15CreatePipelineRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
-	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x19\n" +
-	"\brepo_url\x18\x03 \x01(\tR\arepoUrl\x12\x16\n" +
-	"\x06branch\x18\x04 \x01(\tR\x06branch\x12)\n" +
-	"\x06stages\x18\x05 \x03(\v2\x11.api.job.v1.StageR\x06stages\x12<\n" +
-	"\x03env\x18\x06 \x03(\v2*.api.job.v1.CreatePipelineRequest.EnvEntryR\x03env\x12:\n" +
-	"\ftrigger_type\x18\a \x01(\x0e2\x17.api.job.v1.TriggerTypeR\vtriggerType\x12\x12\n" +
-	"\x04cron\x18\b \x01(\tR\x04cron\x12\x1a\n" +
-	"\bwebhooks\x18\t \x03(\tR\bwebhooks\x1a6\n" +
-	"\bEnvEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\\\n" +
+	"\texpire_at\x18\a \x01(\x03R\bexpireAt\"\\\n" +
 	"\x05Stage\x12\x14\n" +
 	"\x05order\x18\x01 \x01(\x05R\x05order\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12)\n" +
@@ -3416,83 +2478,7 @@ const file_api_job_v1_proto_job_proto_rawDesc = "" +
 	"\x0elabel_selector\x18\v \x01(\v2\x19.api.job.v1.LabelSelectorR\rlabelSelector\x1a6\n" +
 	"\bEnvEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"m\n" +
-	"\x16CreatePipelineResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\x12\x1f\n" +
-	"\vpipeline_id\x18\x03 \x01(\tR\n" +
-	"pipelineId\"5\n" +
-	"\x12GetPipelineRequest\x12\x1f\n" +
-	"\vpipeline_id\x18\x01 \x01(\tR\n" +
-	"pipelineId\"\x81\x01\n" +
-	"\x13GetPipelineResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\x126\n" +
-	"\bpipeline\x18\x03 \x01(\v2\x1a.api.job.v1.PipelineDetailR\bpipeline\"\xf8\x04\n" +
-	"\x0ePipelineDetail\x12\x1f\n" +
-	"\vpipeline_id\x18\x01 \x01(\tR\n" +
-	"pipelineId\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x19\n" +
-	"\brepo_url\x18\x04 \x01(\tR\arepoUrl\x12\x16\n" +
-	"\x06branch\x18\x05 \x01(\tR\x06branch\x122\n" +
-	"\x06status\x18\x06 \x01(\x0e2\x1a.api.job.v1.PipelineStatusR\x06status\x12)\n" +
-	"\x06stages\x18\a \x03(\v2\x11.api.job.v1.StageR\x06stages\x125\n" +
-	"\x03env\x18\b \x03(\v2#.api.job.v1.PipelineDetail.EnvEntryR\x03env\x12:\n" +
-	"\ftrigger_type\x18\t \x01(\x0e2\x17.api.job.v1.TriggerTypeR\vtriggerType\x12\x12\n" +
-	"\x04cron\x18\n" +
-	" \x01(\tR\x04cron\x12\x1d\n" +
-	"\n" +
-	"created_at\x18\v \x01(\x03R\tcreatedAt\x12\x1d\n" +
-	"\n" +
-	"updated_at\x18\f \x01(\x03R\tupdatedAt\x12\x1d\n" +
-	"\n" +
-	"created_by\x18\r \x01(\tR\tcreatedBy\x12\x1d\n" +
-	"\n" +
-	"total_runs\x18\x0e \x01(\x05R\ttotalRuns\x12!\n" +
-	"\fsuccess_runs\x18\x0f \x01(\x05R\vsuccessRuns\x12\x1f\n" +
-	"\vfailed_runs\x18\x10 \x01(\x05R\n" +
-	"failedRuns\x1a6\n" +
-	"\bEnvEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xb1\x01\n" +
-	"\x14ListPipelinesRequest\x122\n" +
-	"\x06status\x18\x01 \x01(\x0e2\x1a.api.job.v1.PipelineStatusR\x06status\x12\x12\n" +
-	"\x04page\x18\x02 \x01(\x05R\x04page\x12\x1b\n" +
-	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\x12\x17\n" +
-	"\asort_by\x18\x04 \x01(\tR\x06sortBy\x12\x1b\n" +
-	"\tsort_desc\x18\x05 \x01(\bR\bsortDesc\"\xcc\x01\n" +
-	"\x15ListPipelinesResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\x128\n" +
-	"\tpipelines\x18\x03 \x03(\v2\x1a.api.job.v1.PipelineDetailR\tpipelines\x12\x14\n" +
-	"\x05total\x18\x04 \x01(\x05R\x05total\x12\x12\n" +
-	"\x04page\x18\x05 \x01(\x05R\x04page\x12\x1b\n" +
-	"\tpage_size\x18\x06 \x01(\x05R\bpageSize\"\x8a\x02\n" +
-	"\x16TriggerPipelineRequest\x12\x1f\n" +
-	"\vpipeline_id\x18\x01 \x01(\tR\n" +
-	"pipelineId\x12\x16\n" +
-	"\x06branch\x18\x02 \x01(\tR\x06branch\x12\x1d\n" +
-	"\n" +
-	"commit_sha\x18\x03 \x01(\tR\tcommitSha\x12=\n" +
-	"\x03env\x18\x04 \x03(\v2+.api.job.v1.TriggerPipelineRequest.EnvEntryR\x03env\x12!\n" +
-	"\ftriggered_by\x18\x05 \x01(\tR\vtriggeredBy\x1a6\n" +
-	"\bEnvEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"}\n" +
-	"\x17TriggerPipelineResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\x12\x15\n" +
-	"\x06run_id\x18\x03 \x01(\tR\x05runId\x12\x17\n" +
-	"\ajob_ids\x18\x04 \x03(\tR\x06jobIds\"e\n" +
-	"\x13StopPipelineRequest\x12\x1f\n" +
-	"\vpipeline_id\x18\x01 \x01(\tR\n" +
-	"pipelineId\x12\x15\n" +
-	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x16\n" +
-	"\x06reason\x18\x03 \x01(\tR\x06reason\"J\n" +
-	"\x14StopPipelineResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"\xf1\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xf1\x01\n" +
 	"\rLabelSelector\x12M\n" +
 	"\fmatch_labels\x18\x01 \x03(\v2*.api.job.v1.LabelSelector.MatchLabelsEntryR\vmatchLabels\x12Q\n" +
 	"\x11match_expressions\x18\x02 \x03(\v2$.api.job.v1.LabelSelectorRequirementR\x10matchExpressions\x1a>\n" +
@@ -3512,15 +2498,7 @@ const file_api_job_v1_proto_job_proto_rawDesc = "" +
 	"\x11JOB_STATUS_FAILED\x10\x05\x12\x18\n" +
 	"\x14JOB_STATUS_CANCELLED\x10\x06\x12\x16\n" +
 	"\x12JOB_STATUS_TIMEOUT\x10\a\x12\x16\n" +
-	"\x12JOB_STATUS_SKIPPED\x10\b*\xdc\x01\n" +
-	"\x0ePipelineStatus\x12\x1b\n" +
-	"\x17PIPELINE_STATUS_UNKNOWN\x10\x00\x12\x1b\n" +
-	"\x17PIPELINE_STATUS_PENDING\x10\x01\x12\x1b\n" +
-	"\x17PIPELINE_STATUS_RUNNING\x10\x02\x12\x1b\n" +
-	"\x17PIPELINE_STATUS_SUCCESS\x10\x03\x12\x1a\n" +
-	"\x16PIPELINE_STATUS_FAILED\x10\x04\x12\x1d\n" +
-	"\x19PIPELINE_STATUS_CANCELLED\x10\x05\x12\x1b\n" +
-	"\x17PIPELINE_STATUS_PARTIAL\x10\x06*\x8b\x01\n" +
+	"\x12JOB_STATUS_SKIPPED\x10\b*\x8b\x01\n" +
 	"\vTriggerType\x12\x18\n" +
 	"\x14TRIGGER_TYPE_UNKNOWN\x10\x00\x12\x17\n" +
 	"\x13TRIGGER_TYPE_MANUAL\x10\x01\x12\x18\n" +
@@ -3534,7 +2512,7 @@ const file_api_job_v1_proto_job_proto_rawDesc = "" +
 	"\x15LABEL_OPERATOR_EXISTS\x10\x03\x12\x1d\n" +
 	"\x19LABEL_OPERATOR_NOT_EXISTS\x10\x04\x12\x15\n" +
 	"\x11LABEL_OPERATOR_GT\x10\x05\x12\x15\n" +
-	"\x11LABEL_OPERATOR_LT\x10\x062\xac\t\n" +
+	"\x11LABEL_OPERATOR_LT\x10\x062\xf4\x05\n" +
 	"\x03Job\x12;\n" +
 	"\x04Ping\x12\x17.api.job.v1.PingRequest\x1a\x18.api.job.v1.PingResponse\"\x00\x12J\n" +
 	"\tCreateJob\x12\x1c.api.job.v1.CreateJobRequest\x1a\x1d.api.job.v1.CreateJobResponse\"\x00\x12A\n" +
@@ -3545,12 +2523,7 @@ const file_api_job_v1_proto_job_proto_rawDesc = "" +
 	"\tCancelJob\x12\x1c.api.job.v1.CancelJobRequest\x1a\x1d.api.job.v1.CancelJobResponse\"\x00\x12G\n" +
 	"\bRetryJob\x12\x1b.api.job.v1.RetryJobRequest\x1a\x1c.api.job.v1.RetryJobResponse\"\x00\x12J\n" +
 	"\tGetJobLog\x12\x1c.api.job.v1.GetJobLogRequest\x1a\x1d.api.job.v1.GetJobLogResponse\"\x00\x12_\n" +
-	"\x10ListJobArtifacts\x12#.api.job.v1.ListJobArtifactsRequest\x1a$.api.job.v1.ListJobArtifactsResponse\"\x00\x12Y\n" +
-	"\x0eCreatePipeline\x12!.api.job.v1.CreatePipelineRequest\x1a\".api.job.v1.CreatePipelineResponse\"\x00\x12P\n" +
-	"\vGetPipeline\x12\x1e.api.job.v1.GetPipelineRequest\x1a\x1f.api.job.v1.GetPipelineResponse\"\x00\x12V\n" +
-	"\rListPipelines\x12 .api.job.v1.ListPipelinesRequest\x1a!.api.job.v1.ListPipelinesResponse\"\x00\x12\\\n" +
-	"\x0fTriggerPipeline\x12\".api.job.v1.TriggerPipelineRequest\x1a#.api.job.v1.TriggerPipelineResponse\"\x00\x12S\n" +
-	"\fStopPipeline\x12\x1f.api.job.v1.StopPipelineRequest\x1a .api.job.v1.StopPipelineResponse\"\x00B,Z*github.com/observabil/arcade/api/job/v1;v1b\x06proto3"
+	"\x10ListJobArtifacts\x12#.api.job.v1.ListJobArtifactsRequest\x1a$.api.job.v1.ListJobArtifactsResponse\"\x00B,Z*github.com/observabil/arcade/api/job/v1;v1b\x06proto3"
 
 var (
 	file_api_job_v1_proto_job_proto_rawDescOnce sync.Once
@@ -3564,132 +2537,96 @@ func file_api_job_v1_proto_job_proto_rawDescGZIP() []byte {
 	return file_api_job_v1_proto_job_proto_rawDescData
 }
 
-var file_api_job_v1_proto_job_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_api_job_v1_proto_job_proto_msgTypes = make([]protoimpl.MessageInfo, 49)
+var file_api_job_v1_proto_job_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_api_job_v1_proto_job_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
 var file_api_job_v1_proto_job_proto_goTypes = []any{
 	(JobStatus)(0),                   // 0: api.job.v1.JobStatus
-	(PipelineStatus)(0),              // 1: api.job.v1.PipelineStatus
-	(TriggerType)(0),                 // 2: api.job.v1.TriggerType
-	(LabelOperator)(0),               // 3: api.job.v1.LabelOperator
-	(*PingRequest)(nil),              // 4: api.job.v1.PingRequest
-	(*PingResponse)(nil),             // 5: api.job.v1.PingResponse
-	(*CreateJobRequest)(nil),         // 6: api.job.v1.CreateJobRequest
-	(*ArtifactConfig)(nil),           // 7: api.job.v1.ArtifactConfig
-	(*CreateJobResponse)(nil),        // 8: api.job.v1.CreateJobResponse
-	(*GetJobRequest)(nil),            // 9: api.job.v1.GetJobRequest
-	(*GetJobResponse)(nil),           // 10: api.job.v1.GetJobResponse
-	(*JobDetail)(nil),                // 11: api.job.v1.JobDetail
-	(*ListJobsRequest)(nil),          // 12: api.job.v1.ListJobsRequest
-	(*ListJobsResponse)(nil),         // 13: api.job.v1.ListJobsResponse
-	(*UpdateJobRequest)(nil),         // 14: api.job.v1.UpdateJobRequest
-	(*UpdateJobResponse)(nil),        // 15: api.job.v1.UpdateJobResponse
-	(*DeleteJobRequest)(nil),         // 16: api.job.v1.DeleteJobRequest
-	(*DeleteJobResponse)(nil),        // 17: api.job.v1.DeleteJobResponse
-	(*CancelJobRequest)(nil),         // 18: api.job.v1.CancelJobRequest
-	(*CancelJobResponse)(nil),        // 19: api.job.v1.CancelJobResponse
-	(*RetryJobRequest)(nil),          // 20: api.job.v1.RetryJobRequest
-	(*RetryJobResponse)(nil),         // 21: api.job.v1.RetryJobResponse
-	(*GetJobLogRequest)(nil),         // 22: api.job.v1.GetJobLogRequest
-	(*GetJobLogResponse)(nil),        // 23: api.job.v1.GetJobLogResponse
-	(*LogLine)(nil),                  // 24: api.job.v1.LogLine
-	(*ListJobArtifactsRequest)(nil),  // 25: api.job.v1.ListJobArtifactsRequest
-	(*ListJobArtifactsResponse)(nil), // 26: api.job.v1.ListJobArtifactsResponse
-	(*Artifact)(nil),                 // 27: api.job.v1.Artifact
-	(*CreatePipelineRequest)(nil),    // 28: api.job.v1.CreatePipelineRequest
-	(*Stage)(nil),                    // 29: api.job.v1.Stage
-	(*JobConfig)(nil),                // 30: api.job.v1.JobConfig
-	(*CreatePipelineResponse)(nil),   // 31: api.job.v1.CreatePipelineResponse
-	(*GetPipelineRequest)(nil),       // 32: api.job.v1.GetPipelineRequest
-	(*GetPipelineResponse)(nil),      // 33: api.job.v1.GetPipelineResponse
-	(*PipelineDetail)(nil),           // 34: api.job.v1.PipelineDetail
-	(*ListPipelinesRequest)(nil),     // 35: api.job.v1.ListPipelinesRequest
-	(*ListPipelinesResponse)(nil),    // 36: api.job.v1.ListPipelinesResponse
-	(*TriggerPipelineRequest)(nil),   // 37: api.job.v1.TriggerPipelineRequest
-	(*TriggerPipelineResponse)(nil),  // 38: api.job.v1.TriggerPipelineResponse
-	(*StopPipelineRequest)(nil),      // 39: api.job.v1.StopPipelineRequest
-	(*StopPipelineResponse)(nil),     // 40: api.job.v1.StopPipelineResponse
-	(*LabelSelector)(nil),            // 41: api.job.v1.LabelSelector
-	(*LabelSelectorRequirement)(nil), // 42: api.job.v1.LabelSelectorRequirement
-	nil,                              // 43: api.job.v1.CreateJobRequest.EnvEntry
-	nil,                              // 44: api.job.v1.CreateJobRequest.SecretsEntry
-	nil,                              // 45: api.job.v1.JobDetail.EnvEntry
-	nil,                              // 46: api.job.v1.JobDetail.AgentLabelsEntry
-	nil,                              // 47: api.job.v1.UpdateJobRequest.EnvEntry
-	nil,                              // 48: api.job.v1.CreatePipelineRequest.EnvEntry
-	nil,                              // 49: api.job.v1.JobConfig.EnvEntry
-	nil,                              // 50: api.job.v1.PipelineDetail.EnvEntry
-	nil,                              // 51: api.job.v1.TriggerPipelineRequest.EnvEntry
-	nil,                              // 52: api.job.v1.LabelSelector.MatchLabelsEntry
+	(TriggerType)(0),                 // 1: api.job.v1.TriggerType
+	(LabelOperator)(0),               // 2: api.job.v1.LabelOperator
+	(*PingRequest)(nil),              // 3: api.job.v1.PingRequest
+	(*PingResponse)(nil),             // 4: api.job.v1.PingResponse
+	(*CreateJobRequest)(nil),         // 5: api.job.v1.CreateJobRequest
+	(*ArtifactConfig)(nil),           // 6: api.job.v1.ArtifactConfig
+	(*CreateJobResponse)(nil),        // 7: api.job.v1.CreateJobResponse
+	(*GetJobRequest)(nil),            // 8: api.job.v1.GetJobRequest
+	(*GetJobResponse)(nil),           // 9: api.job.v1.GetJobResponse
+	(*JobDetail)(nil),                // 10: api.job.v1.JobDetail
+	(*ListJobsRequest)(nil),          // 11: api.job.v1.ListJobsRequest
+	(*ListJobsResponse)(nil),         // 12: api.job.v1.ListJobsResponse
+	(*UpdateJobRequest)(nil),         // 13: api.job.v1.UpdateJobRequest
+	(*UpdateJobResponse)(nil),        // 14: api.job.v1.UpdateJobResponse
+	(*DeleteJobRequest)(nil),         // 15: api.job.v1.DeleteJobRequest
+	(*DeleteJobResponse)(nil),        // 16: api.job.v1.DeleteJobResponse
+	(*CancelJobRequest)(nil),         // 17: api.job.v1.CancelJobRequest
+	(*CancelJobResponse)(nil),        // 18: api.job.v1.CancelJobResponse
+	(*RetryJobRequest)(nil),          // 19: api.job.v1.RetryJobRequest
+	(*RetryJobResponse)(nil),         // 20: api.job.v1.RetryJobResponse
+	(*GetJobLogRequest)(nil),         // 21: api.job.v1.GetJobLogRequest
+	(*GetJobLogResponse)(nil),        // 22: api.job.v1.GetJobLogResponse
+	(*LogLine)(nil),                  // 23: api.job.v1.LogLine
+	(*ListJobArtifactsRequest)(nil),  // 24: api.job.v1.ListJobArtifactsRequest
+	(*ListJobArtifactsResponse)(nil), // 25: api.job.v1.ListJobArtifactsResponse
+	(*Artifact)(nil),                 // 26: api.job.v1.Artifact
+	(*Stage)(nil),                    // 27: api.job.v1.Stage
+	(*JobConfig)(nil),                // 28: api.job.v1.JobConfig
+	(*LabelSelector)(nil),            // 29: api.job.v1.LabelSelector
+	(*LabelSelectorRequirement)(nil), // 30: api.job.v1.LabelSelectorRequirement
+	nil,                              // 31: api.job.v1.CreateJobRequest.EnvEntry
+	nil,                              // 32: api.job.v1.CreateJobRequest.SecretsEntry
+	nil,                              // 33: api.job.v1.JobDetail.EnvEntry
+	nil,                              // 34: api.job.v1.JobDetail.AgentLabelsEntry
+	nil,                              // 35: api.job.v1.UpdateJobRequest.EnvEntry
+	nil,                              // 36: api.job.v1.JobConfig.EnvEntry
+	nil,                              // 37: api.job.v1.LabelSelector.MatchLabelsEntry
 }
 var file_api_job_v1_proto_job_proto_depIdxs = []int32{
-	43, // 0: api.job.v1.CreateJobRequest.env:type_name -> api.job.v1.CreateJobRequest.EnvEntry
-	44, // 1: api.job.v1.CreateJobRequest.secrets:type_name -> api.job.v1.CreateJobRequest.SecretsEntry
-	7,  // 2: api.job.v1.CreateJobRequest.artifacts:type_name -> api.job.v1.ArtifactConfig
-	41, // 3: api.job.v1.CreateJobRequest.label_selector:type_name -> api.job.v1.LabelSelector
-	11, // 4: api.job.v1.GetJobResponse.job:type_name -> api.job.v1.JobDetail
+	31, // 0: api.job.v1.CreateJobRequest.env:type_name -> api.job.v1.CreateJobRequest.EnvEntry
+	32, // 1: api.job.v1.CreateJobRequest.secrets:type_name -> api.job.v1.CreateJobRequest.SecretsEntry
+	6,  // 2: api.job.v1.CreateJobRequest.artifacts:type_name -> api.job.v1.ArtifactConfig
+	29, // 3: api.job.v1.CreateJobRequest.label_selector:type_name -> api.job.v1.LabelSelector
+	10, // 4: api.job.v1.GetJobResponse.job:type_name -> api.job.v1.JobDetail
 	0,  // 5: api.job.v1.JobDetail.status:type_name -> api.job.v1.JobStatus
-	45, // 6: api.job.v1.JobDetail.env:type_name -> api.job.v1.JobDetail.EnvEntry
-	7,  // 7: api.job.v1.JobDetail.artifacts:type_name -> api.job.v1.ArtifactConfig
-	41, // 8: api.job.v1.JobDetail.label_selector:type_name -> api.job.v1.LabelSelector
-	46, // 9: api.job.v1.JobDetail.agent_labels:type_name -> api.job.v1.JobDetail.AgentLabelsEntry
+	33, // 6: api.job.v1.JobDetail.env:type_name -> api.job.v1.JobDetail.EnvEntry
+	6,  // 7: api.job.v1.JobDetail.artifacts:type_name -> api.job.v1.ArtifactConfig
+	29, // 8: api.job.v1.JobDetail.label_selector:type_name -> api.job.v1.LabelSelector
+	34, // 9: api.job.v1.JobDetail.agent_labels:type_name -> api.job.v1.JobDetail.AgentLabelsEntry
 	0,  // 10: api.job.v1.ListJobsRequest.status:type_name -> api.job.v1.JobStatus
-	11, // 11: api.job.v1.ListJobsResponse.jobs:type_name -> api.job.v1.JobDetail
-	47, // 12: api.job.v1.UpdateJobRequest.env:type_name -> api.job.v1.UpdateJobRequest.EnvEntry
-	24, // 13: api.job.v1.GetJobLogResponse.logs:type_name -> api.job.v1.LogLine
-	27, // 14: api.job.v1.ListJobArtifactsResponse.artifacts:type_name -> api.job.v1.Artifact
-	29, // 15: api.job.v1.CreatePipelineRequest.stages:type_name -> api.job.v1.Stage
-	48, // 16: api.job.v1.CreatePipelineRequest.env:type_name -> api.job.v1.CreatePipelineRequest.EnvEntry
-	2,  // 17: api.job.v1.CreatePipelineRequest.trigger_type:type_name -> api.job.v1.TriggerType
-	30, // 18: api.job.v1.Stage.jobs:type_name -> api.job.v1.JobConfig
-	49, // 19: api.job.v1.JobConfig.env:type_name -> api.job.v1.JobConfig.EnvEntry
-	7,  // 20: api.job.v1.JobConfig.artifacts:type_name -> api.job.v1.ArtifactConfig
-	41, // 21: api.job.v1.JobConfig.label_selector:type_name -> api.job.v1.LabelSelector
-	34, // 22: api.job.v1.GetPipelineResponse.pipeline:type_name -> api.job.v1.PipelineDetail
-	1,  // 23: api.job.v1.PipelineDetail.status:type_name -> api.job.v1.PipelineStatus
-	29, // 24: api.job.v1.PipelineDetail.stages:type_name -> api.job.v1.Stage
-	50, // 25: api.job.v1.PipelineDetail.env:type_name -> api.job.v1.PipelineDetail.EnvEntry
-	2,  // 26: api.job.v1.PipelineDetail.trigger_type:type_name -> api.job.v1.TriggerType
-	1,  // 27: api.job.v1.ListPipelinesRequest.status:type_name -> api.job.v1.PipelineStatus
-	34, // 28: api.job.v1.ListPipelinesResponse.pipelines:type_name -> api.job.v1.PipelineDetail
-	51, // 29: api.job.v1.TriggerPipelineRequest.env:type_name -> api.job.v1.TriggerPipelineRequest.EnvEntry
-	52, // 30: api.job.v1.LabelSelector.match_labels:type_name -> api.job.v1.LabelSelector.MatchLabelsEntry
-	42, // 31: api.job.v1.LabelSelector.match_expressions:type_name -> api.job.v1.LabelSelectorRequirement
-	3,  // 32: api.job.v1.LabelSelectorRequirement.operator:type_name -> api.job.v1.LabelOperator
-	4,  // 33: api.job.v1.Job.Ping:input_type -> api.job.v1.PingRequest
-	6,  // 34: api.job.v1.Job.CreateJob:input_type -> api.job.v1.CreateJobRequest
-	9,  // 35: api.job.v1.Job.GetJob:input_type -> api.job.v1.GetJobRequest
-	12, // 36: api.job.v1.Job.ListJobs:input_type -> api.job.v1.ListJobsRequest
-	14, // 37: api.job.v1.Job.UpdateJob:input_type -> api.job.v1.UpdateJobRequest
-	16, // 38: api.job.v1.Job.DeleteJob:input_type -> api.job.v1.DeleteJobRequest
-	18, // 39: api.job.v1.Job.CancelJob:input_type -> api.job.v1.CancelJobRequest
-	20, // 40: api.job.v1.Job.RetryJob:input_type -> api.job.v1.RetryJobRequest
-	22, // 41: api.job.v1.Job.GetJobLog:input_type -> api.job.v1.GetJobLogRequest
-	25, // 42: api.job.v1.Job.ListJobArtifacts:input_type -> api.job.v1.ListJobArtifactsRequest
-	28, // 43: api.job.v1.Job.CreatePipeline:input_type -> api.job.v1.CreatePipelineRequest
-	32, // 44: api.job.v1.Job.GetPipeline:input_type -> api.job.v1.GetPipelineRequest
-	35, // 45: api.job.v1.Job.ListPipelines:input_type -> api.job.v1.ListPipelinesRequest
-	37, // 46: api.job.v1.Job.TriggerPipeline:input_type -> api.job.v1.TriggerPipelineRequest
-	39, // 47: api.job.v1.Job.StopPipeline:input_type -> api.job.v1.StopPipelineRequest
-	5,  // 48: api.job.v1.Job.Ping:output_type -> api.job.v1.PingResponse
-	8,  // 49: api.job.v1.Job.CreateJob:output_type -> api.job.v1.CreateJobResponse
-	10, // 50: api.job.v1.Job.GetJob:output_type -> api.job.v1.GetJobResponse
-	13, // 51: api.job.v1.Job.ListJobs:output_type -> api.job.v1.ListJobsResponse
-	15, // 52: api.job.v1.Job.UpdateJob:output_type -> api.job.v1.UpdateJobResponse
-	17, // 53: api.job.v1.Job.DeleteJob:output_type -> api.job.v1.DeleteJobResponse
-	19, // 54: api.job.v1.Job.CancelJob:output_type -> api.job.v1.CancelJobResponse
-	21, // 55: api.job.v1.Job.RetryJob:output_type -> api.job.v1.RetryJobResponse
-	23, // 56: api.job.v1.Job.GetJobLog:output_type -> api.job.v1.GetJobLogResponse
-	26, // 57: api.job.v1.Job.ListJobArtifacts:output_type -> api.job.v1.ListJobArtifactsResponse
-	31, // 58: api.job.v1.Job.CreatePipeline:output_type -> api.job.v1.CreatePipelineResponse
-	33, // 59: api.job.v1.Job.GetPipeline:output_type -> api.job.v1.GetPipelineResponse
-	36, // 60: api.job.v1.Job.ListPipelines:output_type -> api.job.v1.ListPipelinesResponse
-	38, // 61: api.job.v1.Job.TriggerPipeline:output_type -> api.job.v1.TriggerPipelineResponse
-	40, // 62: api.job.v1.Job.StopPipeline:output_type -> api.job.v1.StopPipelineResponse
-	48, // [48:63] is the sub-list for method output_type
-	33, // [33:48] is the sub-list for method input_type
-	33, // [33:33] is the sub-list for extension type_name
-	33, // [33:33] is the sub-list for extension extendee
-	0,  // [0:33] is the sub-list for field type_name
+	10, // 11: api.job.v1.ListJobsResponse.jobs:type_name -> api.job.v1.JobDetail
+	35, // 12: api.job.v1.UpdateJobRequest.env:type_name -> api.job.v1.UpdateJobRequest.EnvEntry
+	23, // 13: api.job.v1.GetJobLogResponse.logs:type_name -> api.job.v1.LogLine
+	26, // 14: api.job.v1.ListJobArtifactsResponse.artifacts:type_name -> api.job.v1.Artifact
+	28, // 15: api.job.v1.Stage.jobs:type_name -> api.job.v1.JobConfig
+	36, // 16: api.job.v1.JobConfig.env:type_name -> api.job.v1.JobConfig.EnvEntry
+	6,  // 17: api.job.v1.JobConfig.artifacts:type_name -> api.job.v1.ArtifactConfig
+	29, // 18: api.job.v1.JobConfig.label_selector:type_name -> api.job.v1.LabelSelector
+	37, // 19: api.job.v1.LabelSelector.match_labels:type_name -> api.job.v1.LabelSelector.MatchLabelsEntry
+	30, // 20: api.job.v1.LabelSelector.match_expressions:type_name -> api.job.v1.LabelSelectorRequirement
+	2,  // 21: api.job.v1.LabelSelectorRequirement.operator:type_name -> api.job.v1.LabelOperator
+	3,  // 22: api.job.v1.Job.Ping:input_type -> api.job.v1.PingRequest
+	5,  // 23: api.job.v1.Job.CreateJob:input_type -> api.job.v1.CreateJobRequest
+	8,  // 24: api.job.v1.Job.GetJob:input_type -> api.job.v1.GetJobRequest
+	11, // 25: api.job.v1.Job.ListJobs:input_type -> api.job.v1.ListJobsRequest
+	13, // 26: api.job.v1.Job.UpdateJob:input_type -> api.job.v1.UpdateJobRequest
+	15, // 27: api.job.v1.Job.DeleteJob:input_type -> api.job.v1.DeleteJobRequest
+	17, // 28: api.job.v1.Job.CancelJob:input_type -> api.job.v1.CancelJobRequest
+	19, // 29: api.job.v1.Job.RetryJob:input_type -> api.job.v1.RetryJobRequest
+	21, // 30: api.job.v1.Job.GetJobLog:input_type -> api.job.v1.GetJobLogRequest
+	24, // 31: api.job.v1.Job.ListJobArtifacts:input_type -> api.job.v1.ListJobArtifactsRequest
+	4,  // 32: api.job.v1.Job.Ping:output_type -> api.job.v1.PingResponse
+	7,  // 33: api.job.v1.Job.CreateJob:output_type -> api.job.v1.CreateJobResponse
+	9,  // 34: api.job.v1.Job.GetJob:output_type -> api.job.v1.GetJobResponse
+	12, // 35: api.job.v1.Job.ListJobs:output_type -> api.job.v1.ListJobsResponse
+	14, // 36: api.job.v1.Job.UpdateJob:output_type -> api.job.v1.UpdateJobResponse
+	16, // 37: api.job.v1.Job.DeleteJob:output_type -> api.job.v1.DeleteJobResponse
+	18, // 38: api.job.v1.Job.CancelJob:output_type -> api.job.v1.CancelJobResponse
+	20, // 39: api.job.v1.Job.RetryJob:output_type -> api.job.v1.RetryJobResponse
+	22, // 40: api.job.v1.Job.GetJobLog:output_type -> api.job.v1.GetJobLogResponse
+	25, // 41: api.job.v1.Job.ListJobArtifacts:output_type -> api.job.v1.ListJobArtifactsResponse
+	32, // [32:42] is the sub-list for method output_type
+	22, // [22:32] is the sub-list for method input_type
+	22, // [22:22] is the sub-list for extension type_name
+	22, // [22:22] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_api_job_v1_proto_job_proto_init() }
@@ -3702,8 +2639,8 @@ func file_api_job_v1_proto_job_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_job_v1_proto_job_proto_rawDesc), len(file_api_job_v1_proto_job_proto_rawDesc)),
-			NumEnums:      4,
-			NumMessages:   49,
+			NumEnums:      3,
+			NumMessages:   35,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

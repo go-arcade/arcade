@@ -1,0 +1,32 @@
+version: v2
+# Buf 配置文件 - 用于管理和验证 Protocol Buffers
+
+# 模块配置
+modules:
+  - path: .
+
+# Lint 配置 - 代码风格和最佳实践检查
+lint:
+  use:
+    - STANDARD
+  except:
+    # 允许使用 RPC 流式传输
+    - RPC_NO_CLIENT_STREAMING
+    - RPC_NO_SERVER_STREAMING
+  # 忽略某些目录或文件（如需要）
+  # ignore:
+  #   - vendor
+
+# Breaking change 检查配置
+breaking:
+  use:
+    - FILE
+  # 忽略某些字段的破坏性变更检查（如需要）
+  # ignore:
+  #   - vendor
+
+# 依赖管理（如果需要引入第三方 proto）
+# deps:
+#   - buf.build/googleapis/googleapis
+#   - buf.build/grpc-ecosystem/grpc-gateway
+

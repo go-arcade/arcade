@@ -7,7 +7,9 @@
 package v1
 
 import (
+	v12 "github.com/observabil/arcade/api/agent/v1"
 	v1 "github.com/observabil/arcade/api/job/v1"
+	v11 "github.com/observabil/arcade/api/pipeline/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -793,16 +795,16 @@ type StreamPipelineStatusResponse struct {
 	PipelineId     string                 `protobuf:"bytes,1,opt,name=pipeline_id,json=pipelineId,proto3" json:"pipeline_id,omitempty"`
 	RunId          string                 `protobuf:"bytes,2,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"` // 流水线执行ID
 	PipelineName   string                 `protobuf:"bytes,3,opt,name=pipeline_name,json=pipelineName,proto3" json:"pipeline_name,omitempty"`
-	Status         v1.PipelineStatus      `protobuf:"varint,4,opt,name=status,proto3,enum=api.job.v1.PipelineStatus" json:"status,omitempty"`                                       // 流水线状态
-	PreviousStatus v1.PipelineStatus      `protobuf:"varint,5,opt,name=previous_status,json=previousStatus,proto3,enum=api.job.v1.PipelineStatus" json:"previous_status,omitempty"` // 之前的状态
-	Timestamp      int64                  `protobuf:"varint,6,opt,name=timestamp,proto3" json:"timestamp,omitempty"`                                                                // 状态变化时间戳
-	TotalJobs      int32                  `protobuf:"varint,7,opt,name=total_jobs,json=totalJobs,proto3" json:"total_jobs,omitempty"`                                               // 总任务数
-	CompletedJobs  int32                  `protobuf:"varint,8,opt,name=completed_jobs,json=completedJobs,proto3" json:"completed_jobs,omitempty"`                                   // 已完成任务数
-	FailedJobs     int32                  `protobuf:"varint,9,opt,name=failed_jobs,json=failedJobs,proto3" json:"failed_jobs,omitempty"`                                            // 失败任务数
-	RunningJobs    int32                  `protobuf:"varint,10,opt,name=running_jobs,json=runningJobs,proto3" json:"running_jobs,omitempty"`                                        // 运行中任务数
-	CurrentStage   int32                  `protobuf:"varint,11,opt,name=current_stage,json=currentStage,proto3" json:"current_stage,omitempty"`                                     // 当前阶段
-	TotalStages    int32                  `protobuf:"varint,12,opt,name=total_stages,json=totalStages,proto3" json:"total_stages,omitempty"`                                        // 总阶段数
-	Duration       int64                  `protobuf:"varint,13,opt,name=duration,proto3" json:"duration,omitempty"`                                                                 // 执行时长（毫秒）
+	Status         v11.PipelineStatus     `protobuf:"varint,4,opt,name=status,proto3,enum=api.pipeline.v1.PipelineStatus" json:"status,omitempty"`                                       // 流水线状态
+	PreviousStatus v11.PipelineStatus     `protobuf:"varint,5,opt,name=previous_status,json=previousStatus,proto3,enum=api.pipeline.v1.PipelineStatus" json:"previous_status,omitempty"` // 之前的状态
+	Timestamp      int64                  `protobuf:"varint,6,opt,name=timestamp,proto3" json:"timestamp,omitempty"`                                                                     // 状态变化时间戳
+	TotalJobs      int32                  `protobuf:"varint,7,opt,name=total_jobs,json=totalJobs,proto3" json:"total_jobs,omitempty"`                                                    // 总任务数
+	CompletedJobs  int32                  `protobuf:"varint,8,opt,name=completed_jobs,json=completedJobs,proto3" json:"completed_jobs,omitempty"`                                        // 已完成任务数
+	FailedJobs     int32                  `protobuf:"varint,9,opt,name=failed_jobs,json=failedJobs,proto3" json:"failed_jobs,omitempty"`                                                 // 失败任务数
+	RunningJobs    int32                  `protobuf:"varint,10,opt,name=running_jobs,json=runningJobs,proto3" json:"running_jobs,omitempty"`                                             // 运行中任务数
+	CurrentStage   int32                  `protobuf:"varint,11,opt,name=current_stage,json=currentStage,proto3" json:"current_stage,omitempty"`                                          // 当前阶段
+	TotalStages    int32                  `protobuf:"varint,12,opt,name=total_stages,json=totalStages,proto3" json:"total_stages,omitempty"`                                             // 总阶段数
+	Duration       int64                  `protobuf:"varint,13,opt,name=duration,proto3" json:"duration,omitempty"`                                                                      // 执行时长（毫秒）
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -858,18 +860,18 @@ func (x *StreamPipelineStatusResponse) GetPipelineName() string {
 	return ""
 }
 
-func (x *StreamPipelineStatusResponse) GetStatus() v1.PipelineStatus {
+func (x *StreamPipelineStatusResponse) GetStatus() v11.PipelineStatus {
 	if x != nil {
 		return x.Status
 	}
-	return v1.PipelineStatus(0)
+	return v11.PipelineStatus(0)
 }
 
-func (x *StreamPipelineStatusResponse) GetPreviousStatus() v1.PipelineStatus {
+func (x *StreamPipelineStatusResponse) GetPreviousStatus() v11.PipelineStatus {
 	if x != nil {
 		return x.PreviousStatus
 	}
-	return v1.PipelineStatus(0)
+	return v11.PipelineStatus(0)
 }
 
 func (x *StreamPipelineStatusResponse) GetTimestamp() int64 {
@@ -1079,7 +1081,7 @@ func (*AgentChannelRequest_Metrics) isAgentChannelRequest_Payload() {}
 type HeartbeatData struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Timestamp         int64                  `protobuf:"varint,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	Status            AgentStatus            `protobuf:"varint,2,opt,name=status,proto3,enum=api.stream.v1.AgentStatus" json:"status,omitempty"`
+	Status            v12.AgentStatus        `protobuf:"varint,2,opt,name=status,proto3,enum=api.agent.v1.AgentStatus" json:"status,omitempty"`
 	RunningJobsCount  int32                  `protobuf:"varint,3,opt,name=running_jobs_count,json=runningJobsCount,proto3" json:"running_jobs_count,omitempty"`
 	MaxConcurrentJobs int32                  `protobuf:"varint,4,opt,name=max_concurrent_jobs,json=maxConcurrentJobs,proto3" json:"max_concurrent_jobs,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -1123,11 +1125,11 @@ func (x *HeartbeatData) GetTimestamp() int64 {
 	return 0
 }
 
-func (x *HeartbeatData) GetStatus() AgentStatus {
+func (x *HeartbeatData) GetStatus() v12.AgentStatus {
 	if x != nil {
 		return x.Status
 	}
-	return AgentStatus_AGENT_STATUS_UNKNOWN
+	return v12.AgentStatus(0)
 }
 
 func (x *HeartbeatData) GetRunningJobsCount() int32 {
@@ -2208,7 +2210,7 @@ var File_api_stream_v1_proto_stream_proto protoreflect.FileDescriptor
 
 const file_api_stream_v1_proto_stream_proto_rawDesc = "" +
 	"\n" +
-	" api/stream/v1/proto/stream.proto\x12\rapi.stream.v1\x1a\x1aapi/job/v1/proto/job.proto\"'\n" +
+	" api/stream/v1/proto/stream.proto\x12\rapi.stream.v1\x1a\x1aapi/job/v1/proto/job.proto\x1a\x1eapi/agent/v1/proto/agent.proto\x1a$api/pipeline/v1/proto/pipeline.proto\"'\n" +
 	"\vPingRequest\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\"F\n" +
 	"\fPingResponse\x12\x18\n" +
@@ -2258,14 +2260,14 @@ const file_api_stream_v1_proto_stream_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"@\n" +
 	"\x1bStreamPipelineStatusRequest\x12!\n" +
-	"\fpipeline_ids\x18\x01 \x03(\tR\vpipelineIds\"\x80\x04\n" +
+	"\fpipeline_ids\x18\x01 \x03(\tR\vpipelineIds\"\x8a\x04\n" +
 	"\x1cStreamPipelineStatusResponse\x12\x1f\n" +
 	"\vpipeline_id\x18\x01 \x01(\tR\n" +
 	"pipelineId\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12#\n" +
-	"\rpipeline_name\x18\x03 \x01(\tR\fpipelineName\x122\n" +
-	"\x06status\x18\x04 \x01(\x0e2\x1a.api.job.v1.PipelineStatusR\x06status\x12C\n" +
-	"\x0fprevious_status\x18\x05 \x01(\x0e2\x1a.api.job.v1.PipelineStatusR\x0epreviousStatus\x12\x1c\n" +
+	"\rpipeline_name\x18\x03 \x01(\tR\fpipelineName\x127\n" +
+	"\x06status\x18\x04 \x01(\x0e2\x1f.api.pipeline.v1.PipelineStatusR\x06status\x12H\n" +
+	"\x0fprevious_status\x18\x05 \x01(\x0e2\x1f.api.pipeline.v1.PipelineStatusR\x0epreviousStatus\x12\x1c\n" +
 	"\ttimestamp\x18\x06 \x01(\x03R\ttimestamp\x12\x1d\n" +
 	"\n" +
 	"total_jobs\x18\a \x01(\x05R\ttotalJobs\x12%\n" +
@@ -2287,10 +2289,10 @@ const file_api_stream_v1_proto_stream_proto_rawDesc = "" +
 	"\blog_data\x18\x05 \x01(\v2\x16.api.stream.v1.LogDataH\x00R\alogData\x12=\n" +
 	"\tjob_fetch\x18\x06 \x01(\v2\x1e.api.stream.v1.JobFetchRequestH\x00R\bjobFetch\x127\n" +
 	"\ametrics\x18\a \x01(\v2\x1b.api.stream.v1.AgentMetricsH\x00R\ametricsB\t\n" +
-	"\apayload\"\xbf\x01\n" +
+	"\apayload\"\xbe\x01\n" +
 	"\rHeartbeatData\x12\x1c\n" +
-	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\x122\n" +
-	"\x06status\x18\x02 \x01(\x0e2\x1a.api.stream.v1.AgentStatusR\x06status\x12,\n" +
+	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\x121\n" +
+	"\x06status\x18\x02 \x01(\x0e2\x19.api.agent.v1.AgentStatusR\x06status\x12,\n" +
 	"\x12running_jobs_count\x18\x03 \x01(\x05R\x10runningJobsCount\x12.\n" +
 	"\x13max_concurrent_jobs\x18\x04 \x01(\x05R\x11maxConcurrentJobs\"\xb7\x01\n" +
 	"\x0fJobStatusUpdate\x12\x15\n" +
@@ -2479,7 +2481,8 @@ var file_api_stream_v1_proto_stream_proto_goTypes = []any{
 	nil,                                  // 34: api.stream.v1.StreamAgentStatusResponse.LabelsEntry
 	nil,                                  // 35: api.stream.v1.StreamEventsResponse.MetadataEntry
 	(v1.JobStatus)(0),                    // 36: api.job.v1.JobStatus
-	(v1.PipelineStatus)(0),               // 37: api.job.v1.PipelineStatus
+	(v11.PipelineStatus)(0),              // 37: api.pipeline.v1.PipelineStatus
+	(v12.AgentStatus)(0),                 // 38: api.agent.v1.AgentStatus
 }
 var file_api_stream_v1_proto_stream_proto_depIdxs = []int32{
 	6,  // 0: api.stream.v1.StreamJobLogResponse.log_chunk:type_name -> api.stream.v1.LogChunk
@@ -2487,14 +2490,14 @@ var file_api_stream_v1_proto_stream_proto_depIdxs = []int32{
 	36, // 2: api.stream.v1.StreamJobStatusResponse.status:type_name -> api.job.v1.JobStatus
 	36, // 3: api.stream.v1.StreamJobStatusResponse.previous_status:type_name -> api.job.v1.JobStatus
 	29, // 4: api.stream.v1.StreamJobStatusResponse.metrics:type_name -> api.stream.v1.StreamJobStatusResponse.MetricsEntry
-	37, // 5: api.stream.v1.StreamPipelineStatusResponse.status:type_name -> api.job.v1.PipelineStatus
-	37, // 6: api.stream.v1.StreamPipelineStatusResponse.previous_status:type_name -> api.job.v1.PipelineStatus
+	37, // 5: api.stream.v1.StreamPipelineStatusResponse.status:type_name -> api.pipeline.v1.PipelineStatus
+	37, // 6: api.stream.v1.StreamPipelineStatusResponse.previous_status:type_name -> api.pipeline.v1.PipelineStatus
 	14, // 7: api.stream.v1.AgentChannelRequest.heartbeat:type_name -> api.stream.v1.HeartbeatData
 	15, // 8: api.stream.v1.AgentChannelRequest.job_status:type_name -> api.stream.v1.JobStatusUpdate
 	16, // 9: api.stream.v1.AgentChannelRequest.log_data:type_name -> api.stream.v1.LogData
 	17, // 10: api.stream.v1.AgentChannelRequest.job_fetch:type_name -> api.stream.v1.JobFetchRequest
 	18, // 11: api.stream.v1.AgentChannelRequest.metrics:type_name -> api.stream.v1.AgentMetrics
-	0,  // 12: api.stream.v1.HeartbeatData.status:type_name -> api.stream.v1.AgentStatus
+	38, // 12: api.stream.v1.HeartbeatData.status:type_name -> api.agent.v1.AgentStatus
 	36, // 13: api.stream.v1.JobStatusUpdate.status:type_name -> api.job.v1.JobStatus
 	6,  // 14: api.stream.v1.LogData.logs:type_name -> api.stream.v1.LogChunk
 	30, // 15: api.stream.v1.AgentMetrics.custom_metrics:type_name -> api.stream.v1.AgentMetrics.CustomMetricsEntry

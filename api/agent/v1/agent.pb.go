@@ -7,6 +7,7 @@
 package v1
 
 import (
+	v1 "github.com/observabil/arcade/api/job/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -77,68 +78,6 @@ func (AgentStatus) EnumDescriptor() ([]byte, []int) {
 	return file_api_agent_v1_proto_agent_proto_rawDescGZIP(), []int{0}
 }
 
-// 任务状态枚举
-type JobStatus int32
-
-const (
-	JobStatus_JOB_STATUS_UNKNOWN   JobStatus = 0
-	JobStatus_JOB_STATUS_PENDING   JobStatus = 1 // 等待执行
-	JobStatus_JOB_STATUS_RUNNING   JobStatus = 2 // 执行中
-	JobStatus_JOB_STATUS_SUCCESS   JobStatus = 3 // 执行成功
-	JobStatus_JOB_STATUS_FAILED    JobStatus = 4 // 执行失败
-	JobStatus_JOB_STATUS_CANCELLED JobStatus = 5 // 已取消
-	JobStatus_JOB_STATUS_TIMEOUT   JobStatus = 6 // 超时
-)
-
-// Enum value maps for JobStatus.
-var (
-	JobStatus_name = map[int32]string{
-		0: "JOB_STATUS_UNKNOWN",
-		1: "JOB_STATUS_PENDING",
-		2: "JOB_STATUS_RUNNING",
-		3: "JOB_STATUS_SUCCESS",
-		4: "JOB_STATUS_FAILED",
-		5: "JOB_STATUS_CANCELLED",
-		6: "JOB_STATUS_TIMEOUT",
-	}
-	JobStatus_value = map[string]int32{
-		"JOB_STATUS_UNKNOWN":   0,
-		"JOB_STATUS_PENDING":   1,
-		"JOB_STATUS_RUNNING":   2,
-		"JOB_STATUS_SUCCESS":   3,
-		"JOB_STATUS_FAILED":    4,
-		"JOB_STATUS_CANCELLED": 5,
-		"JOB_STATUS_TIMEOUT":   6,
-	}
-)
-
-func (x JobStatus) Enum() *JobStatus {
-	p := new(JobStatus)
-	*p = x
-	return p
-}
-
-func (x JobStatus) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (JobStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_agent_v1_proto_agent_proto_enumTypes[1].Descriptor()
-}
-
-func (JobStatus) Type() protoreflect.EnumType {
-	return &file_api_agent_v1_proto_agent_proto_enumTypes[1]
-}
-
-func (x JobStatus) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use JobStatus.Descriptor instead.
-func (JobStatus) EnumDescriptor() ([]byte, []int) {
-	return file_api_agent_v1_proto_agent_proto_rawDescGZIP(), []int{1}
-}
-
 // 标签操作符
 type LabelOperator int32
 
@@ -185,11 +124,11 @@ func (x LabelOperator) String() string {
 }
 
 func (LabelOperator) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_agent_v1_proto_agent_proto_enumTypes[2].Descriptor()
+	return file_api_agent_v1_proto_agent_proto_enumTypes[1].Descriptor()
 }
 
 func (LabelOperator) Type() protoreflect.EnumType {
-	return &file_api_agent_v1_proto_agent_proto_enumTypes[2]
+	return &file_api_agent_v1_proto_agent_proto_enumTypes[1]
 }
 
 func (x LabelOperator) Number() protoreflect.EnumNumber {
@@ -198,7 +137,7 @@ func (x LabelOperator) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use LabelOperator.Descriptor instead.
 func (LabelOperator) EnumDescriptor() ([]byte, []int) {
-	return file_api_agent_v1_proto_agent_proto_rawDescGZIP(), []int{2}
+	return file_api_agent_v1_proto_agent_proto_rawDescGZIP(), []int{1}
 }
 
 // 心跳请求
@@ -968,7 +907,7 @@ type ReportJobStatusRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AgentId       string                 `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
 	JobId         string                 `protobuf:"bytes,2,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
-	Status        JobStatus              `protobuf:"varint,3,opt,name=status,proto3,enum=api.agent.v1.JobStatus" json:"status,omitempty"`                                                // 任务状态
+	Status        v1.JobStatus           `protobuf:"varint,3,opt,name=status,proto3,enum=api.job.v1.JobStatus" json:"status,omitempty"`                                                  // 任务状态
 	ExitCode      int32                  `protobuf:"varint,4,opt,name=exit_code,json=exitCode,proto3" json:"exit_code,omitempty"`                                                        // 退出码
 	ErrorMessage  string                 `protobuf:"bytes,5,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`                                             // 错误信息
 	StartTime     int64                  `protobuf:"varint,6,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`                                                     // 开始时间（Unix时间戳）
@@ -1022,11 +961,11 @@ func (x *ReportJobStatusRequest) GetJobId() string {
 	return ""
 }
 
-func (x *ReportJobStatusRequest) GetStatus() JobStatus {
+func (x *ReportJobStatusRequest) GetStatus() v1.JobStatus {
 	if x != nil {
 		return x.Status
 	}
-	return JobStatus_JOB_STATUS_UNKNOWN
+	return v1.JobStatus(0)
 }
 
 func (x *ReportJobStatusRequest) GetExitCode() int32 {
@@ -1664,7 +1603,7 @@ var File_api_agent_v1_proto_agent_proto protoreflect.FileDescriptor
 
 const file_api_agent_v1_proto_agent_proto_rawDesc = "" +
 	"\n" +
-	"\x1eapi/agent/v1/proto/agent.proto\x12\fapi.agent.v1\"\xc0\x03\n" +
+	"\x1eapi/agent/v1/proto/agent.proto\x12\fapi.agent.v1\x1a\x1aapi/job/v1/proto/job.proto\"\xc0\x03\n" +
 	"\x10HeartbeatRequest\x12\x19\n" +
 	"\bagent_id\x18\x01 \x01(\tR\aagentId\x121\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x19.api.agent.v1.AgentStatusR\x06status\x12,\n" +
@@ -1743,11 +1682,11 @@ const file_api_agent_v1_proto_agent_proto_rawDesc = "" +
 	"\bArtifact\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x12 \n" +
-	"\vdestination\x18\x03 \x01(\tR\vdestination\"\x80\x03\n" +
+	"\vdestination\x18\x03 \x01(\tR\vdestination\"\xfe\x02\n" +
 	"\x16ReportJobStatusRequest\x12\x19\n" +
 	"\bagent_id\x18\x01 \x01(\tR\aagentId\x12\x15\n" +
-	"\x06job_id\x18\x02 \x01(\tR\x05jobId\x12/\n" +
-	"\x06status\x18\x03 \x01(\x0e2\x17.api.agent.v1.JobStatusR\x06status\x12\x1b\n" +
+	"\x06job_id\x18\x02 \x01(\tR\x05jobId\x12-\n" +
+	"\x06status\x18\x03 \x01(\x0e2\x15.api.job.v1.JobStatusR\x06status\x12\x1b\n" +
 	"\texit_code\x18\x04 \x01(\x05R\bexitCode\x12#\n" +
 	"\rerror_message\x18\x05 \x01(\tR\ferrorMessage\x12\x1d\n" +
 	"\n" +
@@ -1810,15 +1749,7 @@ const file_api_agent_v1_proto_agent_proto_rawDesc = "" +
 	"\x13AGENT_STATUS_ONLINE\x10\x01\x12\x18\n" +
 	"\x14AGENT_STATUS_OFFLINE\x10\x02\x12\x15\n" +
 	"\x11AGENT_STATUS_BUSY\x10\x03\x12\x15\n" +
-	"\x11AGENT_STATUS_IDLE\x10\x04*\xb4\x01\n" +
-	"\tJobStatus\x12\x16\n" +
-	"\x12JOB_STATUS_UNKNOWN\x10\x00\x12\x16\n" +
-	"\x12JOB_STATUS_PENDING\x10\x01\x12\x16\n" +
-	"\x12JOB_STATUS_RUNNING\x10\x02\x12\x16\n" +
-	"\x12JOB_STATUS_SUCCESS\x10\x03\x12\x15\n" +
-	"\x11JOB_STATUS_FAILED\x10\x04\x12\x18\n" +
-	"\x14JOB_STATUS_CANCELLED\x10\x05\x12\x16\n" +
-	"\x12JOB_STATUS_TIMEOUT\x10\x06*\xc5\x01\n" +
+	"\x11AGENT_STATUS_IDLE\x10\x04*\xc5\x01\n" +
 	"\rLabelOperator\x12\x1a\n" +
 	"\x16LABEL_OPERATOR_UNKNOWN\x10\x00\x12\x15\n" +
 	"\x11LABEL_OPERATOR_IN\x10\x01\x12\x19\n" +
@@ -1850,79 +1781,79 @@ func file_api_agent_v1_proto_agent_proto_rawDescGZIP() []byte {
 	return file_api_agent_v1_proto_agent_proto_rawDescData
 }
 
-var file_api_agent_v1_proto_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_api_agent_v1_proto_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_api_agent_v1_proto_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
 var file_api_agent_v1_proto_agent_proto_goTypes = []any{
 	(AgentStatus)(0),                 // 0: api.agent.v1.AgentStatus
-	(JobStatus)(0),                   // 1: api.agent.v1.JobStatus
-	(LabelOperator)(0),               // 2: api.agent.v1.LabelOperator
-	(*HeartbeatRequest)(nil),         // 3: api.agent.v1.HeartbeatRequest
-	(*HeartbeatResponse)(nil),        // 4: api.agent.v1.HeartbeatResponse
-	(*RegisterRequest)(nil),          // 5: api.agent.v1.RegisterRequest
-	(*RegisterResponse)(nil),         // 6: api.agent.v1.RegisterResponse
-	(*UnregisterRequest)(nil),        // 7: api.agent.v1.UnregisterRequest
-	(*UnregisterResponse)(nil),       // 8: api.agent.v1.UnregisterResponse
-	(*FetchJobRequest)(nil),          // 9: api.agent.v1.FetchJobRequest
-	(*FetchJobResponse)(nil),         // 10: api.agent.v1.FetchJobResponse
-	(*Job)(nil),                      // 11: api.agent.v1.Job
-	(*Artifact)(nil),                 // 12: api.agent.v1.Artifact
-	(*ReportJobStatusRequest)(nil),   // 13: api.agent.v1.ReportJobStatusRequest
-	(*ReportJobStatusResponse)(nil),  // 14: api.agent.v1.ReportJobStatusResponse
-	(*ReportJobLogRequest)(nil),      // 15: api.agent.v1.ReportJobLogRequest
-	(*LogEntry)(nil),                 // 16: api.agent.v1.LogEntry
-	(*ReportJobLogResponse)(nil),     // 17: api.agent.v1.ReportJobLogResponse
-	(*CancelJobRequest)(nil),         // 18: api.agent.v1.CancelJobRequest
-	(*CancelJobResponse)(nil),        // 19: api.agent.v1.CancelJobResponse
-	(*UpdateLabelsRequest)(nil),      // 20: api.agent.v1.UpdateLabelsRequest
-	(*UpdateLabelsResponse)(nil),     // 21: api.agent.v1.UpdateLabelsResponse
-	(*LabelSelector)(nil),            // 22: api.agent.v1.LabelSelector
-	(*LabelSelectorRequirement)(nil), // 23: api.agent.v1.LabelSelectorRequirement
-	nil,                              // 24: api.agent.v1.HeartbeatRequest.MetricsEntry
-	nil,                              // 25: api.agent.v1.HeartbeatRequest.LabelsEntry
-	nil,                              // 26: api.agent.v1.RegisterRequest.LabelsEntry
-	nil,                              // 27: api.agent.v1.FetchJobRequest.LabelsEntry
-	nil,                              // 28: api.agent.v1.Job.EnvEntry
-	nil,                              // 29: api.agent.v1.Job.SecretsEntry
-	nil,                              // 30: api.agent.v1.ReportJobStatusRequest.MetricsEntry
-	nil,                              // 31: api.agent.v1.UpdateLabelsRequest.LabelsEntry
-	nil,                              // 32: api.agent.v1.UpdateLabelsResponse.LabelsEntry
-	nil,                              // 33: api.agent.v1.LabelSelector.MatchLabelsEntry
+	(LabelOperator)(0),               // 1: api.agent.v1.LabelOperator
+	(*HeartbeatRequest)(nil),         // 2: api.agent.v1.HeartbeatRequest
+	(*HeartbeatResponse)(nil),        // 3: api.agent.v1.HeartbeatResponse
+	(*RegisterRequest)(nil),          // 4: api.agent.v1.RegisterRequest
+	(*RegisterResponse)(nil),         // 5: api.agent.v1.RegisterResponse
+	(*UnregisterRequest)(nil),        // 6: api.agent.v1.UnregisterRequest
+	(*UnregisterResponse)(nil),       // 7: api.agent.v1.UnregisterResponse
+	(*FetchJobRequest)(nil),          // 8: api.agent.v1.FetchJobRequest
+	(*FetchJobResponse)(nil),         // 9: api.agent.v1.FetchJobResponse
+	(*Job)(nil),                      // 10: api.agent.v1.Job
+	(*Artifact)(nil),                 // 11: api.agent.v1.Artifact
+	(*ReportJobStatusRequest)(nil),   // 12: api.agent.v1.ReportJobStatusRequest
+	(*ReportJobStatusResponse)(nil),  // 13: api.agent.v1.ReportJobStatusResponse
+	(*ReportJobLogRequest)(nil),      // 14: api.agent.v1.ReportJobLogRequest
+	(*LogEntry)(nil),                 // 15: api.agent.v1.LogEntry
+	(*ReportJobLogResponse)(nil),     // 16: api.agent.v1.ReportJobLogResponse
+	(*CancelJobRequest)(nil),         // 17: api.agent.v1.CancelJobRequest
+	(*CancelJobResponse)(nil),        // 18: api.agent.v1.CancelJobResponse
+	(*UpdateLabelsRequest)(nil),      // 19: api.agent.v1.UpdateLabelsRequest
+	(*UpdateLabelsResponse)(nil),     // 20: api.agent.v1.UpdateLabelsResponse
+	(*LabelSelector)(nil),            // 21: api.agent.v1.LabelSelector
+	(*LabelSelectorRequirement)(nil), // 22: api.agent.v1.LabelSelectorRequirement
+	nil,                              // 23: api.agent.v1.HeartbeatRequest.MetricsEntry
+	nil,                              // 24: api.agent.v1.HeartbeatRequest.LabelsEntry
+	nil,                              // 25: api.agent.v1.RegisterRequest.LabelsEntry
+	nil,                              // 26: api.agent.v1.FetchJobRequest.LabelsEntry
+	nil,                              // 27: api.agent.v1.Job.EnvEntry
+	nil,                              // 28: api.agent.v1.Job.SecretsEntry
+	nil,                              // 29: api.agent.v1.ReportJobStatusRequest.MetricsEntry
+	nil,                              // 30: api.agent.v1.UpdateLabelsRequest.LabelsEntry
+	nil,                              // 31: api.agent.v1.UpdateLabelsResponse.LabelsEntry
+	nil,                              // 32: api.agent.v1.LabelSelector.MatchLabelsEntry
+	(v1.JobStatus)(0),                // 33: api.job.v1.JobStatus
 }
 var file_api_agent_v1_proto_agent_proto_depIdxs = []int32{
 	0,  // 0: api.agent.v1.HeartbeatRequest.status:type_name -> api.agent.v1.AgentStatus
-	24, // 1: api.agent.v1.HeartbeatRequest.metrics:type_name -> api.agent.v1.HeartbeatRequest.MetricsEntry
-	25, // 2: api.agent.v1.HeartbeatRequest.labels:type_name -> api.agent.v1.HeartbeatRequest.LabelsEntry
-	26, // 3: api.agent.v1.RegisterRequest.labels:type_name -> api.agent.v1.RegisterRequest.LabelsEntry
-	27, // 4: api.agent.v1.FetchJobRequest.labels:type_name -> api.agent.v1.FetchJobRequest.LabelsEntry
-	11, // 5: api.agent.v1.FetchJobResponse.jobs:type_name -> api.agent.v1.Job
-	28, // 6: api.agent.v1.Job.env:type_name -> api.agent.v1.Job.EnvEntry
-	29, // 7: api.agent.v1.Job.secrets:type_name -> api.agent.v1.Job.SecretsEntry
-	12, // 8: api.agent.v1.Job.artifacts:type_name -> api.agent.v1.Artifact
-	22, // 9: api.agent.v1.Job.label_selector:type_name -> api.agent.v1.LabelSelector
-	1,  // 10: api.agent.v1.ReportJobStatusRequest.status:type_name -> api.agent.v1.JobStatus
-	30, // 11: api.agent.v1.ReportJobStatusRequest.metrics:type_name -> api.agent.v1.ReportJobStatusRequest.MetricsEntry
-	16, // 12: api.agent.v1.ReportJobLogRequest.logs:type_name -> api.agent.v1.LogEntry
-	31, // 13: api.agent.v1.UpdateLabelsRequest.labels:type_name -> api.agent.v1.UpdateLabelsRequest.LabelsEntry
-	32, // 14: api.agent.v1.UpdateLabelsResponse.labels:type_name -> api.agent.v1.UpdateLabelsResponse.LabelsEntry
-	33, // 15: api.agent.v1.LabelSelector.match_labels:type_name -> api.agent.v1.LabelSelector.MatchLabelsEntry
-	23, // 16: api.agent.v1.LabelSelector.match_expressions:type_name -> api.agent.v1.LabelSelectorRequirement
-	2,  // 17: api.agent.v1.LabelSelectorRequirement.operator:type_name -> api.agent.v1.LabelOperator
-	3,  // 18: api.agent.v1.Agent.Heartbeat:input_type -> api.agent.v1.HeartbeatRequest
-	5,  // 19: api.agent.v1.Agent.Register:input_type -> api.agent.v1.RegisterRequest
-	7,  // 20: api.agent.v1.Agent.Unregister:input_type -> api.agent.v1.UnregisterRequest
-	9,  // 21: api.agent.v1.Agent.FetchJob:input_type -> api.agent.v1.FetchJobRequest
-	13, // 22: api.agent.v1.Agent.ReportJobStatus:input_type -> api.agent.v1.ReportJobStatusRequest
-	15, // 23: api.agent.v1.Agent.ReportJobLog:input_type -> api.agent.v1.ReportJobLogRequest
-	18, // 24: api.agent.v1.Agent.CancelJob:input_type -> api.agent.v1.CancelJobRequest
-	20, // 25: api.agent.v1.Agent.UpdateLabels:input_type -> api.agent.v1.UpdateLabelsRequest
-	4,  // 26: api.agent.v1.Agent.Heartbeat:output_type -> api.agent.v1.HeartbeatResponse
-	6,  // 27: api.agent.v1.Agent.Register:output_type -> api.agent.v1.RegisterResponse
-	8,  // 28: api.agent.v1.Agent.Unregister:output_type -> api.agent.v1.UnregisterResponse
-	10, // 29: api.agent.v1.Agent.FetchJob:output_type -> api.agent.v1.FetchJobResponse
-	14, // 30: api.agent.v1.Agent.ReportJobStatus:output_type -> api.agent.v1.ReportJobStatusResponse
-	17, // 31: api.agent.v1.Agent.ReportJobLog:output_type -> api.agent.v1.ReportJobLogResponse
-	19, // 32: api.agent.v1.Agent.CancelJob:output_type -> api.agent.v1.CancelJobResponse
-	21, // 33: api.agent.v1.Agent.UpdateLabels:output_type -> api.agent.v1.UpdateLabelsResponse
+	23, // 1: api.agent.v1.HeartbeatRequest.metrics:type_name -> api.agent.v1.HeartbeatRequest.MetricsEntry
+	24, // 2: api.agent.v1.HeartbeatRequest.labels:type_name -> api.agent.v1.HeartbeatRequest.LabelsEntry
+	25, // 3: api.agent.v1.RegisterRequest.labels:type_name -> api.agent.v1.RegisterRequest.LabelsEntry
+	26, // 4: api.agent.v1.FetchJobRequest.labels:type_name -> api.agent.v1.FetchJobRequest.LabelsEntry
+	10, // 5: api.agent.v1.FetchJobResponse.jobs:type_name -> api.agent.v1.Job
+	27, // 6: api.agent.v1.Job.env:type_name -> api.agent.v1.Job.EnvEntry
+	28, // 7: api.agent.v1.Job.secrets:type_name -> api.agent.v1.Job.SecretsEntry
+	11, // 8: api.agent.v1.Job.artifacts:type_name -> api.agent.v1.Artifact
+	21, // 9: api.agent.v1.Job.label_selector:type_name -> api.agent.v1.LabelSelector
+	33, // 10: api.agent.v1.ReportJobStatusRequest.status:type_name -> api.job.v1.JobStatus
+	29, // 11: api.agent.v1.ReportJobStatusRequest.metrics:type_name -> api.agent.v1.ReportJobStatusRequest.MetricsEntry
+	15, // 12: api.agent.v1.ReportJobLogRequest.logs:type_name -> api.agent.v1.LogEntry
+	30, // 13: api.agent.v1.UpdateLabelsRequest.labels:type_name -> api.agent.v1.UpdateLabelsRequest.LabelsEntry
+	31, // 14: api.agent.v1.UpdateLabelsResponse.labels:type_name -> api.agent.v1.UpdateLabelsResponse.LabelsEntry
+	32, // 15: api.agent.v1.LabelSelector.match_labels:type_name -> api.agent.v1.LabelSelector.MatchLabelsEntry
+	22, // 16: api.agent.v1.LabelSelector.match_expressions:type_name -> api.agent.v1.LabelSelectorRequirement
+	1,  // 17: api.agent.v1.LabelSelectorRequirement.operator:type_name -> api.agent.v1.LabelOperator
+	2,  // 18: api.agent.v1.Agent.Heartbeat:input_type -> api.agent.v1.HeartbeatRequest
+	4,  // 19: api.agent.v1.Agent.Register:input_type -> api.agent.v1.RegisterRequest
+	6,  // 20: api.agent.v1.Agent.Unregister:input_type -> api.agent.v1.UnregisterRequest
+	8,  // 21: api.agent.v1.Agent.FetchJob:input_type -> api.agent.v1.FetchJobRequest
+	12, // 22: api.agent.v1.Agent.ReportJobStatus:input_type -> api.agent.v1.ReportJobStatusRequest
+	14, // 23: api.agent.v1.Agent.ReportJobLog:input_type -> api.agent.v1.ReportJobLogRequest
+	17, // 24: api.agent.v1.Agent.CancelJob:input_type -> api.agent.v1.CancelJobRequest
+	19, // 25: api.agent.v1.Agent.UpdateLabels:input_type -> api.agent.v1.UpdateLabelsRequest
+	3,  // 26: api.agent.v1.Agent.Heartbeat:output_type -> api.agent.v1.HeartbeatResponse
+	5,  // 27: api.agent.v1.Agent.Register:output_type -> api.agent.v1.RegisterResponse
+	7,  // 28: api.agent.v1.Agent.Unregister:output_type -> api.agent.v1.UnregisterResponse
+	9,  // 29: api.agent.v1.Agent.FetchJob:output_type -> api.agent.v1.FetchJobResponse
+	13, // 30: api.agent.v1.Agent.ReportJobStatus:output_type -> api.agent.v1.ReportJobStatusResponse
+	16, // 31: api.agent.v1.Agent.ReportJobLog:output_type -> api.agent.v1.ReportJobLogResponse
+	18, // 32: api.agent.v1.Agent.CancelJob:output_type -> api.agent.v1.CancelJobResponse
+	20, // 33: api.agent.v1.Agent.UpdateLabels:output_type -> api.agent.v1.UpdateLabelsResponse
 	26, // [26:34] is the sub-list for method output_type
 	18, // [18:26] is the sub-list for method input_type
 	18, // [18:18] is the sub-list for extension type_name
@@ -1940,7 +1871,7 @@ func file_api_agent_v1_proto_agent_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_agent_v1_proto_agent_proto_rawDesc), len(file_api_agent_v1_proto_agent_proto_rawDesc)),
-			NumEnums:      3,
+			NumEnums:      2,
 			NumMessages:   31,
 			NumExtensions: 0,
 			NumServices:   1,
