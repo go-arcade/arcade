@@ -30,7 +30,7 @@ var (
 	issUser = "arcade"
 )
 
-func keyFunc(auth http.Auth) (interface{}, error) {
+func keyFunc(auth http.Auth) (any, error) {
 	return auth.SecretKey, nil
 }
 
@@ -69,7 +69,7 @@ func GenToken(userId string, secretKey []byte, accessExpired, refreshExpired tim
 // ParseToken 校验 access_token
 func ParseToken(aToken, secretKey string) (claims *AuthClaims, err error) {
 	claims = new(AuthClaims)
-	token, err := jwt.ParseWithClaims(aToken, claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(aToken, claims, func(token *jwt.Token) (any, error) {
 		// 验证签名算法
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -98,7 +98,7 @@ func RefreshToken(auth *http.Auth, userId, rToken string) (map[string]string, er
 
 	// 解析刷新令牌
 	var refreshClaims jwt.RegisteredClaims
-	token, err := jwt.ParseWithClaims(rToken, &refreshClaims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(rToken, &refreshClaims, func(token *jwt.Token) (any, error) {
 		// 验证签名算法
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])

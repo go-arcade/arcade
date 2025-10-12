@@ -12,13 +12,13 @@ import (
  */
 
 type Response struct {
-	Code   int         `json:"code"`
-	Detail interface{} `json:"detail,omitempty"`
-	Msg    string      `json:"msg"`
+	Code   int    `json:"code"`
+	Detail any    `json:"detail,omitempty"`
+	Msg    string `json:"msg"`
 }
 
 // WithRepJSON 只返回json数据
-func WithRepJSON(c *fiber.Ctx, detail interface{}) error {
+func WithRepJSON(c *fiber.Ctx, detail any) error {
 	return c.JSON(Response{
 		Code:   Success.Code,
 		Detail: detail,
@@ -35,7 +35,7 @@ func WithRepMsg(c *fiber.Ctx, code int, msg string) error {
 }
 
 // WithRepDetail 返回自定义code, msg, detail
-func WithRepDetail(c *fiber.Ctx, code int, msg string, detail interface{}) error {
+func WithRepDetail(c *fiber.Ctx, code int, msg string, detail any) error {
 	return c.JSON(Response{
 		Code:   code,
 		Detail: detail,

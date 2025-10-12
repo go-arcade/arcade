@@ -1,4 +1,4 @@
-package interceptor
+package middleware
 
 import (
 	"runtime/debug"
@@ -8,15 +8,10 @@ import (
 	"github.com/observabil/arcade/pkg/log"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/28 1:07
- * @file: exception_interceptor.go
- * @description:
- */
-
-// ExceptionInterceptor 异常拦截器
-func ExceptionInterceptor(c *fiber.Ctx) error {
+// ExceptionInterceptor 异常中间件
+// 捕获 panic 错误，返回 500 状态码和错误信息
+// This function is used as the middleware of fiber.
+func ExceptionMiddleware(c *fiber.Ctx) error {
 	defer func() {
 		if err := recover(); err != nil {
 			_ = http.WithRepErr(c, http.InternalError.Code, errorToString(err), c.Path())
@@ -27,7 +22,7 @@ func ExceptionInterceptor(c *fiber.Ctx) error {
 	return c.Next()
 }
 
-func errorToString(err interface{}) string {
+func errorToString(err any) string {
 	switch v := err.(type) {
 	case http.ResponseErr:
 		// 符合预期的错误，可以直接返回给客户端

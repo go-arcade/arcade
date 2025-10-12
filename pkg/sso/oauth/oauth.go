@@ -54,6 +54,12 @@ var GetUserInfoFunc = map[Provider]func(token *oauth2.Token) (*UserInfo, error){
 // StateStore 用于存储状态参数
 var StateStore = &sync.Map{}
 
+var (
+	githubUserInfoURL = "https://api.github.com/user"
+	googleUserInfoURL = "https://www.googleapis.com/oauth2/v2/userinfo"
+	slackUserInfoURL  = "https://slack.com/api/users.identity"
+)
+
 // GenState 生成随机状态字符串
 func GenState() string {
 	b := make([]byte, 16)
@@ -83,7 +89,7 @@ func getGitHubUserInfo(token *oauth2.Token) (*UserInfo, error) {
 	resp, err := client.R().
 		SetHeader("Accept", "application/vnd.github.v3+json").
 		SetResult(&ghUserInfo).
-		Get("https://api.github.com/user")
+		Get(githubUserInfoURL)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +115,7 @@ func getGoogleUserInfo(token *oauth2.Token) (*UserInfo, error) {
 	var userInfo UserInfo
 	resp, err := client.R().
 		SetResult(&userInfo).
-		Get("https://www.googleapis.com/oauth2/v2/userinfo")
+		Get(googleUserInfoURL)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +135,7 @@ func getSlackUserInfo(token *oauth2.Token) (*UserInfo, error) {
 	var userInfo UserInfo
 	resp, err := client.R().
 		SetResult(&userInfo).
-		Get("https://slack.com/api/users.identity")
+		Get(slackUserInfoURL)
 	if err != nil {
 		return nil, err
 	}

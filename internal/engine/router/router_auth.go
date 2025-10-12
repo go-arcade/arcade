@@ -10,13 +10,6 @@ import (
 	"github.com/observabil/arcade/pkg/http"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/11/9 16:11
- * @file: router_auth.go
- * @description: router auth
- */
-
 func (rt *Router) authRouter(r fiber.Router, auth fiber.Handler) {
 	authGroup := r.Group("/auth")
 	{
