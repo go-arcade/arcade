@@ -10,7 +10,6 @@ import (
 	"github.com/observabil/arcade/pkg/database"
 	"github.com/observabil/arcade/pkg/http"
 	"github.com/observabil/arcade/pkg/log"
-	"go.uber.org/zap"
 )
 
 var (
@@ -66,11 +65,8 @@ func main() {
 	// 启动 gRPC 服务
 	if app.GrpcServer != nil && appConf.Grpc.Port > 0 {
 		go func() {
-			logger.Info("Starting gRPC server...",
-				zap.String("host", appConf.Grpc.Host),
-				zap.Int("port", appConf.Grpc.Port))
 			if err := app.GrpcServer.Start(appConf.Grpc); err != nil {
-				logger.Error("gRPC server failed", zap.Error(err))
+				logger.Sugar().Errorf("gRPC server failed: %v", err)
 			}
 		}()
 	}

@@ -58,25 +58,7 @@ func (w *Watcher) AddWatchDir(dir string) error {
 	}
 
 	w.dirs = append(w.dirs, absDir)
-	log.Infof("开始监控插件目录: %s", absDir)
-	return nil
-}
-
-// WatchConfig 监控配置文件变化
-func (w *Watcher) WatchConfig(configPath string) error {
-	absPath, err := filepath.Abs(configPath)
-	if err != nil {
-		return fmt.Errorf("get absolute path for config %s: %w", configPath, err)
-	}
-
-	// 监控配置文件所在目录
-	configDir := filepath.Dir(absPath)
-	if err := w.watcher.Add(configDir); err != nil {
-		return fmt.Errorf("add watch config dir %s: %w", configDir, err)
-	}
-
-	w.configPath = absPath
-	log.Infof("开始监控配置文件: %s", absPath)
+	log.Infof("start watch plugin dir: %s", absDir)
 	return nil
 }
 
@@ -95,7 +77,7 @@ func (w *Watcher) Stop() {
 	w.cancel()
 	w.watcher.Close()
 	w.wg.Wait()
-	log.Info("插件监控器已停止")
+	log.Info("plugin watcher stopped")
 }
 
 // watchLoop 监控事件循环
@@ -117,7 +99,7 @@ func (w *Watcher) watchLoop() {
 			if !ok {
 				return
 			}
-			log.Errorf("文件监控错误: %v", err)
+			log.Errorf("file watch error: %v", err)
 		}
 	}
 }
@@ -129,7 +111,7 @@ func (w *Watcher) handleEvent(event fsnotify.Event) {
 		return
 	}
 
-	log.Debugf("检测到文件事件: %s %s", event.Op.String(), event.Name)
+	log.Debugf("detected file event: %s %s", event.Op.String(), event.Name)
 
 	// 配置文件变化
 	if w.configPath != "" && event.Name == w.configPath {
@@ -207,25 +189,25 @@ func (w *Watcher) reloadPlugin(path string) {
 	pluginName := w.getPluginNameFromPath(path)
 	if pluginName != "" {
 		if err := w.manager.AntiRegister(pluginName); err != nil {
-			log.Debugf("卸载插件 %s 失败（可能未加载）: %v", pluginName, err)
+			log.Debugf("unload plugin %s failed (maybe not loaded): %v", pluginName, err)
 		} else {
-			log.Infof("已卸载插件: %s", pluginName)
+			log.Infof("plugin %s unloaded", pluginName)
 		}
 	}
 
 	// 加载新插件
 	if err := w.manager.Register(path); err != nil {
-		log.Errorf("加载插件 %s 失败: %v", path, err)
+		log.Errorf("load plugin %s failed: %v", path, err)
 		return
 	}
 
 	// 初始化插件
 	if err := w.manager.Init(w.ctx); err != nil {
-		log.Errorf("初始化插件 %s 失败: %v", path, err)
+		log.Errorf("init plugin %s failed: %v", path, err)
 		return
 	}
 
-	log.Infof("✓ 成功加载插件: %s", path)
+	log.Infof("plugin %s loaded successfully", path)
 }
 
 // reloadConfig 重新加载配置文件
@@ -234,21 +216,21 @@ func (w *Watcher) reloadConfig() {
 		return
 	}
 
-	log.Info("检测到配置文件变化，正在重新加载...")
+	log.Info("detected config file change, reloading...")
 
 	// 重新加载配置
 	if err := w.manager.LoadPluginsFromConfig(w.configPath); err != nil {
-		log.Errorf("重新加载配置失败: %v", err)
+		log.Errorf("reload config failed: %v", err)
 		return
 	}
 
 	// 初始化新插件
 	if err := w.manager.Init(w.ctx); err != nil {
-		log.Errorf("初始化插件失败: %v", err)
+		log.Errorf("init plugin failed: %v", err)
 		return
 	}
 
-	log.Info("✓ 配置文件重新加载成功")
+	log.Info("config file reloaded successfully")
 }
 
 // getPluginNameFromPath 从路径获取插件名称

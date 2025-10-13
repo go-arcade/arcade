@@ -13,7 +13,6 @@ func (rt *Router) debugRouter(r fiber.Router) {
 	r.Get("/", adaptor.HTTPHandlerFunc(pprof.Index))
 	r.Get("/cmdline", adaptor.HTTPHandlerFunc(pprof.Cmdline))
 	r.Get("/profile", adaptor.HTTPHandlerFunc(pprof.Profile))
-	r.Post("/symbol", adaptor.HTTPHandlerFunc(pprof.Symbol))
 	r.Get("/symbol", adaptor.HTTPHandlerFunc(pprof.Symbol))
 	r.Get("/trace", adaptor.HTTPHandlerFunc(pprof.Trace))
 	r.Get("/allocs", adaptor.HTTPHandler(pprof.Handler("allocs")))

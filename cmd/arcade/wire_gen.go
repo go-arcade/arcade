@@ -31,8 +31,8 @@ func initApp(configPath string, appCtx *ctx.Context, logger *zap.Logger) (*app.A
 	manager := plugin.ProvidePluginManager(pluginRepository)
 	grpcConf := provideGrpcConfig(appConfig, logger)
 	serverWrapper := grpc.ProvideGrpcServer(grpcConf, logger)
-	storageStorage := conf.ProvideStorageConfig(appConfig, appCtx)
-	storageProvider, err := storage.ProvideStorage(storageStorage)
+	storageRepo := repo.ProvideStorageRepo(appCtx)
+	storageProvider, err := storage.ProvideStorageFromDB(appCtx, storageRepo)
 	if err != nil {
 		return nil, nil, err
 	}

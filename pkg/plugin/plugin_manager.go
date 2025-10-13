@@ -215,7 +215,7 @@ func (m *Manager) LoadPluginsFromDatabase() error {
 		return fmt.Errorf("failed to get plugins from database: %w", err)
 	}
 
-	log.Infof("loading %d plugins from database", len(plugins))
+	log.Infof("loading %d plugins", len(plugins))
 
 	var loadErrors []string
 	successCount := 0
@@ -283,11 +283,11 @@ func (m *Manager) LoadPluginsFromDatabase() error {
 			continue
 		}
 
-		log.Infof("loaded plugin %s (v%s) from database: %s (relative: %s)", dbPlugin.PluginId, dbPlugin.Version, absPath, pluginPath)
+		log.Infof("loaded plugin %s (v%s): %s (relative: %s)", dbPlugin.PluginId, dbPlugin.Version, absPath, pluginPath)
 		successCount++
 	}
 
-	log.Infof("successfully loaded %d/%d plugins from database", successCount, len(plugins))
+	log.Infof("successfully loaded %d/%d plugins", successCount, len(plugins))
 
 	if len(loadErrors) > 0 {
 		log.Warnf("failed to load %d plugins:", len(loadErrors))
@@ -470,16 +470,13 @@ func (m *Manager) registerInternal(name string, base BasePlugin, _ any, pc Plugi
 	return nil
 }
 
-// openAndNew 支持两种导出风格：
+// openAndNew 支持多种导出风格：
 // 1) var Plugin <interface>
-// 2) func NewPlugin() (any) 或 func NewPlugin() (BasePlugin, error)
 func openAndNew(path string) (any, BasePlugin, error) {
 	so, err := plugin.Open(path)
 	if err != nil {
 		return nil, nil, err
 	}
-
-	// 优先找 var Plugin
 	if sym, err := so.Lookup("Plugin"); err == nil {
 		if bp, ok := sym.(BasePlugin); ok {
 			return sym, bp, nil
@@ -490,25 +487,19 @@ func openAndNew(path string) (any, BasePlugin, error) {
 				return anyInst, bp, nil
 			}
 		}
-		return nil, nil, errors.New("symbol Plugin exists but not BasePlugin")
 	}
 
 	// 兼容工厂方法 func NewPlugin() ...
-	sym, err := so.Lookup("Plugin")
+	sym, err := so.Lookup("NewPlugin")
 	if err != nil {
-		return nil, nil, errors.New("neither symbol Plugin nor function NewPlugin found")
+		return nil, nil, errors.New("neither symbol Plugin/BasePlugin nor function NewPlugin found")
 	}
 
-	// 1) func() (BasePlugin, error)
-	if fn, ok := sym.(func() (BasePlugin, error)); ok {
-		bp, err := fn()
-		return fn, bp, err
-	}
-	// 2) func() BasePlugin
+	// func() BasePlugin
 	if fn, ok := sym.(func() BasePlugin); ok {
 		return fn, fn(), nil
 	}
-	// 3) func() any （再断言）
+	// func() any （再断言）
 	if fn, ok := sym.(func() any); ok {
 		v := fn()
 		if bp, ok2 := v.(BasePlugin); ok2 {
@@ -566,18 +557,10 @@ func (m *Manager) StartAutoWatch(dirs []string, configPath string) error {
 		}
 	}
 
-	// 监控配置文件
-	if configPath != "" {
-		if err := watcher.WatchConfig(configPath); err != nil {
-			watcher.Stop()
-			return fmt.Errorf("watch config: %w", err)
-		}
-	}
-
 	m.watcher = watcher
 	watcher.Start()
 
-	log.Info("插件自动监控已启动")
+	log.Info("plugin auto watch started")
 	return nil
 }
 
@@ -611,7 +594,7 @@ func (m *Manager) ReloadPlugin(name string) error {
 		return fmt.Errorf("unregister plugin %s: %w", name, err)
 	}
 
-	log.Infof("已卸载插件: %s", name)
+	log.Infof("plugin %s unloaded", name)
 
 	// 重新加载插件
 	if err := m.Register(meta.Path); err != nil {
@@ -626,7 +609,7 @@ func (m *Manager) ReloadPlugin(name string) error {
 		return fmt.Errorf("init reloaded plugin %s: %w", name, err)
 	}
 
-	log.Infof("✓ 插件 %s 重载成功", name)
+	log.Infof("plugin %s reloaded successfully", name)
 	return nil
 }
 

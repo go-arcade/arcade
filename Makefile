@@ -34,6 +34,10 @@ LDFLAGS := \
 
 .DEFAULT_GOAL := help
 
+deps-sync:
+	go mod tidy
+	go mod verify
+
 help: ## 显示帮助信息
 	@echo "Arcade CI/CD 平台 Makefile 命令"
 	@echo ""
@@ -47,7 +51,7 @@ help: ## 显示帮助信息
 	@echo "  make proto          # 生成proto代码"
 	@echo "  make all            # 完整构建"
 
-all: prebuild plugins build ## 完整构建（前端+插件+主程序）
+all: deps-sync prebuild plugins build ## 完整构建（前端+插件+主程序）
 
 JOBS ?= $(shell getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)
 
@@ -68,7 +72,8 @@ plugins: ## 构建所有插件
 	| xargs -P $(JOBS) -n 2 sh -c '\
 		dir="$$1"; out="$$2"; \
 		echo "   -> $$dir  ==>  $$out"; \
-		GO111MODULE=on go build -buildmode=plugin -o "$$out" "$$dir" \
+		cd "$$(git rev-parse --show-toplevel)" && \
+		go build -buildmode=plugin -o "$$out" "$$dir" \
 	' sh
 	@echo ">> plugins build done."
 
@@ -81,14 +86,14 @@ prebuild: ## 下载并嵌入前端文件
 	sh dl.sh
 	echo "web file download and embedding completed."
 
-build: wire ## 构建主程序
-	go build -ldflags "${LDFLAGS}" -o arcade ./cmd/arcade/main.go
+build: wire plugins ## 构建主程序
+	go build -ldflags "${LDFLAGS}" -o arcade ./cmd/arcade/
 
 build-cli: ## 构建CLI工具
 	go build -ldflags "${LDFLAGS}" -o arcade-cli ./cmd/cli/
 
-run: wire ## 后台运行主程序
-	./arcade
+run: deps-sync wire 
+	go run ./cmd/arcade/
 
 release: ## 创建发布版本
 	goreleaser --skip-validate --skip-publish --snapshot

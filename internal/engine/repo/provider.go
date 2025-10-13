@@ -12,6 +12,7 @@ var ProviderSet = wire.NewSet(
 	ProvidePluginRepo,
 	ProvidePluginRepoAdapter,
 	ProvideSSORepo,
+	ProvideStorageRepo,
 )
 
 // ProvideAgentRepo 提供 Agent 仓储实例
@@ -37,4 +38,9 @@ func ProvidePluginRepoAdapter(repo *PluginRepo) *PluginRepoAdapter {
 // ProvideSSORepo 提供 SSO 仓储实例
 func ProvideSSORepo(ctx *ctx.Context) *SSORepo {
 	return NewSSORepo(ctx)
+}
+
+// ProvideStorageRepo 提供 Storage 仓储实例
+func ProvideStorageRepo(ctx *ctx.Context) *StorageRepo {
+	return NewStorageRepo(ctx)
 }

@@ -5,11 +5,11 @@ import (
 	"io/fs"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
-	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/observabil/arcade/pkg/ctx"
 	httpx "github.com/observabil/arcade/pkg/http"
@@ -41,8 +41,16 @@ func NewRouter(httpConf *httpx.Http, ctx *ctx.Context) *Router {
 
 func (rt *Router) Router(log *zap.Logger) *fiber.App {
 	app := fiber.New(fiber.Config{
-		AppName: "Arcade",
+		AppName:      "Arcade",
+		ReadTimeout:  time.Duration(rt.Http.ReadTimeout) * time.Second,
+		WriteTimeout: time.Duration(rt.Http.WriteTimeout) * time.Second,
+		IdleTimeout:  time.Duration(rt.Http.IdleTimeout) * time.Second,
 	})
+
+	// 访问日志 - 必须在最前面
+	if rt.Http.AccessLog {
+		app.Use(httpx.AccessLogFormat(log))
+	}
 
 	// 中间件
 	app.Use(
@@ -75,11 +83,6 @@ func (rt *Router) Router(log *zap.Logger) *fiber.App {
 			stat, _ := file.Stat()
 			return c.Type("html").Status(fiber.StatusOK).SendStream(file, int(stat.Size()))
 		})
-	}
-
-	// 访问日志
-	if rt.Http.AccessLog {
-		app.Use(logger.New())
 	}
 
 	// pprof
@@ -116,6 +119,12 @@ func (rt *Router) Router(log *zap.Logger) *fiber.App {
 	// 	})
 	// }
 
+	// 找不到路径时的处理 - 必须在所有路由注册之后
+	app.Use(func(c *fiber.Ctx) error {
+		return c.Status(fiber.StatusNotFound).
+			JSON(httpx.WithRepErr(c, fiber.StatusNotFound, "request path not found", c.Path()))
+	})
+
 	return app
 }
 
@@ -134,6 +143,18 @@ func (rt *Router) routerGroup(r fiber.Router) {
 
 	// agent
 	rt.agentRouter(r, auth)
+
+	// storage (需要认证)
+	rt.storageRouter(r, auth)
+}
+
+func (rt *Router) storageRouter(r fiber.Router, auth fiber.Handler) {
+	// 存储配置管理需要认证
+	_ = r.Group("/storage", auth)
+	{
+		// 这里需要注入 StorageService，暂时留空
+		// 实际使用时需要在 router 初始化时注入服务
+	}
 }
 
 func queryInt(c *fiber.Ctx, key string) int {
