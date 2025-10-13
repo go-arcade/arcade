@@ -1,12 +1,12 @@
 -- ================================================================
--- Arcade CI/CD 平台数据库表结构设计
+-- Arcade CI/CD 平台完整数据库表结构设计
 -- 数据库: arcade_ci_meta
 -- 字符集: utf8mb4
 -- 排序规则: utf8mb4_unicode_ci
 -- ================================================================
 
 -- ================================================================
--- 用户和权限管理模块
+-- 1. 用户和权限管理模块
 -- ================================================================
 
 -- 用户表
@@ -89,7 +89,250 @@ CREATE TABLE IF NOT EXISTS `t_sso_provider` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='SSO认证提供者表';
 
 -- ================================================================
--- Agent管理模块
+-- 2. 组织和团队管理模块
+-- ================================================================
+
+-- 组织表
+CREATE TABLE IF NOT EXISTS `t_organization` (
+  `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `org_id` VARCHAR(64) NOT NULL COMMENT '组织唯一标识',
+  `name` VARCHAR(128) NOT NULL COMMENT '组织名称(英文标识)',
+  `display_name` VARCHAR(255) NOT NULL COMMENT '组织显示名称',
+  `description` TEXT DEFAULT NULL COMMENT '组织描述',
+  `logo` VARCHAR(512) DEFAULT NULL COMMENT '组织Logo URL',
+  `website` VARCHAR(512) DEFAULT NULL COMMENT '组织官网',
+  `email` VARCHAR(128) DEFAULT NULL COMMENT '组织联系邮箱',
+  `phone` VARCHAR(32) DEFAULT NULL COMMENT '组织联系电话',
+  `address` VARCHAR(512) DEFAULT NULL COMMENT '组织地址',
+  `settings` JSON DEFAULT NULL COMMENT '组织设置(JSON格式)',
+  `plan` VARCHAR(32) NOT NULL DEFAULT 'free' COMMENT '订阅计划(free/pro/enterprise)',
+  `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态: 0-未激活, 1-正常, 2-冻结, 3-已删除',
+  `owner_user_id` VARCHAR(64) NOT NULL COMMENT '组织所有者用户ID',
+  `is_enabled` TINYINT NOT NULL DEFAULT 1 COMMENT '是否启用: 0-禁用, 1-启用',
+  `total_members` INT NOT NULL DEFAULT 0 COMMENT '成员总数',
+  `total_teams` INT NOT NULL DEFAULT 0 COMMENT '团队总数',
+  `total_projects` INT NOT NULL DEFAULT 0 COMMENT '项目总数',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_org_id` (`org_id`),
+  UNIQUE KEY `uk_name` (`name`),
+  KEY `idx_status` (`status`),
+  KEY `idx_owner_user_id` (`owner_user_id`),
+  KEY `idx_plan` (`plan`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='组织表';
+
+-- 组织成员表
+CREATE TABLE IF NOT EXISTS `t_organization_member` (
+  `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `org_id` VARCHAR(64) NOT NULL COMMENT '组织ID',
+  `user_id` VARCHAR(64) NOT NULL COMMENT '用户ID',
+  `role` VARCHAR(32) NOT NULL COMMENT '组织角色(owner/admin/member)',
+  `username` VARCHAR(64) DEFAULT NULL COMMENT '用户名(冗余)',
+  `email` VARCHAR(128) DEFAULT NULL COMMENT '邮箱(冗余)',
+  `invited_by` VARCHAR(64) DEFAULT NULL COMMENT '邀请人用户ID',
+  `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态: 0-待接受, 1-正常, 2-禁用',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_org_user` (`org_id`, `user_id`),
+  KEY `idx_org_id` (`org_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_role` (`role`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='组织成员表';
+
+-- 团队表
+CREATE TABLE IF NOT EXISTS `t_team` (
+  `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `team_id` VARCHAR(64) NOT NULL COMMENT '团队唯一标识',
+  `org_id` VARCHAR(64) NOT NULL COMMENT '所属组织ID',
+  `name` VARCHAR(128) NOT NULL COMMENT '团队名称(英文标识)',
+  `display_name` VARCHAR(255) NOT NULL COMMENT '团队显示名称',
+  `description` TEXT DEFAULT NULL COMMENT '团队描述',
+  `avatar` VARCHAR(512) DEFAULT NULL COMMENT '团队头像',
+  `parent_team_id` VARCHAR(64) DEFAULT NULL COMMENT '父团队ID(支持嵌套)',
+  `path` VARCHAR(512) DEFAULT NULL COMMENT '团队路径(用于层级关系,如:/parent/child)',
+  `level` INT NOT NULL DEFAULT 1 COMMENT '团队层级(1为顶层)',
+  `settings` JSON DEFAULT NULL COMMENT '团队设置(JSON格式)',
+  `visibility` TINYINT NOT NULL DEFAULT 0 COMMENT '可见性: 0-私有, 1-内部, 2-公开',
+  `is_enabled` TINYINT NOT NULL DEFAULT 1 COMMENT '是否启用: 0-禁用, 1-启用',
+  `total_members` INT NOT NULL DEFAULT 0 COMMENT '成员总数',
+  `total_projects` INT NOT NULL DEFAULT 0 COMMENT '项目总数',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_team_id` (`team_id`),
+  UNIQUE KEY `uk_org_name` (`org_id`, `name`),
+  KEY `idx_org_id` (`org_id`),
+  KEY `idx_parent_team_id` (`parent_team_id`),
+  KEY `idx_visibility` (`visibility`),
+  KEY `idx_path` (`path`(191))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='团队表';
+
+-- 团队成员表
+CREATE TABLE IF NOT EXISTS `t_team_member` (
+  `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `team_id` VARCHAR(64) NOT NULL COMMENT '团队ID',
+  `user_id` VARCHAR(64) NOT NULL COMMENT '用户ID',
+  `role` VARCHAR(32) NOT NULL COMMENT '团队角色(owner/maintainer/developer/reporter/guest)',
+  `username` VARCHAR(64) DEFAULT NULL COMMENT '用户名(冗余)',
+  `invited_by` VARCHAR(64) DEFAULT NULL COMMENT '邀请人用户ID',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_team_user` (`team_id`, `user_id`),
+  KEY `idx_team_id` (`team_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_role` (`role`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='团队成员表';
+
+-- 组织邀请表
+CREATE TABLE IF NOT EXISTS `t_organization_invitation` (
+  `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `invitation_id` VARCHAR(64) NOT NULL COMMENT '邀请唯一标识',
+  `org_id` VARCHAR(64) NOT NULL COMMENT '组织ID',
+  `email` VARCHAR(128) NOT NULL COMMENT '被邀请人邮箱',
+  `role` VARCHAR(32) NOT NULL DEFAULT 'member' COMMENT '角色(owner/admin/member)',
+  `token` VARCHAR(255) NOT NULL COMMENT '邀请令牌',
+  `invited_by` VARCHAR(64) NOT NULL COMMENT '邀请人用户ID',
+  `status` TINYINT NOT NULL DEFAULT 0 COMMENT '状态: 0-待接受, 1-已接受, 2-已拒绝, 3-已过期',
+  `expires_at` DATETIME NOT NULL COMMENT '过期时间',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_invitation_id` (`invitation_id`),
+  UNIQUE KEY `uk_token` (`token`),
+  KEY `idx_org_id` (`org_id`),
+  KEY `idx_email` (`email`),
+  KEY `idx_status` (`status`),
+  KEY `idx_expires_at` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='组织邀请表';
+
+-- ================================================================
+-- 3. 项目管理模块
+-- ================================================================
+
+-- 项目表
+CREATE TABLE IF NOT EXISTS `t_project` (
+  `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `project_id` VARCHAR(64) NOT NULL COMMENT '项目唯一标识',
+  `org_id` VARCHAR(64) NOT NULL COMMENT '所属组织ID',
+  `name` VARCHAR(128) NOT NULL COMMENT '项目名称(英文标识)',
+  `display_name` VARCHAR(255) NOT NULL COMMENT '项目显示名称',
+  `namespace` VARCHAR(255) NOT NULL COMMENT '项目命名空间(org_name/project_name)',
+  `description` TEXT DEFAULT NULL COMMENT '项目描述',
+  `repo_url` VARCHAR(512) NOT NULL COMMENT '代码仓库URL',
+  `repo_type` VARCHAR(32) NOT NULL DEFAULT 'git' COMMENT '仓库类型(git/github/gitlab/gitee/svn)',
+  `default_branch` VARCHAR(128) NOT NULL DEFAULT 'main' COMMENT '默认分支',
+  `auth_type` TINYINT NOT NULL DEFAULT 0 COMMENT '认证类型: 0-无, 1-用户名密码, 2-Token, 3-SSH密钥',
+  `credential` TEXT DEFAULT NULL COMMENT '认证凭证(加密存储)',
+  `trigger_mode` INT NOT NULL DEFAULT 1 COMMENT '触发模式(位掩码): 1-手动, 2-Webhook, 4-定时, 8-Push, 16-MR, 32-Tag',
+  `webhook_secret` VARCHAR(255) DEFAULT NULL COMMENT 'Webhook密钥',
+  `cron_expr` VARCHAR(128) DEFAULT NULL COMMENT '定时任务Cron表达式',
+  `build_config` JSON DEFAULT NULL COMMENT '构建配置(JSON格式)',
+  `env_vars` JSON DEFAULT NULL COMMENT '环境变量(JSON格式)',
+  `settings` JSON DEFAULT NULL COMMENT '项目设置(JSON格式)',
+  `tags` VARCHAR(512) DEFAULT NULL COMMENT '项目标签(逗号分隔)',
+  `language` VARCHAR(64) DEFAULT NULL COMMENT '主要编程语言(Go/Java/Python/Node.js等)',
+  `framework` VARCHAR(128) DEFAULT NULL COMMENT '使用的框架',
+  `status` TINYINT NOT NULL DEFAULT 1 COMMENT '项目状态: 0-未激活, 1-正常, 2-归档, 3-禁用',
+  `visibility` TINYINT NOT NULL DEFAULT 0 COMMENT '可见性: 0-私有, 1-内部, 2-公开',
+  `access_level` VARCHAR(32) NOT NULL DEFAULT 'team' COMMENT '默认访问级别(owner/team/org)',
+  `created_by` VARCHAR(64) NOT NULL COMMENT '创建者用户ID',
+  `is_enabled` TINYINT NOT NULL DEFAULT 1 COMMENT '是否启用: 0-禁用, 1-启用',
+  `icon` VARCHAR(512) DEFAULT NULL COMMENT '项目图标URL',
+  `homepage` VARCHAR(512) DEFAULT NULL COMMENT '项目主页',
+  `total_pipelines` INT NOT NULL DEFAULT 0 COMMENT '流水线总数',
+  `total_builds` INT NOT NULL DEFAULT 0 COMMENT '构建总次数',
+  `success_builds` INT NOT NULL DEFAULT 0 COMMENT '成功构建次数',
+  `failed_builds` INT NOT NULL DEFAULT 0 COMMENT '失败构建次数',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_project_id` (`project_id`),
+  UNIQUE KEY `uk_namespace` (`namespace`),
+  KEY `idx_org_id` (`org_id`),
+  KEY `idx_name` (`name`),
+  KEY `idx_status` (`status`),
+  KEY `idx_visibility` (`visibility`),
+  KEY `idx_created_by` (`created_by`),
+  KEY `idx_is_enabled` (`is_enabled`),
+  KEY `idx_repo_type` (`repo_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='项目表';
+
+-- 项目成员表
+CREATE TABLE IF NOT EXISTS `t_project_member` (
+  `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `project_id` VARCHAR(64) NOT NULL COMMENT '项目ID',
+  `user_id` VARCHAR(64) NOT NULL COMMENT '用户ID',
+  `role` VARCHAR(32) NOT NULL COMMENT '角色(owner/maintainer/developer/reporter/guest)',
+  `username` VARCHAR(64) DEFAULT NULL COMMENT '用户名(冗余)',
+  `source` VARCHAR(32) NOT NULL DEFAULT 'direct' COMMENT '来源(direct/team/org)',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_project_user` (`project_id`, `user_id`),
+  KEY `idx_project_id` (`project_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_role` (`role`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='项目成员表';
+
+-- 项目团队关联表
+CREATE TABLE IF NOT EXISTS `t_project_team_relation` (
+  `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `project_id` VARCHAR(64) NOT NULL COMMENT '项目ID',
+  `team_id` VARCHAR(64) NOT NULL COMMENT '团队ID',
+  `access` VARCHAR(32) NOT NULL DEFAULT 'read' COMMENT '访问权限(read/write/admin)',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_project_team` (`project_id`, `team_id`),
+  KEY `idx_project_id` (`project_id`),
+  KEY `idx_team_id` (`team_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='项目团队关联表';
+
+-- 项目Webhook表
+CREATE TABLE IF NOT EXISTS `t_project_webhook` (
+  `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `webhook_id` VARCHAR(64) NOT NULL COMMENT 'Webhook唯一标识',
+  `project_id` VARCHAR(64) NOT NULL COMMENT '项目ID',
+  `name` VARCHAR(128) NOT NULL COMMENT 'Webhook名称',
+  `url` VARCHAR(512) NOT NULL COMMENT 'Webhook URL',
+  `secret` VARCHAR(255) DEFAULT NULL COMMENT '密钥',
+  `events` JSON NOT NULL COMMENT '触发事件列表(push/merge_request/tag等)',
+  `is_enabled` TINYINT NOT NULL DEFAULT 1 COMMENT '是否启用: 0-禁用, 1-启用',
+  `description` VARCHAR(512) DEFAULT NULL COMMENT '描述',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_webhook_id` (`webhook_id`),
+  KEY `idx_project_id` (`project_id`),
+  KEY `idx_is_enabled` (`is_enabled`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='项目Webhook表';
+
+-- 项目变量表
+CREATE TABLE IF NOT EXISTS `t_project_variable` (
+  `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `variable_id` VARCHAR(64) NOT NULL COMMENT '变量唯一标识',
+  `project_id` VARCHAR(64) NOT NULL COMMENT '项目ID',
+  `key` VARCHAR(255) NOT NULL COMMENT '变量键',
+  `value` TEXT NOT NULL COMMENT '变量值(敏感信息加密存储)',
+  `type` VARCHAR(32) NOT NULL DEFAULT 'env' COMMENT '类型(env/secret/file)',
+  `protected` TINYINT NOT NULL DEFAULT 0 COMMENT '是否保护(仅在保护分支可用): 0-否, 1-是',
+  `masked` TINYINT NOT NULL DEFAULT 0 COMMENT '是否掩码(日志中隐藏): 0-否, 1-是',
+  `description` VARCHAR(512) DEFAULT NULL COMMENT '描述',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_variable_id` (`variable_id`),
+  UNIQUE KEY `uk_project_key` (`project_id`, `key`),
+  KEY `idx_project_id` (`project_id`),
+  KEY `idx_type` (`type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='项目变量表';
+
+-- ================================================================
+-- 4. Agent管理模块
 -- ================================================================
 
 -- Agent表（执行器）
@@ -134,13 +377,14 @@ CREATE TABLE IF NOT EXISTS `t_agent_config` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Agent配置表';
 
 -- ================================================================
--- 流水线和任务管理模块
+-- 5. 流水线和任务管理模块
 -- ================================================================
 
 -- 流水线定义表
 CREATE TABLE IF NOT EXISTS `t_pipeline` (
   `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `pipeline_id` VARCHAR(64) NOT NULL COMMENT '流水线唯一标识',
+  `project_id` VARCHAR(64) DEFAULT NULL COMMENT '所属项目ID',
   `name` VARCHAR(255) NOT NULL COMMENT '流水线名称',
   `description` TEXT DEFAULT NULL COMMENT '流水线描述',
   `repo_url` VARCHAR(512) DEFAULT NULL COMMENT '代码仓库URL',
@@ -158,6 +402,7 @@ CREATE TABLE IF NOT EXISTS `t_pipeline` (
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_pipeline_id` (`pipeline_id`),
+  KEY `idx_project_id` (`project_id`),
   KEY `idx_name` (`name`(191)),
   KEY `idx_status` (`status`),
   KEY `idx_created_by` (`created_by`),
@@ -277,6 +522,10 @@ CREATE TABLE IF NOT EXISTS `t_job_artifact` (
   KEY `idx_expire` (`expire`, `expired_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='任务产物表';
 
+-- ================================================================
+-- 6. 日志和事件模块
+-- ================================================================
+
 -- 系统事件表
 CREATE TABLE IF NOT EXISTS `t_system_event` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
@@ -298,7 +547,7 @@ CREATE TABLE IF NOT EXISTS `t_system_event` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统事件表';
 
 -- ================================================================
--- 插件管理模块
+-- 7. 插件管理模块
 -- ================================================================
 
 -- 插件表
@@ -439,7 +688,7 @@ CREATE TABLE IF NOT EXISTS `t_plugin_source` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='插件来源表';
 
 -- ================================================================
--- 配置管理模块
+-- 8. 配置管理模块
 -- ================================================================
 
 -- 对象存储配置表
@@ -495,7 +744,7 @@ CREATE TABLE IF NOT EXISTS `t_secret` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='密钥管理表';
 
 -- ================================================================
--- 审计日志模块
+-- 9. 审计日志模块
 -- ================================================================
 
 -- 操作审计日志表
@@ -543,474 +792,193 @@ INSERT INTO `t_role_relation` (`role_id`, `user_id`)
 VALUES ('role_admin', 'user_admin')
 ON DUPLICATE KEY UPDATE `role_id` = `role_id`;
 
--- 插入示例 SSO 提供者配置
--- OAuth (GitHub)
-INSERT INTO `t_sso_provider` (`provider_id`, `name`, `provider_type`, `config`, `description`, `priority`, `is_enabled`)
-VALUES (
-  'oauth_github',
-  'GitHub',
-  'oauth',
+-- 插入默认组织
+INSERT INTO `t_organization` (
+  `org_id`,
+  `name`,
+  `display_name`,
+  `description`,
+  `website`,
+  `email`,
+  `settings`,
+  `plan`,
+  `status`,
+  `owner_user_id`
+) VALUES (
+  'org_default',
+  'default-org',
+  '默认组织',
+  '这是系统默认组织',
+  'https://arcade.example.com',
+  'admin@example.com',
   JSON_OBJECT(
-    'clientId', 'YOUR_GITHUB_CLIENT_ID',
-    'clientSecret', 'YOUR_GITHUB_CLIENT_SECRET',
-    'authURL', 'https://github.com/login/oauth/authorize',
-    'tokenURL', 'https://github.com/login/oauth/access_token',
-    'userInfoURL', 'https://api.github.com/user',
-    'scopes', JSON_ARRAY('read:user', 'user:email'),
-    'redirectURL', 'http://localhost:8080/api/v1/auth/oauth/callback'
+    'allow_public_projects', true,
+    'require_two_factor', false,
+    'allowed_domains', JSON_ARRAY('example.com'),
+    'max_members', 100,
+    'max_projects', 50,
+    'max_teams', 20,
+    'max_agents', 10,
+    'default_visibility', 'private',
+    'enable_saml', false,
+    'enable_ldap', false
   ),
-  'GitHub OAuth',
+  'free',
   1,
-  0
+  'user_admin'
 ) ON DUPLICATE KEY UPDATE `name` = `name`;
 
--- OAuth (GitLab)
-INSERT INTO `t_sso_provider` (`provider_id`, `name`, `provider_type`, `config`, `description`, `priority`, `is_enabled`)
-VALUES (
-  'oauth_gitlab',
-  'GitLab',
-  'oauth',
-  JSON_OBJECT(
-    'clientId', 'YOUR_GITLAB_CLIENT_ID',
-    'clientSecret', 'YOUR_GITLAB_CLIENT_SECRET',
-    'authURL', 'https://gitlab.com/oauth/authorize',
-    'tokenURL', 'https://gitlab.com/oauth/token',
-    'userInfoURL', 'https://gitlab.com/api/v4/user',
-    'scopes', JSON_ARRAY('read_user'),
-    'redirectURL', 'http://localhost:8080/api/v1/auth/oauth/callback'
-  ),
-  'GitLab OAuth',
-  2,
-  0
-) ON DUPLICATE KEY UPDATE `name` = `name`;
-
--- OAuth (Google)
-INSERT INTO `t_sso_provider` (`provider_id`, `name`, `provider_type`, `config`, `description`, `priority`, `is_enabled`)
-VALUES (
-  'oauth_google',
-  'Google',
-  'oauth',
-  JSON_OBJECT(
-    'clientId', 'YOUR_GOOGLE_CLIENT_ID',
-    'clientSecret', 'YOUR_GOOGLE_CLIENT_SECRET',
-    'authURL', 'https://accounts.google.com/o/oauth2/v2/auth',
-    'tokenURL', 'https://oauth2.googleapis.com/token',
-    'userInfoURL', 'https://www.googleapis.com/oauth2/v2/userinfo',
-    'scopes', JSON_ARRAY('openid', 'profile', 'email'),
-    'redirectURL', 'http://localhost:8080/api/v1/auth/oauth/callback'
-  ),
-  'Google OAuth',
-  5,
-  0
-) ON DUPLICATE KEY UPDATE `name` = `name`;
-
--- OAuth (Slack)
-INSERT INTO `t_sso_provider` (`provider_id`, `name`, `provider_type`, `config`, `description`, `priority`, `is_enabled`)
-VALUES (
-  'oauth_slack',
-  'Slack',
-  'oauth',
-  JSON_OBJECT(
-    'clientId', 'YOUR_SLACK_CLIENT_ID',
-    'clientSecret', 'YOUR_SLACK_CLIENT_SECRET',
-    'authURL', 'https://slack.com/oauth/v2/authorize',
-    'tokenURL', 'https://slack.com/api/oauth.v2.access',
-    'userInfoURL', 'https://slack.com/api/users.identity',
-    'scopes', JSON_ARRAY('identity.basic', 'identity.email', 'identity.avatar'),
-    'redirectURL', 'http://localhost:8080/api/v1/auth/oauth/callback'
-  ),
-  'Slack OAuth',
-  6,
-  0
-) ON DUPLICATE KEY UPDATE `name` = `name`;
-
--- LDAP
-INSERT INTO `t_sso_provider` (`provider_id`, `name`, `provider_type`, `config`, `description`, `priority`, `is_enabled`)
-VALUES (
-  'ldap_default',
-  'LDAP',
-  'ldap',
-  JSON_OBJECT(
-    'host', 'ldap.example.com',
-    'port', 389,
-    'useTLS', false,
-    'skipVerify', false,
-    'baseDN', 'dc=example,dc=com',
-    'bindDN', 'cn=admin,dc=example,dc=com',
-    'bindPassword', 'YOUR_BIND_PASSWORD',
-    'userFilter', '(uid=%s)',
-    'userDN', 'ou=users,dc=example,dc=com',
-    'groupFilter', '(memberUid=%s)',
-    'groupDN', 'ou=groups,dc=example,dc=com',
-    'attributes', JSON_OBJECT(
-      'username', 'uid',
-      'email', 'mail',
-      'displayName', 'cn',
-      'groups', 'memberOf'
-    )
-  ),
-  'LDAP',
-  10,
-  0
-) ON DUPLICATE KEY UPDATE `name` = `name`;
-
--- OIDC (OpenID Connect)
-INSERT INTO `t_sso_provider` (`provider_id`, `name`, `provider_type`, `config`, `description`, `priority`, `is_enabled`)
-VALUES (
-  'oidc_keycloak',
-  'Keycloak',
-  'oidc',
-  JSON_OBJECT(
-    'issuer', 'https://keycloak.example.com/realms/arcade',
-    'clientId', 'YOUR_CLIENT_ID',
-    'clientSecret', 'YOUR_CLIENT_SECRET',
-    'redirectURL', 'http://localhost:8080/api/v1/auth/oidc/callback',
-    'scopes', JSON_ARRAY('openid', 'profile', 'email'),
-    'userInfoURL', 'https://keycloak.example.com/realms/arcade/protocol/openid-connect/userinfo',
-    'skipVerify', false
-  ),
-  'Keycloak OIDC',
-  3,
-  0
-) ON DUPLICATE KEY UPDATE `name` = `name`;
-
--- OIDC (Google Workspace)
-INSERT INTO `t_sso_provider` (`provider_id`, `name`, `provider_type`, `config`, `description`, `priority`, `is_enabled`)
-VALUES (
-  'oidc_google',
-  'Google Workspace',
-  'oidc',
-  JSON_OBJECT(
-    'issuer', 'https://accounts.google.com',
-    'clientId', 'YOUR_GOOGLE_CLIENT_ID',
-    'clientSecret', 'YOUR_GOOGLE_CLIENT_SECRET',
-    'redirectURL', 'http://localhost:8080/api/v1/auth/oidc/callback',
-    'scopes', JSON_ARRAY('openid', 'profile', 'email'),
-    'hostedDomain', 'example.com'
-  ),
-  'Google Workspace OIDC',
-  7,
-  0
-) ON DUPLICATE KEY UPDATE `name` = `name`;
-
--- 插入示例对象存储配置
--- MinIO 配置
-INSERT INTO `t_storage_config` (`storage_id`, `name`, `storage_type`, `config`, `description`, `is_default`, `is_enabled`)
-VALUES (
-  'storage_minio_default',
-  'MinIO Default',
-  'minio',
-  JSON_OBJECT(
-    'endpoint', 'localhost:9000',
-    'accessKey', 'YOUR_MINIO_ACCESS_KEY',
-    'secretKey', 'YOUR_MINIO_SECRET_KEY',
-    'bucket', 'arcade',
-    'region', 'us-east-1',
-    'useTLS', false,
-    'basePath', 'artifacts'
-  ),
-  '默认 MinIO 对象存储',
-  1,
-  0
-) ON DUPLICATE KEY UPDATE `name` = `name`;
-
--- AWS S3 配置
-INSERT INTO `t_storage_config` (`storage_id`, `name`, `storage_type`, `config`, `description`, `is_default`, `is_enabled`)
-VALUES (
-  'storage_s3_default',
-  'AWS S3',
-  's3',
-  JSON_OBJECT(
-    'endpoint', 'https://s3.amazonaws.com',
-    'accessKey', 'YOUR_AWS_ACCESS_KEY',
-    'secretKey', 'YOUR_AWS_SECRET_KEY',
-    'bucket', 'arcade-artifacts',
-    'region', 'us-east-1',
-    'useTLS', true,
-    'basePath', 'ci-artifacts'
-  ),
-  'AWS S3 对象存储',
-  0,
-  0
-) ON DUPLICATE KEY UPDATE `name` = `name`;
-
--- 阿里云 OSS 配置
-INSERT INTO `t_storage_config` (`storage_id`, `name`, `storage_type`, `config`, `description`, `is_default`, `is_enabled`)
-VALUES (
-  'storage_oss_default',
-  'Aliyun OSS',
-  'oss',
-  JSON_OBJECT(
-    'endpoint', 'oss-cn-hangzhou.aliyuncs.com',
-    'accessKey', 'YOUR_OSS_ACCESS_KEY',
-    'secretKey', 'YOUR_OSS_SECRET_KEY',
-    'bucket', 'arcade-artifacts',
-    'region', 'cn-hangzhou',
-    'useTLS', true,
-    'basePath', 'build-artifacts'
-  ),
-  '阿里云 OSS 对象存储',
-  0,
-  0
-) ON DUPLICATE KEY UPDATE `name` = `name`;
-
--- Google Cloud Storage 配置
-INSERT INTO `t_storage_config` (`storage_id`, `name`, `storage_type`, `config`, `description`, `is_default`, `is_enabled`)
-VALUES (
-  'storage_gcs_default',
-  'Google Cloud Storage',
-  'gcs',
-  JSON_OBJECT(
-    'endpoint', 'https://storage.googleapis.com',
-    'accessKey', '/path/to/service-account-key.json',
-    'bucket', 'arcade-artifacts',
-    'region', 'us-central1',
-    'basePath', 'ci-builds'
-  ),
-  'Google Cloud Storage',
-  0,
-  0
-) ON DUPLICATE KEY UPDATE `name` = `name`;
-
--- 腾讯云 COS 配置
-INSERT INTO `t_storage_config` (`storage_id`, `name`, `storage_type`, `config`, `description`, `is_default`, `is_enabled`)
-VALUES (
-  'storage_cos_default',
-  'Tencent COS',
-  'cos',
-  JSON_OBJECT(
-    'endpoint', 'https://cos.ap-guangzhou.myqcloud.com',
-    'accessKey', 'YOUR_COS_SECRET_ID',
-    'secretKey', 'YOUR_COS_SECRET_KEY',
-    'bucket', 'arcade-artifacts',
-    'region', 'ap-guangzhou',
-    'useTLS', true,
-    'basePath', 'pipeline-artifacts'
-  ),
-  '腾讯云 COS 对象存储',
-  0,
-  0
-) ON DUPLICATE KEY UPDATE `name` = `name`;
-
--- 插入示例插件
--- Slack 通知插件
-INSERT INTO `t_plugin` (`plugin_id`, `name`, `version`, `description`, `author`, `plugin_type`, `entry_point`, `config_schema`, `params_schema`, `default_config`, `is_builtin`)
-VALUES (
-  'notify_slack',
-  'Slack Notification',
-  '1.0.0',
-  'Send notifications to Slack channels',
-  'Arcade Team',
-  'notify',
-  'plugins/notify/slack.so',
-  JSON_OBJECT(
-    'type', 'object',
-    'properties', JSON_OBJECT(
-      'webhook_url', JSON_OBJECT('type', 'string', 'description', 'Slack Webhook URL'),
-      'channel', JSON_OBJECT('type', 'string', 'description', 'Target channel'),
-      'username', JSON_OBJECT('type', 'string', 'description', 'Bot username', 'default', 'Arcade CI')
-    ),
-    'required', JSON_ARRAY('webhook_url')
-  ),
-  JSON_OBJECT(
-    'type', 'object',
-    'properties', JSON_OBJECT(
-      'message', JSON_OBJECT('type', 'string', 'description', 'Custom message'),
-      'mention_users', JSON_OBJECT('type', 'array', 'items', JSON_OBJECT('type', 'string'))
-    )
-  ),
-  JSON_OBJECT(
-    'username', 'Arcade CI',
-    'icon_emoji', ':rocket:'
-  ),
-  1
-) ON DUPLICATE KEY UPDATE `version` = `version`;
-
--- Email 通知插件
-INSERT INTO `t_plugin` (`plugin_id`, `name`, `version`, `description`, `author`, `plugin_type`, `entry_point`, `config_schema`, `params_schema`, `default_config`, `is_builtin`)
-VALUES (
-  'notify_email',
-  'Email Notification',
-  '1.0.0',
-  'Send email notifications',
-  'Arcade Team',
-  'notify',
-  'plugins/notify/email.so',
-  JSON_OBJECT(
-    'type', 'object',
-    'properties', JSON_OBJECT(
-      'smtp_host', JSON_OBJECT('type', 'string', 'description', 'SMTP server host'),
-      'smtp_port', JSON_OBJECT('type', 'integer', 'description', 'SMTP server port'),
-      'smtp_user', JSON_OBJECT('type', 'string', 'description', 'SMTP username'),
-      'smtp_password', JSON_OBJECT('type', 'string', 'description', 'SMTP password'),
-      'from_address', JSON_OBJECT('type', 'string', 'description', 'From email address')
-    ),
-    'required', JSON_ARRAY('smtp_host', 'smtp_port', 'from_address')
-  ),
-  JSON_OBJECT(
-    'type', 'object',
-    'properties', JSON_OBJECT(
-      'to', JSON_OBJECT('type', 'array', 'items', JSON_OBJECT('type', 'string')),
-      'subject', JSON_OBJECT('type', 'string', 'description', 'Email subject'),
-      'body', JSON_OBJECT('type', 'string', 'description', 'Email body')
-    ),
-    'required', JSON_ARRAY('to')
-  ),
-  JSON_OBJECT(
-    'smtp_port', 587
-  ),
-  1
-) ON DUPLICATE KEY UPDATE `version` = `version`;
-
--- Docker 构建插件
-INSERT INTO `t_plugin` (`plugin_id`, `name`, `version`, `description`, `author`, `plugin_type`, `entry_point`, `config_schema`, `params_schema`, `is_builtin`)
-VALUES (
-  'build_docker',
-  'Docker Build',
-  '1.0.0',
-  'Build and push Docker images',
-  'Arcade Team',
-  'build',
-  'plugins/build/docker.so',
-  JSON_OBJECT(
-    'type', 'object',
-    'properties', JSON_OBJECT(
-      'registry', JSON_OBJECT('type', 'string', 'description', 'Docker registry URL'),
-      'username', JSON_OBJECT('type', 'string', 'description', 'Registry username'),
-      'password', JSON_OBJECT('type', 'string', 'description', 'Registry password')
-    )
-  ),
-  JSON_OBJECT(
-    'type', 'object',
-    'properties', JSON_OBJECT(
-      'dockerfile', JSON_OBJECT('type', 'string', 'description', 'Dockerfile path', 'default', 'Dockerfile'),
-      'context', JSON_OBJECT('type', 'string', 'description', 'Build context', 'default', '.'),
-      'tags', JSON_OBJECT('type', 'array', 'items', JSON_OBJECT('type', 'string')),
-      'build_args', JSON_OBJECT('type', 'object', 'description', 'Build arguments'),
-      'push', JSON_OBJECT('type', 'boolean', 'description', 'Push after build', 'default', true)
-    ),
-    'required', JSON_ARRAY('tags')
-  ),
-  1
-) ON DUPLICATE KEY UPDATE `version` = `version`;
-
--- 钉钉通知插件
-INSERT INTO `t_plugin` (`plugin_id`, `name`, `version`, `description`, `author`, `plugin_type`, `entry_point`, `config_schema`, `params_schema`, `is_builtin`)
-VALUES (
-  'notify_dingtalk',
-  'DingTalk Notification',
-  '1.0.0',
-  'Send notifications to DingTalk群',
-  'Arcade Team',
-  'notify',
-  'plugins/notify/dingtalk.so',
-  JSON_OBJECT(
-    'type', 'object',
-    'properties', JSON_OBJECT(
-      'webhook_url', JSON_OBJECT('type', 'string', 'description', 'DingTalk Webhook URL'),
-      'secret', JSON_OBJECT('type', 'string', 'description', 'Webhook secret for signature')
-    ),
-    'required', JSON_ARRAY('webhook_url')
-  ),
-  JSON_OBJECT(
-    'type', 'object',
-    'properties', JSON_OBJECT(
-      'message', JSON_OBJECT('type', 'string', 'description', 'Custom message'),
-      'at_mobiles', JSON_OBJECT('type', 'array', 'items', JSON_OBJECT('type', 'string')),
-      'at_all', JSON_OBJECT('type', 'boolean', 'description', '@所有人', 'default', false)
-    )
-  ),
-  1
-) ON DUPLICATE KEY UPDATE `version` = `version`;
-
--- Kubernetes 部署插件
-INSERT INTO `t_plugin` (`plugin_id`, `name`, `version`, `description`, `author`, `plugin_type`, `entry_point`, `config_schema`, `params_schema`, `is_builtin`)
-VALUES (
-  'deploy_kubernetes',
-  'Kubernetes Deploy',
-  '1.0.0',
-  'Deploy applications to Kubernetes',
-  'Arcade Team',
-  'deploy',
-  'plugins/deploy/kubernetes.so',
-  JSON_OBJECT(
-    'type', 'object',
-    'properties', JSON_OBJECT(
-      'kubeconfig', JSON_OBJECT('type', 'string', 'description', 'Kubeconfig file path or content'),
-      'context', JSON_OBJECT('type', 'string', 'description', 'Kubernetes context name')
-    ),
-    'required', JSON_ARRAY('kubeconfig')
-  ),
-  JSON_OBJECT(
-    'type', 'object',
-    'properties', JSON_OBJECT(
-      'namespace', JSON_OBJECT('type', 'string', 'description', 'Target namespace', 'default', 'default'),
-      'manifests', JSON_OBJECT('type', 'array', 'items', JSON_OBJECT('type', 'string'), 'description', 'YAML manifest files'),
-      'wait', JSON_OBJECT('type', 'boolean', 'description', 'Wait for deployment', 'default', true),
-      'timeout', JSON_OBJECT('type', 'integer', 'description', 'Timeout in seconds', 'default', 300)
-    ),
-    'required', JSON_ARRAY('manifests')
-  ),
-  1
-) ON DUPLICATE KEY UPDATE `version` = `version`;
-
--- 插入插件权限配置
--- Slack 插件权限
-INSERT INTO `t_plugin_permission` (`plugin_id`, `permission_type`, `resource`, `action`, `is_allowed`)
-VALUES
-  ('notify_slack', 'network', 'https://hooks.slack.com', 'write', 1),
-  ('notify_slack', 'file_system', '/tmp/slack_cache', 'write', 1)
-ON DUPLICATE KEY UPDATE `is_allowed` = `is_allowed`;
-
--- Email 插件权限
-INSERT INTO `t_plugin_permission` (`plugin_id`, `permission_type`, `resource`, `action`, `is_allowed`)
-VALUES
-  ('notify_email', 'network', '*:587', 'write', 1),
-  ('notify_email', 'network', '*:465', 'write', 1)
-ON DUPLICATE KEY UPDATE `is_allowed` = `is_allowed`;
-
--- Docker 插件权限
-INSERT INTO `t_plugin_permission` (`plugin_id`, `permission_type`, `resource`, `action`, `is_allowed`)
-VALUES
-  ('build_docker', 'process', '/usr/bin/docker', 'execute', 1),
-  ('build_docker', 'network', '*', 'write', 1),
-  ('build_docker', 'file_system', '/var/run/docker.sock', 'read', 1),
-  ('build_docker', 'file_system', '/tmp/docker_build', 'write', 1)
-ON DUPLICATE KEY UPDATE `is_allowed` = `is_allowed`;
-
--- DingTalk 插件权限
-INSERT INTO `t_plugin_permission` (`plugin_id`, `permission_type`, `resource`, `action`, `is_allowed`)
-VALUES
-  ('notify_dingtalk', 'network', 'https://oapi.dingtalk.com', 'write', 1)
-ON DUPLICATE KEY UPDATE `is_allowed` = `is_allowed`;
-
--- Kubernetes 插件权限
-INSERT INTO `t_plugin_permission` (`plugin_id`, `permission_type`, `resource`, `action`, `is_allowed`)
-VALUES
-  ('deploy_kubernetes', 'process', '/usr/bin/kubectl', 'execute', 1),
-  ('deploy_kubernetes', 'network', '*:443', 'write', 1),
-  ('deploy_kubernetes', 'file_system', '/tmp/k8s_manifests', 'read', 1)
-ON DUPLICATE KEY UPDATE `is_allowed` = `is_allowed`;
-
--- 插入插件资源配额
-INSERT INTO `t_plugin_quota` (`plugin_id`, `max_cpu_percent`, `max_memory_mb`, `max_execution_time`, `max_network_mbps`)
-VALUES
-  ('notify_slack', 10, 64, 30, 1),
-  ('notify_email', 10, 64, 60, 1),
-  ('build_docker', 80, 2048, 1800, 50),
-  ('notify_dingtalk', 10, 64, 30, 1),
-  ('deploy_kubernetes', 50, 512, 600, 10)
-ON DUPLICATE KEY UPDATE `max_cpu_percent` = `max_cpu_percent`;
-
--- 插入官方插件来源
-INSERT INTO `t_plugin_source` (`source_id`, `name`, `source_type`, `repository`, `is_trusted`)
+-- 插入组织成员
+INSERT INTO `t_organization_member` (`org_id`, `user_id`, `role`, `username`, `email`, `status`)
 VALUES 
-  ('source_arcade_official', 'Arcade Official', 'official', 'https://github.com/observabil/arcade-plugins', 1),
-  ('source_community', 'Community', 'community', 'https://plugins.arcade.io', 0)
+  ('org_default', 'user_admin', 'owner', 'admin', 'admin@example.com', 1)
+ON DUPLICATE KEY UPDATE `role` = `role`;
+
+-- 插入示例团队
+INSERT INTO `t_team` (
+  `team_id`,
+  `org_id`,
+  `name`,
+  `display_name`,
+  `description`,
+  `parent_team_id`,
+  `path`,
+  `level`,
+  `settings`,
+  `visibility`
+) VALUES (
+  'team_dev',
+  'org_default',
+  'development',
+  '开发团队',
+  '负责产品研发的核心团队',
+  NULL,
+  '/development',
+  1,
+  JSON_OBJECT(
+    'default_role', 'developer',
+    'allow_member_invite', false,
+    'require_approval', true,
+    'max_members', 50
+  ),
+  1
+),
+(
+  'team_ops',
+  'org_default',
+  'operations',
+  '运维团队',
+  '负责系统运维和基础设施管理',
+  NULL,
+  '/operations',
+  1,
+  JSON_OBJECT(
+    'default_role', 'developer',
+    'allow_member_invite', false,
+    'require_approval', true,
+    'max_members', 30
+  ),
+  1
+)
 ON DUPLICATE KEY UPDATE `name` = `name`;
 
--- 插入示例 Agent 配置（Agent注册时自动创建）
--- 每个 Agent 一条记录，所有配置在 config_items JSON 中
+-- 插入团队成员
+INSERT INTO `t_team_member` (`team_id`, `user_id`, `role`, `username`)
+VALUES 
+  ('team_dev', 'user_admin', 'owner', 'admin'),
+  ('team_ops', 'user_admin', 'maintainer', 'admin')
+ON DUPLICATE KEY UPDATE `role` = `role`;
+
+-- 插入示例项目
+INSERT INTO `t_project` (
+  `project_id`,
+  `org_id`, 
+  `name`, 
+  `display_name`,
+  `namespace`, 
+  `description`, 
+  `repo_url`, 
+  `repo_type`, 
+  `default_branch`, 
+  `auth_type`,
+  `trigger_mode`,
+  `build_config`,
+  `env_vars`,
+  `settings`,
+  `tags`,
+  `language`,
+  `framework`,
+  `status`,
+  `visibility`,
+  `access_level`,
+  `created_by`
+) VALUES (
+  'proj_demo',
+  'org_default',
+  'demo-project',
+  '演示项目',
+  'default-org/demo-project',
+  '这是一个示例项目，用于演示 Arcade CI/CD 平台的功能',
+  'https://github.com/example/demo-project.git',
+  'github',
+  'main',
+  2,
+  7,
+  JSON_OBJECT(
+    'dockerfile', 'Dockerfile',
+    'build_context', '.',
+    'cache_enabled', true,
+    'test_enabled', true,
+    'lint_enabled', true,
+    'scan_enabled', false,
+    'artifact_paths', JSON_ARRAY('dist/', 'build/'),
+    'artifact_expire', 30
+  ),
+  JSON_OBJECT(
+    'NODE_ENV', 'production',
+    'APP_NAME', 'Demo App'
+  ),
+  JSON_OBJECT(
+    'auto_cancel', true,
+    'timeout', 3600,
+    'max_concurrent', 3,
+    'retry_count', 1,
+    'notify_on_success', false,
+    'notify_on_failure', true,
+    'clean_workspace', true,
+    'allowed_branches', JSON_ARRAY('main', 'develop', 'release/*'),
+    'badge_enabled', true
+  ),
+  'demo,example,ci-cd',
+  'Go',
+  'Gin',
+  1,
+  1,
+  'team',
+  'user_admin'
+) ON DUPLICATE KEY UPDATE `name` = `name`;
+
+-- 插入项目成员
+INSERT INTO `t_project_member` (`project_id`, `user_id`, `role`, `username`, `source`)
+VALUES 
+  ('proj_demo', 'user_admin', 'owner', 'admin', 'direct')
+ON DUPLICATE KEY UPDATE `role` = `role`;
+
+-- 插入项目团队关联
+INSERT INTO `t_project_team_relation` (`project_id`, `team_id`, `access`)
+VALUES 
+  ('proj_demo', 'team_dev', 'admin')
+ON DUPLICATE KEY UPDATE `access` = `access`;
+
+-- 插入项目变量
+INSERT INTO `t_project_variable` (`variable_id`, `project_id`, `key`, `value`, `type`, `protected`, `masked`, `description`)
+VALUES 
+  ('var_001', 'proj_demo', 'DATABASE_URL', 'mysql://user:pass@localhost:3306/db', 'secret', 1, 1, '数据库连接URL'),
+  ('var_002', 'proj_demo', 'API_KEY', 'your-api-key-here', 'secret', 1, 1, 'API密钥'),
+  ('var_003', 'proj_demo', 'BUILD_ENV', 'production', 'env', 0, 0, '构建环境')
+ON DUPLICATE KEY UPDATE `key` = `key`;
+
+-- 插入示例 Agent 配置
 INSERT INTO `t_agent_config` (`agent_id`, `config_items`, `description`)
 VALUES (
   'agent_001',
@@ -1031,3 +999,19 @@ VALUES (
   ),
   'Agent 001 默认配置'
 ) ON DUPLICATE KEY UPDATE `config_items` = `config_items`;
+
+-- 插入官方插件来源
+INSERT INTO `t_plugin_source` (`source_id`, `name`, `source_type`, `repository`, `is_trusted`)
+VALUES 
+  ('source_arcade_official', 'Arcade Official', 'official', 'https://github.com/observabil/arcade-plugins', 1),
+  ('source_community', 'Community', 'community', 'https://plugins.arcade.io', 0)
+ON DUPLICATE KEY UPDATE `name` = `name`;
+
+-- ================================================================
+-- 说明文档
+-- ================================================================
+
+-- 注意: 
+-- 1. MongoDB 日志表请参考 docs/init_mongodb.js
+-- 2. SSO 提供者、对象存储、插件等详细配置请参考原 database_schema.sql
+-- 3. 执行此脚本前请确保数据库为空或备份现有数据

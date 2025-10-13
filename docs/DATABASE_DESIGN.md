@@ -220,9 +220,364 @@ Agent 特定的配置项（每个Agent一条记录）。
 - `cache_dir` - 缓存目录
 - `cleanup_policy` - 清理策略(JSON)
 
-### 3. 流水线和任务管理模块
+### 3. 组织和团队管理模块
 
-#### 3.1 流水线定义表 (t_pipeline)
+#### 3.1 组织表 (t_organization)
+
+多租户组织管理，支持企业级权限控制。
+
+| 字段名 | 类型 | 说明 | 索引 |
+|--------|------|------|------|
+| id | INT | 主键ID | PK |
+| org_id | VARCHAR(64) | 组织唯一标识 | UK |
+| name | VARCHAR(128) | 组织名称(英文标识) | UK |
+| display_name | VARCHAR(255) | 组织显示名称 | |
+| description | TEXT | 组织描述 | |
+| logo | VARCHAR(512) | 组织Logo URL | |
+| website | VARCHAR(512) | 组织官网 | |
+| email | VARCHAR(128) | 组织联系邮箱 | |
+| phone | VARCHAR(32) | 组织联系电话 | |
+| address | VARCHAR(512) | 组织地址 | |
+| settings | JSON | 组织设置 | |
+| plan | VARCHAR(32) | 订阅计划 | IDX |
+| status | TINYINT | 组织状态 | IDX |
+| owner_user_id | VARCHAR(64) | 组织所有者用户ID | IDX |
+| is_enabled | TINYINT | 是否启用 | |
+| total_members | INT | 成员总数 | |
+| total_teams | INT | 团队总数 | |
+| total_projects | INT | 项目总数 | |
+
+**订阅计划**:
+- free - 免费版(基础功能)
+- pro - 专业版(高级功能)
+- enterprise - 企业版(完整功能+支持)
+
+**组织状态枚举**:
+- 0: INACTIVE - 未激活
+- 1: ACTIVE - 正常
+- 2: FROZEN - 冻结
+- 3: DELETED - 已删除
+
+**settings JSON结构**:
+```json
+{
+  "allow_public_projects": true,
+  "require_two_factor": false,
+  "allowed_domains": ["example.com"],
+  "max_members": 100,
+  "max_projects": 50,
+  "max_teams": 20,
+  "max_agents": 10,
+  "default_visibility": "private",
+  "enable_saml": false,
+  "enable_ldap": false
+}
+```
+
+#### 3.2 组织成员表 (t_organization_member)
+
+组织成员及角色管理。
+
+| 字段名 | 类型 | 说明 | 索引 |
+|--------|------|------|------|
+| id | INT | 主键ID | PK |
+| org_id | VARCHAR(64) | 组织ID | IDX |
+| user_id | VARCHAR(64) | 用户ID | IDX |
+| role | VARCHAR(32) | 组织角色 | IDX |
+| username | VARCHAR(64) | 用户名(冗余) | |
+| email | VARCHAR(128) | 邮箱(冗余) | |
+| invited_by | VARCHAR(64) | 邀请人用户ID | |
+| status | TINYINT | 状态 | IDX |
+
+**组织成员角色**:
+- owner - 所有者(最高权限,可删除组织)
+- admin - 管理员(管理组织、成员、团队、项目)
+- member - 普通成员(基础访问权限)
+
+**成员状态**:
+- 0: PENDING - 待接受
+- 1: ACTIVE - 正常
+- 2: DISABLED - 禁用
+
+#### 3.3 团队表 (t_team)
+
+团队管理，支持层级嵌套。
+
+| 字段名 | 类型 | 说明 | 索引 |
+|--------|------|------|------|
+| id | INT | 主键ID | PK |
+| team_id | VARCHAR(64) | 团队唯一标识 | UK |
+| org_id | VARCHAR(64) | 所属组织ID | IDX |
+| name | VARCHAR(128) | 团队名称(英文标识) | |
+| display_name | VARCHAR(255) | 团队显示名称 | |
+| description | TEXT | 团队描述 | |
+| avatar | VARCHAR(512) | 团队头像 | |
+| parent_team_id | VARCHAR(64) | 父团队ID | IDX |
+| path | VARCHAR(512) | 团队路径 | IDX |
+| level | INT | 团队层级 | |
+| settings | JSON | 团队设置 | |
+| visibility | TINYINT | 可见性 | IDX |
+| is_enabled | TINYINT | 是否启用 | |
+| total_members | INT | 成员总数 | |
+| total_projects | INT | 项目总数 | |
+
+**团队可见性枚举**:
+- 0: PRIVATE - 私有(仅成员可见)
+- 1: INTERNAL - 内部(组织内可见)
+- 2: PUBLIC - 公开(所有人可见)
+
+**settings JSON结构**:
+```json
+{
+  "default_role": "developer",
+  "allow_member_invite": false,
+  "require_approval": true,
+  "max_members": 50
+}
+```
+
+#### 3.4 团队成员表 (t_team_member)
+
+团队成员及权限管理。
+
+| 字段名 | 类型 | 说明 | 索引 |
+|--------|------|------|------|
+| id | INT | 主键ID | PK |
+| team_id | VARCHAR(64) | 团队ID | IDX |
+| user_id | VARCHAR(64) | 用户ID | IDX |
+| role | VARCHAR(32) | 团队角色 | IDX |
+| username | VARCHAR(64) | 用户名(冗余) | |
+| invited_by | VARCHAR(64) | 邀请人用户ID | |
+
+**团队成员角色**:
+- owner - 所有者(完全控制团队)
+- maintainer - 维护者(管理团队成员和项目)
+- developer - 开发者(参与开发)
+- reporter - 报告者(报告问题)
+- guest - 访客(仅查看)
+
+#### 3.5 项目团队关联表 (t_project_team_relation)
+
+项目与团队的关联关系。
+
+| 字段名 | 类型 | 说明 | 索引 |
+|--------|------|------|------|
+| id | INT | 主键ID | PK |
+| project_id | VARCHAR(64) | 项目ID | IDX |
+| team_id | VARCHAR(64) | 团队ID | IDX |
+| access | VARCHAR(32) | 访问权限 | |
+
+**访问权限**:
+- read - 只读(查看代码和构建)
+- write - 读写(提交代码、触发构建)
+- admin - 管理员(完全控制项目)
+
+#### 3.6 组织邀请表 (t_organization_invitation)
+
+组织成员邀请管理。
+
+| 字段名 | 类型 | 说明 | 索引 |
+|--------|------|------|------|
+| id | INT | 主键ID | PK |
+| invitation_id | VARCHAR(64) | 邀请唯一标识 | UK |
+| org_id | VARCHAR(64) | 组织ID | IDX |
+| email | VARCHAR(128) | 被邀请人邮箱 | IDX |
+| role | VARCHAR(32) | 角色 | |
+| token | VARCHAR(255) | 邀请令牌 | UK |
+| invited_by | VARCHAR(64) | 邀请人用户ID | |
+| status | TINYINT | 状态 | IDX |
+| expires_at | DATETIME | 过期时间 | IDX |
+
+**邀请状态**:
+- 0: PENDING - 待接受
+- 1: ACCEPTED - 已接受
+- 2: REJECTED - 已拒绝
+- 3: EXPIRED - 已过期
+
+### 4. 项目管理模块
+
+#### 4.1 项目表 (t_project)
+
+项目定义，包含代码仓库信息、触发配置等。
+
+| 字段名 | 类型 | 说明 | 索引 |
+|--------|------|------|------|
+| id | INT | 主键ID | PK |
+| project_id | VARCHAR(64) | 项目唯一标识 | UK |
+| org_id | VARCHAR(64) | 所属组织ID | IDX |
+| name | VARCHAR(128) | 项目名称(英文标识) | UK |
+| display_name | VARCHAR(255) | 项目显示名称 | |
+| namespace | VARCHAR(255) | 项目命名空间 | UK |
+| description | TEXT | 项目描述 | |
+| repo_url | VARCHAR(512) | 代码仓库URL | |
+| repo_type | VARCHAR(32) | 仓库类型 | IDX |
+| default_branch | VARCHAR(128) | 默认分支 | |
+| auth_type | TINYINT | 认证类型 | |
+| credential | TEXT | 认证凭证(加密) | |
+| trigger_mode | INT | 触发模式(位掩码) | |
+| webhook_secret | VARCHAR(255) | Webhook密钥 | |
+| cron_expr | VARCHAR(128) | Cron表达式 | |
+| build_config | JSON | 构建配置 | |
+| env_vars | JSON | 环境变量 | |
+| settings | JSON | 项目设置 | |
+| tags | VARCHAR(512) | 项目标签 | |
+| language | VARCHAR(64) | 主要编程语言 | |
+| framework | VARCHAR(128) | 使用的框架 | |
+| status | TINYINT | 项目状态 | IDX |
+| visibility | TINYINT | 可见性 | IDX |
+| group_id | VARCHAR(64) | 所属用户组ID | IDX |
+| created_by | VARCHAR(64) | 创建者用户ID | IDX |
+| is_enabled | TINYINT | 是否启用 | IDX |
+| icon | VARCHAR(512) | 项目图标URL | |
+| homepage | VARCHAR(512) | 项目主页 | |
+| total_pipelines | INT | 流水线总数 | |
+| total_builds | INT | 构建总次数 | |
+| success_builds | INT | 成功构建次数 | |
+| failed_builds | INT | 失败构建次数 | |
+
+**触发模式枚举(位掩码)**:
+- 1: MANUAL - 手动触发
+- 2: WEBHOOK - Webhook触发
+- 4: SCHEDULE - 定时触发
+- 8: PUSH - Push触发
+- 16: MR - Merge Request触发
+- 32: TAG - Tag触发
+
+可组合使用，例如: 7 (1+2+4) = 手动 + Webhook + 定时
+
+**认证类型枚举**:
+- 0: NONE - 无认证(公开仓库)
+- 1: PASSWORD - 用户名密码
+- 2: TOKEN - Token/PAT
+- 3: SSH_KEY - SSH密钥
+
+**仓库类型**:
+- git - 通用Git仓库
+- github - GitHub
+- gitlab - GitLab
+- gitee - Gitee码云
+- svn - SVN
+
+**项目状态枚举**:
+- 0: INACTIVE - 未激活
+- 1: ACTIVE - 正常
+- 2: ARCHIVED - 归档
+- 3: DISABLED - 禁用
+
+**可见性枚举**:
+- 0: PRIVATE - 私有(仅成员可见)
+- 1: INTERNAL - 内部(登录用户可见)
+- 2: PUBLIC - 公开(所有人可见)
+
+**build_config JSON结构**:
+```json
+{
+  "dockerfile": "Dockerfile",
+  "build_context": ".",
+  "build_args": {
+    "VERSION": "1.0.0"
+  },
+  "cache_enabled": true,
+  "test_enabled": true,
+  "lint_enabled": true,
+  "scan_enabled": false,
+  "artifact_paths": ["dist/", "build/"],
+  "artifact_expire": 30
+}
+```
+
+**settings JSON结构**:
+```json
+{
+  "auto_cancel": true,
+  "timeout": 3600,
+  "max_concurrent": 3,
+  "retry_count": 1,
+  "notify_on_success": false,
+  "notify_on_failure": true,
+  "clean_workspace": true,
+  "allowed_branches": ["main", "develop"],
+  "ignored_branches": ["temp/*"],
+  "allowed_paths": ["src/**"],
+  "ignored_paths": ["docs/**", "*.md"],
+  "badge_enabled": true
+}
+```
+
+#### 3.2 项目成员表 (t_project_member)
+
+项目成员及权限管理（直接添加的用户）。
+
+| 字段名 | 类型 | 说明 | 索引 |
+|--------|------|------|------|
+| id | INT | 主键ID | PK |
+| project_id | VARCHAR(64) | 项目ID | IDX |
+| user_id | VARCHAR(64) | 用户ID | IDX |
+| role | VARCHAR(32) | 成员角色 | IDX |
+| username | VARCHAR(64) | 用户名(冗余) | |
+| source | VARCHAR(32) | 来源 | |
+
+**成员角色**:
+- owner - 所有者(完全控制)
+- maintainer - 维护者(管理项目、成员)
+- developer - 开发者(创建分支、提交代码)
+- reporter - 报告者(创建问题、查看)
+- guest - 访客(仅查看)
+
+**成员来源**:
+- direct - 直接添加到项目
+- team - 通过团队获得权限
+- org - 通过组织获得权限
+
+> 注：项目实际权限由 `直接成员` + `团队成员` + `组织成员` 共同决定
+
+#### 3.3 项目Webhook表 (t_project_webhook)
+
+项目级Webhook配置。
+
+| 字段名 | 类型 | 说明 | 索引 |
+|--------|------|------|------|
+| id | INT | 主键ID | PK |
+| webhook_id | VARCHAR(64) | Webhook唯一标识 | UK |
+| project_id | VARCHAR(64) | 项目ID | IDX |
+| name | VARCHAR(128) | Webhook名称 | |
+| url | VARCHAR(512) | Webhook URL | |
+| secret | VARCHAR(255) | 密钥 | |
+| events | JSON | 触发事件列表 | |
+| is_enabled | TINYINT | 是否启用 | IDX |
+| description | VARCHAR(512) | 描述 | |
+
+**触发事件**:
+- push - 代码推送
+- pull_request - PR/MR
+- tag - 标签创建
+- issue - 问题
+- release - 发布
+
+#### 3.4 项目变量表 (t_project_variable)
+
+项目级环境变量和密钥管理。
+
+| 字段名 | 类型 | 说明 | 索引 |
+|--------|------|------|------|
+| id | INT | 主键ID | PK |
+| variable_id | VARCHAR(64) | 变量唯一标识 | UK |
+| project_id | VARCHAR(64) | 项目ID | IDX |
+| key | VARCHAR(255) | 变量键 | |
+| value | TEXT | 变量值(加密) | |
+| type | VARCHAR(32) | 变量类型 | IDX |
+| protected | TINYINT | 是否保护 | |
+| masked | TINYINT | 是否掩码 | |
+| description | VARCHAR(512) | 描述 | |
+
+**变量类型**:
+- env - 环境变量
+- secret - 密钥(敏感信息)
+- file - 文件内容
+
+### 4. 流水线和任务管理模块
+
+#### 4.1 流水线定义表 (t_pipeline)
 
 流水线配置信息。
 
@@ -230,6 +585,7 @@ Agent 特定的配置项（每个Agent一条记录）。
 |--------|------|------|------|
 | id | INT | 主键ID | PK |
 | pipeline_id | VARCHAR(64) | 流水线唯一标识 | UK |
+| project_id | VARCHAR(64) | 所属项目ID | IDX |
 | name | VARCHAR(255) | 流水线名称 | IDX |
 | description | TEXT | 流水线描述 | |
 | repo_url | VARCHAR(512) | 代码仓库URL | |
@@ -250,7 +606,7 @@ Agent 特定的配置项（每个Agent一条记录）。
 - 3: SCHEDULE - 定时触发
 - 4: API - API触发
 
-#### 3.2 流水线执行记录表 (t_pipeline_run)
+#### 4.2 流水线执行记录表 (t_pipeline_run)
 
 流水线每次执行的记录。
 
@@ -276,7 +632,7 @@ Agent 特定的配置项（每个Agent一条记录）。
 | end_time | DATETIME | 结束时间 | |
 | duration | BIGINT | 执行时长(毫秒) | |
 
-#### 3.3 流水线阶段表 (t_pipeline_stage)
+#### 4.3 流水线阶段表 (t_pipeline_stage)
 
 流水线的阶段配置。
 
@@ -289,7 +645,7 @@ Agent 特定的配置项（每个Agent一条记录）。
 | stage_order | INT | 阶段顺序 | IDX |
 | parallel | TINYINT | 是否并行执行 | |
 
-#### 3.4 任务表 (t_job)
+#### 4.4 任务表 (t_job)
 
 任务详细信息和执行状态。
 
@@ -333,7 +689,7 @@ Agent 特定的配置项（每个Agent一条记录）。
 - 7: TIMEOUT - 超时
 - 8: SKIPPED - 已跳过
 
-#### 3.5 任务产物表 (t_job_artifact)
+#### 4.5 任务产物表 (t_job_artifact)
 
 任务产生的构建产物。
 
@@ -360,9 +716,9 @@ Agent 特定的配置项（每个Agent一条记录）。
 - gcs (Google Cloud)
 - cos (腾讯云)
 
-### 4. 日志和事件模块
+### 5. 日志和事件模块
 
-#### 4.1 任务日志 (MongoDB)
+#### 5.1 任务日志 (MongoDB)
 
 任务执行日志存储在 MongoDB 中以提高性能。
 
@@ -380,7 +736,7 @@ Agent 特定的配置项（每个Agent一条记录）。
 }
 ```
 
-#### 4.2 系统事件表 (t_system_event)
+#### 5.2 系统事件表 (t_system_event)
 
 记录系统重要事件。
 
@@ -407,9 +763,9 @@ Agent 特定的配置项（每个Agent一条记录）。
 - 7: PIPELINE_COMPLETED - 流水线完成
 - 8: PIPELINE_FAILED - 流水线失败
 
-### 5. 配置管理模块
+### 6. 配置管理模块
 
-#### 5.1 对象存储配置表 (t_storage_config)
+#### 6.1 对象存储配置表 (t_storage_config)
 
 对象存储配置管理，支持多种存储后端。
 
@@ -457,7 +813,7 @@ GCS:
 }
 ```
 
-#### 5.2 系统配置表 (t_system_config)
+#### 6.2 系统配置表 (t_system_config)
 
 系统级配置项。
 
@@ -470,7 +826,7 @@ GCS:
 | description | VARCHAR(512) | 配置描述 | |
 | is_encrypted | TINYINT | 是否加密 | |
 
-#### 5.3 密钥管理表 (t_secret)
+#### 6.3 密钥管理表 (t_secret)
 
 敏感信息管理。
 
@@ -497,9 +853,9 @@ GCS:
 - pipeline - 流水线级
 - user - 用户级
 
-### 6. 审计日志模块
+### 7. 审计日志模块
 
-#### 6.1 操作审计日志表 (t_audit_log)
+#### 7.1 操作审计日志表 (t_audit_log)
 
 记录用户操作行为。
 
@@ -526,6 +882,20 @@ GCS:
 t_user ─┬─ t_role_relation ─── t_role
         └─ t_role_relation ─── t_user_group
 
+组织和团队模块:
+t_organization ─┬─ t_organization_member ─── t_user
+                ├─ t_organization_invitation
+                ├─ t_team ─┬─ t_team_member ─── t_user
+                │          └─ t_project_team_relation ─── t_project
+                └─ t_project (一对多)
+
+项目模块:
+t_project ─┬─ t_project_member ─── t_user
+           ├─ t_project_webhook
+           ├─ t_project_variable
+           ├─ t_project_team_relation ─── t_team
+           └─ t_pipeline (一对多)
+
 流水线模块:
 t_pipeline ─┬─ t_pipeline_run ─── t_job ─── t_job_artifact
             └─ t_pipeline_stage
@@ -537,6 +907,45 @@ t_agent ─── t_job (执行关系)
 t_system_event ─── 各资源表
 t_audit_log ─── t_user
 ```
+
+## 权限继承关系
+
+项目的访问权限采用多层继承模型：
+
+```
+组织所有者 (org owner)
+    └─> 拥有组织内所有资源的完全控制权
+
+组织管理员 (org admin)
+    └─> 可以管理组织、创建团队、管理所有项目
+
+组织成员 (org member)
+    └─> 基础访问权限，可以查看公开项目
+
+团队所有者 (team owner)
+    └─> 拥有团队及关联项目的完全控制权
+
+团队维护者 (team maintainer)
+    └─> 可以管理团队成员和关联的项目
+
+团队开发者 (team developer)
+    └─> 可以访问团队关联的项目并进行开发
+
+项目所有者 (project owner)
+    └─> 拥有项目的完全控制权
+
+项目成员 (project member)
+    └─> 根据分配的角色拥有对应权限
+```
+
+**权限计算规则**:
+1. 用户的最终权限 = MAX(直接项目权限, 团队继承权限, 组织继承权限)
+2. 组织所有者和管理员拥有组织内所有项目的管理权限
+3. 团队成员通过团队关联获得项目访问权限
+4. 项目可以设置 `access_level` 控制默认访问范围
+   - owner: 仅项目所有者可访问
+   - team: 关联团队成员可访问（默认）
+   - org: 组织所有成员可访问
 
 ## 索引策略
 
