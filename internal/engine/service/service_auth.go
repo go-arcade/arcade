@@ -14,11 +14,11 @@ import (
 )
 
 type AuthService struct {
-	authRepo *repo.AuthRepo
+	authRepo *repo.SSORepo
 	userRepo *repo.UserRepo
 }
 
-func NewAuthService(authRepo *repo.AuthRepo, userRepo *repo.UserRepo) *AuthService {
+func NewAuthService(authRepo *repo.SSORepo, userRepo *repo.UserRepo) *AuthService {
 	return &AuthService{
 		authRepo: authRepo,
 		userRepo: userRepo,
@@ -27,18 +27,18 @@ func NewAuthService(authRepo *repo.AuthRepo, userRepo *repo.UserRepo) *AuthServi
 
 func (as *AuthService) Oauth(providerName string) (string, error) {
 
-	providerInfo, err := as.authRepo.GetOauthProvider(providerName)
+	oauthConf, err := as.authRepo.GetOauthProvider(providerName)
 	if err != nil {
 		log.Errorf("failed to get oauth provider: %v", err)
 		return "", err
 	}
 
 	oauthConfig := &oauth2.Config{
-		ClientID:     providerInfo.ClientID,
-		ClientSecret: providerInfo.ClientSecret,
-		RedirectURL:  providerInfo.RedirectURL,
-		Scopes:       providerInfo.Scopes,
-		Endpoint:     providerInfo.Endpoint,
+		ClientID:     oauthConf.ClientID,
+		ClientSecret: oauthConf.ClientSecret,
+		RedirectURL:  oauthConf.RedirectURL,
+		Scopes:       oauthConf.Scopes,
+		Endpoint:     oauthConf.Endpoint,
 	}
 
 	if oauthConfig.Endpoint.AuthURL == "" || oauthConfig.Endpoint.TokenURL == "" {
@@ -58,18 +58,18 @@ func (as *AuthService) Callback(providerName, state, code string) (*model.Regist
 		return nil, fmt.Errorf("invalid state parameter")
 	}
 
-	providerInfo, err := as.authRepo.GetOauthProvider(providerName)
+	oauthConf, err := as.authRepo.GetOauthProvider(providerName)
 	if err != nil {
 		log.Errorf("failed to get oauth provider: %v", err)
 		return nil, err
 	}
 
 	oauthConfig := &oauth2.Config{
-		ClientID:     providerInfo.ClientID,
-		ClientSecret: providerInfo.ClientSecret,
-		RedirectURL:  providerInfo.RedirectURL,
-		Scopes:       providerInfo.Scopes,
-		Endpoint:     providerInfo.Endpoint,
+		ClientID:     oauthConf.ClientID,
+		ClientSecret: oauthConf.ClientSecret,
+		RedirectURL:  oauthConf.RedirectURL,
+		Scopes:       oauthConf.Scopes,
+		Endpoint:     oauthConf.Endpoint,
 	}
 
 	token, err := oauthConfig.Exchange(context.Background(), code)
@@ -112,17 +112,17 @@ func (as *AuthService) Callback(providerName, state, code string) (*model.Regist
 	return registerUserInfo, nil
 }
 
-func (as *AuthService) GetOauthProvider(name string) (*model.OauthProviderContent, error) {
+func (as *AuthService) GetOauthProvider(name string) (*model.OAuthConfig, error) {
 
-	authConfig, err := as.authRepo.GetOauthProvider(name)
+	oauthConfig, err := as.authRepo.GetOauthProvider(name)
 	if err != nil {
 		log.Errorf("failed to get oauth provider: %v", err)
 		return nil, err
 	}
-	return authConfig, err
+	return oauthConfig, nil
 }
 
-func (as *AuthService) GetOauthProviderList() ([]model.OauthProvider, error) {
+func (as *AuthService) GetOauthProviderList() ([]model.SSOProvider, error) {
 
 	authConfigs, err := as.authRepo.GetOauthProviderList()
 	return authConfigs, err

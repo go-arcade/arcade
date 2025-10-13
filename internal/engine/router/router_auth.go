@@ -22,7 +22,7 @@ func (rt *Router) authRouter(r fiber.Router, auth fiber.Handler) {
 }
 
 func (rt *Router) oauth(c *fiber.Ctx) error {
-	authRepo := repo.NewAuthRepo(rt.Ctx)
+	authRepo := repo.NewSSORepo(rt.Ctx)
 	userRepo := repo.NewUserRepo(rt.Ctx)
 	authService := service.NewAuthService(authRepo, userRepo)
 
@@ -40,7 +40,7 @@ func (rt *Router) oauth(c *fiber.Ctx) error {
 }
 
 func (rt *Router) callback(c *fiber.Ctx) error {
-	authRepo := repo.NewAuthRepo(rt.Ctx)
+	authRepo := repo.NewSSORepo(rt.Ctx)
 	userRepo := repo.NewUserRepo(rt.Ctx)
 	authService := service.NewAuthService(authRepo, userRepo)
 
@@ -61,7 +61,7 @@ func (rt *Router) callback(c *fiber.Ctx) error {
 }
 
 func (rt *Router) getOauthProvider(c *fiber.Ctx) error {
-	authRepo := repo.NewAuthRepo(rt.Ctx)
+	authRepo := repo.NewSSORepo(rt.Ctx)
 	userRepo := repo.NewUserRepo(rt.Ctx)
 	authService := service.NewAuthService(authRepo, userRepo)
 
@@ -80,7 +80,7 @@ func (rt *Router) getOauthProvider(c *fiber.Ctx) error {
 }
 
 func (rt *Router) getOauthProviderList(c *fiber.Ctx) error {
-	authRepo := repo.NewAuthRepo(rt.Ctx)
+	authRepo := repo.NewSSORepo(rt.Ctx)
 	userRepo := repo.NewUserRepo(rt.Ctx)
 	authService := service.NewAuthService(authRepo, userRepo)
 

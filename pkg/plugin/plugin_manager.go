@@ -2,8 +2,12 @@ package plugin
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"plugin"
@@ -12,6 +16,34 @@ import (
 
 	"github.com/observabil/arcade/pkg/log"
 )
+
+// PluginRepository 插件数据库仓库接口
+type PluginRepository interface {
+	GetEnabledPlugins() ([]PluginModel, error)
+	GetPluginByID(pluginID string) (*PluginModel, error)
+	GetDefaultPluginConfig(pluginID string) (*PluginConfigModel, error)
+}
+
+// PluginModel 插件数据模型（从数据库读取）
+type PluginModel struct {
+	PluginId      string
+	Name          string
+	Version       string
+	PluginType    string
+	EntryPoint    string
+	ConfigSchema  json.RawMessage
+	DefaultConfig json.RawMessage
+	IsEnabled     int
+	InstallPath   string
+	Checksum      string // SHA256 校验和
+}
+
+// PluginConfigModel 插件配置数据模型
+type PluginConfigModel struct {
+	ConfigId    string
+	PluginId    string
+	ConfigItems json.RawMessage
+}
 
 type Manager struct {
 	mu sync.RWMutex
@@ -39,6 +71,9 @@ type Manager struct {
 	// 自动监控器
 	watcher *Watcher
 	ctx     context.Context
+
+	// 数据库插件仓库（可选）
+	pluginRepo PluginRepository
 }
 
 var (
@@ -158,6 +193,109 @@ func (m *Manager) LoadPluginsFromConfig(configPath string) error {
 			return err
 		}
 	}
+	return nil
+}
+
+// SetPluginRepository 设置插件数据库仓库
+func (m *Manager) SetPluginRepository(repo PluginRepository) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.pluginRepo = repo
+}
+
+// LoadPluginsFromDatabase 从数据库加载插件
+func (m *Manager) LoadPluginsFromDatabase() error {
+	if m.pluginRepo == nil {
+		return fmt.Errorf("plugin repository not set")
+	}
+
+	// 从数据库获取所有启用的插件
+	plugins, err := m.pluginRepo.GetEnabledPlugins()
+	if err != nil {
+		return fmt.Errorf("failed to get plugins from database: %w", err)
+	}
+
+	log.Infof("loading %d plugins from database", len(plugins))
+
+	var loadErrors []string
+	successCount := 0
+
+	// 获取程序运行目录
+	workDir, err := os.Getwd()
+	if err != nil {
+		log.Warnf("failed to get working directory: %v", err)
+		workDir = "."
+	}
+
+	for _, dbPlugin := range plugins {
+		// 使用 install_path 或 entry_point 作为插件文件路径
+		pluginPath := dbPlugin.InstallPath
+		if pluginPath == "" {
+			pluginPath = dbPlugin.EntryPoint
+		}
+
+		// 将相对路径转换为基于程序运行目录的绝对路径
+		var absPath string
+		if filepath.IsAbs(pluginPath) {
+			// 如果已经是绝对路径，直接使用
+			absPath = pluginPath
+		} else {
+			// 相对路径，基于程序运行目录
+			absPath = filepath.Join(workDir, pluginPath)
+		}
+
+		// 安全检查：验证插件文件校验和
+		if dbPlugin.Checksum != "" {
+			if err := verifyPluginChecksum(absPath, dbPlugin.Checksum); err != nil {
+				errMsg := fmt.Sprintf("checksum verification failed for plugin %s: %v", dbPlugin.PluginId, err)
+				log.Error(errMsg)
+				loadErrors = append(loadErrors, errMsg)
+				continue
+			}
+			log.Infof("checksum verified for plugin %s", dbPlugin.PluginId)
+		} else {
+			log.Warnf("plugin %s has no checksum, skipping verification (security risk!)", dbPlugin.PluginId)
+		}
+
+		// 构建 PluginConfig
+		pc := PluginConfig{
+			Path:    absPath,
+			Name:    dbPlugin.PluginId, // 使用 plugin_id 作为唯一标识
+			Type:    PluginType(dbPlugin.PluginType),
+			Version: dbPlugin.Version,
+		}
+
+		// 尝试获取默认配置
+		if len(dbPlugin.DefaultConfig) > 0 {
+			var config interface{}
+			if err := json.Unmarshal(dbPlugin.DefaultConfig, &config); err != nil {
+				log.Warnf("failed to unmarshal default config for plugin %s: %v", dbPlugin.PluginId, err)
+			} else {
+				pc.Config = config
+			}
+		}
+
+		// 尝试加载插件
+		if err := m.RegisterFromConfig(pc); err != nil {
+			errMsg := fmt.Sprintf("failed to load plugin %s from %s: %v", dbPlugin.PluginId, absPath, err)
+			log.Warn(errMsg)
+			loadErrors = append(loadErrors, errMsg)
+			continue
+		}
+
+		log.Infof("loaded plugin %s (v%s) from database: %s (relative: %s)", dbPlugin.PluginId, dbPlugin.Version, absPath, pluginPath)
+		successCount++
+	}
+
+	log.Infof("successfully loaded %d/%d plugins from database", successCount, len(plugins))
+
+	if len(loadErrors) > 0 {
+		log.Warnf("failed to load %d plugins:", len(loadErrors))
+		for _, errMsg := range loadErrors {
+			log.Warn("  - " + errMsg)
+		}
+	}
+
 	return nil
 }
 
@@ -495,4 +633,49 @@ func (m *Manager) ReloadPlugin(name string) error {
 // SetContext 设置全局上下文
 func (m *Manager) SetContext(ctx context.Context) {
 	m.ctx = ctx
+}
+
+// verifyPluginChecksum 验证插件文件的SHA256校验和
+func verifyPluginChecksum(pluginPath string, expectedChecksum string) error {
+	if expectedChecksum == "" {
+		return fmt.Errorf("checksum not provided")
+	}
+
+	// 打开插件文件
+	file, err := os.Open(pluginPath)
+	if err != nil {
+		return fmt.Errorf("failed to open plugin file: %w", err)
+	}
+	defer file.Close()
+
+	// 计算 SHA256
+	hash := sha256.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return fmt.Errorf("failed to calculate checksum: %w", err)
+	}
+
+	actualChecksum := hex.EncodeToString(hash.Sum(nil))
+
+	// 比较校验和
+	if actualChecksum != expectedChecksum {
+		return fmt.Errorf("checksum mismatch: expected %s, got %s", expectedChecksum, actualChecksum)
+	}
+
+	return nil
+}
+
+// CalculatePluginChecksum 计算插件文件的SHA256校验和（用于生成checksum）
+func CalculatePluginChecksum(pluginPath string) (string, error) {
+	file, err := os.Open(pluginPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open plugin file: %w", err)
+	}
+	defer file.Close()
+
+	hash := sha256.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return "", fmt.Errorf("failed to calculate checksum: %w", err)
+	}
+
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }
