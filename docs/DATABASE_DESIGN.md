@@ -165,6 +165,61 @@ OIDC:
 - 3: BUSY - 忙碌
 - 4: IDLE - 空闲
 
+#### 2.2 Agent配置表 (t_agent_config)
+
+Agent 特定的配置项（每个Agent一条记录）。
+
+| 字段名 | 类型 | 说明 | 索引 |
+|--------|------|------|------|
+| id | INT | 主键ID | PK |
+| agent_id | VARCHAR(64) | Agent唯一标识 | UK |
+| config_items | JSON | 所有配置项(JSON格式) | |
+| description | VARCHAR(512) | 配置描述 | |
+
+**config_items JSON 结构**:
+```json
+{
+  "heartbeat_interval": 30,
+  "max_concurrent_jobs": 5,
+  "job_timeout": 3600,
+  "workspace_dir": "/var/lib/arcade/workspace",
+  "temp_dir": "/var/lib/arcade/temp",
+  "log_level": "INFO",
+  "enable_docker": true,
+  "docker_network": "bridge",
+  "resource_limits": {
+    "cpu": "2",
+    "memory": "4G"
+  },
+  "allowed_commands": ["docker", "kubectl", "npm", "yarn"],
+  "env_vars": {
+    "PATH": "/usr/local/bin:/usr/bin:/bin"
+  },
+  "cache_dir": "/var/lib/arcade/cache",
+  "cleanup_policy": {
+    "max_age_days": 7,
+    "max_size_gb": 50
+  }
+}
+```
+
+**配置项说明**:
+- `heartbeat_interval` - 心跳间隔(秒)
+- `max_concurrent_jobs` - 最大并发任务数
+- `job_timeout` - 任务超时时间(秒)
+- `workspace_dir` - 工作目录
+- `temp_dir` - 临时目录
+- `log_level` - 日志级别
+- `enable_docker` - 是否启用Docker
+- `docker_network` - Docker网络模式
+- `resource_limits` - 资源限制(JSON)
+- `allowed_commands` - 允许执行的命令白名单(JSON)
+- `env_vars` - 环境变量(JSON)
+- `ssh_key` - SSH私钥(加密)
+- `proxy_url` - 代理地址
+- `cache_dir` - 缓存目录
+- `cleanup_policy` - 清理策略(JSON)
+
 ### 3. 流水线和任务管理模块
 
 #### 3.1 流水线定义表 (t_pipeline)
