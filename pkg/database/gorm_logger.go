@@ -3,17 +3,11 @@ package database
 import (
 	"context"
 	"errors"
+	"time"
+
 	"go.uber.org/zap"
 	"gorm.io/gorm/logger"
-	"time"
 )
-
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/16 13:54
- * @file: gorm_logger.go
- * @description: gorm log
- */
 
 type GormLogger struct {
 	Config logger.Config

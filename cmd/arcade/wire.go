@@ -7,6 +7,7 @@ import (
 	"github.com/google/wire"
 	"github.com/observabil/arcade/internal/app"
 	"github.com/observabil/arcade/internal/engine/conf"
+	"github.com/observabil/arcade/internal/engine/repo"
 	"github.com/observabil/arcade/internal/engine/router"
 	"github.com/observabil/arcade/internal/pkg/grpc"
 	"github.com/observabil/arcade/pkg/ctx"
@@ -19,6 +20,7 @@ import (
 func initApp(configPath string, appCtx *ctx.Context, logger *zap.Logger) (*app.App, func(), error) {
 	panic(wire.Build(
 		conf.ProviderSet,
+		repo.ProviderSet,
 		router.ProviderSet,
 		plugin.ProviderSet,
 		storage.ProviderSet,
@@ -26,6 +28,7 @@ func initApp(configPath string, appCtx *ctx.Context, logger *zap.Logger) (*app.A
 		provideHttpConfig,
 		provideGrpcConfig,
 		provideStorageConfig,
+		providePluginRepository,
 		app.NewApp,
 	))
 }
@@ -44,11 +47,14 @@ func provideStorageConfig(appConf conf.AppConfig, appCtx *ctx.Context) *storage.
 	}
 }
 
-
 func provideHttpConfig(appConf conf.AppConfig) *http.Http {
 	return &appConf.Http
 }
 
 func provideGrpcConfig(appConf conf.AppConfig) *grpc.GrpcConf {
 	return &appConf.Grpc
+}
+
+func providePluginRepository(adapter *repo.PluginRepoAdapter) plugin.PluginRepository {
+	return adapter
 }

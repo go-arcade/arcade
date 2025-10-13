@@ -1,12 +1,5 @@
 package constant
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/28 17:56
- * @file: const_unified_resp.go
- * @description: 统一响应常量
- */
-
 // UnifiedResponse 统一响应
 const (
 	// DETAIL Detail 用于设置响应数据，例如查询，分页等，需要返回数据
