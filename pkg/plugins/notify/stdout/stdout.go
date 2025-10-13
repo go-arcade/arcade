@@ -14,9 +14,9 @@ import (
 // StdoutNotifyConfig 插件自身的配置结构（可从宿主 Init 传入）
 type StdoutNotifyConfig struct {
 	// 前缀（打印时展示）
-	Prefix string `yaml:"prefix" json:"prefix"`
+	Prefix string `json:"prefix"`
 	// 是否输出 JSON（Send 时 message 将被 json.Marshal）
-	JSON bool `yaml:"json" json:"json"`
+	JSON bool `json:"json"`
 }
 
 type StdoutNotify struct {
@@ -122,5 +122,11 @@ func (p *StdoutNotify) SendTemplate(_ context.Context, tpl string, data any, _ .
 	return nil
 }
 
-// 插件入口点
-var Plugin = NewStdoutNotify()
+// 插件入口点 - 使用工厂函数导出
+// Go 插件系统在 package main 时会生成唯一包名，导致 var Plugin 无法被 Lookup 找到
+// 因此使用函数导出更可靠
+func NewPlugin() plugin.BasePlugin {
+	return NewStdoutNotify()
+}
+
+// var Plugin plugin.BasePlugin = NewStdoutNotify()

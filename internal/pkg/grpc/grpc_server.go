@@ -14,8 +14,6 @@ import (
 	"github.com/observabil/arcade/pkg/log"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
-	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	agentapi "github.com/observabil/arcade/api/agent/v1"
@@ -46,16 +44,16 @@ func NewGrpcServer(cfg GrpcConf, log *zap.Logger) *ServerWrapper {
 	opts := []grpc.ServerOption{
 		grpc.MaxConcurrentStreams(uint32(cfg.MaxConnections)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
-			// 注意顺序，先 tags，再 zap，再 auth，最后 recovery
+			// 注意顺序，先 tags，再 logging，再 auth，最后 recovery
 			grpc_ctxtags.StreamServerInterceptor(),
-			grpc_zap.StreamServerInterceptor(log),
-			grpc_auth.StreamServerInterceptor(middleware.AuthInterceptor),
+			middleware.LoggingStreamInterceptor(log), // 使用自定义日志拦截器，可过滤心跳接口
+			middleware.AuthStreamInterceptor(),       // 使用自定义认证拦截器，可跳过心跳接口
 			grpc_recovery.StreamServerInterceptor(),
 		)),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			grpc_ctxtags.UnaryServerInterceptor(),
-			grpc_zap.UnaryServerInterceptor(log),
-			grpc_auth.UnaryServerInterceptor(middleware.AuthInterceptor),
+			middleware.LoggingUnaryInterceptor(log), // 使用自定义日志拦截器，可过滤心跳接口
+			middleware.AuthUnaryInterceptor(),       // 使用自定义认证拦截器，可跳过心跳接口
 			grpc_recovery.UnaryServerInterceptor(),
 		)),
 	}

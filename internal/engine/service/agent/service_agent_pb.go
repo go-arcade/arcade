@@ -13,6 +13,7 @@ type AgentServiceImpl struct {
 
 func (a *AgentServiceImpl) Heartbeat(ctx context.Context, req *agentapi.HeartbeatRequest) (*agentapi.HeartbeatResponse, error) {
 	return &agentapi.HeartbeatResponse{
+		Success:   true,
 		Message:   "pong",
 		Timestamp: time.Now().Unix(),
 	}, nil

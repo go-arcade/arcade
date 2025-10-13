@@ -1,8 +1,9 @@
 package http
 
 import (
+	"time"
+
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/logger"
 	"go.uber.org/zap"
 )
 
@@ -14,27 +15,48 @@ import (
  */
 
 func AccessLogFormat(log *zap.Logger) fiber.Handler {
+	// 使用 sugar logger
+	sugar := log.Sugar()
+
 	// exclude api path
 	// tips: 这里的路径是不需要记录日志的路径，url为端口后的全部路径
 	excludedPaths := map[string]bool{
 		"/health": true,
 	}
 
-	return logger.New(logger.Config{
-		Format:     "[${method} ${path}${query}] ${ip} ${userAgent} ${status} ${latency}\n",
-		TimeFormat: "2006-01-02 15:04:05",
-		TimeZone:   "Local",
-		CustomTags: map[string]logger.LogFunc{
-			"query": func(output logger.Buffer, c *fiber.Ctx, data *logger.Data, extraParam string) (int, error) {
-				query := c.Context().QueryArgs().String()
-				if query != "" {
-					return output.WriteString("?" + query)
-				}
-				return 0, nil
-			},
-		},
-		Next: func(c *fiber.Ctx) bool {
-			return excludedPaths[c.Path()]
-		},
-	})
+	return func(c *fiber.Ctx) error {
+		// 检查是否需要跳过日志
+		if excludedPaths[c.Path()] {
+			return c.Next()
+		}
+
+		// 记录开始时间
+		start := time.Now()
+
+		// 处理请求
+		err := c.Next()
+
+		// 计算延迟
+		latency := time.Since(start)
+
+		// 构建查询字符串
+		query := c.Context().QueryArgs().String()
+		queryStr := ""
+		if query != "" {
+			queryStr = "?" + query
+		}
+
+		// 使用 sugar logger 记录访问日志
+		sugar.Infof("[%s %s %s %d] %s %s %s",
+			c.Method(),
+			c.Path(),
+			queryStr,
+			c.Response().StatusCode(),
+			c.IP(),
+			c.Get("User-Agent"),
+			latency.String(),
+		)
+
+		return err
+	}
 }

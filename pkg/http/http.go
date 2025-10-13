@@ -10,6 +10,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/observabil/arcade/pkg/ctx"
+	"github.com/observabil/arcade/pkg/log"
 )
 
 type Http struct {
@@ -46,23 +47,15 @@ type Auth struct {
 func NewHttp(cfg Http, app *fiber.App) func() {
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 
-	config := fiber.Config{
-		ReadTimeout:  time.Duration(cfg.ReadTimeout) * time.Second,
-		WriteTimeout: time.Duration(cfg.WriteTimeout) * time.Second,
-		IdleTimeout:  time.Duration(cfg.IdleTimeout) * time.Second,
-	}
-
-	app = fiber.New(config)
-
 	go func() {
-		fmt.Printf("[Init] http server start at: %s\n", addr)
+		log.Infof("HTTP server started at %s", addr)
 		if cfg.TLS.CertFile != "" && cfg.TLS.KeyFile != "" {
 			if err := app.ListenTLS(addr, cfg.TLS.CertFile, cfg.TLS.KeyFile); err != nil {
-				panic(err)
+				log.Fatalf("HTTP server failed: %v", err)
 			}
 		} else {
 			if err := app.Listen(addr); err != nil {
-				panic(err)
+				log.Fatalf("HTTP server failed: %v", err)
 			}
 		}
 	}()
@@ -79,15 +72,15 @@ func createShutdownHook(app *fiber.App, shutdownTimeout int, signalChan chan os.
 
 	return func() {
 		<-signalChan
-		fmt.Println("[Shutdown] HTTP server shutting down...")
+		log.Info("Shutting down HTTP server...")
 
 		ctx2, cancel := context.WithTimeout(context.Background(), time.Duration(shutdownTimeout)*time.Second)
 		defer cancel()
 
 		if err := app.ShutdownWithContext(ctx2); err != nil {
-			fmt.Printf("[Error] Server shutdown error: %v\n", err)
+			log.Errorf("HTTP server shutdown error: %v", err)
 		} else {
-			fmt.Println("[Shutdown] HTTP server shut down gracefully.")
+			log.Info("HTTP server shut down gracefully")
 		}
 	}
 }

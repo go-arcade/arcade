@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -12,6 +13,76 @@ import (
 type TokenInfo struct {
 	ID    string
 	Roles []string
+}
+
+// 需要跳过认证的 gRPC 方法
+var excludedAuthMethods = map[string]bool{
+	"/api.agent.v1.Agent/Heartbeat":  true,
+	"/api.job.v1.Job/Ping":           true,
+	"/api.stream.v1.Stream/Ping":     true,
+	"/api.pipeline.v1.Pipeline/Ping": true,
+}
+
+// AuthUnaryInterceptor 一元调用认证拦截器（可跳过心跳接口）
+func AuthUnaryInterceptor() grpc.UnaryServerInterceptor {
+	return func(
+		ctx context.Context,
+		req any,
+		info *grpc.UnaryServerInfo,
+		handler grpc.UnaryHandler,
+	) (any, error) {
+		// 检查是否需要跳过认证
+		if excludedAuthMethods[info.FullMethod] {
+			return handler(ctx, req)
+		}
+
+		// 执行认证
+		newCtx, err := AuthInterceptor(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		return handler(newCtx, req)
+	}
+}
+
+// AuthStreamInterceptor 流式调用认证拦截器（可跳过心跳接口）
+func AuthStreamInterceptor() grpc.StreamServerInterceptor {
+	return func(
+		srv any,
+		ss grpc.ServerStream,
+		info *grpc.StreamServerInfo,
+		handler grpc.StreamHandler,
+	) error {
+		// 检查是否需要跳过认证
+		if excludedAuthMethods[info.FullMethod] {
+			return handler(srv, ss)
+		}
+
+		// 执行认证
+		newCtx, err := AuthInterceptor(ss.Context())
+		if err != nil {
+			return err
+		}
+
+		// 创建新的 ServerStream 包装器
+		wrapped := &wrappedServerStream{
+			ServerStream: ss,
+			ctx:          newCtx,
+		}
+
+		return handler(srv, wrapped)
+	}
+}
+
+// wrappedServerStream 包装 ServerStream 以替换 context
+type wrappedServerStream struct {
+	grpc.ServerStream
+	ctx context.Context
+}
+
+func (w *wrappedServerStream) Context() context.Context {
+	return w.ctx
 }
 
 func AuthInterceptor(ctx context.Context) (context.Context, error) {

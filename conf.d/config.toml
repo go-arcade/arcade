@@ -1,6 +1,6 @@
 [log]
 # support stdout, file, kafka
-output = "file"
+output = "stdout"
 # log level: DEBUG INFO WARNING ERROR FATAL
 level = "DEBUG"
 # log write directory
@@ -36,7 +36,7 @@ mode = "debug"
 # unit: second
 heartbeat = 60
 # enable pprof, false or true
-pprof = false
+pprof = true
 # enable metrics, false or true
 exposeMetrics = true
 # access log, false or true
@@ -78,8 +78,8 @@ type = "mysql"
 host = "127.0.0.1"
 port = "3306"
 user = "root"
-password = "1qaz@WSX."
-db = "arcade_ci_meta"
+password = "muP4woo9Aidiph2jeX8u"
+db = "arcade"
 # sql print, false or true
 output = true
 # max open connections
@@ -98,18 +98,19 @@ maxIdleTime = 60
 [database.mongodb]
 # cluster, standalone
 # cluster: uri = "mongodb://localhost:27017,localhost:27018,localhost:27019"
-# auth: uri = "mongodb://username:password@localhost:27017"
-uri = "mongodb://127.0.0.1:27017"
+# auth: 
+uri = "mongodb://mongo:muP4woo9Aidiph2jeX8u@localhost:27017"
+# uri = "mongodb://127.0.0.1:27017"
 compressors = ["snappy", "zstd", "zlib"]
-db = "job_log"
+db = "arcade_job_log"
 poolSize = 100
 
 [redis]
 # support single, cluster, sentinel
 mode = "single"
 # address, ip:port or ip1:port,ip2:port for cluster and sentinel(SentinelAddrs)
-address = "0.0.0.0:6379"
-password = "1qaz@WSX."
+address = "127.0.0.1:6379"
+password = ""
 db = 0
 poolSize = 50
 #useTLS = false
@@ -127,15 +128,17 @@ readTimeout = 10
 # unit: second
 writeTimeout = 10
 
-[storage]
-Provider  = "minio"
-AccessKey = ""
-SecretKey = ""
-Endpoint  = ""
-Bucket    = ""
-Region    = ""
-UseTLS    = false
-BasePath  = ""
+# 存储配置已移至数据库管理
+# 请使用 API 或管理界面配置存储
+# [storage]
+# Provider  = "minio"
+# AccessKey = ""
+# SecretKey = ""
+# Endpoint  = ""
+# Bucket    = ""
+# Region    = ""
+# UseTLS    = false
+# BasePath  = ""
 
 [job]
 # Job worker pool configuration
