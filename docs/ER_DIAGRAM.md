@@ -14,6 +14,9 @@ erDiagram
     t_user ||--o{ t_secret : "creates"
     t_user ||--o{ t_audit_log : "performs"
     
+    %% Agent 配置模块
+    t_agent ||--o{ t_agent_config : "has"
+    
     %% 流水线和任务模块
     t_pipeline ||--o{ t_pipeline_run : "has"
     t_pipeline ||--o{ t_pipeline_stage : "contains"
@@ -108,6 +111,16 @@ erDiagram
         json metrics
         datetime last_heartbeat
         tinyint is_enabled
+        datetime create_time
+        datetime update_time
+    }
+
+    %% Agent配置表
+    t_agent_config {
+        int id PK
+        varchar agent_id UK_FK
+        json config_items
+        varchar description
         datetime create_time
         datetime update_time
     }

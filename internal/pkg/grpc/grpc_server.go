@@ -7,11 +7,17 @@ import (
 	"os/signal"
 	"syscall"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
 	"github.com/observabil/arcade/pkg/log"
 
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	agentapi "github.com/observabil/arcade/api/agent/v1"
 	jobapi "github.com/observabil/arcade/api/job/v1"
 	pipelineapi "github.com/observabil/arcade/api/pipeline/v1"
@@ -20,6 +26,7 @@ import (
 	"github.com/observabil/arcade/internal/engine/service/job"
 	"github.com/observabil/arcade/internal/engine/service/pipeline"
 	"github.com/observabil/arcade/internal/engine/service/stream"
+	"github.com/observabil/arcade/internal/pkg/grpc/middleware"
 )
 
 // gRPC 配置
@@ -35,9 +42,22 @@ type ServerWrapper struct {
 }
 
 // NewGrpcServer 创建 gRPC 服务
-func NewGrpcServer(cfg GrpcConf) *ServerWrapper {
+func NewGrpcServer(cfg GrpcConf, log *zap.Logger) *ServerWrapper {
 	opts := []grpc.ServerOption{
 		grpc.MaxConcurrentStreams(uint32(cfg.MaxConnections)),
+		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+			// 注意顺序，先 tags，再 zap，再 auth，最后 recovery
+			grpc_ctxtags.StreamServerInterceptor(),
+			grpc_zap.StreamServerInterceptor(log),
+			grpc_auth.StreamServerInterceptor(middleware.AuthInterceptor),
+			grpc_recovery.StreamServerInterceptor(),
+		)),
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			grpc_ctxtags.UnaryServerInterceptor(),
+			grpc_zap.UnaryServerInterceptor(log),
+			grpc_auth.UnaryServerInterceptor(middleware.AuthInterceptor),
+			grpc_recovery.UnaryServerInterceptor(),
+		)),
 	}
 
 	s := grpc.NewServer(opts...)

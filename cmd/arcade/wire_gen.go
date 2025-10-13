@@ -9,6 +9,7 @@ package main
 import (
 	"github.com/observabil/arcade/internal/app"
 	"github.com/observabil/arcade/internal/engine/conf"
+	"github.com/observabil/arcade/internal/engine/repo"
 	"github.com/observabil/arcade/internal/engine/router"
 	"github.com/observabil/arcade/internal/pkg/grpc"
 	"github.com/observabil/arcade/pkg/ctx"
@@ -24,10 +25,13 @@ func initApp(configPath string, appCtx *ctx.Context, logger *zap.Logger) (*app.A
 	appConfig := conf.ProvideConf(configPath)
 	http := provideHttpConfig(appConfig)
 	routerRouter := router.ProvideRouter(http, appCtx)
-	manager := plugin.ProvidePluginManager()
-	grpcConf := provideGrpcConfig(appConfig)
-	serverWrapper := grpc.ProvideGrpcServer(grpcConf)
-	storageStorage := provideStorageConfig(appConfig, appCtx)
+	pluginRepo := repo.ProvidePluginRepo(appCtx)
+	pluginRepoAdapter := repo.ProvidePluginRepoAdapter(pluginRepo)
+	pluginRepository := providePluginRepository(pluginRepoAdapter)
+	manager := plugin.ProvidePluginManager(pluginRepository)
+	grpcConf := provideGrpcConfig(appConfig, logger)
+	serverWrapper := grpc.ProvideGrpcServer(grpcConf, logger)
+	storageStorage := conf.ProvideStorageConfig(appConfig, appCtx)
 	storageProvider, err := storage.ProvideStorage(storageStorage)
 	if err != nil {
 		return nil, nil, err
@@ -43,24 +47,14 @@ func initApp(configPath string, appCtx *ctx.Context, logger *zap.Logger) (*app.A
 
 // wire.go:
 
-func provideStorageConfig(appConf conf.AppConfig, appCtx *ctx.Context) *storage.Storage {
-	return &storage.Storage{
-		Ctx:       appCtx,
-		Provider:  appConf.Storage.Provider,
-		AccessKey: appConf.Storage.AccessKey,
-		SecretKey: appConf.Storage.SecretKey,
-		Endpoint:  appConf.Storage.Endpoint,
-		Bucket:    appConf.Storage.Bucket,
-		Region:    appConf.Storage.Region,
-		UseTLS:    appConf.Storage.UseTLS,
-		BasePath:  appConf.Storage.BasePath,
-	}
-}
-
 func provideHttpConfig(appConf conf.AppConfig) *http.Http {
 	return &appConf.Http
 }
 
-func provideGrpcConfig(appConf conf.AppConfig) *grpc.GrpcConf {
+func provideGrpcConfig(appConf conf.AppConfig, logger *zap.Logger) *grpc.GrpcConf {
 	return &appConf.Grpc
+}
+
+func providePluginRepository(adapter *repo.PluginRepoAdapter) plugin.PluginRepository {
+	return adapter
 }

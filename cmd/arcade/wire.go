@@ -27,31 +27,16 @@ func initApp(configPath string, appCtx *ctx.Context, logger *zap.Logger) (*app.A
 		grpc.ProviderSet,
 		provideHttpConfig,
 		provideGrpcConfig,
-		provideStorageConfig,
 		providePluginRepository,
 		app.NewApp,
 	))
-}
-
-func provideStorageConfig(appConf conf.AppConfig, appCtx *ctx.Context) *storage.Storage {
-	return &storage.Storage{
-		Ctx:       appCtx,
-		Provider:  appConf.Storage.Provider,
-		AccessKey: appConf.Storage.AccessKey,
-		SecretKey: appConf.Storage.SecretKey,
-		Endpoint:  appConf.Storage.Endpoint,
-		Bucket:    appConf.Storage.Bucket,
-		Region:    appConf.Storage.Region,
-		UseTLS:    appConf.Storage.UseTLS,
-		BasePath:  appConf.Storage.BasePath,
-	}
 }
 
 func provideHttpConfig(appConf conf.AppConfig) *http.Http {
 	return &appConf.Http
 }
 
-func provideGrpcConfig(appConf conf.AppConfig) *grpc.GrpcConf {
+func provideGrpcConfig(appConf conf.AppConfig, logger *zap.Logger) *grpc.GrpcConf {
 	return &appConf.Grpc
 }
 

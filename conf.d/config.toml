@@ -136,3 +136,12 @@ Bucket    = ""
 Region    = ""
 UseTLS    = false
 BasePath  = ""
+
+[job]
+# Job worker pool configuration
+# If maxWorkers is 0, it will be calculated based on CPU cores (CPU * 2)
+# If queueSize is 0, it will be calculated as maxWorkers * 10
+maxWorkers = 0
+queueSize = 0
+# unit: second
+workerTimeout = 1800

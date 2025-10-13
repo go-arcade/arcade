@@ -15,6 +15,12 @@ import (
 	"github.com/observabil/arcade/pkg/log"
 )
 
+type JobConfig struct {
+	MaxWorkers    int `mapstructure:"maxWorkers"`
+	QueueSize     int `mapstructure:"queueSize"`
+	WorkerTimeout int `mapstructure:"workerTimeout"`
+}
+
 type AppConfig struct {
 	Log      log.LogConfig
 	Grpc     grpc.GrpcConf
@@ -22,6 +28,7 @@ type AppConfig struct {
 	Database database.Database
 	Redis    cache.Redis
 	Storage  storage.Storage
+	Job      JobConfig
 }
 
 var (

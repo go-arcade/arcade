@@ -121,6 +121,18 @@ CREATE TABLE IF NOT EXISTS `t_agent` (
   KEY `idx_last_heartbeat` (`last_heartbeat`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Agent表';
 
+-- Agent配置表（每个Agent一条记录）
+CREATE TABLE IF NOT EXISTS `t_agent_config` (
+  `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `agent_id` VARCHAR(64) NOT NULL COMMENT 'Agent唯一标识',
+  `config_items` JSON NOT NULL COMMENT '配置项',
+  `description` VARCHAR(512) DEFAULT NULL COMMENT '配置描述',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_agent_id` (`agent_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Agent配置表';
+
 -- ================================================================
 -- 流水线和任务管理模块
 -- ================================================================
@@ -419,7 +431,7 @@ CREATE TABLE IF NOT EXISTS `t_plugin` (
   UNIQUE KEY `uk_plugin_id_version` (`plugin_id`, `version`),
   KEY `idx_plugin_type` (`plugin_type`),
   KEY `idx_is_enabled` (`is_enabled`),
-  KEY `idx_name` (`name`(191))
+  KEY `idx_name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='插件表';
 
 -- 插件配置表
@@ -617,13 +629,13 @@ CREATE TABLE IF NOT EXISTS `t_audit_log` (
 -- ================================================================
 
 -- 插入默认管理员用户（密码: admin123，需要在应用层加密）
-INSERT INTO `t_user` (`user_id`, `username`, `nick_name`, `password`, `email`, `is_enabled`) 
+INSERT INTO `t_user` (`user_id`, `username`, `nick_name`, `password`, `email`, `is_enabled`)
 VALUES ('user_admin', 'admin', '系统管理员', 'TO_BE_ENCRYPTED', 'admin@arcade.local', 0)
 ON DUPLICATE KEY UPDATE `username` = `username`;
 
 -- 插入默认角色
-INSERT INTO `t_role` (`role_id`, `role_name`, `role_code`, `role_desc`) 
-VALUES 
+INSERT INTO `t_role` (`role_id`, `role_name`, `role_code`, `role_desc`)
+VALUES
   ('role_admin', '管理员', 'ADMIN', '系统管理员角色'),
   ('role_developer', '开发者', 'DEVELOPER', '开发者角色'),
   ('role_operator', '运维人员', 'OPERATOR', '运维人员角色'),
@@ -631,7 +643,7 @@ VALUES
 ON DUPLICATE KEY UPDATE `role_name` = `role_name`;
 
 -- 绑定管理员角色
-INSERT INTO `t_role_relation` (`role_id`, `user_id`) 
+INSERT INTO `t_role_relation` (`role_id`, `user_id`)
 VALUES ('role_admin', 'user_admin')
 ON DUPLICATE KEY UPDATE `role_id` = `role_id`;
 
@@ -1049,21 +1061,21 @@ VALUES (
 -- 插入插件权限配置
 -- Slack 插件权限
 INSERT INTO `t_plugin_permission` (`plugin_id`, `permission_type`, `resource`, `action`, `is_allowed`)
-VALUES 
+VALUES
   ('notify_slack', 'network', 'https://hooks.slack.com', 'write', 1),
   ('notify_slack', 'file_system', '/tmp/slack_cache', 'write', 1)
 ON DUPLICATE KEY UPDATE `is_allowed` = `is_allowed`;
 
 -- Email 插件权限
 INSERT INTO `t_plugin_permission` (`plugin_id`, `permission_type`, `resource`, `action`, `is_allowed`)
-VALUES 
+VALUES
   ('notify_email', 'network', '*:587', 'write', 1),
   ('notify_email', 'network', '*:465', 'write', 1)
 ON DUPLICATE KEY UPDATE `is_allowed` = `is_allowed`;
 
 -- Docker 插件权限
 INSERT INTO `t_plugin_permission` (`plugin_id`, `permission_type`, `resource`, `action`, `is_allowed`)
-VALUES 
+VALUES
   ('build_docker', 'process', '/usr/bin/docker', 'execute', 1),
   ('build_docker', 'network', '*', 'write', 1),
   ('build_docker', 'file_system', '/var/run/docker.sock', 'read', 1),
@@ -1072,13 +1084,13 @@ ON DUPLICATE KEY UPDATE `is_allowed` = `is_allowed`;
 
 -- DingTalk 插件权限
 INSERT INTO `t_plugin_permission` (`plugin_id`, `permission_type`, `resource`, `action`, `is_allowed`)
-VALUES 
+VALUES
   ('notify_dingtalk', 'network', 'https://oapi.dingtalk.com', 'write', 1)
 ON DUPLICATE KEY UPDATE `is_allowed` = `is_allowed`;
 
 -- Kubernetes 插件权限
 INSERT INTO `t_plugin_permission` (`plugin_id`, `permission_type`, `resource`, `action`, `is_allowed`)
-VALUES 
+VALUES
   ('deploy_kubernetes', 'process', '/usr/bin/kubectl', 'execute', 1),
   ('deploy_kubernetes', 'network', '*:443', 'write', 1),
   ('deploy_kubernetes', 'file_system', '/tmp/k8s_manifests', 'read', 1)
@@ -1086,7 +1098,7 @@ ON DUPLICATE KEY UPDATE `is_allowed` = `is_allowed`;
 
 -- 插入插件资源配额
 INSERT INTO `t_plugin_quota` (`plugin_id`, `max_cpu_percent`, `max_memory_mb`, `max_execution_time`, `max_network_mbps`)
-VALUES 
+VALUES
   ('notify_slack', 10, 64, 30, 1),
   ('notify_email', 10, 64, 60, 1),
   ('build_docker', 80, 2048, 1800, 50),
@@ -1100,3 +1112,26 @@ VALUES
   ('source_arcade_official', 'Arcade Official', 'official', 'https://github.com/observabil/arcade-plugins', 1),
   ('source_community', 'Community', 'community', 'https://plugins.arcade.io', 0)
 ON DUPLICATE KEY UPDATE `name` = `name`;
+
+-- 插入示例 Agent 配置（Agent注册时自动创建）
+-- 每个 Agent 一条记录，所有配置在 config_items JSON 中
+INSERT INTO `t_agent_config` (`agent_id`, `config_items`, `description`)
+VALUES (
+  'agent_001',
+  JSON_OBJECT(
+    'heartbeat_interval', 30,
+    'max_concurrent_jobs', 5,
+    'job_timeout', 3600,
+    'workspace_dir', '/var/lib/arcade/workspace',
+    'temp_dir', '/var/lib/arcade/temp',
+    'log_level', 'INFO',
+    'enable_docker', true,
+    'docker_network', 'bridge',
+    'resource_limits', JSON_OBJECT('cpu', '2', 'memory', '4G'),
+    'allowed_commands', JSON_ARRAY('docker', 'kubectl', 'npm', 'yarn', 'go', 'python'),
+    'env_vars', JSON_OBJECT('PATH', '/usr/local/bin:/usr/bin:/bin'),
+    'cache_dir', '/var/lib/arcade/cache',
+    'cleanup_policy', JSON_OBJECT('max_age_days', 7, 'max_size_gb', 50)
+  ),
+  'Agent 001 默认配置'
+) ON DUPLICATE KEY UPDATE `config_items` = `config_items`;
