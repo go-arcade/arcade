@@ -7,6 +7,8 @@
 package main
 
 import (
+	"context"
+	"github.com/google/wire"
 	"github.com/observabil/arcade/internal/app"
 	"github.com/observabil/arcade/internal/engine/conf"
 	"github.com/observabil/arcade/internal/engine/repo"
@@ -14,6 +16,7 @@ import (
 	"github.com/observabil/arcade/internal/pkg/grpc"
 	"github.com/observabil/arcade/pkg/ctx"
 	"github.com/observabil/arcade/pkg/http"
+	"github.com/observabil/arcade/pkg/log"
 	"github.com/observabil/arcade/pkg/plugin"
 	"github.com/observabil/arcade/pkg/storage"
 	"go.uber.org/zap"
@@ -57,4 +60,29 @@ func provideGrpcConfig(appConf conf.AppConfig, logger *zap.Logger) *grpc.GrpcCon
 
 func providePluginRepository(adapter *repo.PluginRepoAdapter) plugin.PluginRepository {
 	return adapter
+}
+
+// ProviderSet 提供插件相关的依赖
+var pluginProviderSet = wire.NewSet(plugin.ProvidePluginManager)
+
+// ProvidePluginManager 提供插件管理器实例
+// 如果提供了 PluginRepository，则从数据库加载插件
+func ProvidePluginManager(repo2 plugin.PluginRepository) *plugin.Manager {
+	m := plugin.NewManager()
+
+	m.SetPluginRepository(repo2)
+
+	if err := m.LoadPluginsFromDatabase(); err != nil {
+		log.Warnf("failed to load plugins from database: %v, will try file system", err)
+
+		if err := m.LoadPluginsFromDir("./plugins"); err != nil {
+			log.Warnf("failed to load plugins from directory: %v", err)
+		}
+	}
+
+	if err := m.Init(context.Background()); err != nil {
+		log.Errorf("failed to initialize plugins: %v", err)
+	}
+
+	return m
 }
