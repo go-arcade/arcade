@@ -20,7 +20,7 @@ func NewAgentRepo(ctx *ctx.Context) *AgentRepo {
 func (ar *AgentRepo) AddAgent(addAgentReqRepo *model.AddAgentReqRepo) error {
 
 	var err error
-	if err = ar.Ctx.GetDB().Table(ar.AgentModel.TableName()).Create(addAgentReqRepo).Error; err != nil {
+	if err = ar.Ctx.DBSession().Table(ar.AgentModel.TableName()).Create(addAgentReqRepo).Error; err != nil {
 		return err
 	}
 	return err
@@ -28,7 +28,7 @@ func (ar *AgentRepo) AddAgent(addAgentReqRepo *model.AddAgentReqRepo) error {
 
 func (ar *AgentRepo) UpdateAgent(agent *model.Agent) error {
 	var err error
-	if err = ar.Ctx.GetDB().Model(agent).Updates(agent).Error; err != nil {
+	if err = ar.Ctx.DBSession().Model(agent).Updates(agent).Error; err != nil {
 		return err
 	}
 	return err
@@ -41,11 +41,11 @@ func (ar *AgentRepo) ListAgent(pageNum, pageSize int) ([]model.Agent, int64, err
 	var err error
 	offset := (pageNum - 1) * pageSize
 
-	if err = ar.Ctx.GetDB().Table(ar.AgentModel.TableName()).Count(&count).Error; err != nil {
+	if err = ar.Ctx.DBSession().Table(ar.AgentModel.TableName()).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err = ar.Ctx.GetDB().Select("id, agent_id, agent_name, address, port, username, auth_type, is_enabled").
+	if err = ar.Ctx.DBSession().Select("id, agent_id, agent_name, address, port, username, auth_type, is_enabled").
 		Table(ar.AgentModel.TableName()).
 		Offset(offset).Limit(pageSize).Find(&agents).Error; err != nil {
 		return nil, 0, err

@@ -3,6 +3,7 @@ package job
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	agentapi "github.com/observabil/arcade/api/agent/v1"
@@ -25,13 +26,29 @@ type ConcreteJobTask struct {
 	agentClient agentapi.AgentClient
 }
 
-// NewConcreteJobTask 创建 Job 任务
+// jobTaskPool JobTask 对象池
+var jobTaskPool = sync.Pool{
+	New: func() any {
+		return &ConcreteJobTask{}
+	},
+}
+
+// NewConcreteJobTask 创建 Job 任务（从对象池获取）
 func NewConcreteJobTask(job *model.Job, jobRepo *repo.AgentRepo, agentClient agentapi.AgentClient) *ConcreteJobTask {
-	return &ConcreteJobTask{
-		job:         job,
-		jobRepo:     jobRepo,
-		agentClient: agentClient,
-	}
+	task := jobTaskPool.Get().(*ConcreteJobTask)
+	task.job = job
+	task.jobRepo = jobRepo
+	task.agentClient = agentClient
+	return task
+}
+
+// Release 释放任务对象回对象池
+func (t *ConcreteJobTask) Release() {
+	// 清空字段，避免内存泄漏
+	t.job = nil
+	t.jobRepo = nil
+	t.agentClient = nil
+	jobTaskPool.Put(t)
 }
 
 // GetJobID 实现 JobTask 接口
@@ -48,6 +65,9 @@ func (t *ConcreteJobTask) GetPriority() int {
 func (t *ConcreteJobTask) Execute(ctx context.Context) error {
 	jobId := t.job.JobId
 	log.Infof("starting execution of job %s", jobId)
+
+	// 确保任务执行完成后释放回对象池
+	defer t.Release()
 
 	// 更新任务状态为运行中
 	if err := t.updateJobStatus(JobStatusRunning, ""); err != nil {

@@ -23,7 +23,7 @@ func NewStorageRepo(ctx *ctx.Context) *StorageRepo {
 // GetDefaultStorageConfig 获取默认存储配置
 func (sr *StorageRepo) GetDefaultStorageConfig() (*model.StorageConfig, error) {
 	var storageConfig model.StorageConfig
-	err := sr.Ctx.GetDB().Table(sr.StorageModel.TableName()).
+	err := sr.Ctx.DBSession().Table(sr.StorageModel.TableName()).
 		Where("is_default = ? AND is_enabled = ?", 1, 1).
 		First(&storageConfig).Error
 	if err != nil {
@@ -35,7 +35,7 @@ func (sr *StorageRepo) GetDefaultStorageConfig() (*model.StorageConfig, error) {
 // GetStorageConfigByID 根据存储ID获取配置
 func (sr *StorageRepo) GetStorageConfigByID(storageID string) (*model.StorageConfig, error) {
 	var storageConfig model.StorageConfig
-	err := sr.Ctx.GetDB().Table(sr.StorageModel.TableName()).
+	err := sr.Ctx.DBSession().Table(sr.StorageModel.TableName()).
 		Where("storage_id = ? AND is_enabled = ?", storageID, 1).
 		First(&storageConfig).Error
 	if err != nil {
@@ -47,7 +47,7 @@ func (sr *StorageRepo) GetStorageConfigByID(storageID string) (*model.StorageCon
 // GetEnabledStorageConfigs 获取所有启用的存储配置
 func (sr *StorageRepo) GetEnabledStorageConfigs() ([]model.StorageConfig, error) {
 	var storageConfigs []model.StorageConfig
-	err := sr.Ctx.GetDB().Table(sr.StorageModel.TableName()).
+	err := sr.Ctx.DBSession().Table(sr.StorageModel.TableName()).
 		Where("is_enabled = ?", 1).
 		Order("is_default DESC, id ASC").
 		Find(&storageConfigs).Error
@@ -60,7 +60,7 @@ func (sr *StorageRepo) GetEnabledStorageConfigs() ([]model.StorageConfig, error)
 // GetStorageConfigByType 根据存储类型获取配置
 func (sr *StorageRepo) GetStorageConfigByType(storageType string) ([]model.StorageConfig, error) {
 	var storageConfigs []model.StorageConfig
-	err := sr.Ctx.GetDB().Table(sr.StorageModel.TableName()).
+	err := sr.Ctx.DBSession().Table(sr.StorageModel.TableName()).
 		Where("storage_type = ? AND is_enabled = ?", storageType, 1).
 		Order("is_default DESC, id ASC").
 		Find(&storageConfigs).Error
@@ -72,7 +72,7 @@ func (sr *StorageRepo) GetStorageConfigByType(storageType string) ([]model.Stora
 
 // CreateStorageConfig 创建存储配置
 func (sr *StorageRepo) CreateStorageConfig(storageConfig *model.StorageConfig) error {
-	err := sr.Ctx.GetDB().Table(sr.StorageModel.TableName()).Create(storageConfig).Error
+	err := sr.Ctx.DBSession().Table(sr.StorageModel.TableName()).Create(storageConfig).Error
 	if err != nil {
 		return fmt.Errorf("failed to create storage config: %w", err)
 	}
@@ -81,7 +81,7 @@ func (sr *StorageRepo) CreateStorageConfig(storageConfig *model.StorageConfig) e
 
 // UpdateStorageConfig 更新存储配置
 func (sr *StorageRepo) UpdateStorageConfig(storageConfig *model.StorageConfig) error {
-	err := sr.Ctx.GetDB().Table(sr.StorageModel.TableName()).
+	err := sr.Ctx.DBSession().Table(sr.StorageModel.TableName()).
 		Where("storage_id = ?", storageConfig.StorageId).
 		Updates(storageConfig).Error
 	if err != nil {
@@ -92,7 +92,7 @@ func (sr *StorageRepo) UpdateStorageConfig(storageConfig *model.StorageConfig) e
 
 // DeleteStorageConfig 删除存储配置
 func (sr *StorageRepo) DeleteStorageConfig(storageID string) error {
-	err := sr.Ctx.GetDB().Table(sr.StorageModel.TableName()).
+	err := sr.Ctx.DBSession().Table(sr.StorageModel.TableName()).
 		Where("storage_id = ?", storageID).
 		Delete(&model.StorageConfig{}).Error
 	if err != nil {
@@ -104,7 +104,7 @@ func (sr *StorageRepo) DeleteStorageConfig(storageID string) error {
 // SetDefaultStorageConfig 设置默认存储配置
 func (sr *StorageRepo) SetDefaultStorageConfig(storageID string) error {
 	// 先取消所有默认配置
-	err := sr.Ctx.GetDB().Table(sr.StorageModel.TableName()).
+	err := sr.Ctx.DBSession().Table(sr.StorageModel.TableName()).
 		Where("is_default = ?", 1).
 		Update("is_default", 0).Error
 	if err != nil {
@@ -112,7 +112,7 @@ func (sr *StorageRepo) SetDefaultStorageConfig(storageID string) error {
 	}
 
 	// 设置新的默认配置
-	err = sr.Ctx.GetDB().Table(sr.StorageModel.TableName()).
+	err = sr.Ctx.DBSession().Table(sr.StorageModel.TableName()).
 		Where("storage_id = ?", storageID).
 		Update("is_default", 1).Error
 	if err != nil {

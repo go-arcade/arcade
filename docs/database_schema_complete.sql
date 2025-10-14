@@ -1003,15 +1003,7 @@ VALUES (
 -- 插入官方插件来源
 INSERT INTO `t_plugin_source` (`source_id`, `name`, `source_type`, `repository`, `is_trusted`)
 VALUES 
-  ('source_arcade_official', 'Arcade Official', 'official', 'https://github.com/observabil/arcade-plugins', 1),
+  ('source_arcade_official', 'Arcade Official', 'official', 'https://github.com/observabil/arcade/plugins', 1),
   ('source_community', 'Community', 'community', 'https://plugins.arcade.io', 0)
 ON DUPLICATE KEY UPDATE `name` = `name`;
 
--- ================================================================
--- 说明文档
--- ================================================================
-
--- 注意: 
--- 1. MongoDB 日志表请参考 docs/init_mongodb.js
--- 2. SSO 提供者、对象存储、插件等详细配置请参考原 database_schema.sql
--- 3. 执行此脚本前请确保数据库为空或备份现有数据

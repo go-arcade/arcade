@@ -31,7 +31,7 @@ func newMinio(s *Storage) (*MinioStorage, error) {
 
 func (m *MinioStorage) GetObject(ctx *ctx.Context, objectName string) ([]byte, error) {
 	fullPath := getFullPath(m.s.BasePath, objectName)
-	obj, err := m.Client.GetObject(ctx.GetCtx(), m.s.Bucket, fullPath, minio.GetObjectOptions{})
+	obj, err := m.Client.GetObject(ctx.ContextIns(), m.s.Bucket, fullPath, minio.GetObjectOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (m *MinioStorage) PutObject(ctx *ctx.Context, objectName string, file *mult
 	defer src.Close()
 
 	fullPath := getFullPath(m.s.BasePath, objectName)
-	_, err = m.Client.PutObject(ctx.GetCtx(), m.s.Bucket, fullPath, src, file.Size, minio.PutObjectOptions{
+	_, err = m.Client.PutObject(ctx.ContextIns(), m.s.Bucket, fullPath, src, file.Size, minio.PutObjectOptions{
 		ContentType: contentType,
 	})
 	if err != nil {
@@ -64,7 +64,7 @@ func (m *MinioStorage) Upload(ctx *ctx.Context, objectName string, file *multipa
 
 func (m *MinioStorage) Download(ctx *ctx.Context, objectName string) ([]byte, error) {
 	fullPath := getFullPath(m.s.BasePath, objectName)
-	obj, err := m.Client.GetObject(ctx.GetCtx(), m.s.Bucket, fullPath, minio.GetObjectOptions{})
+	obj, err := m.Client.GetObject(ctx.ContextIns(), m.s.Bucket, fullPath, minio.GetObjectOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -79,5 +79,5 @@ func (m *MinioStorage) Download(ctx *ctx.Context, objectName string) ([]byte, er
 
 func (m *MinioStorage) Delete(ctx *ctx.Context, objectName string) error {
 	fullPath := getFullPath(m.s.BasePath, objectName)
-	return m.Client.RemoveObject(ctx.GetCtx(), m.s.Bucket, fullPath, minio.RemoveObjectOptions{})
+	return m.Client.RemoveObject(ctx.ContextIns(), m.s.Bucket, fullPath, minio.RemoveObjectOptions{})
 }

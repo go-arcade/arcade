@@ -46,30 +46,30 @@ func NewContext(ctx context.Context, mongodb *mongo.Client, redis *redis.Client,
 	}
 }
 
-func (c *Context) GetCtx() context.Context {
+func (c *Context) ContextIns() context.Context {
 	return c.Ctx
 }
 
-func (c *Context) SetDB(db *gorm.DB) {
+func (c *Context) SetDBSession(db *gorm.DB) {
 	c.DB = db
 }
 
-func (c *Context) GetDB() *gorm.DB {
+func (c *Context) DBSession() *gorm.DB {
 	return c.DB
 }
 
-func (c *Context) SetMongoIns(client *mongo.Client) {
+func (c *Context) SetMongoSession(client *mongo.Client) {
 	c.Mongo = client
 }
 
-func (c *Context) GetMongoIns() *mongo.Client {
+func (c *Context) MongoSession() *mongo.Client {
 	return c.Mongo
 }
 
-func (c *Context) SetRedis(redis *redis.Client) {
+func (c *Context) SetRedisSession(redis *redis.Client) {
 	c.Redis = redis
 }
 
-func (c *Context) GetRedis() *redis.Client {
+func (c *Context) RedisSession() *redis.Client {
 	return c.Redis
 }

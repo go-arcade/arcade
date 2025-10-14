@@ -21,6 +21,12 @@ var (
 	TokenExpired           = failed(4408, "Token is expired")
 	TokenFormatIncorrect   = failed(4409, "Token format is incorrect")
 
+	// BadRequest 400
+	BadRequest = failed(4000, "Bad request")
+
+	// Forbidden 403
+	Forbidden = failed(4030, "Forbidden")
+
 	InternalError = failed(5000, "Internal error, please contact the administrator")
 
 	UserNotExist          = failed(4041, "User does not exist")

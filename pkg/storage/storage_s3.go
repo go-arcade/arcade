@@ -36,7 +36,7 @@ func newS3(s *Storage) (*S3Storage, error) {
 
 func (s *S3Storage) GetObject(ctx *ctx.Context, objectName string) ([]byte, error) {
 	fullPath := getFullPath(s.s.BasePath, objectName)
-	out, err := s.Client.GetObject(ctx.GetCtx(), &s3.GetObjectInput{
+	out, err := s.Client.GetObject(ctx.ContextIns(), &s3.GetObjectInput{
 		Bucket: aws.String(s.s.Bucket),
 		Key:    aws.String(fullPath),
 	})
@@ -57,7 +57,7 @@ func (s *S3Storage) PutObject(ctx *ctx.Context, objectName string, file *multipa
 	defer src.Close()
 
 	fullPath := getFullPath(s.s.BasePath, objectName)
-	_, err = s.Client.PutObject(ctx.GetCtx(), &s3.PutObjectInput{
+	_, err = s.Client.PutObject(ctx.ContextIns(), &s3.PutObjectInput{
 		Bucket:      aws.String(s.s.Bucket),
 		Key:         aws.String(fullPath),
 		Body:        src,
@@ -72,7 +72,7 @@ func (s *S3Storage) Upload(ctx *ctx.Context, objectName string, file *multipart.
 
 func (s *S3Storage) Download(ctx *ctx.Context, objectName string) ([]byte, error) {
 	fullPath := getFullPath(s.s.BasePath, objectName)
-	out, err := s.Client.GetObject(ctx.GetCtx(), &s3.GetObjectInput{
+	out, err := s.Client.GetObject(ctx.ContextIns(), &s3.GetObjectInput{
 		Bucket: aws.String(s.s.Bucket),
 		Key:    aws.String(fullPath),
 	})
@@ -87,7 +87,7 @@ func (s *S3Storage) Download(ctx *ctx.Context, objectName string) ([]byte, error
 
 func (s *S3Storage) Delete(ctx *ctx.Context, objectName string) error {
 	fullPath := getFullPath(s.s.BasePath, objectName)
-	_, err := s.Client.DeleteObject(ctx.GetCtx(), &s3.DeleteObjectInput{
+	_, err := s.Client.DeleteObject(ctx.ContextIns(), &s3.DeleteObjectInput{
 		Bucket: aws.String(s.s.Bucket),
 		Key:    aws.String(fullPath),
 	})

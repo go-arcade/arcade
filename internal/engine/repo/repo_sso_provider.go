@@ -22,7 +22,7 @@ func NewSSORepo(ctx *ctx.Context) *SSORepo {
 
 func (ar *SSORepo) GetOauthProvider(name string) (*model.OAuthConfig, error) {
 	var ssoProvider model.SSOProvider
-	if err := ar.Ctx.GetDB().Table(ar.AuthConfigModel.TableName()).
+	if err := ar.Ctx.DBSession().Table(ar.AuthConfigModel.TableName()).
 		Where("name = ? AND provider_type = ?", name, "oauth").
 		First(&ssoProvider).Error; err != nil {
 		return nil, err
@@ -46,7 +46,7 @@ func (ar *SSORepo) GetOauthProvider(name string) (*model.OAuthConfig, error) {
 
 func (ar *SSORepo) GetOauthProviderList() ([]model.SSOProvider, error) {
 	var ssoProviders []model.SSOProvider
-	if err := ar.Ctx.GetDB().Table(ar.AuthConfigModel.TableName()).
+	if err := ar.Ctx.DBSession().Table(ar.AuthConfigModel.TableName()).
 		Where("provider_type = ? AND is_enabled = ?", "oauth", 1).
 		Order("priority ASC").
 		Find(&ssoProviders).Error; err != nil {

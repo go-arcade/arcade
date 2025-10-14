@@ -3,12 +3,13 @@ package repo
 import (
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/observabil/arcade/internal/engine/model"
 	"github.com/observabil/arcade/pkg/ctx"
 	"github.com/observabil/arcade/pkg/http"
 	"github.com/observabil/arcade/pkg/log"
 	"gorm.io/gorm"
-	"time"
 )
 
 type UserRepo struct {
@@ -24,11 +25,11 @@ func NewUserRepo(ctx *ctx.Context) *UserRepo {
 }
 
 func (ur *UserRepo) AddUser(addUserReq *model.AddUserReq) error {
-	return ur.Context.GetDB().Create(addUserReq).Error
+	return ur.Context.DBSession().Create(addUserReq).Error
 }
 
 func (ur *UserRepo) UpdateUser(userId string, user *model.User) error {
-	return ur.Context.GetDB().Where("user_id = ?", userId).Model(user).Updates(user).Error
+	return ur.Context.DBSession().Where("user_id = ?", userId).Model(user).Updates(user).Error
 }
 
 func (ur *UserRepo) GetUserInfo(userId string) (*model.UserInfo, error) {
@@ -36,7 +37,7 @@ func (ur *UserRepo) GetUserInfo(userId string) (*model.UserInfo, error) {
 	userKey := "userInfo:" + userId
 	user := &model.UserInfo{UserId: userId}
 
-	userInfo, err := ur.GetRedis().HGetAll(ur.Ctx, userKey).Result()
+	userInfo, err := ur.RedisSession().HGetAll(ur.Ctx, userKey).Result()
 	if err != nil {
 		log.Errorf("failed to get user info from Redis: %v", err)
 	} else if len(userInfo) > 0 {
@@ -48,7 +49,7 @@ func (ur *UserRepo) GetUserInfo(userId string) (*model.UserInfo, error) {
 		return user, nil
 	}
 
-	err = ur.Context.GetDB().Table(ur.userModel.TableName()).
+	err = ur.Context.DBSession().Table(ur.userModel.TableName()).
 		Select("user_id, username, nick_name AS nickname, avatar, email, phone").
 		Where("user_id = ?", userId).First(user).Error
 	if err != nil {
@@ -62,11 +63,11 @@ func (ur *UserRepo) GetUserInfo(userId string) (*model.UserInfo, error) {
 		"email":    user.Email,
 		"phone":    user.Phone,
 	}
-	err = ur.GetRedis().HMSet(ur.Ctx, userKey, userInfoMap).Err()
+	err = ur.RedisSession().HMSet(ur.Ctx, userKey, userInfoMap).Err()
 	if err != nil {
 		log.Errorf("failed to cache user info: %v", err)
 	} else {
-		ur.GetRedis().Expire(ur.Ctx, userKey, time.Hour)
+		ur.RedisSession().Expire(ur.Ctx, userKey, time.Hour)
 	}
 
 	return user, nil
@@ -74,7 +75,7 @@ func (ur *UserRepo) GetUserInfo(userId string) (*model.UserInfo, error) {
 
 func (ur *UserRepo) GetUserByUsername(username string) (string, error) {
 	var user = &model.User{}
-	err := ur.Context.GetDB().Table(ur.userModel.TableName()).Select("user_id").Where("username = ?", username).
+	err := ur.Context.DBSession().Table(ur.userModel.TableName()).Select("user_id").Where("username = ?", username).
 		First(user).Error
 	return user.UserId, err
 }
@@ -85,7 +86,7 @@ func (ur *UserRepo) Login(login *model.Login) (*model.User, error) {
 		return db.Table(ur.userModel.TableName()).Select("user_id, username, nick_name, avatar, email, phone, password")
 	}
 
-	err := ur.Context.GetDB().Scopes(scope).Where(
+	err := ur.Context.DBSession().Scopes(scope).Where(
 		"(username = ? OR email = ?)",
 		login.Username, login.Email,
 	).First(&user).Error
@@ -98,35 +99,35 @@ func (ur *UserRepo) Login(login *model.Login) (*model.User, error) {
 
 func (ur *UserRepo) Register(register *model.Register) error {
 	var user model.User
-	err := ur.Context.GetDB().Table(ur.userModel.TableName()).Select("username").
+	err := ur.Context.DBSession().Table(ur.userModel.TableName()).Select("username").
 		Where("username = ?", register.Username).
 		First(&user).Error
 	if err == nil {
 		return errors.New(http.UserAlreadyExist.Msg)
 	}
-	return ur.Context.GetDB().Table(ur.userModel.TableName()).Create(register).Error
+	return ur.Context.DBSession().Table(ur.userModel.TableName()).Create(register).Error
 }
 
 func (ur *UserRepo) Logout(userKey string) error {
 
-	return ur.Context.GetRedis().Del(ur.Ctx, userKey).Err()
+	return ur.Context.RedisSession().Del(ur.Ctx, userKey).Err()
 }
 
 func (ur *UserRepo) GetUserList(offset int, pageSize int) ([]model.User, int64, error) {
 	var users []model.User
 	var count int64
-	err := ur.Context.GetDB().Offset(offset).Limit(pageSize).Find(&users).Error
+	err := ur.Context.DBSession().Offset(offset).Limit(pageSize).Find(&users).Error
 	if err != nil {
 		return nil, 0, err
 	}
-	err = ur.Context.GetDB().Model(&model.User{}).Count(&count).Error
+	err = ur.Context.DBSession().Model(&model.User{}).Count(&count).Error
 	return users, count, err
 }
 
 func (ur *UserRepo) SetToken(userId, aToken string, auth http.Auth) (string, error) {
 
 	key := auth.RedisKeyPrefix + userId
-	if err := ur.GetRedis().Set(ur.Ctx, key, aToken, auth.AccessExpire*time.Second).Err(); err != nil {
+	if err := ur.RedisSession().Set(ur.Ctx, key, aToken, auth.AccessExpire*time.Second).Err(); err != nil {
 		return "", fmt.Errorf("failed to set token in Redis: %w", err)
 	}
 	return key, nil
@@ -134,7 +135,7 @@ func (ur *UserRepo) SetToken(userId, aToken string, auth http.Auth) (string, err
 
 func (ur *UserRepo) SetLoginRespInfo(tokenKeyPrefix string, accessExpire time.Duration, loginResp *model.LoginResp) error {
 
-	pipe := ur.GetRedis().Pipeline()
+	pipe := ur.RedisSession().Pipeline()
 
 	if err := pipe.
 		Set(ur.Ctx, tokenKeyPrefix+loginResp.UserInfo.UserId, loginResp.Token["accessToken"], accessExpire*time.Minute).
@@ -166,7 +167,7 @@ func (ur *UserRepo) SetLoginRespInfo(tokenKeyPrefix string, accessExpire time.Du
 }
 
 func (ur *UserRepo) GetToken(key string) (string, error) {
-	token, err := ur.GetRedis().Get(ur.Ctx, key).Result()
+	token, err := ur.RedisSession().Get(ur.Ctx, key).Result()
 	if err != nil {
 		return "", fmt.Errorf("failed to get token from Redis: %w", err)
 	}
@@ -174,7 +175,7 @@ func (ur *UserRepo) GetToken(key string) (string, error) {
 }
 
 func (ur *UserRepo) DelToken(key string) error {
-	if err := ur.GetRedis().Del(ur.Ctx, key).Err(); err != nil {
+	if err := ur.RedisSession().Del(ur.Ctx, key).Err(); err != nil {
 		return fmt.Errorf("failed to delete token from Redis: %w", err)
 	}
 	return nil
