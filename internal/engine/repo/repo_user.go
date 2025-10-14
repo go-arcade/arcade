@@ -11,13 +11,6 @@ import (
 	"time"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/10/4 10:30
- * @file: repo_user.go
- * @description: user repository
- */
-
 type UserRepo struct {
 	*ctx.Context
 	userModel *model.User

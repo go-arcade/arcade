@@ -7,6 +7,26 @@ type Options struct {
 	// ctx context.Context
 }
 
+// PluginType 插件类型
+type PluginType string
+
+const (
+	// TypeCI CI类型插件
+	TypeCI PluginType = "ci"
+	// TypeCD CD类型插件
+	TypeCD PluginType = "cd"
+	// TypeSecurity 安全类型插件
+	TypeSecurity PluginType = "security"
+	// TypeNotify 通知类型插件
+	TypeNotify PluginType = "notify"
+	// TypeStorage 存储类型插件
+	TypeStorage PluginType = "storage"
+	// TypeApproval 审批类型插件
+	TypeApproval PluginType = "approval"
+	// TypeCustom 自定义类型插件
+	TypeCustom PluginType = "custom"
+)
+
 // BasePlugin 基础插件接口
 type BasePlugin interface {
 	// Name plugin name
@@ -70,6 +90,13 @@ type StoragePlugin interface {
 	Load(ctx context.Context, key string, opts ...Option) (any, error)
 	// Delete 删除数据
 	Delete(ctx context.Context, key string, opts ...Option) error
+}
+
+// ApprovalPlugin 审批类型插件接口
+type ApprovalPlugin interface {
+	BasePlugin
+	// Approve 审批
+	Approve(ctx context.Context, projectConfig any, opts ...Option) error
 }
 
 // CustomPlugin 自定义类型插件接口

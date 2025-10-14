@@ -17,7 +17,6 @@ type Watcher struct {
 	manager      *Manager
 	watcher      *fsnotify.Watcher
 	dirs         []string
-	configPath   string
 	ctx          context.Context
 	cancel       context.CancelFunc
 	wg           sync.WaitGroup
@@ -113,15 +112,7 @@ func (w *Watcher) handleEvent(event fsnotify.Event) {
 
 	log.Debugf("detected file event: %s %s", event.Op.String(), event.Name)
 
-	// 配置文件变化
-	if w.configPath != "" && event.Name == w.configPath {
-		if event.Op&fsnotify.Write == fsnotify.Write {
-			w.scheduleConfigReload()
-		}
-		return
-	}
-
-	// 插件文件变化
+	// 处理插件文件变化
 	if !strings.HasSuffix(event.Name, ".so") {
 		return
 	}
@@ -136,14 +127,6 @@ func (w *Watcher) schedulePluginOperation(event fsnotify.Event) {
 
 	// 记录操作时间，用于防抖
 	w.pendingOps[event.Name] = time.Now()
-}
-
-// scheduleConfigReload 调度配置重载（防抖）
-func (w *Watcher) scheduleConfigReload() {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
-	w.pendingOps["__config__"] = time.Now()
 }
 
 // debounceLoop 防抖处理循环
@@ -173,11 +156,7 @@ func (w *Watcher) processPendingOps() {
 	for path, opTime := range w.pendingOps {
 		// 如果操作时间已经超过防抖时间
 		if now.Sub(opTime) >= w.debounceTime {
-			if path == "__config__" {
-				w.reloadConfig()
-			} else {
-				w.reloadPlugin(path)
-			}
+			w.reloadPlugin(path)
 			delete(w.pendingOps, path)
 		}
 	}
@@ -196,7 +175,7 @@ func (w *Watcher) reloadPlugin(path string) {
 	}
 
 	// 加载新插件
-	if err := w.manager.Register(path); err != nil {
+	if err := w.manager.Register(path, pluginName, nil); err != nil {
 		log.Errorf("load plugin %s failed: %v", path, err)
 		return
 	}
@@ -208,29 +187,6 @@ func (w *Watcher) reloadPlugin(path string) {
 	}
 
 	log.Infof("plugin %s loaded successfully", path)
-}
-
-// reloadConfig 重新加载配置文件
-func (w *Watcher) reloadConfig() {
-	if w.configPath == "" {
-		return
-	}
-
-	log.Info("detected config file change, reloading...")
-
-	// 重新加载配置
-	if err := w.manager.LoadPluginsFromConfig(w.configPath); err != nil {
-		log.Errorf("reload config failed: %v", err)
-		return
-	}
-
-	// 初始化新插件
-	if err := w.manager.Init(w.ctx); err != nil {
-		log.Errorf("init plugin failed: %v", err)
-		return
-	}
-
-	log.Info("config file reloaded successfully")
 }
 
 // getPluginNameFromPath 从路径获取插件名称

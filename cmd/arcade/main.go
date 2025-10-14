@@ -13,14 +13,12 @@ import (
 )
 
 var (
-	configFile       string
-	pluginConfigFile string
-	pluginDir        string
+	configFile string
+	pluginDir  string
 )
 
 func init() {
 	flag.StringVar(&configFile, "conf", "conf.d/config.toml", "conf file path, e.g. -conf ./conf.d")
-	flag.StringVar(&pluginConfigFile, "plugin-config", "conf.d/plugins.yaml", "plugin config file path, e.g. -plugin-config ./conf.d")
 	flag.StringVar(&pluginDir, "plugin", "plugins", "plugin dir path, e.g. -plugin ./plugins")
 }
 
@@ -57,9 +55,8 @@ func main() {
 
 	// 启动插件系统
 	app.PluginMgr.SetContext(context.Background())
-	app.PluginMgr.LoadPluginsFromConfig(pluginConfigFile)
 	app.PluginMgr.Init(context.Background())
-	app.PluginMgr.StartAutoWatch([]string{pluginDir}, pluginConfigFile)
+	app.PluginMgr.StartAutoWatch([]string{pluginDir})
 	defer app.PluginMgr.StopAutoWatch()
 
 	// 启动 gRPC 服务

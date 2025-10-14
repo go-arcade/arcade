@@ -54,15 +54,6 @@ func (p *StdoutNotify) Init(_ context.Context, config any) error {
 		p.cfg = *c
 	case StdoutNotifyConfig:
 		p.cfg = c
-	case *plugin.Config:
-		// 如果你把整个宿主 Config 传了进来，这里可在 Plugins 里按 name 找到自己的 Config
-		for _, pc := range c.Plugins {
-			if pc.Name == p.name || pc.Type == plugin.TypeNotify {
-				// 尝试把 pc.Config 解到自己 cfg
-				b, _ := json.Marshal(pc.Config)
-				_ = json.Unmarshal(b, &p.cfg)
-			}
-		}
 	default:
 		// 忽略未知类型，使用默认配置
 	}

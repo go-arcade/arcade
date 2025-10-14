@@ -48,14 +48,13 @@ type PluginConfigModel struct {
 type Manager struct {
 	mu sync.RWMutex
 
-	cfg *Config
-
 	// 分类索引
 	ci       map[string]CIPlugin
 	cd       map[string]CDPlugin
 	security map[string]SecurityPlugin
 	notify   map[string]NotifyPlugin
 	storage  map[string]StoragePlugin
+	approval map[string]ApprovalPlugin
 	custom   map[string]CustomPlugin
 
 	// 统一索引（便于 AntiRegister / 列表）
@@ -89,6 +88,7 @@ func NewManager() *Manager {
 		security: map[string]SecurityPlugin{},
 		notify:   map[string]NotifyPlugin{},
 		storage:  map[string]StoragePlugin{},
+		approval: map[string]ApprovalPlugin{},
 		custom:   map[string]CustomPlugin{},
 
 		all: map[string]BasePlugin{},
@@ -112,44 +112,20 @@ func (m *Manager) Version() string {
 	return version
 }
 
-// RegisterFromConfig 根据单个插件配置装载
-func (m *Manager) RegisterFromConfig(pc PluginConfig) error {
-	inst, base, err := openAndNew(pc.Path)
-	if err != nil {
-		return fmt.Errorf("open %s: %w", pc.Path, err)
-	}
-
-	// 名称/类型/版本基本校验
-	name := base.Name()
-	if pc.Name != "" {
-		name = pc.Name // 允许用配置覆盖逻辑名（避免不同路径但同名冲突）
-	}
-	if name == "" {
-		return fmt.Errorf("plugin %s returns empty Name()", pc.Path)
-	}
-	if pc.Type != "" && base.Type() != pc.Type {
-		return fmt.Errorf("plugin %s type mismatch: got %s, expect %s", name, base.Type(), pc.Type)
-	}
-	// 版本仅做提示，不强校验（可按需加 compare）
-	if pc.Version != "" && base.Version() != pc.Version {
-		// 这里仅提醒，不 return
-	}
-
-	return m.registerInternal(name, base, inst, pc)
-}
-
-// Register 兼容旧签名：仅给 .so 路径
-func (m *Manager) Register(path string) error {
+// Register 注册插件：给 .so 路径
+func (m *Manager) Register(path string, pluginName string, config any) error {
 	inst, base, err := openAndNew(path)
 	if err != nil {
 		return err
 	}
-	pc := PluginConfig{
-		Path: path,
-		Name: base.Name(),
-		Type: base.Type(),
+	name := base.Name()
+	if pluginName != "" {
+		name = pluginName
 	}
-	return m.registerInternal(pc.Name, base, inst, pc)
+	if name == "" {
+		return fmt.Errorf("plugin %s returns empty Name()", path)
+	}
+	return m.registerInternal(name, base, inst, path, config, base.Type())
 }
 
 // LoadPluginsFromDir 从目录装载所有 .so 插件
@@ -169,28 +145,10 @@ func (m *Manager) LoadPluginsFromDir(dir string) error {
 		}
 
 		path := filepath.Join(dir, entry.Name())
-		if err := m.Register(path); err != nil {
+		if err := m.Register(path, "", nil); err != nil {
 			log.Warnf("failed to load plugin %s: %v", path, err)
 		} else {
 			log.Infof("loaded plugin %s", path)
-		}
-	}
-	return nil
-}
-
-// LoadPluginsFromConfig 按 YAML 装载
-func (m *Manager) LoadPluginsFromConfig(configPath string) error {
-	cfg, err := LoadConfig(configPath)
-	if err != nil {
-		return err
-	}
-	m.mu.Lock()
-	m.cfg = cfg
-	m.mu.Unlock()
-
-	for _, pc := range cfg.Plugins {
-		if err := m.RegisterFromConfig(pc); err != nil {
-			return err
 		}
 	}
 	return nil
@@ -257,26 +215,16 @@ func (m *Manager) LoadPluginsFromDatabase() error {
 			log.Warnf("plugin %s has no checksum, skipping verification (security risk!)", dbPlugin.PluginId)
 		}
 
-		// 构建 PluginConfig
-		pc := PluginConfig{
-			Path:    absPath,
-			Name:    dbPlugin.PluginId, // 使用 plugin_id 作为唯一标识
-			Type:    PluginType(dbPlugin.PluginType),
-			Version: dbPlugin.Version,
-		}
-
-		// 尝试获取默认配置
+		// 解析插件配置
+		var config interface{}
 		if len(dbPlugin.DefaultConfig) > 0 {
-			var config interface{}
 			if err := json.Unmarshal(dbPlugin.DefaultConfig, &config); err != nil {
 				log.Warnf("failed to unmarshal default config for plugin %s: %v", dbPlugin.PluginId, err)
-			} else {
-				pc.Config = config
 			}
 		}
 
 		// 尝试加载插件
-		if err := m.RegisterFromConfig(pc); err != nil {
+		if err := m.Register(absPath, dbPlugin.PluginId, config); err != nil {
 			errMsg := fmt.Sprintf("failed to load plugin %s from %s: %v", dbPlugin.PluginId, absPath, err)
 			log.Warn(errMsg)
 			loadErrors = append(loadErrors, errMsg)
@@ -347,6 +295,8 @@ func (m *Manager) AntiRegister(name string) error {
 		delete(m.notify, name)
 	case TypeStorage:
 		delete(m.storage, name)
+	case TypeApproval:
+		delete(m.approval, name)
 	case TypeCustom:
 		delete(m.custom, name)
 	}
@@ -397,6 +347,14 @@ func (m *Manager) GetStoragePlugin(name string) (StoragePlugin, error) {
 	}
 	return nil, fmt.Errorf("storage plugin %q not found", name)
 }
+func (m *Manager) GetApprovalPlugin(name string) (ApprovalPlugin, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	if p, ok := m.approval[name]; ok {
+		return p, nil
+	}
+	return nil, fmt.Errorf("approval plugin %q not found", name)
+}
 func (m *Manager) GetCustomPlugin(name string) (CustomPlugin, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -407,7 +365,7 @@ func (m *Manager) GetCustomPlugin(name string) (CustomPlugin, error) {
 }
 
 // registerInternal 内部注册逻辑
-func (m *Manager) registerInternal(name string, base BasePlugin, _ any, pc PluginConfig) error {
+func (m *Manager) registerInternal(name string, base BasePlugin, _ any, path string, config any, pluginType PluginType) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -445,6 +403,12 @@ func (m *Manager) registerInternal(name string, base BasePlugin, _ any, pc Plugi
 		} else {
 			return fmt.Errorf("%s claims Storage but not implements StoragePlugin", name)
 		}
+	case TypeApproval:
+		if p, ok := base.(ApprovalPlugin); ok {
+			m.approval[name] = p
+		} else {
+			return fmt.Errorf("%s claims Approval but not implements ApprovalPlugin", name)
+		}
 	case TypeCustom:
 		if p, ok := base.(CustomPlugin); ok {
 			m.custom[name] = p
@@ -462,9 +426,9 @@ func (m *Manager) registerInternal(name string, base BasePlugin, _ any, pc Plugi
 		Config any
 		Type   PluginType
 	}{
-		Path:   filepath.Clean(pc.Path),
-		Config: pc.Config,
-		Type:   base.Type(),
+		Path:   filepath.Clean(path),
+		Config: config,
+		Type:   pluginType,
 	}
 
 	return nil
@@ -539,7 +503,7 @@ func (m *Manager) ListPlugins() []PluginInfo {
 }
 
 // StartAutoWatch 启动自动监控
-func (m *Manager) StartAutoWatch(dirs []string, configPath string) error {
+func (m *Manager) StartAutoWatch(dirs []string) error {
 	if m.watcher != nil {
 		return fmt.Errorf("watcher already started")
 	}
@@ -597,7 +561,7 @@ func (m *Manager) ReloadPlugin(name string) error {
 	log.Infof("plugin %s unloaded", name)
 
 	// 重新加载插件
-	if err := m.Register(meta.Path); err != nil {
+	if err := m.Register(meta.Path, name, meta.Config); err != nil {
 		return fmt.Errorf("reload plugin %s from %s: %w", name, meta.Path, err)
 	}
 
