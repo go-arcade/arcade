@@ -2,11 +2,11 @@ package router
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/observabil/arcade/internal/engine/constant"
 	"github.com/observabil/arcade/internal/engine/model"
 	"github.com/observabil/arcade/internal/engine/repo"
 	"github.com/observabil/arcade/internal/engine/service/agent"
 	"github.com/observabil/arcade/pkg/http"
+	"github.com/observabil/arcade/pkg/http/middleware"
 )
 
 func (rt *Router) agentRouter(r fiber.Router, auth fiber.Handler) {
@@ -30,7 +30,7 @@ func (rt *Router) addAgent(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
 
-	c.Locals(constant.OPERATION, "")
+	c.Locals(middleware.OPERATION, "")
 	return nil
 }
 
@@ -49,6 +49,6 @@ func (rt *Router) listAgent(c *fiber.Ctx) error {
 	result := make(map[string]any)
 	result["agents"] = agents
 	result["count"] = count
-	c.Locals(constant.DETAIL, result)
+	c.Locals(middleware.DETAIL, result)
 	return nil
 }

@@ -2,12 +2,12 @@ package router
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/observabil/arcade/internal/engine/constant"
 	"github.com/observabil/arcade/internal/engine/model"
 	"github.com/observabil/arcade/internal/engine/repo"
 	"github.com/observabil/arcade/internal/engine/service"
 	"github.com/observabil/arcade/internal/engine/tool"
 	"github.com/observabil/arcade/pkg/http"
+	"github.com/observabil/arcade/pkg/http/middleware"
 )
 
 /**
@@ -50,7 +50,7 @@ func (rt *Router) login(c *fiber.Ctx) error {
 	result["token"] = user.Token
 	result["role"] = nil
 
-	c.Locals(constant.DETAIL, user)
+	c.Locals(middleware.DETAIL, user)
 	return nil
 }
 
@@ -66,7 +66,7 @@ func (rt *Router) register(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
 	}
 
-	c.Locals(constant.OPERATION, "")
+	c.Locals(middleware.OPERATION, "")
 	return nil
 }
 
@@ -81,7 +81,7 @@ func (rt *Router) refresh(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
 	}
 
-	c.Locals(constant.DETAIL, token)
+	c.Locals(middleware.DETAIL, token)
 	return nil
 }
 
@@ -93,7 +93,7 @@ func (rt *Router) logout(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
 	}
 
-	c.Locals(constant.OPERATION, "")
+	c.Locals(middleware.OPERATION, "")
 	return nil
 }
 
@@ -109,7 +109,7 @@ func (rt *Router) addUser(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
 
-	c.Locals(constant.OPERATION, "")
+	c.Locals(middleware.OPERATION, "")
 	return nil
 }
 
@@ -126,7 +126,7 @@ func (rt *Router) updateUser(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
 
-	c.Locals(constant.OPERATION, "")
+	c.Locals(middleware.OPERATION, "")
 	return nil
 }
 
@@ -145,7 +145,7 @@ func (rt *Router) getUserInfo(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
 	}
 
-	c.Locals(constant.DETAIL, user)
+	c.Locals(middleware.DETAIL, user)
 	return nil
 }
 
