@@ -1,0 +1,36 @@
+version: '3.1'
+
+services:
+  redis:
+    image: redis:8.0
+    container_name: redis
+    restart: always
+    ports:
+      - 6379:6379
+    volumes:
+      - ./redis/data:/data
+    command: ["redis-server", "--appendonly", "no"]
+
+  mongo:
+    image: mongo:8.0.15
+    container_name: mongo
+    restart: always
+    ports:
+      - 27017:27017
+    volumes:
+      - ./mongo/data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongo
+      MONGO_INITDB_ROOT_PASSWORD: muP4woo9Aidiph2jeX8u
+    command: --auth
+
+  mysql:
+    image: mysql:8.0.40
+    container_name: mysql
+    restart: always
+    ports:
+      - 3306:3306
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: muP4woo9Aidiph2jeX8u
