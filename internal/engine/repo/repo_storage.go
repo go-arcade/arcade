@@ -8,13 +8,6 @@ import (
 	"github.com/observabil/arcade/pkg/ctx"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/15
- * @file: repo_storage.go
- * @description: storage config repository
- */
-
 type StorageRepo struct {
 	Ctx          *ctx.Context
 	StorageModel model.StorageConfig

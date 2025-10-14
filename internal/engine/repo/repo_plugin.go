@@ -5,12 +5,6 @@ import (
 	"github.com/observabil/arcade/pkg/ctx"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/13
- * @file: repo_plugin.go
- * @description: plugin repository
- */
 
 type PluginRepo struct {
 	Ctx         *ctx.Context

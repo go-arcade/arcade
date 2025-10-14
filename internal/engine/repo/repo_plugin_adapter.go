@@ -6,13 +6,6 @@ import (
 	"github.com/observabil/arcade/pkg/plugin"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/13
- * @file: repo_plugin_adapter.go
- * @description: plugin repository adapter for plugin manager
- */
-
 // PluginRepoAdapter 适配器，让 PluginRepo 实现 plugin.PluginRepository 接口
 type PluginRepoAdapter struct {
 	repo *PluginRepo

@@ -5,14 +5,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/google/wire"
 	"github.com/observabil/arcade/internal/engine/model"
 	"github.com/observabil/arcade/internal/engine/repo"
 	"github.com/observabil/arcade/pkg/ctx"
 )
-
-// ProviderSet 提供存储相关的依赖
-var ProviderSet = wire.NewSet(ProvideStorageFromDB)
 
 // 存储类型常量
 const (
@@ -41,15 +37,6 @@ type StorageDBProvider struct {
 	ctx           *ctx.Context
 	storageRepo   *repo.StorageRepo
 	storageConfig *model.StorageConfig
-}
-
-// ProvideStorageFromDB 提供从数据库加载的存储实例
-func ProvideStorageFromDB(ctx *ctx.Context, storageRepo *repo.StorageRepo) (StorageProvider, error) {
-	dbProvider, err := NewStorageDBProvider(ctx, storageRepo)
-	if err != nil {
-		panic(err)
-	}
-	return dbProvider.GetStorageProvider()
 }
 
 // NewStorage 根据配置创建存储提供者实例

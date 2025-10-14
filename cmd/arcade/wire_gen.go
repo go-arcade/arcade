@@ -13,6 +13,7 @@ import (
 	"github.com/observabil/arcade/internal/engine/conf"
 	"github.com/observabil/arcade/internal/engine/repo"
 	"github.com/observabil/arcade/internal/engine/router"
+	"github.com/observabil/arcade/internal/engine/service/job"
 	"github.com/observabil/arcade/internal/pkg/grpc"
 	"github.com/observabil/arcade/pkg/ctx"
 	"github.com/observabil/arcade/pkg/http"
@@ -25,21 +26,21 @@ import (
 // Injectors from wire.go:
 
 func initApp(configPath string, appCtx *ctx.Context, logger *zap.Logger) (*app.App, func(), error) {
-	appConfig := conf.ProvideConf(configPath)
+	appConfig := provideConf(configPath)
 	http := provideHttpConfig(appConfig)
-	routerRouter := router.ProvideRouter(http, appCtx)
-	pluginRepo := repo.ProvidePluginRepo(appCtx)
-	pluginRepoAdapter := repo.ProvidePluginRepoAdapter(pluginRepo)
+	router := provideRouter(http, appCtx)
+	pluginRepo := providePluginRepo(appCtx)
+	pluginRepoAdapter := providePluginRepoAdapter(pluginRepo)
 	pluginRepository := providePluginRepository(pluginRepoAdapter)
-	manager := plugin.ProvidePluginManager(pluginRepository)
-	grpcConf := provideGrpcConfig(appConfig, logger)
-	serverWrapper := grpc.ProvideGrpcServer(grpcConf, logger)
-	storageRepo := repo.ProvideStorageRepo(appCtx)
-	storageProvider, err := storage.ProvideStorageFromDB(appCtx, storageRepo)
+	manager := providePluginManager(pluginRepository)
+	grpcConf := provideGrpcConfig(appConfig)
+	serverWrapper := provideGrpcServer(grpcConf, logger)
+	storageRepo := provideStorageRepo(appCtx)
+	storageProvider, err := provideStorageFromDB(appCtx, storageRepo)
 	if err != nil {
 		return nil, nil, err
 	}
-	appApp, cleanup, err := app.NewApp(routerRouter, logger, manager, serverWrapper, storageProvider)
+	appApp, cleanup, err := app.NewApp(router, logger, manager, serverWrapper, storageProvider)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -50,27 +51,114 @@ func initApp(configPath string, appCtx *ctx.Context, logger *zap.Logger) (*app.A
 
 // wire.go:
 
+// confProviderSet 配置层 ProviderSet
+var confProviderSet = wire.NewSet(
+	provideConf,
+	provideJobPoolConfig,
+	provideHttpConfig,
+	provideGrpcConfig,
+)
+
+func provideConf(configPath string) conf.AppConfig {
+	return conf.NewConf(configPath)
+}
+
+func provideJobPoolConfig(appConf conf.AppConfig) job.JobPoolConfig {
+	return job.JobPoolConfig{
+		MaxWorkers:    appConf.Job.MaxWorkers,
+		QueueSize:     appConf.Job.QueueSize,
+		WorkerTimeout: appConf.Job.WorkerTimeout,
+	}
+}
+
 func provideHttpConfig(appConf conf.AppConfig) *http.Http {
 	return &appConf.Http
 }
 
-func provideGrpcConfig(appConf conf.AppConfig, logger *zap.Logger) *grpc.GrpcConf {
+func provideGrpcConfig(appConf conf.AppConfig) *grpc.GrpcConf {
 	return &appConf.Grpc
 }
+
+// repoProviderSet 仓储层 ProviderSet
+var repoProviderSet = wire.NewSet(
+	provideAgentRepo,
+	provideUserRepo,
+	providePluginRepo,
+	providePluginRepoAdapter,
+	provideSSORepo,
+	provideStorageRepo,
+)
+
+func provideAgentRepo(appCtx *ctx.Context) *repo.AgentRepo {
+	return repo.NewAgentRepo(appCtx)
+}
+
+func provideUserRepo(appCtx *ctx.Context) *repo.UserRepo {
+	return repo.NewUserRepo(appCtx)
+}
+
+func providePluginRepo(appCtx *ctx.Context) *repo.PluginRepo {
+	return repo.NewPluginRepo(appCtx)
+}
+
+func providePluginRepoAdapter(pluginRepo *repo.PluginRepo) *repo.PluginRepoAdapter {
+	return repo.NewPluginRepoAdapter(pluginRepo)
+}
+
+func provideSSORepo(appCtx *ctx.Context) *repo.SSORepo {
+	return repo.NewSSORepo(appCtx)
+}
+
+func provideStorageRepo(appCtx *ctx.Context) *repo.StorageRepo {
+	return repo.NewStorageRepo(appCtx)
+}
+
+// routerProviderSet 路由层 ProviderSet
+var routerProviderSet = wire.NewSet(
+	provideRouter,
+)
+
+func provideRouter(httpConf *http.Http, appCtx *ctx.Context) *router.Router {
+	return router.NewRouter(httpConf, appCtx)
+}
+
+// storageProviderSet 存储层 ProviderSet
+var storageProviderSet = wire.NewSet(
+	provideStorageFromDB,
+)
+
+func provideStorageFromDB(appCtx *ctx.Context, storageRepo *repo.StorageRepo) (storage.StorageProvider, error) {
+	dbProvider, err := storage.NewStorageDBProvider(appCtx, storageRepo)
+	if err != nil {
+		return nil, err
+	}
+	return dbProvider.GetStorageProvider()
+}
+
+// grpcProviderSet gRPC 服务层 ProviderSet
+var grpcProviderSet = wire.NewSet(
+	provideGrpcServer,
+)
+
+func provideGrpcServer(cfg *grpc.GrpcConf, logger *zap.Logger) *grpc.ServerWrapper {
+	server := grpc.NewGrpcServer(*cfg, logger)
+	server.Register()
+	return server
+}
+
+// pluginProviderSet 插件层 ProviderSet
+var pluginProviderSet = wire.NewSet(
+	providePluginManager,
+	providePluginRepository,
+)
 
 func providePluginRepository(adapter *repo.PluginRepoAdapter) plugin.PluginRepository {
 	return adapter
 }
 
-// ProviderSet 提供插件相关的依赖
-var pluginProviderSet = wire.NewSet(plugin.ProvidePluginManager)
-
-// ProvidePluginManager 提供插件管理器实例
-// 如果提供了 PluginRepository，则从数据库加载插件
-func ProvidePluginManager(repo2 plugin.PluginRepository) *plugin.Manager {
+func providePluginManager(pluginRepo plugin.PluginRepository) *plugin.Manager {
 	m := plugin.NewManager()
-
-	m.SetPluginRepository(repo2)
+	m.SetPluginRepository(pluginRepo)
 
 	if err := m.LoadPluginsFromDatabase(); err != nil {
 		log.Warnf("failed to load plugins from database: %v, will try file system", err)
