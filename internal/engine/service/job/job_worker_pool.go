@@ -13,7 +13,7 @@ import (
  * @author: gagral.x@gmail.com
  * @time: 2025/01/13
  * @file: job_worker_pool.go
- * @description: Job worker pool with goroutine pool
+ * @description: Job worker pool with goroutine pool and sync.Pool optimization
  */
 
 // JobTask Job 任务接口
@@ -21,6 +21,30 @@ type JobTask interface {
 	GetJobID() string
 	GetPriority() int
 	Execute(ctx context.Context) error
+}
+
+// contextPool context.Context 对象池（用于任务执行）
+var contextPool = sync.Pool{
+	New: func() interface{} {
+		return context.Background()
+	},
+}
+
+// statsUpdatePool 统计更新临时结构池
+var statsUpdatePool = sync.Pool{
+	New: func() interface{} {
+		return &statsUpdate{}
+	},
+}
+
+// statsUpdate 统计更新临时结构
+type statsUpdate struct {
+	completed bool
+	failed    bool
+	cancelled bool
+	duration  time.Duration
+	activeInc int
+	activeDec int
 }
 
 // JobWorkerPool Job 协程池
@@ -69,6 +93,13 @@ type PoolStats struct {
 	AverageExecTime time.Duration
 }
 
+// workerPool worker 对象池（用于动态调整时复用）
+var workerPool = sync.Pool{
+	New: func() interface{} {
+		return &worker{}
+	},
+}
+
 // NewJobWorkerPool 创建 Job 协程池
 func NewJobWorkerPool(maxWorkers, queueSize int) *JobWorkerPool {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -103,14 +134,14 @@ func (p *JobWorkerPool) Start() error {
 
 	log.Infof("starting job worker pool with %d workers", p.maxWorkers)
 
-	// 启动工作协程
+	// 启动工作协程（从对象池获取 worker）
 	for i := 0; i < p.maxWorkers; i++ {
-		w := &worker{
-			id:       i,
-			pool:     p,
-			taskChan: p.taskQueue,
-			stopChan: make(chan struct{}),
-		}
+		w := workerPool.Get().(*worker)
+		w.id = i
+		w.pool = p
+		w.taskChan = p.taskQueue
+		w.stopChan = make(chan struct{})
+
 		p.workers = append(p.workers, w)
 
 		p.wg.Add(1)
@@ -250,14 +281,14 @@ func (p *JobWorkerPool) Resize(newSize int) error {
 	}
 
 	if newSize > currentSize {
-		// 增加工作协程
+		// 增加工作协程（从对象池获取）
 		for i := currentSize; i < newSize; i++ {
-			w := &worker{
-				id:       i,
-				pool:     p,
-				taskChan: p.taskQueue,
-				stopChan: make(chan struct{}),
-			}
+			w := workerPool.Get().(*worker)
+			w.id = i
+			w.pool = p
+			w.taskChan = p.taskQueue
+			w.stopChan = make(chan struct{})
+
 			p.workers = append(p.workers, w)
 
 			p.wg.Add(1)
@@ -265,9 +296,18 @@ func (p *JobWorkerPool) Resize(newSize int) error {
 		}
 		log.Infof("worker pool resized from %d to %d workers", currentSize, newSize)
 	} else {
-		// 减少工作协程
+		// 减少工作协程（归还对象池）
 		for i := currentSize - 1; i >= newSize; i-- {
-			close(p.workers[i].stopChan)
+			w := p.workers[i]
+			close(w.stopChan)
+
+			// 清空 worker 并归还对象池
+			w.id = 0
+			w.pool = nil
+			w.taskChan = nil
+			w.stopChan = nil
+			workerPool.Put(w)
+
 			p.workers = p.workers[:i]
 		}
 		log.Infof("worker pool resized from %d to %d workers", currentSize, newSize)
@@ -332,10 +372,18 @@ func (w *worker) run() {
 	}
 }
 
-// executeTask 执行单个任务
+// executeTask 执行单个任务（使用 sync.Pool 优化）
 func (w *worker) executeTask(task JobTask) {
 	jobId := task.GetJobID()
 	startTime := time.Now()
+
+	// 从对象池获取统计更新对象
+	update := statsUpdatePool.Get().(*statsUpdate)
+	defer func() {
+		// 重置并归还对象池
+		*update = statsUpdate{}
+		statsUpdatePool.Put(update)
+	}()
 
 	// 更新活跃工作协程数
 	w.pool.stats.mu.Lock()
@@ -346,32 +394,60 @@ func (w *worker) executeTask(task JobTask) {
 		// 恢复 panic
 		if r := recover(); r != nil {
 			log.Errorf("worker %d panic while executing task %s: %v", w.id, jobId, r)
-			w.pool.stats.mu.Lock()
-			w.pool.stats.TotalFailed++
-			w.pool.stats.ActiveWorkers--
-			w.pool.stats.mu.Unlock()
+			update.failed = true
+			update.activeDec = 1
+			w.applyStatsUpdate(update, time.Since(startTime))
 		}
 	}()
 
 	log.Infof("worker %d executing task %s (priority=%d)", w.id, jobId, task.GetPriority())
 
-	// 创建带超时的上下文
-	ctx, cancel := context.WithTimeout(context.Background(), w.pool.workerTimeout)
-	defer cancel()
+	// 创建带超时的上下文（复用基础 context）
+	baseCtx := contextPool.Get().(context.Context)
+	ctx, cancel := context.WithTimeout(baseCtx, w.pool.workerTimeout)
+	defer func() {
+		cancel()
+		contextPool.Put(context.Background())
+	}()
 
 	// 执行任务
 	err := task.Execute(ctx)
 	duration := time.Since(startTime)
 
-	// 更新统计
-	w.pool.stats.mu.Lock()
+	// 准备统计更新
+	update.activeDec = 1
+	update.duration = duration
+
 	if err != nil {
-		w.pool.stats.TotalFailed++
+		// 任务失败
+		update.failed = true
 		log.Errorf("worker %d task %s failed after %v: %v", w.id, jobId, duration, err)
 	} else {
-		w.pool.stats.TotalCompleted++
+		// 任务成功
+		update.completed = true
 		log.Infof("worker %d task %s completed in %v", w.id, jobId, duration)
 	}
+
+	// 应用统计更新
+	w.applyStatsUpdate(update, duration)
+}
+
+// applyStatsUpdate 应用统计更新（集中处理，减少锁竞争）
+func (w *worker) applyStatsUpdate(update *statsUpdate, duration time.Duration) {
+	w.pool.stats.mu.Lock()
+	defer w.pool.stats.mu.Unlock()
+
+	if update.completed {
+		w.pool.stats.TotalCompleted++
+	}
+	if update.failed {
+		w.pool.stats.TotalFailed++
+	}
+	if update.cancelled {
+		w.pool.stats.TotalCancelled++
+	}
+
+	w.pool.stats.ActiveWorkers -= update.activeDec
 
 	// 更新平均执行时间
 	totalTasks := w.pool.stats.TotalCompleted + w.pool.stats.TotalFailed
@@ -379,23 +455,36 @@ func (w *worker) executeTask(task JobTask) {
 		avgTime := w.pool.stats.AverageExecTime
 		w.pool.stats.AverageExecTime = (avgTime*time.Duration(totalTasks-1) + duration) / time.Duration(totalTasks)
 	}
-
-	w.pool.stats.ActiveWorkers--
-	w.pool.stats.mu.Unlock()
 }
 
-// PriorityQueue 优先级队列（最小堆）
+// PriorityQueue 优先级队列（最小堆，使用 sync.Pool 优化）
 type PriorityQueue struct {
 	mu    sync.RWMutex
 	tasks []JobTask
 	index map[string]int // jobId -> index in tasks
 }
 
-// NewPriorityQueue 创建优先级队列
+// taskSlicePool 任务切片对象池
+var taskSlicePool = sync.Pool{
+	New: func() interface{} {
+		slice := make([]JobTask, 0, 100) // 预分配容量
+		return &slice
+	},
+}
+
+// indexMapPool 索引映射对象池
+var indexMapPool = sync.Pool{
+	New: func() interface{} {
+		m := make(map[string]int, 100) // 预分配容量
+		return &m
+	},
+}
+
+// NewPriorityQueue 创建优先级队列（使用对象池）
 func NewPriorityQueue() *PriorityQueue {
 	return &PriorityQueue{
-		tasks: make([]JobTask, 0),
-		index: make(map[string]int),
+		tasks: make([]JobTask, 0, 100),
+		index: make(map[string]int, 100),
 	}
 }
 

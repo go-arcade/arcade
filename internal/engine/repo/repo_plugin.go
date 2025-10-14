@@ -5,7 +5,6 @@ import (
 	"github.com/observabil/arcade/pkg/ctx"
 )
 
-
 type PluginRepo struct {
 	Ctx         *ctx.Context
 	PluginModel model.Plugin
@@ -21,7 +20,7 @@ func NewPluginRepo(ctx *ctx.Context) *PluginRepo {
 // GetEnabledPlugins 获取所有启用的插件
 func (r *PluginRepo) GetEnabledPlugins() ([]model.Plugin, error) {
 	var plugins []model.Plugin
-	err := r.Ctx.GetDB().Table(r.PluginModel.TableName()).
+	err := r.Ctx.DBSession().Table(r.PluginModel.TableName()).
 		Where("is_enabled = ?", 1).
 		Order("plugin_type ASC, id ASC").
 		Find(&plugins).Error
@@ -31,7 +30,7 @@ func (r *PluginRepo) GetEnabledPlugins() ([]model.Plugin, error) {
 // GetPluginByID 根据plugin_id获取插件
 func (r *PluginRepo) GetPluginByID(pluginID string) (*model.Plugin, error) {
 	var plugin model.Plugin
-	err := r.Ctx.GetDB().Table(r.PluginModel.TableName()).
+	err := r.Ctx.DBSession().Table(r.PluginModel.TableName()).
 		Where("plugin_id = ? AND is_enabled = ?", pluginID, 1).
 		First(&plugin).Error
 	if err != nil {
@@ -43,7 +42,7 @@ func (r *PluginRepo) GetPluginByID(pluginID string) (*model.Plugin, error) {
 // GetPluginsByType 根据类型获取插件列表
 func (r *PluginRepo) GetPluginsByType(pluginType string) ([]model.Plugin, error) {
 	var plugins []model.Plugin
-	err := r.Ctx.GetDB().Table(r.PluginModel.TableName()).
+	err := r.Ctx.DBSession().Table(r.PluginModel.TableName()).
 		Where("plugin_type = ? AND is_enabled = ?", pluginType, 1).
 		Order("id ASC").
 		Find(&plugins).Error
@@ -53,7 +52,7 @@ func (r *PluginRepo) GetPluginsByType(pluginType string) ([]model.Plugin, error)
 // GetPluginConfig 获取插件配置
 func (r *PluginRepo) GetPluginConfig(configID string) (*model.PluginConfig, error) {
 	var config model.PluginConfig
-	err := r.Ctx.GetDB().Table("t_plugin_config").
+	err := r.Ctx.DBSession().Table("t_plugin_config").
 		Where("config_id = ?", configID).
 		First(&config).Error
 	if err != nil {
@@ -65,7 +64,7 @@ func (r *PluginRepo) GetPluginConfig(configID string) (*model.PluginConfig, erro
 // GetDefaultPluginConfig 获取插件的默认配置
 func (r *PluginRepo) GetDefaultPluginConfig(pluginID string) (*model.PluginConfig, error) {
 	var config model.PluginConfig
-	err := r.Ctx.GetDB().Table("t_plugin_config").
+	err := r.Ctx.DBSession().Table("t_plugin_config").
 		Where("plugin_id = ? AND is_default = ?", pluginID, 1).
 		First(&config).Error
 	if err != nil {
@@ -77,7 +76,7 @@ func (r *PluginRepo) GetDefaultPluginConfig(pluginID string) (*model.PluginConfi
 // GetJobPlugins 获取任务关联的插件列表
 func (r *PluginRepo) GetJobPlugins(jobID string) ([]model.JobPlugin, error) {
 	var jobPlugins []model.JobPlugin
-	err := r.Ctx.GetDB().Table("t_job_plugin").
+	err := r.Ctx.DBSession().Table("t_job_plugin").
 		Where("job_id = ?", jobID).
 		Order("execution_order ASC").
 		Find(&jobPlugins).Error
@@ -86,7 +85,7 @@ func (r *PluginRepo) GetJobPlugins(jobID string) ([]model.JobPlugin, error) {
 
 // CreateJobPlugin 创建任务插件关联
 func (r *PluginRepo) CreateJobPlugin(jobPlugin *model.JobPlugin) error {
-	return r.Ctx.GetDB().Table("t_job_plugin").Create(jobPlugin).Error
+	return r.Ctx.DBSession().Table("t_job_plugin").Create(jobPlugin).Error
 }
 
 // UpdateJobPluginStatus 更新任务插件执行状态
@@ -100,7 +99,7 @@ func (r *PluginRepo) UpdateJobPluginStatus(id int, status int, result, errorMsg 
 	if errorMsg != "" {
 		updates["error_message"] = errorMsg
 	}
-	return r.Ctx.GetDB().Table("t_job_plugin").
+	return r.Ctx.DBSession().Table("t_job_plugin").
 		Where("id = ?", id).
 		Updates(updates).Error
 }

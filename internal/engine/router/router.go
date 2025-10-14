@@ -11,6 +11,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/observabil/arcade/internal/engine/service"
 	"github.com/observabil/arcade/pkg/ctx"
 	httpx "github.com/observabil/arcade/pkg/http"
 	"github.com/observabil/arcade/pkg/http/middleware"
@@ -20,8 +21,9 @@ import (
 )
 
 type Router struct {
-	Http *httpx.Http
-	Ctx  *ctx.Context
+	Http        *httpx.Http
+	Ctx         *ctx.Context
+	PermService *service.PermissionService
 }
 
 const (
@@ -132,7 +134,7 @@ func (rt *Router) routerGroup(r fiber.Router) {
 	auth := middleware.AuthorizationMiddleware(
 		rt.Http.Auth.SecretKey,
 		rt.Http.Auth.RedisKeyPrefix,
-		*rt.Ctx.GetRedis(),
+		*rt.Ctx.RedisSession(),
 	)
 
 	// user

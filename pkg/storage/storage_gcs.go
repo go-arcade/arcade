@@ -41,7 +41,7 @@ func newGCS(s *Storage) (*GCSStorage, error) {
 
 func (g *GCSStorage) GetObject(ctx *ctx.Context, objectName string) ([]byte, error) {
 	fullPath := getFullPath(g.s.BasePath, objectName)
-	reader, err := g.Bucket.Object(fullPath).NewReader(ctx.GetCtx())
+	reader, err := g.Bucket.Object(fullPath).NewReader(ctx.ContextIns())
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (g *GCSStorage) PutObject(ctx *ctx.Context, objectName string, file *multip
 	defer src.Close()
 
 	fullPath := getFullPath(g.s.BasePath, objectName)
-	writer := g.Bucket.Object(fullPath).NewWriter(ctx.GetCtx())
+	writer := g.Bucket.Object(fullPath).NewWriter(ctx.ContextIns())
 	writer.ContentType = contentType
 
 	if _, err := io.Copy(writer, src); err != nil {
@@ -83,7 +83,7 @@ func (g *GCSStorage) Upload(ctx *ctx.Context, objectName string, file *multipart
 
 func (g *GCSStorage) Download(ctx *ctx.Context, objectName string) ([]byte, error) {
 	fullPath := getFullPath(g.s.BasePath, objectName)
-	reader, err := g.Bucket.Object(fullPath).NewReader(ctx.GetCtx())
+	reader, err := g.Bucket.Object(fullPath).NewReader(ctx.ContextIns())
 	if err != nil {
 		return nil, err
 	}
@@ -94,5 +94,5 @@ func (g *GCSStorage) Download(ctx *ctx.Context, objectName string) ([]byte, erro
 
 func (g *GCSStorage) Delete(ctx *ctx.Context, objectName string) error {
 	fullPath := getFullPath(g.s.BasePath, objectName)
-	return g.Bucket.Object(fullPath).Delete(ctx.GetCtx())
+	return g.Bucket.Object(fullPath).Delete(ctx.ContextIns())
 }

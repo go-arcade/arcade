@@ -115,36 +115,6 @@ const (
 	VisibilityPublic   = 2 // 公开
 )
 
-// ProjectMember 项目成员表（直接添加的用户）
-type ProjectMember struct {
-	BaseModel
-	ProjectId string `gorm:"column:project_id" json:"projectId"` // 项目ID
-	UserId    string `gorm:"column:user_id" json:"userId"`       // 用户ID
-	Role      string `gorm:"column:role" json:"role"`            // 角色(owner/maintainer/developer/reporter/guest)
-	Username  string `gorm:"column:username" json:"username"`    // 用户名(冗余)
-	Source    string `gorm:"column:source" json:"source"`        // 来源(direct/team/org)
-}
-
-func (ProjectMember) TableName() string {
-	return "t_project_member"
-}
-
-// ProjectMemberSource 项目成员来源
-const (
-	MemberSourceDirect = "direct" // 直接添加
-	MemberSourceTeam   = "team"   // 来自团队
-	MemberSourceOrg    = "org"    // 来自组织
-)
-
-// ProjectMemberRole 项目成员角色
-const (
-	RoleOwner      = "owner"      // 所有者
-	RoleMaintainer = "maintainer" // 维护者
-	RoleDeveloper  = "developer"  // 开发者
-	RoleReporter   = "reporter"   // 报告者
-	RoleGuest      = "guest"      // 访客
-)
-
 // ProjectWebhook 项目Webhook表
 type ProjectWebhook struct {
 	BaseModel
