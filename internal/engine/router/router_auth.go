@@ -4,10 +4,10 @@ import (
 	http2 "net/http"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/observabil/arcade/internal/engine/constant"
 	"github.com/observabil/arcade/internal/engine/repo"
 	"github.com/observabil/arcade/internal/engine/service"
 	"github.com/observabil/arcade/pkg/http"
+	"github.com/observabil/arcade/pkg/http/middleware"
 )
 
 func (rt *Router) authRouter(r fiber.Router, auth fiber.Handler) {
@@ -56,7 +56,7 @@ func (rt *Router) callback(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
 	}
 
-	c.Locals(constant.DETAIL, userInfo)
+	c.Locals(middleware.DETAIL, userInfo)
 	return nil
 }
 
@@ -75,7 +75,7 @@ func (rt *Router) getOauthProvider(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
 
-	c.Locals(constant.DETAIL, authConfig)
+	c.Locals(middleware.DETAIL, authConfig)
 	return nil
 }
 
@@ -89,6 +89,6 @@ func (rt *Router) getOauthProviderList(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
 
-	c.Locals(constant.DETAIL, authConfigs)
+	c.Locals(middleware.DETAIL, authConfigs)
 	return nil
 }

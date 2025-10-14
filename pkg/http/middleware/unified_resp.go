@@ -2,8 +2,18 @@ package middleware
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/observabil/arcade/internal/engine/constant"
 	httpx "github.com/observabil/arcade/pkg/http"
+)
+
+// UnifiedResponse 统一响应
+const (
+	// DETAIL Detail 用于设置响应数据，例如查询，分页等，需要返回数据
+	// e.g: c.Set(DETAIL, value)
+	DETAIL = "detail"
+
+	// OPERATION Operation 用于设置响应数据，例如新增，修改，删除等，不需要返回数据，只返回操作结果
+	// e.g: c.Set(OPERATION, "")
+	OPERATION = "operation"
 )
 
 // UnifiedResponseInterceptor 统一响应拦截器
@@ -28,12 +38,12 @@ func UnifiedResponseMiddleware() fiber.Handler {
 
 		// 业务逻辑正确, 设置响应数据
 		if c.Response().StatusCode() >= fiber.StatusOK && c.Response().StatusCode() < fiber.StatusMultipleChoices {
-			if detail := c.Locals(constant.DETAIL); detail != nil {
+			if detail := c.Locals(DETAIL); detail != nil {
 				return httpx.WithRepJSON(c, detail)
 			}
 
 			// 业务逻辑正确, 无响应数据, 只返回结果
-			if c.Locals(constant.OPERATION) != nil {
+			if c.Locals(OPERATION) != nil {
 				return httpx.WithRepNotDetail(c)
 			}
 		}
