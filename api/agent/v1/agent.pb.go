@@ -140,6 +140,59 @@ func (LabelOperator) EnumDescriptor() ([]byte, []int) {
 	return file_api_agent_v1_proto_agent_proto_rawDescGZIP(), []int{1}
 }
 
+// 插件位置
+type PluginLocation int32
+
+const (
+	PluginLocation_PLUGIN_LOCATION_UNKNOWN  PluginLocation = 0
+	PluginLocation_PLUGIN_LOCATION_SERVER   PluginLocation = 1 // 服务端文件系统
+	PluginLocation_PLUGIN_LOCATION_STORAGE  PluginLocation = 2 // 对象存储
+	PluginLocation_PLUGIN_LOCATION_REGISTRY PluginLocation = 3 // 插件仓库
+)
+
+// Enum value maps for PluginLocation.
+var (
+	PluginLocation_name = map[int32]string{
+		0: "PLUGIN_LOCATION_UNKNOWN",
+		1: "PLUGIN_LOCATION_SERVER",
+		2: "PLUGIN_LOCATION_STORAGE",
+		3: "PLUGIN_LOCATION_REGISTRY",
+	}
+	PluginLocation_value = map[string]int32{
+		"PLUGIN_LOCATION_UNKNOWN":  0,
+		"PLUGIN_LOCATION_SERVER":   1,
+		"PLUGIN_LOCATION_STORAGE":  2,
+		"PLUGIN_LOCATION_REGISTRY": 3,
+	}
+)
+
+func (x PluginLocation) Enum() *PluginLocation {
+	p := new(PluginLocation)
+	*p = x
+	return p
+}
+
+func (x PluginLocation) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PluginLocation) Descriptor() protoreflect.EnumDescriptor {
+	return file_api_agent_v1_proto_agent_proto_enumTypes[2].Descriptor()
+}
+
+func (PluginLocation) Type() protoreflect.EnumType {
+	return &file_api_agent_v1_proto_agent_proto_enumTypes[2]
+}
+
+func (x PluginLocation) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use PluginLocation.Descriptor instead.
+func (PluginLocation) EnumDescriptor() ([]byte, []int) {
+	return file_api_agent_v1_proto_agent_proto_rawDescGZIP(), []int{2}
+}
+
 // 心跳请求
 type HeartbeatRequest struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
@@ -298,6 +351,7 @@ type RegisterRequest struct {
 	Tags              []string               `protobuf:"bytes,7,rep,name=tags,proto3" json:"tags,omitempty"`                                                                               // Agent标签（用于任务路由）
 	MaxConcurrentJobs int32                  `protobuf:"varint,8,opt,name=max_concurrent_jobs,json=maxConcurrentJobs,proto3" json:"max_concurrent_jobs,omitempty"`                         // 最大并发任务数
 	Labels            map[string]string      `protobuf:"bytes,9,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // 自定义标签
+	InstalledPlugins  []string               `protobuf:"bytes,10,rep,name=installed_plugins,json=installedPlugins,proto3" json:"installed_plugins,omitempty"`                              // Agent已安装的插件列表
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -391,6 +445,13 @@ func (x *RegisterRequest) GetMaxConcurrentJobs() int32 {
 func (x *RegisterRequest) GetLabels() map[string]string {
 	if x != nil {
 		return x.Labels
+	}
+	return nil
+}
+
+func (x *RegisterRequest) GetInstalledPlugins() []string {
+	if x != nil {
+		return x.InstalledPlugins
 	}
 	return nil
 }
@@ -716,6 +777,7 @@ type Job struct {
 	Secrets       map[string]string      `protobuf:"bytes,11,rep,name=secrets,proto3" json:"secrets,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // 密钥信息
 	Artifacts     []*Artifact            `protobuf:"bytes,12,rep,name=artifacts,proto3" json:"artifacts,omitempty"`                                                                       // 产物配置
 	LabelSelector *LabelSelector         `protobuf:"bytes,13,opt,name=label_selector,json=labelSelector,proto3" json:"label_selector,omitempty"`                                          // 标签选择器（用于匹配Agent）
+	Plugins       []*PluginInfo          `protobuf:"bytes,14,rep,name=plugins,proto3" json:"plugins,omitempty"`                                                                           // 任务所需插件列表
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -837,6 +899,13 @@ func (x *Job) GetArtifacts() []*Artifact {
 func (x *Job) GetLabelSelector() *LabelSelector {
 	if x != nil {
 		return x.LabelSelector
+	}
+	return nil
+}
+
+func (x *Job) GetPlugins() []*PluginInfo {
+	if x != nil {
+		return x.Plugins
 	}
 	return nil
 }
@@ -1599,6 +1668,359 @@ func (x *LabelSelectorRequirement) GetValues() []string {
 	return nil
 }
 
+// 插件信息
+type PluginInfo struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PluginId      string                 `protobuf:"bytes,1,opt,name=plugin_id,json=pluginId,proto3" json:"plugin_id,omitempty"`                   // 插件ID
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`                                           // 插件名称
+	Version       string                 `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`                                     // 版本号
+	Checksum      string                 `protobuf:"bytes,4,opt,name=checksum,proto3" json:"checksum,omitempty"`                                   // SHA256校验和
+	Size          int64                  `protobuf:"varint,5,opt,name=size,proto3" json:"size,omitempty"`                                          // 文件大小（字节）
+	DownloadUrl   string                 `protobuf:"bytes,6,opt,name=download_url,json=downloadUrl,proto3" json:"download_url,omitempty"`          // 下载地址（可选，用于CDN分发）
+	Location      PluginLocation         `protobuf:"varint,7,opt,name=location,proto3,enum=api.agent.v1.PluginLocation" json:"location,omitempty"` // 插件位置
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PluginInfo) Reset() {
+	*x = PluginInfo{}
+	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PluginInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PluginInfo) ProtoMessage() {}
+
+func (x *PluginInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PluginInfo.ProtoReflect.Descriptor instead.
+func (*PluginInfo) Descriptor() ([]byte, []int) {
+	return file_api_agent_v1_proto_agent_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *PluginInfo) GetPluginId() string {
+	if x != nil {
+		return x.PluginId
+	}
+	return ""
+}
+
+func (x *PluginInfo) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *PluginInfo) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *PluginInfo) GetChecksum() string {
+	if x != nil {
+		return x.Checksum
+	}
+	return ""
+}
+
+func (x *PluginInfo) GetSize() int64 {
+	if x != nil {
+		return x.Size
+	}
+	return 0
+}
+
+func (x *PluginInfo) GetDownloadUrl() string {
+	if x != nil {
+		return x.DownloadUrl
+	}
+	return ""
+}
+
+func (x *PluginInfo) GetLocation() PluginLocation {
+	if x != nil {
+		return x.Location
+	}
+	return PluginLocation_PLUGIN_LOCATION_UNKNOWN
+}
+
+// 下载插件请求
+type DownloadPluginRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentId       string                 `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`    // Agent ID
+	PluginId      string                 `protobuf:"bytes,2,opt,name=plugin_id,json=pluginId,proto3" json:"plugin_id,omitempty"` // 插件ID
+	Version       string                 `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`                   // 版本号（可选，不指定则下载最新版本）
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DownloadPluginRequest) Reset() {
+	*x = DownloadPluginRequest{}
+	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DownloadPluginRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DownloadPluginRequest) ProtoMessage() {}
+
+func (x *DownloadPluginRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DownloadPluginRequest.ProtoReflect.Descriptor instead.
+func (*DownloadPluginRequest) Descriptor() ([]byte, []int) {
+	return file_api_agent_v1_proto_agent_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *DownloadPluginRequest) GetAgentId() string {
+	if x != nil {
+		return x.AgentId
+	}
+	return ""
+}
+
+func (x *DownloadPluginRequest) GetPluginId() string {
+	if x != nil {
+		return x.PluginId
+	}
+	return ""
+}
+
+func (x *DownloadPluginRequest) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+// 下载插件响应
+type DownloadPluginResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`                        // 是否成功
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`                         // 消息
+	PluginData    []byte                 `protobuf:"bytes,3,opt,name=plugin_data,json=pluginData,proto3" json:"plugin_data,omitempty"` // 插件二进制数据
+	Checksum      string                 `protobuf:"bytes,4,opt,name=checksum,proto3" json:"checksum,omitempty"`                       // SHA256校验和
+	Size          int64                  `protobuf:"varint,5,opt,name=size,proto3" json:"size,omitempty"`                              // 文件大小
+	Version       string                 `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`                         // 实际版本号
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DownloadPluginResponse) Reset() {
+	*x = DownloadPluginResponse{}
+	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DownloadPluginResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DownloadPluginResponse) ProtoMessage() {}
+
+func (x *DownloadPluginResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DownloadPluginResponse.ProtoReflect.Descriptor instead.
+func (*DownloadPluginResponse) Descriptor() ([]byte, []int) {
+	return file_api_agent_v1_proto_agent_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *DownloadPluginResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *DownloadPluginResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *DownloadPluginResponse) GetPluginData() []byte {
+	if x != nil {
+		return x.PluginData
+	}
+	return nil
+}
+
+func (x *DownloadPluginResponse) GetChecksum() string {
+	if x != nil {
+		return x.Checksum
+	}
+	return ""
+}
+
+func (x *DownloadPluginResponse) GetSize() int64 {
+	if x != nil {
+		return x.Size
+	}
+	return 0
+}
+
+func (x *DownloadPluginResponse) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+// 列出可用插件请求
+type ListAvailablePluginsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AgentId       string                 `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`          // Agent ID
+	PluginType    string                 `protobuf:"bytes,2,opt,name=plugin_type,json=pluginType,proto3" json:"plugin_type,omitempty"` // 可选：按类型过滤（notify/ci/cd/security等）
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAvailablePluginsRequest) Reset() {
+	*x = ListAvailablePluginsRequest{}
+	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAvailablePluginsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAvailablePluginsRequest) ProtoMessage() {}
+
+func (x *ListAvailablePluginsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAvailablePluginsRequest.ProtoReflect.Descriptor instead.
+func (*ListAvailablePluginsRequest) Descriptor() ([]byte, []int) {
+	return file_api_agent_v1_proto_agent_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *ListAvailablePluginsRequest) GetAgentId() string {
+	if x != nil {
+		return x.AgentId
+	}
+	return ""
+}
+
+func (x *ListAvailablePluginsRequest) GetPluginType() string {
+	if x != nil {
+		return x.PluginType
+	}
+	return ""
+}
+
+// 列出可用插件响应
+type ListAvailablePluginsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	Plugins       []*PluginInfo          `protobuf:"bytes,3,rep,name=plugins,proto3" json:"plugins,omitempty"` // 可用插件列表
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAvailablePluginsResponse) Reset() {
+	*x = ListAvailablePluginsResponse{}
+	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAvailablePluginsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAvailablePluginsResponse) ProtoMessage() {}
+
+func (x *ListAvailablePluginsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAvailablePluginsResponse.ProtoReflect.Descriptor instead.
+func (*ListAvailablePluginsResponse) Descriptor() ([]byte, []int) {
+	return file_api_agent_v1_proto_agent_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *ListAvailablePluginsResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *ListAvailablePluginsResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *ListAvailablePluginsResponse) GetPlugins() []*PluginInfo {
+	if x != nil {
+		return x.Plugins
+	}
+	return nil
+}
+
 var File_api_agent_v1_proto_agent_proto protoreflect.FileDescriptor
 
 const file_api_agent_v1_proto_agent_proto_rawDesc = "" +
@@ -1620,7 +2042,7 @@ const file_api_agent_v1_proto_agent_proto_rawDesc = "" +
 	"\x11HeartbeatResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x1c\n" +
-	"\ttimestamp\x18\x03 \x01(\x03R\ttimestamp\"\xd8\x02\n" +
+	"\ttimestamp\x18\x03 \x01(\x03R\ttimestamp\"\x85\x03\n" +
 	"\x0fRegisterRequest\x12\x19\n" +
 	"\bagent_id\x18\x01 \x01(\tR\aagentId\x12\x1a\n" +
 	"\bhostname\x18\x02 \x01(\tR\bhostname\x12\x0e\n" +
@@ -1630,7 +2052,9 @@ const file_api_agent_v1_proto_agent_proto_rawDesc = "" +
 	"\aversion\x18\x06 \x01(\tR\aversion\x12\x12\n" +
 	"\x04tags\x18\a \x03(\tR\x04tags\x12.\n" +
 	"\x13max_concurrent_jobs\x18\b \x01(\x05R\x11maxConcurrentJobs\x12A\n" +
-	"\x06labels\x18\t \x03(\v2).api.agent.v1.RegisterRequest.LabelsEntryR\x06labels\x1a9\n" +
+	"\x06labels\x18\t \x03(\v2).api.agent.v1.RegisterRequest.LabelsEntryR\x06labels\x12+\n" +
+	"\x11installed_plugins\x18\n" +
+	" \x03(\tR\x10installedPlugins\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x90\x01\n" +
@@ -1656,7 +2080,7 @@ const file_api_agent_v1_proto_agent_proto_rawDesc = "" +
 	"\x10FetchJobResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12%\n" +
-	"\x04jobs\x18\x03 \x03(\v2\x11.api.agent.v1.JobR\x04jobs\"\xbb\x04\n" +
+	"\x04jobs\x18\x03 \x03(\v2\x11.api.agent.v1.JobR\x04jobs\"\xef\x04\n" +
 	"\x03Job\x12\x15\n" +
 	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1f\n" +
@@ -1672,7 +2096,8 @@ const file_api_agent_v1_proto_agent_proto_rawDesc = "" +
 	" \x01(\tR\x05image\x128\n" +
 	"\asecrets\x18\v \x03(\v2\x1e.api.agent.v1.Job.SecretsEntryR\asecrets\x124\n" +
 	"\tartifacts\x18\f \x03(\v2\x16.api.agent.v1.ArtifactR\tartifacts\x12B\n" +
-	"\x0elabel_selector\x18\r \x01(\v2\x1b.api.agent.v1.LabelSelectorR\rlabelSelector\x1a6\n" +
+	"\x0elabel_selector\x18\r \x01(\v2\x1b.api.agent.v1.LabelSelectorR\rlabelSelector\x122\n" +
+	"\aplugins\x18\x0e \x03(\v2\x18.api.agent.v1.PluginInfoR\aplugins\x1a6\n" +
 	"\bEnvEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a:\n" +
@@ -1743,7 +2168,36 @@ const file_api_agent_v1_proto_agent_proto_rawDesc = "" +
 	"\x18LabelSelectorRequirement\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x127\n" +
 	"\boperator\x18\x02 \x01(\x0e2\x1b.api.agent.v1.LabelOperatorR\boperator\x12\x16\n" +
-	"\x06values\x18\x03 \x03(\tR\x06values*\x88\x01\n" +
+	"\x06values\x18\x03 \x03(\tR\x06values\"\xe4\x01\n" +
+	"\n" +
+	"PluginInfo\x12\x1b\n" +
+	"\tplugin_id\x18\x01 \x01(\tR\bpluginId\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
+	"\aversion\x18\x03 \x01(\tR\aversion\x12\x1a\n" +
+	"\bchecksum\x18\x04 \x01(\tR\bchecksum\x12\x12\n" +
+	"\x04size\x18\x05 \x01(\x03R\x04size\x12!\n" +
+	"\fdownload_url\x18\x06 \x01(\tR\vdownloadUrl\x128\n" +
+	"\blocation\x18\a \x01(\x0e2\x1c.api.agent.v1.PluginLocationR\blocation\"i\n" +
+	"\x15DownloadPluginRequest\x12\x19\n" +
+	"\bagent_id\x18\x01 \x01(\tR\aagentId\x12\x1b\n" +
+	"\tplugin_id\x18\x02 \x01(\tR\bpluginId\x12\x18\n" +
+	"\aversion\x18\x03 \x01(\tR\aversion\"\xb7\x01\n" +
+	"\x16DownloadPluginResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12\x1f\n" +
+	"\vplugin_data\x18\x03 \x01(\fR\n" +
+	"pluginData\x12\x1a\n" +
+	"\bchecksum\x18\x04 \x01(\tR\bchecksum\x12\x12\n" +
+	"\x04size\x18\x05 \x01(\x03R\x04size\x12\x18\n" +
+	"\aversion\x18\x06 \x01(\tR\aversion\"Y\n" +
+	"\x1bListAvailablePluginsRequest\x12\x19\n" +
+	"\bagent_id\x18\x01 \x01(\tR\aagentId\x12\x1f\n" +
+	"\vplugin_type\x18\x02 \x01(\tR\n" +
+	"pluginType\"\x86\x01\n" +
+	"\x1cListAvailablePluginsResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x122\n" +
+	"\aplugins\x18\x03 \x03(\v2\x18.api.agent.v1.PluginInfoR\aplugins*\x88\x01\n" +
 	"\vAgentStatus\x12\x18\n" +
 	"\x14AGENT_STATUS_UNKNOWN\x10\x00\x12\x17\n" +
 	"\x13AGENT_STATUS_ONLINE\x10\x01\x12\x18\n" +
@@ -1757,7 +2211,12 @@ const file_api_agent_v1_proto_agent_proto_rawDesc = "" +
 	"\x15LABEL_OPERATOR_EXISTS\x10\x03\x12\x1d\n" +
 	"\x19LABEL_OPERATOR_NOT_EXISTS\x10\x04\x12\x15\n" +
 	"\x11LABEL_OPERATOR_GT\x10\x05\x12\x15\n" +
-	"\x11LABEL_OPERATOR_LT\x10\x062\xa8\x05\n" +
+	"\x11LABEL_OPERATOR_LT\x10\x06*\x84\x01\n" +
+	"\x0ePluginLocation\x12\x1b\n" +
+	"\x17PLUGIN_LOCATION_UNKNOWN\x10\x00\x12\x1a\n" +
+	"\x16PLUGIN_LOCATION_SERVER\x10\x01\x12\x1b\n" +
+	"\x17PLUGIN_LOCATION_STORAGE\x10\x02\x12\x1c\n" +
+	"\x18PLUGIN_LOCATION_REGISTRY\x10\x032\xf8\x06\n" +
 	"\x05Agent\x12N\n" +
 	"\tHeartbeat\x12\x1e.api.agent.v1.HeartbeatRequest\x1a\x1f.api.agent.v1.HeartbeatResponse\"\x00\x12K\n" +
 	"\bRegister\x12\x1d.api.agent.v1.RegisterRequest\x1a\x1e.api.agent.v1.RegisterResponse\"\x00\x12Q\n" +
@@ -1767,7 +2226,9 @@ const file_api_agent_v1_proto_agent_proto_rawDesc = "" +
 	"\x0fReportJobStatus\x12$.api.agent.v1.ReportJobStatusRequest\x1a%.api.agent.v1.ReportJobStatusResponse\"\x00\x12W\n" +
 	"\fReportJobLog\x12!.api.agent.v1.ReportJobLogRequest\x1a\".api.agent.v1.ReportJobLogResponse\"\x00\x12N\n" +
 	"\tCancelJob\x12\x1e.api.agent.v1.CancelJobRequest\x1a\x1f.api.agent.v1.CancelJobResponse\"\x00\x12W\n" +
-	"\fUpdateLabels\x12!.api.agent.v1.UpdateLabelsRequest\x1a\".api.agent.v1.UpdateLabelsResponse\"\x00B.Z,github.com/observabil/arcade/api/agent/v1;v1b\x06proto3"
+	"\fUpdateLabels\x12!.api.agent.v1.UpdateLabelsRequest\x1a\".api.agent.v1.UpdateLabelsResponse\"\x00\x12]\n" +
+	"\x0eDownloadPlugin\x12#.api.agent.v1.DownloadPluginRequest\x1a$.api.agent.v1.DownloadPluginResponse\"\x00\x12o\n" +
+	"\x14ListAvailablePlugins\x12).api.agent.v1.ListAvailablePluginsRequest\x1a*.api.agent.v1.ListAvailablePluginsResponse\"\x00B.Z,github.com/observabil/arcade/api/agent/v1;v1b\x06proto3"
 
 var (
 	file_api_agent_v1_proto_agent_proto_rawDescOnce sync.Once
@@ -1781,84 +2242,97 @@ func file_api_agent_v1_proto_agent_proto_rawDescGZIP() []byte {
 	return file_api_agent_v1_proto_agent_proto_rawDescData
 }
 
-var file_api_agent_v1_proto_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_api_agent_v1_proto_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
+var file_api_agent_v1_proto_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_api_agent_v1_proto_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
 var file_api_agent_v1_proto_agent_proto_goTypes = []any{
-	(AgentStatus)(0),                 // 0: api.agent.v1.AgentStatus
-	(LabelOperator)(0),               // 1: api.agent.v1.LabelOperator
-	(*HeartbeatRequest)(nil),         // 2: api.agent.v1.HeartbeatRequest
-	(*HeartbeatResponse)(nil),        // 3: api.agent.v1.HeartbeatResponse
-	(*RegisterRequest)(nil),          // 4: api.agent.v1.RegisterRequest
-	(*RegisterResponse)(nil),         // 5: api.agent.v1.RegisterResponse
-	(*UnregisterRequest)(nil),        // 6: api.agent.v1.UnregisterRequest
-	(*UnregisterResponse)(nil),       // 7: api.agent.v1.UnregisterResponse
-	(*FetchJobRequest)(nil),          // 8: api.agent.v1.FetchJobRequest
-	(*FetchJobResponse)(nil),         // 9: api.agent.v1.FetchJobResponse
-	(*Job)(nil),                      // 10: api.agent.v1.Job
-	(*Artifact)(nil),                 // 11: api.agent.v1.Artifact
-	(*ReportJobStatusRequest)(nil),   // 12: api.agent.v1.ReportJobStatusRequest
-	(*ReportJobStatusResponse)(nil),  // 13: api.agent.v1.ReportJobStatusResponse
-	(*ReportJobLogRequest)(nil),      // 14: api.agent.v1.ReportJobLogRequest
-	(*LogEntry)(nil),                 // 15: api.agent.v1.LogEntry
-	(*ReportJobLogResponse)(nil),     // 16: api.agent.v1.ReportJobLogResponse
-	(*CancelJobRequest)(nil),         // 17: api.agent.v1.CancelJobRequest
-	(*CancelJobResponse)(nil),        // 18: api.agent.v1.CancelJobResponse
-	(*UpdateLabelsRequest)(nil),      // 19: api.agent.v1.UpdateLabelsRequest
-	(*UpdateLabelsResponse)(nil),     // 20: api.agent.v1.UpdateLabelsResponse
-	(*LabelSelector)(nil),            // 21: api.agent.v1.LabelSelector
-	(*LabelSelectorRequirement)(nil), // 22: api.agent.v1.LabelSelectorRequirement
-	nil,                              // 23: api.agent.v1.HeartbeatRequest.MetricsEntry
-	nil,                              // 24: api.agent.v1.HeartbeatRequest.LabelsEntry
-	nil,                              // 25: api.agent.v1.RegisterRequest.LabelsEntry
-	nil,                              // 26: api.agent.v1.FetchJobRequest.LabelsEntry
-	nil,                              // 27: api.agent.v1.Job.EnvEntry
-	nil,                              // 28: api.agent.v1.Job.SecretsEntry
-	nil,                              // 29: api.agent.v1.ReportJobStatusRequest.MetricsEntry
-	nil,                              // 30: api.agent.v1.UpdateLabelsRequest.LabelsEntry
-	nil,                              // 31: api.agent.v1.UpdateLabelsResponse.LabelsEntry
-	nil,                              // 32: api.agent.v1.LabelSelector.MatchLabelsEntry
-	(v1.JobStatus)(0),                // 33: api.job.v1.JobStatus
+	(AgentStatus)(0),                     // 0: api.agent.v1.AgentStatus
+	(LabelOperator)(0),                   // 1: api.agent.v1.LabelOperator
+	(PluginLocation)(0),                  // 2: api.agent.v1.PluginLocation
+	(*HeartbeatRequest)(nil),             // 3: api.agent.v1.HeartbeatRequest
+	(*HeartbeatResponse)(nil),            // 4: api.agent.v1.HeartbeatResponse
+	(*RegisterRequest)(nil),              // 5: api.agent.v1.RegisterRequest
+	(*RegisterResponse)(nil),             // 6: api.agent.v1.RegisterResponse
+	(*UnregisterRequest)(nil),            // 7: api.agent.v1.UnregisterRequest
+	(*UnregisterResponse)(nil),           // 8: api.agent.v1.UnregisterResponse
+	(*FetchJobRequest)(nil),              // 9: api.agent.v1.FetchJobRequest
+	(*FetchJobResponse)(nil),             // 10: api.agent.v1.FetchJobResponse
+	(*Job)(nil),                          // 11: api.agent.v1.Job
+	(*Artifact)(nil),                     // 12: api.agent.v1.Artifact
+	(*ReportJobStatusRequest)(nil),       // 13: api.agent.v1.ReportJobStatusRequest
+	(*ReportJobStatusResponse)(nil),      // 14: api.agent.v1.ReportJobStatusResponse
+	(*ReportJobLogRequest)(nil),          // 15: api.agent.v1.ReportJobLogRequest
+	(*LogEntry)(nil),                     // 16: api.agent.v1.LogEntry
+	(*ReportJobLogResponse)(nil),         // 17: api.agent.v1.ReportJobLogResponse
+	(*CancelJobRequest)(nil),             // 18: api.agent.v1.CancelJobRequest
+	(*CancelJobResponse)(nil),            // 19: api.agent.v1.CancelJobResponse
+	(*UpdateLabelsRequest)(nil),          // 20: api.agent.v1.UpdateLabelsRequest
+	(*UpdateLabelsResponse)(nil),         // 21: api.agent.v1.UpdateLabelsResponse
+	(*LabelSelector)(nil),                // 22: api.agent.v1.LabelSelector
+	(*LabelSelectorRequirement)(nil),     // 23: api.agent.v1.LabelSelectorRequirement
+	(*PluginInfo)(nil),                   // 24: api.agent.v1.PluginInfo
+	(*DownloadPluginRequest)(nil),        // 25: api.agent.v1.DownloadPluginRequest
+	(*DownloadPluginResponse)(nil),       // 26: api.agent.v1.DownloadPluginResponse
+	(*ListAvailablePluginsRequest)(nil),  // 27: api.agent.v1.ListAvailablePluginsRequest
+	(*ListAvailablePluginsResponse)(nil), // 28: api.agent.v1.ListAvailablePluginsResponse
+	nil,                                  // 29: api.agent.v1.HeartbeatRequest.MetricsEntry
+	nil,                                  // 30: api.agent.v1.HeartbeatRequest.LabelsEntry
+	nil,                                  // 31: api.agent.v1.RegisterRequest.LabelsEntry
+	nil,                                  // 32: api.agent.v1.FetchJobRequest.LabelsEntry
+	nil,                                  // 33: api.agent.v1.Job.EnvEntry
+	nil,                                  // 34: api.agent.v1.Job.SecretsEntry
+	nil,                                  // 35: api.agent.v1.ReportJobStatusRequest.MetricsEntry
+	nil,                                  // 36: api.agent.v1.UpdateLabelsRequest.LabelsEntry
+	nil,                                  // 37: api.agent.v1.UpdateLabelsResponse.LabelsEntry
+	nil,                                  // 38: api.agent.v1.LabelSelector.MatchLabelsEntry
+	(v1.JobStatus)(0),                    // 39: api.job.v1.JobStatus
 }
 var file_api_agent_v1_proto_agent_proto_depIdxs = []int32{
 	0,  // 0: api.agent.v1.HeartbeatRequest.status:type_name -> api.agent.v1.AgentStatus
-	23, // 1: api.agent.v1.HeartbeatRequest.metrics:type_name -> api.agent.v1.HeartbeatRequest.MetricsEntry
-	24, // 2: api.agent.v1.HeartbeatRequest.labels:type_name -> api.agent.v1.HeartbeatRequest.LabelsEntry
-	25, // 3: api.agent.v1.RegisterRequest.labels:type_name -> api.agent.v1.RegisterRequest.LabelsEntry
-	26, // 4: api.agent.v1.FetchJobRequest.labels:type_name -> api.agent.v1.FetchJobRequest.LabelsEntry
-	10, // 5: api.agent.v1.FetchJobResponse.jobs:type_name -> api.agent.v1.Job
-	27, // 6: api.agent.v1.Job.env:type_name -> api.agent.v1.Job.EnvEntry
-	28, // 7: api.agent.v1.Job.secrets:type_name -> api.agent.v1.Job.SecretsEntry
-	11, // 8: api.agent.v1.Job.artifacts:type_name -> api.agent.v1.Artifact
-	21, // 9: api.agent.v1.Job.label_selector:type_name -> api.agent.v1.LabelSelector
-	33, // 10: api.agent.v1.ReportJobStatusRequest.status:type_name -> api.job.v1.JobStatus
-	29, // 11: api.agent.v1.ReportJobStatusRequest.metrics:type_name -> api.agent.v1.ReportJobStatusRequest.MetricsEntry
-	15, // 12: api.agent.v1.ReportJobLogRequest.logs:type_name -> api.agent.v1.LogEntry
-	30, // 13: api.agent.v1.UpdateLabelsRequest.labels:type_name -> api.agent.v1.UpdateLabelsRequest.LabelsEntry
-	31, // 14: api.agent.v1.UpdateLabelsResponse.labels:type_name -> api.agent.v1.UpdateLabelsResponse.LabelsEntry
-	32, // 15: api.agent.v1.LabelSelector.match_labels:type_name -> api.agent.v1.LabelSelector.MatchLabelsEntry
-	22, // 16: api.agent.v1.LabelSelector.match_expressions:type_name -> api.agent.v1.LabelSelectorRequirement
-	1,  // 17: api.agent.v1.LabelSelectorRequirement.operator:type_name -> api.agent.v1.LabelOperator
-	2,  // 18: api.agent.v1.Agent.Heartbeat:input_type -> api.agent.v1.HeartbeatRequest
-	4,  // 19: api.agent.v1.Agent.Register:input_type -> api.agent.v1.RegisterRequest
-	6,  // 20: api.agent.v1.Agent.Unregister:input_type -> api.agent.v1.UnregisterRequest
-	8,  // 21: api.agent.v1.Agent.FetchJob:input_type -> api.agent.v1.FetchJobRequest
-	12, // 22: api.agent.v1.Agent.ReportJobStatus:input_type -> api.agent.v1.ReportJobStatusRequest
-	14, // 23: api.agent.v1.Agent.ReportJobLog:input_type -> api.agent.v1.ReportJobLogRequest
-	17, // 24: api.agent.v1.Agent.CancelJob:input_type -> api.agent.v1.CancelJobRequest
-	19, // 25: api.agent.v1.Agent.UpdateLabels:input_type -> api.agent.v1.UpdateLabelsRequest
-	3,  // 26: api.agent.v1.Agent.Heartbeat:output_type -> api.agent.v1.HeartbeatResponse
-	5,  // 27: api.agent.v1.Agent.Register:output_type -> api.agent.v1.RegisterResponse
-	7,  // 28: api.agent.v1.Agent.Unregister:output_type -> api.agent.v1.UnregisterResponse
-	9,  // 29: api.agent.v1.Agent.FetchJob:output_type -> api.agent.v1.FetchJobResponse
-	13, // 30: api.agent.v1.Agent.ReportJobStatus:output_type -> api.agent.v1.ReportJobStatusResponse
-	16, // 31: api.agent.v1.Agent.ReportJobLog:output_type -> api.agent.v1.ReportJobLogResponse
-	18, // 32: api.agent.v1.Agent.CancelJob:output_type -> api.agent.v1.CancelJobResponse
-	20, // 33: api.agent.v1.Agent.UpdateLabels:output_type -> api.agent.v1.UpdateLabelsResponse
-	26, // [26:34] is the sub-list for method output_type
-	18, // [18:26] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	29, // 1: api.agent.v1.HeartbeatRequest.metrics:type_name -> api.agent.v1.HeartbeatRequest.MetricsEntry
+	30, // 2: api.agent.v1.HeartbeatRequest.labels:type_name -> api.agent.v1.HeartbeatRequest.LabelsEntry
+	31, // 3: api.agent.v1.RegisterRequest.labels:type_name -> api.agent.v1.RegisterRequest.LabelsEntry
+	32, // 4: api.agent.v1.FetchJobRequest.labels:type_name -> api.agent.v1.FetchJobRequest.LabelsEntry
+	11, // 5: api.agent.v1.FetchJobResponse.jobs:type_name -> api.agent.v1.Job
+	33, // 6: api.agent.v1.Job.env:type_name -> api.agent.v1.Job.EnvEntry
+	34, // 7: api.agent.v1.Job.secrets:type_name -> api.agent.v1.Job.SecretsEntry
+	12, // 8: api.agent.v1.Job.artifacts:type_name -> api.agent.v1.Artifact
+	22, // 9: api.agent.v1.Job.label_selector:type_name -> api.agent.v1.LabelSelector
+	24, // 10: api.agent.v1.Job.plugins:type_name -> api.agent.v1.PluginInfo
+	39, // 11: api.agent.v1.ReportJobStatusRequest.status:type_name -> api.job.v1.JobStatus
+	35, // 12: api.agent.v1.ReportJobStatusRequest.metrics:type_name -> api.agent.v1.ReportJobStatusRequest.MetricsEntry
+	16, // 13: api.agent.v1.ReportJobLogRequest.logs:type_name -> api.agent.v1.LogEntry
+	36, // 14: api.agent.v1.UpdateLabelsRequest.labels:type_name -> api.agent.v1.UpdateLabelsRequest.LabelsEntry
+	37, // 15: api.agent.v1.UpdateLabelsResponse.labels:type_name -> api.agent.v1.UpdateLabelsResponse.LabelsEntry
+	38, // 16: api.agent.v1.LabelSelector.match_labels:type_name -> api.agent.v1.LabelSelector.MatchLabelsEntry
+	23, // 17: api.agent.v1.LabelSelector.match_expressions:type_name -> api.agent.v1.LabelSelectorRequirement
+	1,  // 18: api.agent.v1.LabelSelectorRequirement.operator:type_name -> api.agent.v1.LabelOperator
+	2,  // 19: api.agent.v1.PluginInfo.location:type_name -> api.agent.v1.PluginLocation
+	24, // 20: api.agent.v1.ListAvailablePluginsResponse.plugins:type_name -> api.agent.v1.PluginInfo
+	3,  // 21: api.agent.v1.Agent.Heartbeat:input_type -> api.agent.v1.HeartbeatRequest
+	5,  // 22: api.agent.v1.Agent.Register:input_type -> api.agent.v1.RegisterRequest
+	7,  // 23: api.agent.v1.Agent.Unregister:input_type -> api.agent.v1.UnregisterRequest
+	9,  // 24: api.agent.v1.Agent.FetchJob:input_type -> api.agent.v1.FetchJobRequest
+	13, // 25: api.agent.v1.Agent.ReportJobStatus:input_type -> api.agent.v1.ReportJobStatusRequest
+	15, // 26: api.agent.v1.Agent.ReportJobLog:input_type -> api.agent.v1.ReportJobLogRequest
+	18, // 27: api.agent.v1.Agent.CancelJob:input_type -> api.agent.v1.CancelJobRequest
+	20, // 28: api.agent.v1.Agent.UpdateLabels:input_type -> api.agent.v1.UpdateLabelsRequest
+	25, // 29: api.agent.v1.Agent.DownloadPlugin:input_type -> api.agent.v1.DownloadPluginRequest
+	27, // 30: api.agent.v1.Agent.ListAvailablePlugins:input_type -> api.agent.v1.ListAvailablePluginsRequest
+	4,  // 31: api.agent.v1.Agent.Heartbeat:output_type -> api.agent.v1.HeartbeatResponse
+	6,  // 32: api.agent.v1.Agent.Register:output_type -> api.agent.v1.RegisterResponse
+	8,  // 33: api.agent.v1.Agent.Unregister:output_type -> api.agent.v1.UnregisterResponse
+	10, // 34: api.agent.v1.Agent.FetchJob:output_type -> api.agent.v1.FetchJobResponse
+	14, // 35: api.agent.v1.Agent.ReportJobStatus:output_type -> api.agent.v1.ReportJobStatusResponse
+	17, // 36: api.agent.v1.Agent.ReportJobLog:output_type -> api.agent.v1.ReportJobLogResponse
+	19, // 37: api.agent.v1.Agent.CancelJob:output_type -> api.agent.v1.CancelJobResponse
+	21, // 38: api.agent.v1.Agent.UpdateLabels:output_type -> api.agent.v1.UpdateLabelsResponse
+	26, // 39: api.agent.v1.Agent.DownloadPlugin:output_type -> api.agent.v1.DownloadPluginResponse
+	28, // 40: api.agent.v1.Agent.ListAvailablePlugins:output_type -> api.agent.v1.ListAvailablePluginsResponse
+	31, // [31:41] is the sub-list for method output_type
+	21, // [21:31] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_api_agent_v1_proto_agent_proto_init() }
@@ -1871,8 +2345,8 @@ func file_api_agent_v1_proto_agent_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_agent_v1_proto_agent_proto_rawDesc), len(file_api_agent_v1_proto_agent_proto_rawDesc)),
-			NumEnums:      2,
-			NumMessages:   31,
+			NumEnums:      3,
+			NumMessages:   36,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

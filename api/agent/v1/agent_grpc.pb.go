@@ -19,14 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Agent_Heartbeat_FullMethodName       = "/api.agent.v1.Agent/Heartbeat"
-	Agent_Register_FullMethodName        = "/api.agent.v1.Agent/Register"
-	Agent_Unregister_FullMethodName      = "/api.agent.v1.Agent/Unregister"
-	Agent_FetchJob_FullMethodName        = "/api.agent.v1.Agent/FetchJob"
-	Agent_ReportJobStatus_FullMethodName = "/api.agent.v1.Agent/ReportJobStatus"
-	Agent_ReportJobLog_FullMethodName    = "/api.agent.v1.Agent/ReportJobLog"
-	Agent_CancelJob_FullMethodName       = "/api.agent.v1.Agent/CancelJob"
-	Agent_UpdateLabels_FullMethodName    = "/api.agent.v1.Agent/UpdateLabels"
+	Agent_Heartbeat_FullMethodName            = "/api.agent.v1.Agent/Heartbeat"
+	Agent_Register_FullMethodName             = "/api.agent.v1.Agent/Register"
+	Agent_Unregister_FullMethodName           = "/api.agent.v1.Agent/Unregister"
+	Agent_FetchJob_FullMethodName             = "/api.agent.v1.Agent/FetchJob"
+	Agent_ReportJobStatus_FullMethodName      = "/api.agent.v1.Agent/ReportJobStatus"
+	Agent_ReportJobLog_FullMethodName         = "/api.agent.v1.Agent/ReportJobLog"
+	Agent_CancelJob_FullMethodName            = "/api.agent.v1.Agent/CancelJob"
+	Agent_UpdateLabels_FullMethodName         = "/api.agent.v1.Agent/UpdateLabels"
+	Agent_DownloadPlugin_FullMethodName       = "/api.agent.v1.Agent/DownloadPlugin"
+	Agent_ListAvailablePlugins_FullMethodName = "/api.agent.v1.Agent/ListAvailablePlugins"
 )
 
 // AgentClient is the client API for Agent service.
@@ -51,6 +53,10 @@ type AgentClient interface {
 	CancelJob(ctx context.Context, in *CancelJobRequest, opts ...grpc.CallOption) (*CancelJobResponse, error)
 	// 更新Agent标签 - 动态更新Agent的labels和tags
 	UpdateLabels(ctx context.Context, in *UpdateLabelsRequest, opts ...grpc.CallOption) (*UpdateLabelsResponse, error)
+	// 下载插件 - Agent从Server下载插件
+	DownloadPlugin(ctx context.Context, in *DownloadPluginRequest, opts ...grpc.CallOption) (*DownloadPluginResponse, error)
+	// 列出可用插件 - Agent查询可用的插件列表
+	ListAvailablePlugins(ctx context.Context, in *ListAvailablePluginsRequest, opts ...grpc.CallOption) (*ListAvailablePluginsResponse, error)
 }
 
 type agentClient struct {
@@ -141,6 +147,26 @@ func (c *agentClient) UpdateLabels(ctx context.Context, in *UpdateLabelsRequest,
 	return out, nil
 }
 
+func (c *agentClient) DownloadPlugin(ctx context.Context, in *DownloadPluginRequest, opts ...grpc.CallOption) (*DownloadPluginResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DownloadPluginResponse)
+	err := c.cc.Invoke(ctx, Agent_DownloadPlugin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *agentClient) ListAvailablePlugins(ctx context.Context, in *ListAvailablePluginsRequest, opts ...grpc.CallOption) (*ListAvailablePluginsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAvailablePluginsResponse)
+	err := c.cc.Invoke(ctx, Agent_ListAvailablePlugins_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AgentServer is the server API for Agent service.
 // All implementations must embed UnimplementedAgentServer
 // for forward compatibility.
@@ -163,6 +189,10 @@ type AgentServer interface {
 	CancelJob(context.Context, *CancelJobRequest) (*CancelJobResponse, error)
 	// 更新Agent标签 - 动态更新Agent的labels和tags
 	UpdateLabels(context.Context, *UpdateLabelsRequest) (*UpdateLabelsResponse, error)
+	// 下载插件 - Agent从Server下载插件
+	DownloadPlugin(context.Context, *DownloadPluginRequest) (*DownloadPluginResponse, error)
+	// 列出可用插件 - Agent查询可用的插件列表
+	ListAvailablePlugins(context.Context, *ListAvailablePluginsRequest) (*ListAvailablePluginsResponse, error)
 	mustEmbedUnimplementedAgentServer()
 }
 
@@ -196,6 +226,12 @@ func (UnimplementedAgentServer) CancelJob(context.Context, *CancelJobRequest) (*
 }
 func (UnimplementedAgentServer) UpdateLabels(context.Context, *UpdateLabelsRequest) (*UpdateLabelsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateLabels not implemented")
+}
+func (UnimplementedAgentServer) DownloadPlugin(context.Context, *DownloadPluginRequest) (*DownloadPluginResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DownloadPlugin not implemented")
+}
+func (UnimplementedAgentServer) ListAvailablePlugins(context.Context, *ListAvailablePluginsRequest) (*ListAvailablePluginsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListAvailablePlugins not implemented")
 }
 func (UnimplementedAgentServer) mustEmbedUnimplementedAgentServer() {}
 func (UnimplementedAgentServer) testEmbeddedByValue()               {}
@@ -362,6 +398,42 @@ func _Agent_UpdateLabels_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Agent_DownloadPlugin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DownloadPluginRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentServer).DownloadPlugin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Agent_DownloadPlugin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentServer).DownloadPlugin(ctx, req.(*DownloadPluginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Agent_ListAvailablePlugins_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAvailablePluginsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentServer).ListAvailablePlugins(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Agent_ListAvailablePlugins_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentServer).ListAvailablePlugins(ctx, req.(*ListAvailablePluginsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Agent_ServiceDesc is the grpc.ServiceDesc for Agent service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -400,6 +472,14 @@ var Agent_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateLabels",
 			Handler:    _Agent_UpdateLabels_Handler,
+		},
+		{
+			MethodName: "DownloadPlugin",
+			Handler:    _Agent_DownloadPlugin_Handler,
+		},
+		{
+			MethodName: "ListAvailablePlugins",
+			Handler:    _Agent_ListAvailablePlugins_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
