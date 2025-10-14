@@ -31,6 +31,12 @@ service Agent {
 
     // 更新Agent标签 - 动态更新Agent的labels和tags
     rpc UpdateLabels(UpdateLabelsRequest) returns (UpdateLabelsResponse) {}
+
+    // 下载插件 - Agent从Server下载插件
+    rpc DownloadPlugin(DownloadPluginRequest) returns (DownloadPluginResponse) {}
+
+    // 列出可用插件 - Agent查询可用的插件列表
+    rpc ListAvailablePlugins(ListAvailablePluginsRequest) returns (ListAvailablePluginsResponse) {}
 }
 
 // Agent状态枚举
@@ -70,6 +76,7 @@ message RegisterRequest {
   repeated string tags = 7;           // Agent标签（用于任务路由）
   int32 max_concurrent_jobs = 8;      // 最大并发任务数
   map<string, string> labels = 9;     // 自定义标签
+  repeated string installed_plugins = 10; // Agent已安装的插件列表
 }
 
 // Agent注册响应
@@ -122,6 +129,7 @@ message Job {
   map<string, string> secrets = 11;   // 密钥信息
   repeated Artifact artifacts = 12;   // 产物配置
   LabelSelector label_selector = 13;  // 标签选择器（用于匹配Agent）
+  repeated PluginInfo plugins = 14;   // 任务所需插件列表
 }
 
 // 产物定义
@@ -223,4 +231,55 @@ enum LabelOperator {
   LABEL_OPERATOR_NOT_EXISTS = 4;      // 标签key不存在
   LABEL_OPERATOR_GT = 5;              // 标签值大于指定值（用于数值比较）
   LABEL_OPERATOR_LT = 6;              // 标签值小于指定值（用于数值比较）
+}
+
+// ============ 插件分发相关 ============
+
+// 插件信息
+message PluginInfo {
+  string plugin_id = 1;               // 插件ID
+  string name = 2;                    // 插件名称
+  string version = 3;                 // 版本号
+  string checksum = 4;                // SHA256校验和
+  int64 size = 5;                     // 文件大小（字节）
+  string download_url = 6;            // 下载地址（可选，用于CDN分发）
+  PluginLocation location = 7;        // 插件位置
+}
+
+// 插件位置
+enum PluginLocation {
+  PLUGIN_LOCATION_UNKNOWN = 0;
+  PLUGIN_LOCATION_SERVER = 1;         // 服务端文件系统
+  PLUGIN_LOCATION_STORAGE = 2;        // 对象存储
+  PLUGIN_LOCATION_REGISTRY = 3;       // 插件仓库
+}
+
+// 下载插件请求
+message DownloadPluginRequest {
+  string agent_id = 1;                // Agent ID
+  string plugin_id = 2;               // 插件ID
+  string version = 3;                 // 版本号（可选，不指定则下载最新版本）
+}
+
+// 下载插件响应
+message DownloadPluginResponse {
+  bool success = 1;                   // 是否成功
+  string message = 2;                 // 消息
+  bytes plugin_data = 3;              // 插件二进制数据
+  string checksum = 4;                // SHA256校验和
+  int64 size = 5;                     // 文件大小
+  string version = 6;                 // 实际版本号
+}
+
+// 列出可用插件请求
+message ListAvailablePluginsRequest {
+  string agent_id = 1;                // Agent ID
+  string plugin_type = 2;             // 可选：按类型过滤（notify/ci/cd/security等）
+}
+
+// 列出可用插件响应
+message ListAvailablePluginsResponse {
+  bool success = 1;
+  string message = 2;
+  repeated PluginInfo plugins = 3;    // 可用插件列表
 }
