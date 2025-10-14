@@ -2,11 +2,11 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/observabil/arcade/internal/engine/model"
 	"github.com/observabil/arcade/pkg/ctx"
+	"github.com/observabil/arcade/pkg/log"
 )
 
 /**
@@ -51,35 +51,18 @@ func (ps *PermissionService) GetRole(roleId string) (*model.Role, error) {
 
 // HasPermission 检查角色是否拥有指定权限点
 func (ps *PermissionService) HasPermission(roleId string, permissionPoint string) (bool, error) {
-	// 对于内置角色，直接查看预定义权限
-	if permissions, ok := model.BuiltinRolePermissions[roleId]; ok {
-		for _, perm := range permissions {
-			if perm == permissionPoint {
-				return true, nil
-			}
-		}
-		return false, nil
-	}
+	// 从关联表查询角色权限
+	var count int64
+	err := ps.ctx.DB.Table("t_role_permission rp").
+		Joins("JOIN t_permission p ON rp.permission_id = p.permission_id").
+		Where("rp.role_id = ? AND p.code = ? AND p.is_enabled = ?", roleId, permissionPoint, 1).
+		Count(&count).Error
 
-	// 对于自定义角色，从数据库加载权限
-	role, err := ps.GetRole(roleId)
 	if err != nil {
 		return false, err
 	}
 
-	// 解析权限JSON
-	var permissions []string
-	if err := json.Unmarshal([]byte(role.Permissions), &permissions); err != nil {
-		return false, fmt.Errorf("parse permissions failed: %w", err)
-	}
-
-	for _, perm := range permissions {
-		if perm == permissionPoint {
-			return true, nil
-		}
-	}
-
-	return false, nil
+	return count > 0, nil
 }
 
 // ProjectPermission 项目权限结构
@@ -282,26 +265,22 @@ func (ps *PermissionService) mapTeamRoleToProjectRole(teamRoleId, accessLevel st
 
 // loadRolePermissions 加载角色的权限点列表
 func (ps *PermissionService) loadRolePermissions(perm *ProjectPermission, roleId string) {
-	// 对于内置角色，使用预定义权限
-	if permissions, ok := model.BuiltinRolePermissions[roleId]; ok {
-		perm.Permissions = permissions
-		return
-	}
+	// 从关联表查询角色权限
+	var permissionCodes []string
 
-	// 对于自定义角色，从数据库加载
-	role, err := ps.GetRole(roleId)
+	err := ps.ctx.DB.Table("t_role_permission rp").
+		Select("p.code").
+		Joins("JOIN t_permission p ON rp.permission_id = p.permission_id").
+		Where("rp.role_id = ? AND p.is_enabled = ?", roleId, 1).
+		Pluck("code", &permissionCodes).Error
+
 	if err != nil {
+		log.Warnf("failed to load role permissions for %s: %v", roleId, err)
 		perm.Permissions = []string{}
 		return
 	}
 
-	var permissions []string
-	if err := json.Unmarshal([]byte(role.Permissions), &permissions); err != nil {
-		perm.Permissions = []string{}
-		return
-	}
-
-	perm.Permissions = permissions
+	perm.Permissions = permissionCodes
 }
 
 // calculatePermissionFlags 根据权限点计算具体权限标志

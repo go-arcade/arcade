@@ -59,20 +59,6 @@ const (
 	PermTeamProject  = "team.project"  // 管理团队项目
 	PermTeamSettings = "team.settings" // 修改团队设置
 
-	// ========== Issue/任务权限 ==========
-	PermIssueView   = "issue.view"   // 查看Issue
-	PermIssueCreate = "issue.create" // 创建Issue
-	PermIssueEdit   = "issue.edit"   // 编辑Issue
-	PermIssueClose  = "issue.close"  // 关闭Issue
-	PermIssueDelete = "issue.delete" // 删除Issue
-
-	// ========== 监控权限 ==========
-	PermMonitorView      = "monitor.view"      // 查看监控
-	PermMonitorMetrics   = "monitor.metrics"   // 查看指标
-	PermMonitorLogs      = "monitor.logs"      // 查看日志
-	PermMonitorAlert     = "monitor.alert"     // 管理告警
-	PermMonitorDashboard = "monitor.dashboard" // 管理仪表板
-
 	// ========== 安全权限 ==========
 	PermSecurityScan   = "security.scan"   // 安全扫描
 	PermSecurityAudit  = "security.audit"  // 安全审计
@@ -97,8 +83,6 @@ var BuiltinRolePermissions = map[string][]string{
 		// 所有团队权限
 		PermTeamView, PermTeamProject, PermTeamSettings,
 		// 其他权限
-		PermIssueView, PermIssueCreate, PermIssueEdit, PermIssueClose, PermIssueDelete,
-		PermMonitorView, PermMonitorMetrics, PermMonitorLogs, PermMonitorAlert, PermMonitorDashboard,
 		PermSecurityScan, PermSecurityAudit, PermSecurityPolicy,
 	},
 
@@ -116,8 +100,6 @@ var BuiltinRolePermissions = map[string][]string{
 		// 团队权限
 		PermTeamView, PermTeamProject, PermTeamSettings,
 		// 其他权限
-		PermIssueView, PermIssueCreate, PermIssueEdit, PermIssueClose, PermIssueDelete,
-		PermMonitorView, PermMonitorMetrics, PermMonitorLogs, PermMonitorAlert, PermMonitorDashboard,
 		PermSecurityScan, PermSecurityAudit,
 	},
 
@@ -135,8 +117,6 @@ var BuiltinRolePermissions = map[string][]string{
 		// 团队权限（只读）
 		PermTeamView,
 		// 其他权限
-		PermIssueView, PermIssueCreate, PermIssueEdit, PermIssueClose,
-		PermMonitorView, PermMonitorMetrics, PermMonitorLogs,
 		PermSecurityScan,
 	},
 
@@ -149,8 +129,6 @@ var BuiltinRolePermissions = map[string][]string{
 		PermMemberView,
 		PermTeamView,
 		// Issue 权限
-		PermIssueView, PermIssueCreate, PermIssueEdit,
-		PermMonitorView, PermMonitorMetrics, PermMonitorLogs,
 	},
 
 	BuiltinProjectGuest: {
@@ -160,8 +138,6 @@ var BuiltinRolePermissions = map[string][]string{
 		PermPipelineView,
 		PermDeployView,
 		PermMemberView,
-		PermIssueView,
-		PermMonitorView,
 	},
 
 	// ========== 团队角色权限 ==========
@@ -198,4 +174,40 @@ var BuiltinRolePermissions = map[string][]string{
 	BuiltinOrgMember: {
 		PermTeamView,
 	},
+}
+
+// Permission 权限点表
+type Permission struct {
+	BaseModel
+	PermissionId string `gorm:"column:permission_id;uniqueIndex" json:"permissionId"`
+	Code         string `gorm:"column:code;uniqueIndex" json:"code"`          // 权限代码（如：project.view）
+	Name         string `gorm:"column:name" json:"name"`                      // 权限名称
+	Category     string `gorm:"column:category" json:"category"`              // 权限分类
+	Description  string `gorm:"column:description" json:"description"`        // 描述
+	IsEnabled    int    `gorm:"column:is_enabled;default:1" json:"isEnabled"` // 是否启用
+}
+
+func (Permission) TableName() string {
+	return "t_permission"
+}
+
+// RolePermission 角色权限关联表
+type RolePermission struct {
+	ID           int64  `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
+	RoleId       string `gorm:"column:role_id;index:idx_role_id" json:"roleId"`
+	PermissionId string `gorm:"column:permission_id;index:idx_permission_id" json:"permissionId"`
+	CreatedAt    string `gorm:"column:created_at" json:"createdAt"`
+}
+
+func (RolePermission) TableName() string {
+	return "t_role_permission"
+}
+
+// PermissionDTO 权限DTO
+type PermissionDTO struct {
+	PermissionId string `json:"permissionId"`
+	Code         string `json:"code"`
+	Name         string `json:"name"`
+	Category     string `json:"category"`
+	Description  string `json:"description"`
 }
