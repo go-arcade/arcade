@@ -1,15 +1,15 @@
 syntax = "proto3";
 
-package api.stream.v1;
+package stream.v1;
 
-import "api/task/v1/proto/task.proto";
-import "api/agent/v1/proto/agent.proto";
-import "api/pipeline/v1/proto/pipeline.proto";
+import "task/v1/task.proto";
+import "agent/v1/agent.proto";
+import "pipeline/v1/pipeline.proto";
 
-option go_package = "github.com/observabil/arcade/api/stream/v1;v1";
+option go_package = "github.com/observabil/arcade/api/stream/v1;streamv1";
 
 // Stream服务 - 实时数据流传输接口
-service Stream {
+service StreamService {
   // ping
   rpc Ping(PingRequest) returns (PingResponse) {}
 
@@ -37,7 +37,7 @@ service Stream {
 
 // Agent状态枚举
 enum AgentStatus {
-  AGENT_STATUS_UNKNOWN = 0;
+  AGENT_STATUS_UNSPECIFIED = 0;
   AGENT_STATUS_ONLINE = 1;   // 在线
   AGENT_STATUS_OFFLINE = 2;  // 离线
   AGENT_STATUS_BUSY = 3;     // 忙碌
@@ -46,7 +46,7 @@ enum AgentStatus {
 
 // 事件类型枚举
 enum EventType {
-  EVENT_TYPE_UNKNOWN = 0;
+  EVENT_TYPE_UNSPECIFIED = 0;
   EVENT_TYPE_JOB_CREATED = 1;       // 任务创建
   EVENT_TYPE_JOB_STARTED = 2;       // 任务开始
   EVENT_TYPE_JOB_COMPLETED = 3;     // 任务完成
@@ -120,8 +120,8 @@ message StreamTaskStatusRequest {
 message StreamTaskStatusResponse {
   string task_id = 1;
   string task_name = 2;
-  api.task.v1.TaskStatus status = 3;                 // 任务状态
-  api.task.v1.TaskStatus previous_status = 4;        // 之前的状态
+  task.v1.TaskStatus status = 3;                 // 任务状态
+  task.v1.TaskStatus previous_status = 4;        // 之前的状态
   int64 timestamp = 5;                  // 状态变化时间戳
   string agent_id = 6;                  // 执行的Agent ID
   int32 exit_code = 7;                  // 退出码
@@ -142,8 +142,8 @@ message StreamPipelineStatusResponse {
   string pipeline_id = 1;
   string run_id = 2;                    // 流水线执行ID
   string pipeline_name = 3;
-  api.pipeline.v1.PipelineStatus status = 4;            // 流水线状态
-  api.pipeline.v1.PipelineStatus previous_status = 5;   // 之前的状态
+  pipeline.v1.PipelineStatus status = 4;            // 流水线状态
+  pipeline.v1.PipelineStatus previous_status = 5;   // 之前的状态
   int64 timestamp = 6;                  // 状态变化时间戳
   int32 total_jobs = 7;                 // 总任务数
   int32 completed_jobs = 8;             // 已完成任务数
@@ -172,7 +172,7 @@ message AgentChannelRequest {
 // 心跳数据
 message HeartbeatData {
   int64 timestamp = 1;
-  api.agent.v1.AgentStatus status = 2;
+  agent.v1.AgentStatus status = 2;
   int32 running_jobs_count = 3;
   int32 max_concurrent_jobs = 4;
 }
@@ -180,7 +180,7 @@ message HeartbeatData {
 // 任务状态更新
 message TaskStatusUpdate {
   string task_id = 1;
-  api.task.v1.TaskStatus status = 2;
+  task.v1.TaskStatus status = 2;
   int32 exit_code = 3;
   string error_message = 4;
   int64 timestamp = 5;

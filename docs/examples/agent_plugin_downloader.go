@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	v1 "github.com/observabil/arcade/api/agent/v1"
+	agentv1 "github.com/observabil/arcade/api/agent/v1"
 	"github.com/observabil/arcade/pkg/log"
 )
 
@@ -26,7 +26,7 @@ import (
 
 // PluginDownloader Agent端插件下载管理器
 type PluginDownloader struct {
-	agentClient v1.AgentClient
+	agentClient agentv1.AgentServiceClient
 	agentID     string
 	pluginDir   string
 	cache       map[string]*CachedPlugin // key: pluginID@version
@@ -46,7 +46,7 @@ type CachedPlugin struct {
 }
 
 // NewPluginDownloader 创建插件下载器
-func NewPluginDownloader(agentClient v1.AgentClient, agentID string, pluginDir string) *PluginDownloader {
+func NewPluginDownloader(agentClient agentv1.AgentServiceClient, agentID string, pluginDir string) *PluginDownloader {
 	return &PluginDownloader{
 		agentClient: agentClient,
 		agentID:     agentID,
@@ -153,7 +153,7 @@ func (d *PluginDownloader) scanDirectory(dir string, source string) error {
 }
 
 // EnsurePlugins 确保所有需要的插件都已就绪
-func (d *PluginDownloader) EnsurePlugins(ctx context.Context, plugins []*v1.PluginInfo) ([]string, error) {
+func (d *PluginDownloader) EnsurePlugins(ctx context.Context, plugins []*agentv1.PluginInfo) ([]string, error) {
 	if len(plugins) == 0 {
 		return []string{}, nil
 	}
@@ -175,7 +175,7 @@ func (d *PluginDownloader) EnsurePlugins(ctx context.Context, plugins []*v1.Plug
 }
 
 // ensurePlugin 确保单个插件就绪
-func (d *PluginDownloader) ensurePlugin(ctx context.Context, plugin *v1.PluginInfo) (string, error) {
+func (d *PluginDownloader) ensurePlugin(ctx context.Context, plugin *agentv1.PluginInfo) (string, error) {
 	cacheKey := fmt.Sprintf("%s@%s", plugin.PluginId, plugin.Version)
 
 	// 检查缓存
@@ -199,7 +199,7 @@ func (d *PluginDownloader) ensurePlugin(ctx context.Context, plugin *v1.PluginIn
 }
 
 // downloadPluginWithRetry 下载插件（带重试）
-func (d *PluginDownloader) downloadPluginWithRetry(ctx context.Context, plugin *v1.PluginInfo) (string, error) {
+func (d *PluginDownloader) downloadPluginWithRetry(ctx context.Context, plugin *agentv1.PluginInfo) (string, error) {
 	var lastErr error
 
 	for i := 0; i < d.maxRetries; i++ {
@@ -223,13 +223,13 @@ func (d *PluginDownloader) downloadPluginWithRetry(ctx context.Context, plugin *
 }
 
 // downloadPlugin 从服务端下载插件
-func (d *PluginDownloader) downloadPlugin(ctx context.Context, plugin *v1.PluginInfo) (string, error) {
+func (d *PluginDownloader) downloadPlugin(ctx context.Context, plugin *agentv1.PluginInfo) (string, error) {
 	// 创建带超时的上下文
 	downloadCtx, cancel := context.WithTimeout(ctx, d.timeout)
 	defer cancel()
 
 	// 调用gRPC下载插件
-	resp, err := d.agentClient.DownloadPlugin(downloadCtx, &v1.DownloadPluginRequest{
+	resp, err := d.agentClient.DownloadPlugin(downloadCtx, &agentv1.DownloadPluginRequest{
 		AgentId:  d.agentID,
 		PluginId: plugin.PluginId,
 		Version:  plugin.Version,
@@ -354,8 +354,8 @@ func (d *PluginDownloader) CleanCache(maxAge time.Duration) error {
 }
 
 // ListAvailablePlugins 从服务端查询可用插件列表
-func (d *PluginDownloader) ListAvailablePlugins(ctx context.Context, pluginType string) ([]*v1.PluginInfo, error) {
-	resp, err := d.agentClient.ListAvailablePlugins(ctx, &v1.ListAvailablePluginsRequest{
+func (d *PluginDownloader) ListAvailablePlugins(ctx context.Context, pluginType string) ([]*agentv1.PluginInfo, error) {
+	resp, err := d.agentClient.ListAvailablePlugins(ctx, &agentv1.ListAvailablePluginsRequest{
 		AgentId:    d.agentID,
 		PluginType: pluginType,
 	})

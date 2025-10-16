@@ -8,7 +8,7 @@ import (
 )
 
 type PipelineServiceImpl struct {
-	pipelineapi.UnimplementedPipelineServer
+	pipelineapi.UnimplementedPipelineServiceServer
 }
 
 func (a *PipelineServiceImpl) Ping(ctx context.Context, req *pipelineapi.PingRequest) (*pipelineapi.PingResponse, error) {

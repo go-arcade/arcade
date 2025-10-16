@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-package api.pipeline.v1;
+package pipeline.v1;
 
-option go_package = "github.com/observabil/arcade/api/pipeline/v1;v1";
+option go_package = "github.com/observabil/arcade/api/pipeline/v1;pipelinev1";
 
-service Pipeline {
+service PipelineService {
   // ping 
   rpc Ping(PingRequest) returns (PingResponse) {}
     
@@ -37,7 +37,7 @@ message PingResponse {
 
 // 流水线状态枚举
 enum PipelineStatus {
-  PIPELINE_STATUS_UNKNOWN = 0;
+  PIPELINE_STATUS_UNSPECIFIED = 0;
   PIPELINE_STATUS_PENDING = 1;   // 等待执行
   PIPELINE_STATUS_RUNNING = 2;   // 执行中
   PIPELINE_STATUS_SUCCESS = 3;   // 执行成功
@@ -48,7 +48,7 @@ enum PipelineStatus {
 
 // 触发类型枚举
 enum TriggerType {
-  TRIGGER_TYPE_UNKNOWN = 0;
+  TRIGGER_TYPE_UNSPECIFIED = 0;
   TRIGGER_TYPE_MANUAL = 1;       // 手动触发
   TRIGGER_TYPE_WEBHOOK = 2;      // Webhook触发
   TRIGGER_TYPE_SCHEDULE = 3;     // 定时触发
