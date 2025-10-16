@@ -1,12 +1,5 @@
 package log
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/16 15:34
- * @file: log_level.go
- * @description: LogConfig level
- */
-
 // LogLevel defines the severity of a LogConfig internal.
 type LogLevel int8
 
@@ -23,35 +16,18 @@ const (
 	FatalLevel
 )
 
-func (l LogLevel) String() string {
-	switch l {
-	case DebugLevel:
-		return "debug"
-	case InfoLevel:
-		return "info"
-	case WarnLevel:
-		return "warn"
-	case ErrorLevel:
-		return "error"
-	case FatalLevel:
-		return "fatal"
-	default:
-		return "unknown"
-	}
-}
-
-// ParseLogLevel converts a string level to a LogLevel.
-func ParseLogLevel(level string) LogLevel {
+// parseLogLevel converts a string level to a LogLevel.
+func parseLogLevel(level string) LogLevel {
 	switch level {
-	case "debug":
+	case "DEBUG":
 		return DebugLevel
-	case "info":
+	case "INFO":
 		return InfoLevel
-	case "warn":
+	case "WARN":
 		return WarnLevel
-	case "error":
+	case "ERROR":
 		return ErrorLevel
-	case "fatal":
+	case "FATAL":
 		return FatalLevel
 	default:
 		return InfoLevel
