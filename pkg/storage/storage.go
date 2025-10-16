@@ -1,13 +1,16 @@
 package storage
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"path/filepath"
 	"strings"
 
 	"github.com/observabil/arcade/internal/engine/model"
 	"github.com/observabil/arcade/internal/engine/repo"
 	"github.com/observabil/arcade/pkg/ctx"
+	"github.com/observabil/arcade/pkg/log"
 )
 
 // 存储类型常量
@@ -37,6 +40,56 @@ type StorageDBProvider struct {
 	ctx           *ctx.Context
 	storageRepo   *repo.StorageRepo
 	storageConfig *model.StorageConfig
+}
+
+const defaultPartSize = 5 * 1024 * 1024 // 5MB
+
+type uploadCheckpoint struct {
+	UploadID       string  `json:"upload_id"`
+	Parts          []int32 `json:"parts"`
+	FileSize       int64   `json:"file_size"`
+	Key            string  `json:"key"`
+	UploadedBytes  int64   `json:"uploaded_bytes"`  // 已上传字节数
+	UploadProgress float64 `json:"upload_progress"` // 上传进度百分比
+}
+
+// ProgressReader 统一的进度跟踪 Reader
+type ProgressReader struct {
+	reader     io.Reader
+	uploaded   int64
+	total      int64
+	fullPath   string
+	provider   string // 存储提供商名称（S3, MinIO, OSS, COS, GCS）
+	onProgress func(uploaded int64)
+}
+
+// newProgressReader 创建新的进度跟踪 Reader
+func newProgressReader(reader io.Reader, uploaded, total int64, fullPath, provider string, onProgress func(int64)) *ProgressReader {
+	return &ProgressReader{
+		reader:     reader,
+		uploaded:   uploaded,
+		total:      total,
+		fullPath:   fullPath,
+		provider:   provider,
+		onProgress: onProgress,
+	}
+}
+
+func (pr *ProgressReader) Read(p []byte) (int, error) {
+	n, err := pr.reader.Read(p)
+	if n > 0 {
+		pr.uploaded += int64(n)
+		if pr.onProgress != nil {
+			pr.onProgress(pr.uploaded)
+		}
+	}
+	return n, err
+}
+
+// LogProgress 记录上传进度
+func (pr *ProgressReader) LogProgress(progress float64) {
+	log.Debugf("%s upload progress: %s - %.2f%% (%d/%d bytes)",
+		pr.provider, pr.fullPath, progress, pr.uploaded, pr.total)
 }
 
 // NewStorage 根据配置创建存储提供者实例
@@ -242,4 +295,10 @@ func getFullPath(basePath, objectName string) string {
 	basePath = strings.Trim(basePath, "/")
 	objectName = strings.TrimPrefix(objectName, "/")
 	return filepath.Join(basePath, objectName)
+}
+
+// mustJSON 将对象序列化为 JSON 并返回字节切片
+func mustJSON(v any) []byte {
+	b, _ := json.MarshalIndent(v, "", "  ")
+	return b
 }
