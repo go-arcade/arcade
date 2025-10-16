@@ -8,7 +8,7 @@ import (
 )
 
 type StreamServiceImpl struct {
-	streamapi.UnimplementedStreamServer
+	streamapi.UnimplementedStreamServiceServer
 }
 
 func (a *StreamServiceImpl) Ping(ctx context.Context, req *streamapi.PingRequest) (*streamapi.PingResponse, error) {

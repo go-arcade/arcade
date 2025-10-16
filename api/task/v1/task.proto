@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-package api.task.v1;
+package task.v1;
 
 option go_package = "github.com/observabil/arcade/api/task/v1;v1";
 
 // Task服务 - 任务和流水线管理接口
-service Task {
+service TaskService {
     // Ping服务健康检查
     rpc Ping(PingRequest) returns (PingResponse) {}
 
@@ -39,7 +39,7 @@ service Task {
 
 // 任务状态枚举
 enum TaskStatus {
-  TASK_STATUS_UNKNOWN = 0;
+  TASK_STATUS_UNSPECIFIED = 0;
   TASK_STATUS_PENDING = 1;       // 等待执行
   TASK_STATUS_QUEUED = 2;        // 已入队
   TASK_STATUS_RUNNING = 3;       // 执行中
@@ -52,7 +52,7 @@ enum TaskStatus {
 
 // 触发类型枚举
 enum TriggerType {
-  TRIGGER_TYPE_UNKNOWN = 0;
+  TRIGGER_TYPE_UNSPECIFIED = 0;
   TRIGGER_TYPE_MANUAL = 1;       // 手动触发
   TRIGGER_TYPE_WEBHOOK = 2;      // Webhook触发
   TRIGGER_TYPE_SCHEDULE = 3;     // 定时触发
@@ -306,7 +306,7 @@ message LabelSelectorRequirement {
 
 // 标签操作符
 enum LabelOperator {
-  LABEL_OPERATOR_UNKNOWN = 0;
+  LABEL_OPERATOR_UNSPECIFIED = 0;
   LABEL_OPERATOR_IN = 1;              // 标签值在values列表中
   LABEL_OPERATOR_NOT_IN = 2;          // 标签值不在values列表中
   LABEL_OPERATOR_EXISTS = 3;          // 标签key存在

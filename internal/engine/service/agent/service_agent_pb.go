@@ -8,7 +8,7 @@ import (
 )
 
 type AgentServiceImpl struct {
-	agentapi.UnimplementedAgentServer
+	agentapi.UnimplementedAgentServiceServer
 }
 
 func (a *AgentServiceImpl) Heartbeat(ctx context.Context, req *agentapi.HeartbeatRequest) (*agentapi.HeartbeatResponse, error) {

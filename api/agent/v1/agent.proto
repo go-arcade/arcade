@@ -1,13 +1,13 @@
 syntax = "proto3";
 
-package api.agent.v1;
+package agent.v1;
 
-import "api/task/v1/proto/task.proto";
+import "task/v1/task.proto";
 
-option go_package = "github.com/observabil/arcade/api/agent/v1;v1";
+option go_package = "github.com/observabil/arcade/api/agent/v1;agentv1";
 
 // Agent服务 - Agent端与Server端通信的主要接口
-service Agent {
+service AgentService {
     // 心跳保持 - Agent定期向Server发送心跳
     rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse) {}
 
@@ -41,7 +41,7 @@ service Agent {
 
 // Agent状态枚举
 enum AgentStatus {
-  AGENT_STATUS_UNKNOWN = 0;
+  AGENT_STATUS_UNSPECIFIED = 0;
   AGENT_STATUS_ONLINE = 1;   // 在线
   AGENT_STATUS_OFFLINE = 2;  // 离线
   AGENT_STATUS_BUSY = 3;     // 忙碌
@@ -143,7 +143,7 @@ message Artifact {
 message ReportTaskStatusRequest {
   string agent_id = 1;
   string task_id = 2;
-  api.task.v1.TaskStatus status = 3;               // 任务状态
+  task.v1.TaskStatus status = 3;               // 任务状态
   int32 exit_code = 4;                // 退出码
   string error_message = 5;           // 错误信息
   int64 start_time = 6;               // 开始时间（Unix时间戳）
@@ -224,7 +224,7 @@ message LabelSelectorRequirement {
 
 // 标签操作符
 enum LabelOperator {
-  LABEL_OPERATOR_UNKNOWN = 0;
+  LABEL_OPERATOR_UNSPECIFIED = 0;
   LABEL_OPERATOR_IN = 1;              // 标签值在values列表中
   LABEL_OPERATOR_NOT_IN = 2;          // 标签值不在values列表中
   LABEL_OPERATOR_EXISTS = 3;          // 标签key存在
@@ -248,7 +248,7 @@ message PluginInfo {
 
 // 插件位置
 enum PluginLocation {
-  PLUGIN_LOCATION_UNKNOWN = 0;
+  PLUGIN_LOCATION_UNSPECIFIED = 0;
   PLUGIN_LOCATION_SERVER = 1;         // 服务端文件系统
   PLUGIN_LOCATION_STORAGE = 2;        // 对象存储
   PLUGIN_LOCATION_REGISTRY = 3;       // 插件仓库

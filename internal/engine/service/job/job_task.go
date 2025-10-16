@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	agentapi "github.com/observabil/arcade/api/agent/v1"
+	agentv1 "github.com/observabil/arcade/api/agent/v1"
 	"github.com/observabil/arcade/internal/engine/model"
 	"github.com/observabil/arcade/internal/engine/repo"
 	"github.com/observabil/arcade/pkg/log"
@@ -23,7 +23,7 @@ import (
 type ConcreteTask struct {
 	task        *model.Task
 	taskRepo    *repo.AgentRepo
-	agentClient agentapi.AgentClient
+	agentClient agentv1.AgentServiceClient
 }
 
 // taskPool Task 对象池
@@ -34,7 +34,7 @@ var taskPool = sync.Pool{
 }
 
 // NewConcreteTask 创建 Task 任务（从对象池获取）
-func NewConcreteTask(task *model.Task, taskRepo *repo.AgentRepo, agentClient agentapi.AgentClient) *ConcreteTask {
+func NewConcreteTask(task *model.Task, taskRepo *repo.AgentRepo, agentClient agentv1.AgentServiceClient) *ConcreteTask {
 	t := taskPool.Get().(*ConcreteTask)
 	t.task = task
 	t.taskRepo = taskRepo

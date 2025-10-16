@@ -99,55 +99,42 @@ release: ## 创建发布版本
 	goreleaser --skip-validate --skip-publish --snapshot
 
 # proto代码生成
-proto-install: ## 安装protoc相关插件
-	@echo ">> installing protoc plugins..."
-	@go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-	@go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-	@echo ">> protoc plugins installed."
-	@echo "   protoc-gen-go: $(PROTOC_GEN_GO)"
-	@echo "   protoc-gen-go-grpc: $(PROTOC_GEN_GO_GRPC)"
+buf-install: ## 安装buf相关插件
+	@echo ">> installing buf..."
+	@go install github.com/bufbuild/buf/cmd/buf@latest
+	@echo ">> buf installed: $$(which buf)"
 
-proto: proto-check ## 生成proto代码
-	@echo ">> generating proto code from $(PROTO_DIR)"
-	@for proto in $(PROTO_FILES); do \
-		dir=$$(dirname $$proto); \
-		out_dir=$$(dirname $$dir); \
-		echo "   -> generating $$proto to $$out_dir"; \
-		$(PROTOC) --go_out=. --go_opt=paths=source_relative \
-			--go-grpc_out=. --go-grpc_opt=paths=source_relative \
-			-I. $$proto; \
-		mkdir -p $$out_dir; \
-		mv $$dir/*.pb.go $$out_dir/ 2>/dev/null || true; \
-	done
-	@echo ">> proto code generation done."
+buf: buf-check ## 生成buf代码
+	@echo ">> generating buf code from $(PROTO_DIR)"
+	@cd $(PROTO_DIR) && buf generate --template buf.gen.yaml
+	@echo ">> buf code generation done."
 
-proto-check: ## 检查proto工具是否已安装
-	@command -v $(PROTOC) >/dev/null 2>&1 || { \
-		echo "错误: protoc 未安装，请先安装 Protocol Buffers 编译器"; \
-		echo ""; \
-		echo "macOS 安装方法:"; \
-		echo "  brew install protobuf"; \
-		echo ""; \
-		echo "Linux 安装方法:"; \
-		echo "  apt-get install -y protobuf-compiler  # Debian/Ubuntu"; \
-		echo "  yum install -y protobuf-compiler      # CentOS/RHEL"; \
-		echo ""; \
-		echo "或从官网下载: https://github.com/protocolbuffers/protobuf/releases"; \
+buf-check: ## 检查buf工具是否已安装
+	@command -v buf >/dev/null 2>&1 || { \
+		echo "错误: buf 未安装，请先运行 make buf-install"; \
 		exit 1; \
 	}
-	@test -f $(PROTOC_GEN_GO) || { \
-		echo "错误: protoc-gen-go 未安装，请运行: make proto-install"; \
-		exit 1; \
-	}
-	@test -f $(PROTOC_GEN_GO_GRPC) || { \
-		echo "错误: protoc-gen-go-grpc 未安装，请运行: make proto-install"; \
-		exit 1; \
-	}
+	@echo ">> buf installed: $$(which buf)"
 
-proto-clean: ## 清理生成的proto代码
-	@echo ">> cleaning generated proto files..."
-	@find $(PROTO_DIR) -type f -name "*.pb.go" ! -path "*/proto/*" -delete 2>/dev/null || true
-	@echo ">> proto files cleaned."
+buf-lint: ## 检查buf代码风格
+	@echo ">> linting buf code..."
+	@cd $(PROTO_DIR) && buf lint
+	@echo ">> buf code linting done."
+
+buf-breaking: ## 检查buf代码破坏性变更
+	@echo ">> checking buf code breaking changes..."
+	@cd $(PROTO_DIR) && buf breaking
+	@echo ">> buf code breaking changes checking done."
+
+buf-push: ## 推送buf代码
+	@echo ">> pushing buf code..."
+	@cd $(PROTO_DIR) && buf push
+	@echo ">> buf code pushing done."
+
+buf-clean: ## 清理生成的buf代码
+	@echo ">> cleaning generated protobuf files..."
+	@find $(PROTO_DIR) -type f \( -name "*.pb.go" -o -name "*_grpc.pb.go" \) -delete 2>/dev/null || true
+	@echo ">> protobuf files cleaned."
 
 # wire依赖注入代码生成
 wire-install: ## 安装wire工具

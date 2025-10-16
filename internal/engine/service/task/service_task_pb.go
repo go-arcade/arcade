@@ -8,7 +8,7 @@ import (
 )
 
 type TaskServiceImpl struct {
-	taskapi.UnimplementedTaskServer
+	taskapi.UnimplementedTaskServiceServer
 }
 
 func (a *TaskServiceImpl) Ping(ctx context.Context, req *taskapi.PingRequest) (*taskapi.PingResponse, error) {

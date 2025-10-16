@@ -1,9 +1,8 @@
 version: v2
 # Buf 配置文件 - 用于管理和验证 Protocol Buffers
 
-# 模块配置
-modules:
-  - path: .
+name: buf.build/observabil/arcade
+deps: []
 
 # Lint 配置 - 代码风格和最佳实践检查
 lint:

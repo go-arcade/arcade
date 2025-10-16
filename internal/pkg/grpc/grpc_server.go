@@ -16,10 +16,10 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
-	agentapi "github.com/observabil/arcade/api/agent/v1"
-	pipelineapi "github.com/observabil/arcade/api/pipeline/v1"
-	streamapi "github.com/observabil/arcade/api/stream/v1"
-	taskapi "github.com/observabil/arcade/api/task/v1"
+	agentv1 "github.com/observabil/arcade/api/agent/v1"
+	pipelinev1 "github.com/observabil/arcade/api/pipeline/v1"
+	streamv1 "github.com/observabil/arcade/api/stream/v1"
+	taskv1 "github.com/observabil/arcade/api/task/v1"
 	"github.com/observabil/arcade/internal/engine/service/agent"
 	"github.com/observabil/arcade/internal/engine/service/pipeline"
 	"github.com/observabil/arcade/internal/engine/service/stream"
@@ -64,10 +64,10 @@ func NewGrpcServer(cfg GrpcConf, log *zap.Logger) *ServerWrapper {
 
 // RegisterAll 注册所有 gRPC 服务
 func (s *ServerWrapper) Register() {
-	agentapi.RegisterAgentServer(s.svr, &agent.AgentServiceImpl{})
-	taskapi.RegisterTaskServer(s.svr, &task.TaskServiceImpl{})
-	streamapi.RegisterStreamServer(s.svr, &stream.StreamServiceImpl{})
-	pipelineapi.RegisterPipelineServer(s.svr, &pipeline.PipelineServiceImpl{})
+	agentv1.RegisterAgentServiceServer(s.svr, &agent.AgentServiceImpl{})
+	taskv1.RegisterTaskServiceServer(s.svr, &task.TaskServiceImpl{})
+	streamv1.RegisterStreamServiceServer(s.svr, &stream.StreamServiceImpl{})
+	pipelinev1.RegisterPipelineServiceServer(s.svr, &pipeline.PipelineServiceImpl{})
 	// reflection（调试）
 	reflection.Register(s.svr)
 }
