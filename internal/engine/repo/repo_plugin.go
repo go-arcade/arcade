@@ -73,23 +73,23 @@ func (r *PluginRepo) GetDefaultPluginConfig(pluginID string) (*model.PluginConfi
 	return &config, nil
 }
 
-// GetJobPlugins 获取任务关联的插件列表
-func (r *PluginRepo) GetJobPlugins(jobID string) ([]model.JobPlugin, error) {
-	var jobPlugins []model.JobPlugin
-	err := r.Ctx.DBSession().Table("t_job_plugin").
-		Where("job_id = ?", jobID).
+// GetTaskPlugins 获取任务关联的插件列表
+func (r *PluginRepo) GetTaskPlugins(taskID string) ([]model.TaskPlugin, error) {
+	var taskPlugins []model.TaskPlugin
+	err := r.Ctx.DBSession().Table("t_task_plugin").
+		Where("task_id = ?", taskID).
 		Order("execution_order ASC").
-		Find(&jobPlugins).Error
-	return jobPlugins, err
+		Find(&taskPlugins).Error
+	return taskPlugins, err
 }
 
-// CreateJobPlugin 创建任务插件关联
-func (r *PluginRepo) CreateJobPlugin(jobPlugin *model.JobPlugin) error {
-	return r.Ctx.DBSession().Table("t_job_plugin").Create(jobPlugin).Error
+// CreateTaskPlugin 创建任务插件关联
+func (r *PluginRepo) CreateTaskPlugin(taskPlugin *model.TaskPlugin) error {
+	return r.Ctx.DBSession().Table("t_task_plugin").Create(taskPlugin).Error
 }
 
-// UpdateJobPluginStatus 更新任务插件执行状态
-func (r *PluginRepo) UpdateJobPluginStatus(id int, status int, result, errorMsg string) error {
+// UpdateTaskPluginStatus 更新任务插件执行状态
+func (r *PluginRepo) UpdateTaskPluginStatus(id int, status int, result, errorMsg string) error {
 	updates := map[string]interface{}{
 		"status": status,
 	}
@@ -99,7 +99,7 @@ func (r *PluginRepo) UpdateJobPluginStatus(id int, status int, result, errorMsg 
 	if errorMsg != "" {
 		updates["error_message"] = errorMsg
 	}
-	return r.Ctx.DBSession().Table("t_job_plugin").
+	return r.Ctx.DBSession().Table("t_task_plugin").
 		Where("id = ?", id).
 		Updates(updates).Error
 }

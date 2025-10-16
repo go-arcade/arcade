@@ -17,13 +17,13 @@ import (
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	agentapi "github.com/observabil/arcade/api/agent/v1"
-	jobapi "github.com/observabil/arcade/api/job/v1"
 	pipelineapi "github.com/observabil/arcade/api/pipeline/v1"
 	streamapi "github.com/observabil/arcade/api/stream/v1"
+	taskapi "github.com/observabil/arcade/api/task/v1"
 	"github.com/observabil/arcade/internal/engine/service/agent"
-	"github.com/observabil/arcade/internal/engine/service/job"
 	"github.com/observabil/arcade/internal/engine/service/pipeline"
 	"github.com/observabil/arcade/internal/engine/service/stream"
+	"github.com/observabil/arcade/internal/engine/service/task"
 	"github.com/observabil/arcade/internal/pkg/grpc/middleware"
 )
 
@@ -65,7 +65,7 @@ func NewGrpcServer(cfg GrpcConf, log *zap.Logger) *ServerWrapper {
 // RegisterAll 注册所有 gRPC 服务
 func (s *ServerWrapper) Register() {
 	agentapi.RegisterAgentServer(s.svr, &agent.AgentServiceImpl{})
-	jobapi.RegisterJobServer(s.svr, &job.JobServiceImpl{})
+	taskapi.RegisterTaskServer(s.svr, &task.TaskServiceImpl{})
 	streamapi.RegisterStreamServer(s.svr, &stream.StreamServiceImpl{})
 	pipelineapi.RegisterPipelineServer(s.svr, &pipeline.PipelineServiceImpl{})
 	// reflection（调试）

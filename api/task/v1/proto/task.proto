@@ -1,53 +1,53 @@
 syntax = "proto3";
 
-package api.job.v1;
+package api.task.v1;
 
-option go_package = "github.com/observabil/arcade/api/job/v1;v1";
+option go_package = "github.com/observabil/arcade/api/task/v1;v1";
 
-// Job服务 - 任务和流水线管理接口
-service Job {
+// Task服务 - 任务和流水线管理接口
+service Task {
     // Ping服务健康检查
     rpc Ping(PingRequest) returns (PingResponse) {}
 
     // 创建任务
-    rpc CreateJob(CreateJobRequest) returns (CreateJobResponse) {}
+    rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse) {}
 
     // 获取任务详情
-    rpc GetJob(GetJobRequest) returns (GetJobResponse) {}
+    rpc GetTask(GetTaskRequest) returns (GetTaskResponse) {}
 
     // 列出任务（支持分页和过滤）
-    rpc ListJobs(ListJobsRequest) returns (ListJobsResponse) {}
+    rpc ListTasks(ListTasksRequest) returns (ListTasksResponse) {}
 
     // 更新任务
-    rpc UpdateJob(UpdateJobRequest) returns (UpdateJobResponse) {}
+    rpc UpdateTask(UpdateTaskRequest) returns (UpdateTaskResponse) {}
 
     // 删除任务
-    rpc DeleteJob(DeleteJobRequest) returns (DeleteJobResponse) {}
+    rpc DeleteTask(DeleteTaskRequest) returns (DeleteTaskResponse) {}
 
     // 取消任务
-    rpc CancelJob(CancelJobRequest) returns (CancelJobResponse) {}
+    rpc CancelTask(CancelTaskRequest) returns (CancelTaskResponse) {}
 
     // 重试任务
-    rpc RetryJob(RetryJobRequest) returns (RetryJobResponse) {}
+    rpc RetryTask(RetryTaskRequest) returns (RetryTaskResponse) {}
 
     // 获取任务日志
-    rpc GetJobLog(GetJobLogRequest) returns (GetJobLogResponse) {}
+    rpc GetTaskLog(GetTaskLogRequest) returns (GetTaskLogResponse) {}
 
     // 获取任务产物列表
-    rpc ListJobArtifacts(ListJobArtifactsRequest) returns (ListJobArtifactsResponse) {}
+    rpc ListTaskArtifacts(ListTaskArtifactsRequest) returns (ListTaskArtifactsResponse) {}
 }
 
 // 任务状态枚举
-enum JobStatus {
-  JOB_STATUS_UNKNOWN = 0;
-  JOB_STATUS_PENDING = 1;       // 等待执行
-  JOB_STATUS_QUEUED = 2;        // 已入队
-  JOB_STATUS_RUNNING = 3;       // 执行中
-  JOB_STATUS_SUCCESS = 4;       // 执行成功
-  JOB_STATUS_FAILED = 5;        // 执行失败
-  JOB_STATUS_CANCELLED = 6;     // 已取消
-  JOB_STATUS_TIMEOUT = 7;       // 超时
-  JOB_STATUS_SKIPPED = 8;       // 已跳过
+enum TaskStatus {
+  TASK_STATUS_UNKNOWN = 0;
+  TASK_STATUS_PENDING = 1;       // 等待执行
+  TASK_STATUS_QUEUED = 2;        // 已入队
+  TASK_STATUS_RUNNING = 3;       // 执行中
+  TASK_STATUS_SUCCESS = 4;       // 执行成功
+  TASK_STATUS_FAILED = 5;        // 执行失败
+  TASK_STATUS_CANCELLED = 6;     // 已取消
+  TASK_STATUS_TIMEOUT = 7;       // 超时
+  TASK_STATUS_SKIPPED = 8;       // 已跳过
 }
 
 // 触发类型枚举
@@ -69,7 +69,7 @@ message PingResponse {
 }
 
 // 创建任务请求
-message CreateJobRequest {
+message CreateTaskRequest {
   string name = 1;                      // 任务名称
   string pipeline_id = 2;               // 所属流水线ID
   int32 stage = 3;                      // 阶段序号
@@ -97,31 +97,31 @@ message ArtifactConfig {
 }
 
 // 创建任务响应
-message CreateJobResponse {
+message CreateTaskResponse {
   bool success = 1;
   string message = 2;
-  string job_id = 3;                    // 创建的任务ID
+  string task_id = 3;                   // 创建的任务ID
 }
 
 // 获取任务请求
-message GetJobRequest {
-  string job_id = 1;
+message GetTaskRequest {
+  string task_id = 1;
 }
 
 // 获取任务响应
-message GetJobResponse {
+message GetTaskResponse {
   bool success = 1;
   string message = 2;
-  JobDetail job = 3;
+  TaskDetail task = 3;
 }
 
 // 任务详情
-message JobDetail {
-  string job_id = 1;                    // 任务ID
+message TaskDetail {
+  string task_id = 1;                   // 任务ID
   string name = 2;                      // 任务名称
   string pipeline_id = 3;               // 所属流水线ID
   int32 stage = 4;                      // 阶段序号
-  JobStatus status = 5;                 // 任务状态
+  TaskStatus status = 5;                // 任务状态
   repeated string commands = 6;         // 执行命令列表
   map<string, string> env = 7;          // 环境变量
   string workspace = 8;                 // 工作目录
@@ -146,9 +146,9 @@ message JobDetail {
 }
 
 // 列出任务请求
-message ListJobsRequest {
+message ListTasksRequest {
   string pipeline_id = 1;               // 流水线ID（可选）
-  JobStatus status = 2;                 // 状态过滤（可选）
+  TaskStatus status = 2;                // 状态过滤（可选）
   string agent_id = 3;                  // Agent ID过滤（可选）
   int32 page = 4;                       // 页码（从1开始）
   int32 page_size = 5;                  // 每页数量（默认20）
@@ -157,18 +157,18 @@ message ListJobsRequest {
 }
 
 // 列出任务响应
-message ListJobsResponse {
+message ListTasksResponse {
   bool success = 1;
   string message = 2;
-  repeated JobDetail jobs = 3;
+  repeated TaskDetail tasks = 3;
   int32 total = 4;                      // 总数
   int32 page = 5;                       // 当前页
   int32 page_size = 6;                  // 每页数量
 }
 
 // 更新任务请求
-message UpdateJobRequest {
-  string job_id = 1;
+message UpdateTaskRequest {
+  string task_id = 1;
   string name = 2;                      // 任务名称（可选）
   repeated string commands = 3;         // 执行命令列表（可选）
   map<string, string> env = 4;          // 环境变量（可选）
@@ -177,55 +177,55 @@ message UpdateJobRequest {
 }
 
 // 更新任务响应
-message UpdateJobResponse {
+message UpdateTaskResponse {
   bool success = 1;
   string message = 2;
 }
 
 // 删除任务请求
-message DeleteJobRequest {
-  string job_id = 1;
+message DeleteTaskRequest {
+  string task_id = 1;
 }
 
 // 删除任务响应
-message DeleteJobResponse {
+message DeleteTaskResponse {
   bool success = 1;
   string message = 2;
 }
 
 // 取消任务请求
-message CancelJobRequest {
-  string job_id = 1;
+message CancelTaskRequest {
+  string task_id = 1;
   string reason = 2;                    // 取消原因
 }
 
 // 取消任务响应
-message CancelJobResponse {
+message CancelTaskResponse {
   bool success = 1;
   string message = 2;
 }
 
 // 重试任务请求
-message RetryJobRequest {
-  string job_id = 1;
+message RetryTaskRequest {
+  string task_id = 1;
 }
 
 // 重试任务响应
-message RetryJobResponse {
+message RetryTaskResponse {
   bool success = 1;
   string message = 2;
-  string new_job_id = 3;                // 新创建的任务ID
+  string new_task_id = 3;               // 新创建的任务ID
 }
 
 // 获取任务日志请求
-message GetJobLogRequest {
-  string job_id = 1;
+message GetTaskLogRequest {
+  string task_id = 1;
   int32 offset = 2;                     // 日志偏移量（行号）
   int32 limit = 3;                      // 获取数量（默认1000行）
 }
 
 // 获取任务日志响应
-message GetJobLogResponse {
+message GetTaskLogResponse {
   bool success = 1;
   string message = 2;
   repeated LogLine logs = 3;
@@ -242,12 +242,12 @@ message LogLine {
 }
 
 // 列出任务产物请求
-message ListJobArtifactsRequest {
-  string job_id = 1;
+message ListTaskArtifactsRequest {
+  string task_id = 1;
 }
 
 // 列出任务产物响应
-message ListJobArtifactsResponse {
+message ListTaskArtifactsResponse {
   bool success = 1;
   string message = 2;
   repeated Artifact artifacts = 3;
@@ -268,11 +268,11 @@ message Artifact {
 message Stage {
   int32 order = 1;                      // 阶段序号
   string name = 2;                      // 阶段名称
-  repeated JobConfig jobs = 3;          // 任务配置列表
+  repeated TaskConfig tasks = 3;        // 任务配置列表
 }
 
 // 任务配置
-message JobConfig {
+message TaskConfig {
   string name = 1;                      // 任务名称
   repeated string commands = 2;         // 执行命令
   map<string, string> env = 3;          // 环境变量

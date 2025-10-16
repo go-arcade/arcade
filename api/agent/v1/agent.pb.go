@@ -7,7 +7,7 @@
 package v1
 
 import (
-	v1 "github.com/observabil/arcade/api/job/v1"
+	v1 "github.com/observabil/arcade/api/task/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -632,7 +632,7 @@ func (x *UnregisterResponse) GetMessage() string {
 }
 
 // 获取任务请求
-type FetchJobRequest struct {
+type FetchTaskRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AgentId       string                 `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
 	MaxJobs       int32                  `protobuf:"varint,2,opt,name=max_jobs,json=maxJobs,proto3" json:"max_jobs,omitempty"`                                                         // 最多获取的任务数
@@ -642,20 +642,20 @@ type FetchJobRequest struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *FetchJobRequest) Reset() {
-	*x = FetchJobRequest{}
+func (x *FetchTaskRequest) Reset() {
+	*x = FetchTaskRequest{}
 	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *FetchJobRequest) String() string {
+func (x *FetchTaskRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*FetchJobRequest) ProtoMessage() {}
+func (*FetchTaskRequest) ProtoMessage() {}
 
-func (x *FetchJobRequest) ProtoReflect() protoreflect.Message {
+func (x *FetchTaskRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -667,33 +667,33 @@ func (x *FetchJobRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use FetchJobRequest.ProtoReflect.Descriptor instead.
-func (*FetchJobRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use FetchTaskRequest.ProtoReflect.Descriptor instead.
+func (*FetchTaskRequest) Descriptor() ([]byte, []int) {
 	return file_api_agent_v1_proto_agent_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *FetchJobRequest) GetAgentId() string {
+func (x *FetchTaskRequest) GetAgentId() string {
 	if x != nil {
 		return x.AgentId
 	}
 	return ""
 }
 
-func (x *FetchJobRequest) GetMaxJobs() int32 {
+func (x *FetchTaskRequest) GetMaxJobs() int32 {
 	if x != nil {
 		return x.MaxJobs
 	}
 	return 0
 }
 
-func (x *FetchJobRequest) GetTags() []string {
+func (x *FetchTaskRequest) GetTags() []string {
 	if x != nil {
 		return x.Tags
 	}
 	return nil
 }
 
-func (x *FetchJobRequest) GetLabels() map[string]string {
+func (x *FetchTaskRequest) GetLabels() map[string]string {
 	if x != nil {
 		return x.Labels
 	}
@@ -701,29 +701,29 @@ func (x *FetchJobRequest) GetLabels() map[string]string {
 }
 
 // 获取任务响应
-type FetchJobResponse struct {
+type FetchTaskResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
 	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
-	Jobs          []*Job                 `protobuf:"bytes,3,rep,name=jobs,proto3" json:"jobs,omitempty"` // 待执行的任务列表
+	Tasks         []*Task                `protobuf:"bytes,3,rep,name=tasks,proto3" json:"tasks,omitempty"` // 待执行的任务列表
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *FetchJobResponse) Reset() {
-	*x = FetchJobResponse{}
+func (x *FetchTaskResponse) Reset() {
+	*x = FetchTaskResponse{}
 	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *FetchJobResponse) String() string {
+func (x *FetchTaskResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*FetchJobResponse) ProtoMessage() {}
+func (*FetchTaskResponse) ProtoMessage() {}
 
-func (x *FetchJobResponse) ProtoReflect() protoreflect.Message {
+func (x *FetchTaskResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -735,34 +735,34 @@ func (x *FetchJobResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use FetchJobResponse.ProtoReflect.Descriptor instead.
-func (*FetchJobResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use FetchTaskResponse.ProtoReflect.Descriptor instead.
+func (*FetchTaskResponse) Descriptor() ([]byte, []int) {
 	return file_api_agent_v1_proto_agent_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *FetchJobResponse) GetSuccess() bool {
+func (x *FetchTaskResponse) GetSuccess() bool {
 	if x != nil {
 		return x.Success
 	}
 	return false
 }
 
-func (x *FetchJobResponse) GetMessage() string {
+func (x *FetchTaskResponse) GetMessage() string {
 	if x != nil {
 		return x.Message
 	}
 	return ""
 }
 
-func (x *FetchJobResponse) GetJobs() []*Job {
+func (x *FetchTaskResponse) GetTasks() []*Task {
 	if x != nil {
-		return x.Jobs
+		return x.Tasks
 	}
 	return nil
 }
 
 // 任务定义
-type Job struct {
+type Task struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	JobId         string                 `protobuf:"bytes,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`                                                                   // 任务ID
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`                                                                                  // 任务名称
@@ -782,20 +782,20 @@ type Job struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Job) Reset() {
-	*x = Job{}
+func (x *Task) Reset() {
+	*x = Task{}
 	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Job) String() string {
+func (x *Task) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Job) ProtoMessage() {}
+func (*Task) ProtoMessage() {}
 
-func (x *Job) ProtoReflect() protoreflect.Message {
+func (x *Task) ProtoReflect() protoreflect.Message {
 	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -807,103 +807,103 @@ func (x *Job) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Job.ProtoReflect.Descriptor instead.
-func (*Job) Descriptor() ([]byte, []int) {
+// Deprecated: Use Task.ProtoReflect.Descriptor instead.
+func (*Task) Descriptor() ([]byte, []int) {
 	return file_api_agent_v1_proto_agent_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *Job) GetJobId() string {
+func (x *Task) GetJobId() string {
 	if x != nil {
 		return x.JobId
 	}
 	return ""
 }
 
-func (x *Job) GetName() string {
+func (x *Task) GetName() string {
 	if x != nil {
 		return x.Name
 	}
 	return ""
 }
 
-func (x *Job) GetPipelineId() string {
+func (x *Task) GetPipelineId() string {
 	if x != nil {
 		return x.PipelineId
 	}
 	return ""
 }
 
-func (x *Job) GetStage() int32 {
+func (x *Task) GetStage() int32 {
 	if x != nil {
 		return x.Stage
 	}
 	return 0
 }
 
-func (x *Job) GetCommands() []string {
+func (x *Task) GetCommands() []string {
 	if x != nil {
 		return x.Commands
 	}
 	return nil
 }
 
-func (x *Job) GetEnv() map[string]string {
+func (x *Task) GetEnv() map[string]string {
 	if x != nil {
 		return x.Env
 	}
 	return nil
 }
 
-func (x *Job) GetWorkspace() string {
+func (x *Task) GetWorkspace() string {
 	if x != nil {
 		return x.Workspace
 	}
 	return ""
 }
 
-func (x *Job) GetTimeout() int32 {
+func (x *Task) GetTimeout() int32 {
 	if x != nil {
 		return x.Timeout
 	}
 	return 0
 }
 
-func (x *Job) GetTags() []string {
+func (x *Task) GetTags() []string {
 	if x != nil {
 		return x.Tags
 	}
 	return nil
 }
 
-func (x *Job) GetImage() string {
+func (x *Task) GetImage() string {
 	if x != nil {
 		return x.Image
 	}
 	return ""
 }
 
-func (x *Job) GetSecrets() map[string]string {
+func (x *Task) GetSecrets() map[string]string {
 	if x != nil {
 		return x.Secrets
 	}
 	return nil
 }
 
-func (x *Job) GetArtifacts() []*Artifact {
+func (x *Task) GetArtifacts() []*Artifact {
 	if x != nil {
 		return x.Artifacts
 	}
 	return nil
 }
 
-func (x *Job) GetLabelSelector() *LabelSelector {
+func (x *Task) GetLabelSelector() *LabelSelector {
 	if x != nil {
 		return x.LabelSelector
 	}
 	return nil
 }
 
-func (x *Job) GetPlugins() []*PluginInfo {
+func (x *Task) GetPlugins() []*PluginInfo {
 	if x != nil {
 		return x.Plugins
 	}
@@ -972,11 +972,11 @@ func (x *Artifact) GetDestination() string {
 }
 
 // 上报任务状态请求
-type ReportJobStatusRequest struct {
+type ReportTaskStatusRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AgentId       string                 `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
-	JobId         string                 `protobuf:"bytes,2,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
-	Status        v1.JobStatus           `protobuf:"varint,3,opt,name=status,proto3,enum=api.job.v1.JobStatus" json:"status,omitempty"`                                                  // 任务状态
+	TaskId        string                 `protobuf:"bytes,2,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	Status        v1.TaskStatus          `protobuf:"varint,3,opt,name=status,proto3,enum=api.task.v1.TaskStatus" json:"status,omitempty"`                                                // 任务状态
 	ExitCode      int32                  `protobuf:"varint,4,opt,name=exit_code,json=exitCode,proto3" json:"exit_code,omitempty"`                                                        // 退出码
 	ErrorMessage  string                 `protobuf:"bytes,5,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`                                             // 错误信息
 	StartTime     int64                  `protobuf:"varint,6,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`                                                     // 开始时间（Unix时间戳）
@@ -986,20 +986,20 @@ type ReportJobStatusRequest struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ReportJobStatusRequest) Reset() {
-	*x = ReportJobStatusRequest{}
+func (x *ReportTaskStatusRequest) Reset() {
+	*x = ReportTaskStatusRequest{}
 	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ReportJobStatusRequest) String() string {
+func (x *ReportTaskStatusRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ReportJobStatusRequest) ProtoMessage() {}
+func (*ReportTaskStatusRequest) ProtoMessage() {}
 
-func (x *ReportJobStatusRequest) ProtoReflect() protoreflect.Message {
+func (x *ReportTaskStatusRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1011,61 +1011,61 @@ func (x *ReportJobStatusRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ReportJobStatusRequest.ProtoReflect.Descriptor instead.
-func (*ReportJobStatusRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use ReportTaskStatusRequest.ProtoReflect.Descriptor instead.
+func (*ReportTaskStatusRequest) Descriptor() ([]byte, []int) {
 	return file_api_agent_v1_proto_agent_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *ReportJobStatusRequest) GetAgentId() string {
+func (x *ReportTaskStatusRequest) GetAgentId() string {
 	if x != nil {
 		return x.AgentId
 	}
 	return ""
 }
 
-func (x *ReportJobStatusRequest) GetJobId() string {
+func (x *ReportTaskStatusRequest) GetTaskId() string {
 	if x != nil {
-		return x.JobId
+		return x.TaskId
 	}
 	return ""
 }
 
-func (x *ReportJobStatusRequest) GetStatus() v1.JobStatus {
+func (x *ReportTaskStatusRequest) GetStatus() v1.TaskStatus {
 	if x != nil {
 		return x.Status
 	}
-	return v1.JobStatus(0)
+	return v1.TaskStatus(0)
 }
 
-func (x *ReportJobStatusRequest) GetExitCode() int32 {
+func (x *ReportTaskStatusRequest) GetExitCode() int32 {
 	if x != nil {
 		return x.ExitCode
 	}
 	return 0
 }
 
-func (x *ReportJobStatusRequest) GetErrorMessage() string {
+func (x *ReportTaskStatusRequest) GetErrorMessage() string {
 	if x != nil {
 		return x.ErrorMessage
 	}
 	return ""
 }
 
-func (x *ReportJobStatusRequest) GetStartTime() int64 {
+func (x *ReportTaskStatusRequest) GetStartTime() int64 {
 	if x != nil {
 		return x.StartTime
 	}
 	return 0
 }
 
-func (x *ReportJobStatusRequest) GetEndTime() int64 {
+func (x *ReportTaskStatusRequest) GetEndTime() int64 {
 	if x != nil {
 		return x.EndTime
 	}
 	return 0
 }
 
-func (x *ReportJobStatusRequest) GetMetrics() map[string]string {
+func (x *ReportTaskStatusRequest) GetMetrics() map[string]string {
 	if x != nil {
 		return x.Metrics
 	}
@@ -1073,7 +1073,7 @@ func (x *ReportJobStatusRequest) GetMetrics() map[string]string {
 }
 
 // 上报任务状态响应
-type ReportJobStatusResponse struct {
+type ReportTaskStatusResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
 	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
@@ -1081,20 +1081,20 @@ type ReportJobStatusResponse struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ReportJobStatusResponse) Reset() {
-	*x = ReportJobStatusResponse{}
+func (x *ReportTaskStatusResponse) Reset() {
+	*x = ReportTaskStatusResponse{}
 	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ReportJobStatusResponse) String() string {
+func (x *ReportTaskStatusResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ReportJobStatusResponse) ProtoMessage() {}
+func (*ReportTaskStatusResponse) ProtoMessage() {}
 
-func (x *ReportJobStatusResponse) ProtoReflect() protoreflect.Message {
+func (x *ReportTaskStatusResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1106,19 +1106,19 @@ func (x *ReportJobStatusResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ReportJobStatusResponse.ProtoReflect.Descriptor instead.
-func (*ReportJobStatusResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use ReportTaskStatusResponse.ProtoReflect.Descriptor instead.
+func (*ReportTaskStatusResponse) Descriptor() ([]byte, []int) {
 	return file_api_agent_v1_proto_agent_proto_rawDescGZIP(), []int{11}
 }
 
-func (x *ReportJobStatusResponse) GetSuccess() bool {
+func (x *ReportTaskStatusResponse) GetSuccess() bool {
 	if x != nil {
 		return x.Success
 	}
 	return false
 }
 
-func (x *ReportJobStatusResponse) GetMessage() string {
+func (x *ReportTaskStatusResponse) GetMessage() string {
 	if x != nil {
 		return x.Message
 	}
@@ -1126,29 +1126,29 @@ func (x *ReportJobStatusResponse) GetMessage() string {
 }
 
 // 上报任务日志请求
-type ReportJobLogRequest struct {
+type ReportTaskLogRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AgentId       string                 `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
-	JobId         string                 `protobuf:"bytes,2,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
+	TaskId        string                 `protobuf:"bytes,2,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
 	Logs          []*LogEntry            `protobuf:"bytes,3,rep,name=logs,proto3" json:"logs,omitempty"` // 日志条目
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ReportJobLogRequest) Reset() {
-	*x = ReportJobLogRequest{}
+func (x *ReportTaskLogRequest) Reset() {
+	*x = ReportTaskLogRequest{}
 	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ReportJobLogRequest) String() string {
+func (x *ReportTaskLogRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ReportJobLogRequest) ProtoMessage() {}
+func (*ReportTaskLogRequest) ProtoMessage() {}
 
-func (x *ReportJobLogRequest) ProtoReflect() protoreflect.Message {
+func (x *ReportTaskLogRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1160,26 +1160,26 @@ func (x *ReportJobLogRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ReportJobLogRequest.ProtoReflect.Descriptor instead.
-func (*ReportJobLogRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use ReportTaskLogRequest.ProtoReflect.Descriptor instead.
+func (*ReportTaskLogRequest) Descriptor() ([]byte, []int) {
 	return file_api_agent_v1_proto_agent_proto_rawDescGZIP(), []int{12}
 }
 
-func (x *ReportJobLogRequest) GetAgentId() string {
+func (x *ReportTaskLogRequest) GetAgentId() string {
 	if x != nil {
 		return x.AgentId
 	}
 	return ""
 }
 
-func (x *ReportJobLogRequest) GetJobId() string {
+func (x *ReportTaskLogRequest) GetTaskId() string {
 	if x != nil {
-		return x.JobId
+		return x.TaskId
 	}
 	return ""
 }
 
-func (x *ReportJobLogRequest) GetLogs() []*LogEntry {
+func (x *ReportTaskLogRequest) GetLogs() []*LogEntry {
 	if x != nil {
 		return x.Logs
 	}
@@ -1256,7 +1256,7 @@ func (x *LogEntry) GetLineNumber() int32 {
 }
 
 // 上报任务日志响应
-type ReportJobLogResponse struct {
+type ReportTaskLogResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
 	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
@@ -1264,20 +1264,20 @@ type ReportJobLogResponse struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ReportJobLogResponse) Reset() {
-	*x = ReportJobLogResponse{}
+func (x *ReportTaskLogResponse) Reset() {
+	*x = ReportTaskLogResponse{}
 	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ReportJobLogResponse) String() string {
+func (x *ReportTaskLogResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ReportJobLogResponse) ProtoMessage() {}
+func (*ReportTaskLogResponse) ProtoMessage() {}
 
-func (x *ReportJobLogResponse) ProtoReflect() protoreflect.Message {
+func (x *ReportTaskLogResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1289,19 +1289,19 @@ func (x *ReportJobLogResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ReportJobLogResponse.ProtoReflect.Descriptor instead.
-func (*ReportJobLogResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use ReportTaskLogResponse.ProtoReflect.Descriptor instead.
+func (*ReportTaskLogResponse) Descriptor() ([]byte, []int) {
 	return file_api_agent_v1_proto_agent_proto_rawDescGZIP(), []int{14}
 }
 
-func (x *ReportJobLogResponse) GetSuccess() bool {
+func (x *ReportTaskLogResponse) GetSuccess() bool {
 	if x != nil {
 		return x.Success
 	}
 	return false
 }
 
-func (x *ReportJobLogResponse) GetMessage() string {
+func (x *ReportTaskLogResponse) GetMessage() string {
 	if x != nil {
 		return x.Message
 	}
@@ -1309,7 +1309,7 @@ func (x *ReportJobLogResponse) GetMessage() string {
 }
 
 // 取消任务请求
-type CancelJobRequest struct {
+type CancelTaskRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AgentId       string                 `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
 	JobId         string                 `protobuf:"bytes,2,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
@@ -1318,20 +1318,20 @@ type CancelJobRequest struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *CancelJobRequest) Reset() {
-	*x = CancelJobRequest{}
+func (x *CancelTaskRequest) Reset() {
+	*x = CancelTaskRequest{}
 	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *CancelJobRequest) String() string {
+func (x *CancelTaskRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CancelJobRequest) ProtoMessage() {}
+func (*CancelTaskRequest) ProtoMessage() {}
 
-func (x *CancelJobRequest) ProtoReflect() protoreflect.Message {
+func (x *CancelTaskRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1343,26 +1343,26 @@ func (x *CancelJobRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CancelJobRequest.ProtoReflect.Descriptor instead.
-func (*CancelJobRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use CancelTaskRequest.ProtoReflect.Descriptor instead.
+func (*CancelTaskRequest) Descriptor() ([]byte, []int) {
 	return file_api_agent_v1_proto_agent_proto_rawDescGZIP(), []int{15}
 }
 
-func (x *CancelJobRequest) GetAgentId() string {
+func (x *CancelTaskRequest) GetAgentId() string {
 	if x != nil {
 		return x.AgentId
 	}
 	return ""
 }
 
-func (x *CancelJobRequest) GetJobId() string {
+func (x *CancelTaskRequest) GetJobId() string {
 	if x != nil {
 		return x.JobId
 	}
 	return ""
 }
 
-func (x *CancelJobRequest) GetReason() string {
+func (x *CancelTaskRequest) GetReason() string {
 	if x != nil {
 		return x.Reason
 	}
@@ -1370,7 +1370,7 @@ func (x *CancelJobRequest) GetReason() string {
 }
 
 // 取消任务响应
-type CancelJobResponse struct {
+type CancelTaskResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
 	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
@@ -1378,20 +1378,20 @@ type CancelJobResponse struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *CancelJobResponse) Reset() {
-	*x = CancelJobResponse{}
+func (x *CancelTaskResponse) Reset() {
+	*x = CancelTaskResponse{}
 	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *CancelJobResponse) String() string {
+func (x *CancelTaskResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CancelJobResponse) ProtoMessage() {}
+func (*CancelTaskResponse) ProtoMessage() {}
 
-func (x *CancelJobResponse) ProtoReflect() protoreflect.Message {
+func (x *CancelTaskResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_api_agent_v1_proto_agent_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1403,19 +1403,19 @@ func (x *CancelJobResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CancelJobResponse.ProtoReflect.Descriptor instead.
-func (*CancelJobResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use CancelTaskResponse.ProtoReflect.Descriptor instead.
+func (*CancelTaskResponse) Descriptor() ([]byte, []int) {
 	return file_api_agent_v1_proto_agent_proto_rawDescGZIP(), []int{16}
 }
 
-func (x *CancelJobResponse) GetSuccess() bool {
+func (x *CancelTaskResponse) GetSuccess() bool {
 	if x != nil {
 		return x.Success
 	}
 	return false
 }
 
-func (x *CancelJobResponse) GetMessage() string {
+func (x *CancelTaskResponse) GetMessage() string {
 	if x != nil {
 		return x.Message
 	}
@@ -2025,7 +2025,7 @@ var File_api_agent_v1_proto_agent_proto protoreflect.FileDescriptor
 
 const file_api_agent_v1_proto_agent_proto_rawDesc = "" +
 	"\n" +
-	"\x1eapi/agent/v1/proto/agent.proto\x12\fapi.agent.v1\x1a\x1aapi/job/v1/proto/job.proto\"\xc0\x03\n" +
+	"\x1eapi/agent/v1/proto/agent.proto\x12\fapi.agent.v1\x1a\x1capi/task/v1/proto/task.proto\"\xc0\x03\n" +
 	"\x10HeartbeatRequest\x12\x19\n" +
 	"\bagent_id\x18\x01 \x01(\tR\aagentId\x121\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x19.api.agent.v1.AgentStatusR\x06status\x12,\n" +
@@ -2068,33 +2068,33 @@ const file_api_agent_v1_proto_agent_proto_rawDesc = "" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\"H\n" +
 	"\x12UnregisterResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"\xd9\x01\n" +
-	"\x0fFetchJobRequest\x12\x19\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"\xdb\x01\n" +
+	"\x10FetchTaskRequest\x12\x19\n" +
 	"\bagent_id\x18\x01 \x01(\tR\aagentId\x12\x19\n" +
 	"\bmax_jobs\x18\x02 \x01(\x05R\amaxJobs\x12\x12\n" +
-	"\x04tags\x18\x03 \x03(\tR\x04tags\x12A\n" +
-	"\x06labels\x18\x04 \x03(\v2).api.agent.v1.FetchJobRequest.LabelsEntryR\x06labels\x1a9\n" +
+	"\x04tags\x18\x03 \x03(\tR\x04tags\x12B\n" +
+	"\x06labels\x18\x04 \x03(\v2*.api.agent.v1.FetchTaskRequest.LabelsEntryR\x06labels\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"m\n" +
-	"\x10FetchJobResponse\x12\x18\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"q\n" +
+	"\x11FetchTaskResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\x12%\n" +
-	"\x04jobs\x18\x03 \x03(\v2\x11.api.agent.v1.JobR\x04jobs\"\xef\x04\n" +
-	"\x03Job\x12\x15\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12(\n" +
+	"\x05tasks\x18\x03 \x03(\v2\x12.api.agent.v1.TaskR\x05tasks\"\xf2\x04\n" +
+	"\x04Task\x12\x15\n" +
 	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1f\n" +
 	"\vpipeline_id\x18\x03 \x01(\tR\n" +
 	"pipelineId\x12\x14\n" +
 	"\x05stage\x18\x04 \x01(\x05R\x05stage\x12\x1a\n" +
-	"\bcommands\x18\x05 \x03(\tR\bcommands\x12,\n" +
-	"\x03env\x18\x06 \x03(\v2\x1a.api.agent.v1.Job.EnvEntryR\x03env\x12\x1c\n" +
+	"\bcommands\x18\x05 \x03(\tR\bcommands\x12-\n" +
+	"\x03env\x18\x06 \x03(\v2\x1b.api.agent.v1.Task.EnvEntryR\x03env\x12\x1c\n" +
 	"\tworkspace\x18\a \x01(\tR\tworkspace\x12\x18\n" +
 	"\atimeout\x18\b \x01(\x05R\atimeout\x12\x12\n" +
 	"\x04tags\x18\t \x03(\tR\x04tags\x12\x14\n" +
 	"\x05image\x18\n" +
-	" \x01(\tR\x05image\x128\n" +
-	"\asecrets\x18\v \x03(\v2\x1e.api.agent.v1.Job.SecretsEntryR\asecrets\x124\n" +
+	" \x01(\tR\x05image\x129\n" +
+	"\asecrets\x18\v \x03(\v2\x1f.api.agent.v1.Task.SecretsEntryR\asecrets\x124\n" +
 	"\tartifacts\x18\f \x03(\v2\x16.api.agent.v1.ArtifactR\tartifacts\x12B\n" +
 	"\x0elabel_selector\x18\r \x01(\v2\x1b.api.agent.v1.LabelSelectorR\rlabelSelector\x122\n" +
 	"\aplugins\x18\x0e \x03(\v2\x18.api.agent.v1.PluginInfoR\aplugins\x1a6\n" +
@@ -2107,41 +2107,41 @@ const file_api_agent_v1_proto_agent_proto_rawDesc = "" +
 	"\bArtifact\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x12 \n" +
-	"\vdestination\x18\x03 \x01(\tR\vdestination\"\xfe\x02\n" +
-	"\x16ReportJobStatusRequest\x12\x19\n" +
-	"\bagent_id\x18\x01 \x01(\tR\aagentId\x12\x15\n" +
-	"\x06job_id\x18\x02 \x01(\tR\x05jobId\x12-\n" +
-	"\x06status\x18\x03 \x01(\x0e2\x15.api.job.v1.JobStatusR\x06status\x12\x1b\n" +
+	"\vdestination\x18\x03 \x01(\tR\vdestination\"\x84\x03\n" +
+	"\x17ReportTaskStatusRequest\x12\x19\n" +
+	"\bagent_id\x18\x01 \x01(\tR\aagentId\x12\x17\n" +
+	"\atask_id\x18\x02 \x01(\tR\x06taskId\x12/\n" +
+	"\x06status\x18\x03 \x01(\x0e2\x17.api.task.v1.TaskStatusR\x06status\x12\x1b\n" +
 	"\texit_code\x18\x04 \x01(\x05R\bexitCode\x12#\n" +
 	"\rerror_message\x18\x05 \x01(\tR\ferrorMessage\x12\x1d\n" +
 	"\n" +
 	"start_time\x18\x06 \x01(\x03R\tstartTime\x12\x19\n" +
-	"\bend_time\x18\a \x01(\x03R\aendTime\x12K\n" +
-	"\ametrics\x18\b \x03(\v21.api.agent.v1.ReportJobStatusRequest.MetricsEntryR\ametrics\x1a:\n" +
+	"\bend_time\x18\a \x01(\x03R\aendTime\x12L\n" +
+	"\ametrics\x18\b \x03(\v22.api.agent.v1.ReportTaskStatusRequest.MetricsEntryR\ametrics\x1a:\n" +
 	"\fMetricsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"M\n" +
-	"\x17ReportJobStatusResponse\x12\x18\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"N\n" +
+	"\x18ReportTaskStatusResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"s\n" +
-	"\x13ReportJobLogRequest\x12\x19\n" +
-	"\bagent_id\x18\x01 \x01(\tR\aagentId\x12\x15\n" +
-	"\x06job_id\x18\x02 \x01(\tR\x05jobId\x12*\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"v\n" +
+	"\x14ReportTaskLogRequest\x12\x19\n" +
+	"\bagent_id\x18\x01 \x01(\tR\aagentId\x12\x17\n" +
+	"\atask_id\x18\x02 \x01(\tR\x06taskId\x12*\n" +
 	"\x04logs\x18\x03 \x03(\v2\x16.api.agent.v1.LogEntryR\x04logs\"y\n" +
 	"\bLogEntry\x12\x1c\n" +
 	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\x12\x14\n" +
 	"\x05level\x18\x02 \x01(\tR\x05level\x12\x18\n" +
 	"\acontent\x18\x03 \x01(\tR\acontent\x12\x1f\n" +
 	"\vline_number\x18\x04 \x01(\x05R\n" +
-	"lineNumber\"J\n" +
-	"\x14ReportJobLogResponse\x12\x18\n" +
+	"lineNumber\"K\n" +
+	"\x15ReportTaskLogResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"\\\n" +
-	"\x10CancelJobRequest\x12\x19\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"]\n" +
+	"\x11CancelTaskRequest\x12\x19\n" +
 	"\bagent_id\x18\x01 \x01(\tR\aagentId\x12\x15\n" +
 	"\x06job_id\x18\x02 \x01(\tR\x05jobId\x12\x16\n" +
-	"\x06reason\x18\x03 \x01(\tR\x06reason\"G\n" +
-	"\x11CancelJobResponse\x12\x18\n" +
+	"\x06reason\x18\x03 \x01(\tR\x06reason\"H\n" +
+	"\x12CancelTaskResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"\xdc\x01\n" +
 	"\x13UpdateLabelsRequest\x12\x19\n" +
@@ -2216,16 +2216,17 @@ const file_api_agent_v1_proto_agent_proto_rawDesc = "" +
 	"\x17PLUGIN_LOCATION_UNKNOWN\x10\x00\x12\x1a\n" +
 	"\x16PLUGIN_LOCATION_SERVER\x10\x01\x12\x1b\n" +
 	"\x17PLUGIN_LOCATION_STORAGE\x10\x02\x12\x1c\n" +
-	"\x18PLUGIN_LOCATION_REGISTRY\x10\x032\xf8\x06\n" +
+	"\x18PLUGIN_LOCATION_REGISTRY\x10\x032\x84\a\n" +
 	"\x05Agent\x12N\n" +
 	"\tHeartbeat\x12\x1e.api.agent.v1.HeartbeatRequest\x1a\x1f.api.agent.v1.HeartbeatResponse\"\x00\x12K\n" +
 	"\bRegister\x12\x1d.api.agent.v1.RegisterRequest\x1a\x1e.api.agent.v1.RegisterResponse\"\x00\x12Q\n" +
 	"\n" +
-	"Unregister\x12\x1f.api.agent.v1.UnregisterRequest\x1a .api.agent.v1.UnregisterResponse\"\x00\x12K\n" +
-	"\bFetchJob\x12\x1d.api.agent.v1.FetchJobRequest\x1a\x1e.api.agent.v1.FetchJobResponse\"\x00\x12`\n" +
-	"\x0fReportJobStatus\x12$.api.agent.v1.ReportJobStatusRequest\x1a%.api.agent.v1.ReportJobStatusResponse\"\x00\x12W\n" +
-	"\fReportJobLog\x12!.api.agent.v1.ReportJobLogRequest\x1a\".api.agent.v1.ReportJobLogResponse\"\x00\x12N\n" +
-	"\tCancelJob\x12\x1e.api.agent.v1.CancelJobRequest\x1a\x1f.api.agent.v1.CancelJobResponse\"\x00\x12W\n" +
+	"Unregister\x12\x1f.api.agent.v1.UnregisterRequest\x1a .api.agent.v1.UnregisterResponse\"\x00\x12N\n" +
+	"\tFetchTask\x12\x1e.api.agent.v1.FetchTaskRequest\x1a\x1f.api.agent.v1.FetchTaskResponse\"\x00\x12c\n" +
+	"\x10ReportTaskStatus\x12%.api.agent.v1.ReportTaskStatusRequest\x1a&.api.agent.v1.ReportTaskStatusResponse\"\x00\x12Z\n" +
+	"\rReportTaskLog\x12\".api.agent.v1.ReportTaskLogRequest\x1a#.api.agent.v1.ReportTaskLogResponse\"\x00\x12Q\n" +
+	"\n" +
+	"CancelTask\x12\x1f.api.agent.v1.CancelTaskRequest\x1a .api.agent.v1.CancelTaskResponse\"\x00\x12W\n" +
 	"\fUpdateLabels\x12!.api.agent.v1.UpdateLabelsRequest\x1a\".api.agent.v1.UpdateLabelsResponse\"\x00\x12]\n" +
 	"\x0eDownloadPlugin\x12#.api.agent.v1.DownloadPluginRequest\x1a$.api.agent.v1.DownloadPluginResponse\"\x00\x12o\n" +
 	"\x14ListAvailablePlugins\x12).api.agent.v1.ListAvailablePluginsRequest\x1a*.api.agent.v1.ListAvailablePluginsResponse\"\x00B.Z,github.com/observabil/arcade/api/agent/v1;v1b\x06proto3"
@@ -2254,17 +2255,17 @@ var file_api_agent_v1_proto_agent_proto_goTypes = []any{
 	(*RegisterResponse)(nil),             // 6: api.agent.v1.RegisterResponse
 	(*UnregisterRequest)(nil),            // 7: api.agent.v1.UnregisterRequest
 	(*UnregisterResponse)(nil),           // 8: api.agent.v1.UnregisterResponse
-	(*FetchJobRequest)(nil),              // 9: api.agent.v1.FetchJobRequest
-	(*FetchJobResponse)(nil),             // 10: api.agent.v1.FetchJobResponse
-	(*Job)(nil),                          // 11: api.agent.v1.Job
+	(*FetchTaskRequest)(nil),             // 9: api.agent.v1.FetchTaskRequest
+	(*FetchTaskResponse)(nil),            // 10: api.agent.v1.FetchTaskResponse
+	(*Task)(nil),                         // 11: api.agent.v1.Task
 	(*Artifact)(nil),                     // 12: api.agent.v1.Artifact
-	(*ReportJobStatusRequest)(nil),       // 13: api.agent.v1.ReportJobStatusRequest
-	(*ReportJobStatusResponse)(nil),      // 14: api.agent.v1.ReportJobStatusResponse
-	(*ReportJobLogRequest)(nil),          // 15: api.agent.v1.ReportJobLogRequest
+	(*ReportTaskStatusRequest)(nil),      // 13: api.agent.v1.ReportTaskStatusRequest
+	(*ReportTaskStatusResponse)(nil),     // 14: api.agent.v1.ReportTaskStatusResponse
+	(*ReportTaskLogRequest)(nil),         // 15: api.agent.v1.ReportTaskLogRequest
 	(*LogEntry)(nil),                     // 16: api.agent.v1.LogEntry
-	(*ReportJobLogResponse)(nil),         // 17: api.agent.v1.ReportJobLogResponse
-	(*CancelJobRequest)(nil),             // 18: api.agent.v1.CancelJobRequest
-	(*CancelJobResponse)(nil),            // 19: api.agent.v1.CancelJobResponse
+	(*ReportTaskLogResponse)(nil),        // 17: api.agent.v1.ReportTaskLogResponse
+	(*CancelTaskRequest)(nil),            // 18: api.agent.v1.CancelTaskRequest
+	(*CancelTaskResponse)(nil),           // 19: api.agent.v1.CancelTaskResponse
 	(*UpdateLabelsRequest)(nil),          // 20: api.agent.v1.UpdateLabelsRequest
 	(*UpdateLabelsResponse)(nil),         // 21: api.agent.v1.UpdateLabelsResponse
 	(*LabelSelector)(nil),                // 22: api.agent.v1.LabelSelector
@@ -2277,30 +2278,30 @@ var file_api_agent_v1_proto_agent_proto_goTypes = []any{
 	nil,                                  // 29: api.agent.v1.HeartbeatRequest.MetricsEntry
 	nil,                                  // 30: api.agent.v1.HeartbeatRequest.LabelsEntry
 	nil,                                  // 31: api.agent.v1.RegisterRequest.LabelsEntry
-	nil,                                  // 32: api.agent.v1.FetchJobRequest.LabelsEntry
-	nil,                                  // 33: api.agent.v1.Job.EnvEntry
-	nil,                                  // 34: api.agent.v1.Job.SecretsEntry
-	nil,                                  // 35: api.agent.v1.ReportJobStatusRequest.MetricsEntry
+	nil,                                  // 32: api.agent.v1.FetchTaskRequest.LabelsEntry
+	nil,                                  // 33: api.agent.v1.Task.EnvEntry
+	nil,                                  // 34: api.agent.v1.Task.SecretsEntry
+	nil,                                  // 35: api.agent.v1.ReportTaskStatusRequest.MetricsEntry
 	nil,                                  // 36: api.agent.v1.UpdateLabelsRequest.LabelsEntry
 	nil,                                  // 37: api.agent.v1.UpdateLabelsResponse.LabelsEntry
 	nil,                                  // 38: api.agent.v1.LabelSelector.MatchLabelsEntry
-	(v1.JobStatus)(0),                    // 39: api.job.v1.JobStatus
+	(v1.TaskStatus)(0),                   // 39: api.task.v1.TaskStatus
 }
 var file_api_agent_v1_proto_agent_proto_depIdxs = []int32{
 	0,  // 0: api.agent.v1.HeartbeatRequest.status:type_name -> api.agent.v1.AgentStatus
 	29, // 1: api.agent.v1.HeartbeatRequest.metrics:type_name -> api.agent.v1.HeartbeatRequest.MetricsEntry
 	30, // 2: api.agent.v1.HeartbeatRequest.labels:type_name -> api.agent.v1.HeartbeatRequest.LabelsEntry
 	31, // 3: api.agent.v1.RegisterRequest.labels:type_name -> api.agent.v1.RegisterRequest.LabelsEntry
-	32, // 4: api.agent.v1.FetchJobRequest.labels:type_name -> api.agent.v1.FetchJobRequest.LabelsEntry
-	11, // 5: api.agent.v1.FetchJobResponse.jobs:type_name -> api.agent.v1.Job
-	33, // 6: api.agent.v1.Job.env:type_name -> api.agent.v1.Job.EnvEntry
-	34, // 7: api.agent.v1.Job.secrets:type_name -> api.agent.v1.Job.SecretsEntry
-	12, // 8: api.agent.v1.Job.artifacts:type_name -> api.agent.v1.Artifact
-	22, // 9: api.agent.v1.Job.label_selector:type_name -> api.agent.v1.LabelSelector
-	24, // 10: api.agent.v1.Job.plugins:type_name -> api.agent.v1.PluginInfo
-	39, // 11: api.agent.v1.ReportJobStatusRequest.status:type_name -> api.job.v1.JobStatus
-	35, // 12: api.agent.v1.ReportJobStatusRequest.metrics:type_name -> api.agent.v1.ReportJobStatusRequest.MetricsEntry
-	16, // 13: api.agent.v1.ReportJobLogRequest.logs:type_name -> api.agent.v1.LogEntry
+	32, // 4: api.agent.v1.FetchTaskRequest.labels:type_name -> api.agent.v1.FetchTaskRequest.LabelsEntry
+	11, // 5: api.agent.v1.FetchTaskResponse.tasks:type_name -> api.agent.v1.Task
+	33, // 6: api.agent.v1.Task.env:type_name -> api.agent.v1.Task.EnvEntry
+	34, // 7: api.agent.v1.Task.secrets:type_name -> api.agent.v1.Task.SecretsEntry
+	12, // 8: api.agent.v1.Task.artifacts:type_name -> api.agent.v1.Artifact
+	22, // 9: api.agent.v1.Task.label_selector:type_name -> api.agent.v1.LabelSelector
+	24, // 10: api.agent.v1.Task.plugins:type_name -> api.agent.v1.PluginInfo
+	39, // 11: api.agent.v1.ReportTaskStatusRequest.status:type_name -> api.task.v1.TaskStatus
+	35, // 12: api.agent.v1.ReportTaskStatusRequest.metrics:type_name -> api.agent.v1.ReportTaskStatusRequest.MetricsEntry
+	16, // 13: api.agent.v1.ReportTaskLogRequest.logs:type_name -> api.agent.v1.LogEntry
 	36, // 14: api.agent.v1.UpdateLabelsRequest.labels:type_name -> api.agent.v1.UpdateLabelsRequest.LabelsEntry
 	37, // 15: api.agent.v1.UpdateLabelsResponse.labels:type_name -> api.agent.v1.UpdateLabelsResponse.LabelsEntry
 	38, // 16: api.agent.v1.LabelSelector.match_labels:type_name -> api.agent.v1.LabelSelector.MatchLabelsEntry
@@ -2311,20 +2312,20 @@ var file_api_agent_v1_proto_agent_proto_depIdxs = []int32{
 	3,  // 21: api.agent.v1.Agent.Heartbeat:input_type -> api.agent.v1.HeartbeatRequest
 	5,  // 22: api.agent.v1.Agent.Register:input_type -> api.agent.v1.RegisterRequest
 	7,  // 23: api.agent.v1.Agent.Unregister:input_type -> api.agent.v1.UnregisterRequest
-	9,  // 24: api.agent.v1.Agent.FetchJob:input_type -> api.agent.v1.FetchJobRequest
-	13, // 25: api.agent.v1.Agent.ReportJobStatus:input_type -> api.agent.v1.ReportJobStatusRequest
-	15, // 26: api.agent.v1.Agent.ReportJobLog:input_type -> api.agent.v1.ReportJobLogRequest
-	18, // 27: api.agent.v1.Agent.CancelJob:input_type -> api.agent.v1.CancelJobRequest
+	9,  // 24: api.agent.v1.Agent.FetchTask:input_type -> api.agent.v1.FetchTaskRequest
+	13, // 25: api.agent.v1.Agent.ReportTaskStatus:input_type -> api.agent.v1.ReportTaskStatusRequest
+	15, // 26: api.agent.v1.Agent.ReportTaskLog:input_type -> api.agent.v1.ReportTaskLogRequest
+	18, // 27: api.agent.v1.Agent.CancelTask:input_type -> api.agent.v1.CancelTaskRequest
 	20, // 28: api.agent.v1.Agent.UpdateLabels:input_type -> api.agent.v1.UpdateLabelsRequest
 	25, // 29: api.agent.v1.Agent.DownloadPlugin:input_type -> api.agent.v1.DownloadPluginRequest
 	27, // 30: api.agent.v1.Agent.ListAvailablePlugins:input_type -> api.agent.v1.ListAvailablePluginsRequest
 	4,  // 31: api.agent.v1.Agent.Heartbeat:output_type -> api.agent.v1.HeartbeatResponse
 	6,  // 32: api.agent.v1.Agent.Register:output_type -> api.agent.v1.RegisterResponse
 	8,  // 33: api.agent.v1.Agent.Unregister:output_type -> api.agent.v1.UnregisterResponse
-	10, // 34: api.agent.v1.Agent.FetchJob:output_type -> api.agent.v1.FetchJobResponse
-	14, // 35: api.agent.v1.Agent.ReportJobStatus:output_type -> api.agent.v1.ReportJobStatusResponse
-	17, // 36: api.agent.v1.Agent.ReportJobLog:output_type -> api.agent.v1.ReportJobLogResponse
-	19, // 37: api.agent.v1.Agent.CancelJob:output_type -> api.agent.v1.CancelJobResponse
+	10, // 34: api.agent.v1.Agent.FetchTask:output_type -> api.agent.v1.FetchTaskResponse
+	14, // 35: api.agent.v1.Agent.ReportTaskStatus:output_type -> api.agent.v1.ReportTaskStatusResponse
+	17, // 36: api.agent.v1.Agent.ReportTaskLog:output_type -> api.agent.v1.ReportTaskLogResponse
+	19, // 37: api.agent.v1.Agent.CancelTask:output_type -> api.agent.v1.CancelTaskResponse
 	21, // 38: api.agent.v1.Agent.UpdateLabels:output_type -> api.agent.v1.UpdateLabelsResponse
 	26, // 39: api.agent.v1.Agent.DownloadPlugin:output_type -> api.agent.v1.DownloadPluginResponse
 	28, // 40: api.agent.v1.Agent.ListAvailablePlugins:output_type -> api.agent.v1.ListAvailablePluginsResponse

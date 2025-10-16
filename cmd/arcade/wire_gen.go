@@ -8,12 +8,13 @@ package main
 
 import (
 	"context"
+
 	"github.com/google/wire"
 	"github.com/observabil/arcade/internal/app"
 	"github.com/observabil/arcade/internal/engine/conf"
 	"github.com/observabil/arcade/internal/engine/repo"
 	"github.com/observabil/arcade/internal/engine/router"
-	"github.com/observabil/arcade/internal/engine/service/job"
+	"github.com/observabil/arcade/internal/engine/service/task"
 	"github.com/observabil/arcade/internal/pkg/grpc"
 	"github.com/observabil/arcade/pkg/ctx"
 	"github.com/observabil/arcade/pkg/http"
@@ -54,7 +55,7 @@ func initApp(configPath string, appCtx *ctx.Context, logger *zap.Logger) (*app.A
 // confProviderSet 配置层 ProviderSet
 var confProviderSet = wire.NewSet(
 	provideConf,
-	provideJobPoolConfig,
+	provideTaskPoolConfig,
 	provideHttpConfig,
 	provideGrpcConfig,
 )
@@ -63,11 +64,11 @@ func provideConf(configPath string) conf.AppConfig {
 	return conf.NewConf(configPath)
 }
 
-func provideJobPoolConfig(appConf conf.AppConfig) job.JobPoolConfig {
-	return job.JobPoolConfig{
-		MaxWorkers:    appConf.Job.MaxWorkers,
-		QueueSize:     appConf.Job.QueueSize,
-		WorkerTimeout: appConf.Job.WorkerTimeout,
+func provideTaskPoolConfig(appConf conf.AppConfig) task.TaskPoolConfig {
+	return task.TaskPoolConfig{
+		MaxWorkers:    appConf.Task.MaxWorkers,
+		QueueSize:     appConf.Task.QueueSize,
+		WorkerTimeout: appConf.Task.WorkerTimeout,
 	}
 }
 

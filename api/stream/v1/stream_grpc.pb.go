@@ -20,9 +20,9 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	Stream_Ping_FullMethodName                 = "/api.stream.v1.Stream/Ping"
-	Stream_StreamJobLog_FullMethodName         = "/api.stream.v1.Stream/StreamJobLog"
-	Stream_UploadJobLog_FullMethodName         = "/api.stream.v1.Stream/UploadJobLog"
-	Stream_StreamJobStatus_FullMethodName      = "/api.stream.v1.Stream/StreamJobStatus"
+	Stream_StreamTaskLog_FullMethodName        = "/api.stream.v1.Stream/StreamTaskLog"
+	Stream_UploadTaskLog_FullMethodName        = "/api.stream.v1.Stream/UploadTaskLog"
+	Stream_StreamTaskStatus_FullMethodName     = "/api.stream.v1.Stream/StreamTaskStatus"
 	Stream_StreamPipelineStatus_FullMethodName = "/api.stream.v1.Stream/StreamPipelineStatus"
 	Stream_AgentChannel_FullMethodName         = "/api.stream.v1.Stream/AgentChannel"
 	Stream_StreamAgentStatus_FullMethodName    = "/api.stream.v1.Stream/StreamAgentStatus"
@@ -38,11 +38,11 @@ type StreamClient interface {
 	// ping
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
 	// 实时获取任务日志流 - Server端流式推送日志给客户端
-	StreamJobLog(ctx context.Context, in *StreamJobLogRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamJobLogResponse], error)
+	StreamTaskLog(ctx context.Context, in *StreamTaskLogRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamTaskLogResponse], error)
 	// 上报任务日志流 - Agent端流式上报日志给Server
-	UploadJobLog(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadJobLogRequest, UploadJobLogResponse], error)
+	UploadTaskLog(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadTaskLogRequest, UploadTaskLogResponse], error)
 	// 实时获取任务状态流 - Server端流式推送任务状态变化
-	StreamJobStatus(ctx context.Context, in *StreamJobStatusRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamJobStatusResponse], error)
+	StreamTaskStatus(ctx context.Context, in *StreamTaskStatusRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamTaskStatusResponse], error)
 	// 实时获取流水线状态流 - Server端流式推送流水线状态变化
 	StreamPipelineStatus(ctx context.Context, in *StreamPipelineStatusRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamPipelineStatusResponse], error)
 	// Agent与Server双向通信流 - 用于实时任务调度和控制
@@ -71,13 +71,13 @@ func (c *streamClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc.C
 	return out, nil
 }
 
-func (c *streamClient) StreamJobLog(ctx context.Context, in *StreamJobLogRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamJobLogResponse], error) {
+func (c *streamClient) StreamTaskLog(ctx context.Context, in *StreamTaskLogRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamTaskLogResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &Stream_ServiceDesc.Streams[0], Stream_StreamJobLog_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &Stream_ServiceDesc.Streams[0], Stream_StreamTaskLog_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[StreamJobLogRequest, StreamJobLogResponse]{ClientStream: stream}
+	x := &grpc.GenericClientStream[StreamTaskLogRequest, StreamTaskLogResponse]{ClientStream: stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -88,28 +88,28 @@ func (c *streamClient) StreamJobLog(ctx context.Context, in *StreamJobLogRequest
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Stream_StreamJobLogClient = grpc.ServerStreamingClient[StreamJobLogResponse]
+type Stream_StreamTaskLogClient = grpc.ServerStreamingClient[StreamTaskLogResponse]
 
-func (c *streamClient) UploadJobLog(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadJobLogRequest, UploadJobLogResponse], error) {
+func (c *streamClient) UploadTaskLog(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadTaskLogRequest, UploadTaskLogResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &Stream_ServiceDesc.Streams[1], Stream_UploadJobLog_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &Stream_ServiceDesc.Streams[1], Stream_UploadTaskLog_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[UploadJobLogRequest, UploadJobLogResponse]{ClientStream: stream}
+	x := &grpc.GenericClientStream[UploadTaskLogRequest, UploadTaskLogResponse]{ClientStream: stream}
 	return x, nil
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Stream_UploadJobLogClient = grpc.ClientStreamingClient[UploadJobLogRequest, UploadJobLogResponse]
+type Stream_UploadTaskLogClient = grpc.ClientStreamingClient[UploadTaskLogRequest, UploadTaskLogResponse]
 
-func (c *streamClient) StreamJobStatus(ctx context.Context, in *StreamJobStatusRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamJobStatusResponse], error) {
+func (c *streamClient) StreamTaskStatus(ctx context.Context, in *StreamTaskStatusRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamTaskStatusResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &Stream_ServiceDesc.Streams[2], Stream_StreamJobStatus_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &Stream_ServiceDesc.Streams[2], Stream_StreamTaskStatus_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[StreamJobStatusRequest, StreamJobStatusResponse]{ClientStream: stream}
+	x := &grpc.GenericClientStream[StreamTaskStatusRequest, StreamTaskStatusResponse]{ClientStream: stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -120,7 +120,7 @@ func (c *streamClient) StreamJobStatus(ctx context.Context, in *StreamJobStatusR
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Stream_StreamJobStatusClient = grpc.ServerStreamingClient[StreamJobStatusResponse]
+type Stream_StreamTaskStatusClient = grpc.ServerStreamingClient[StreamTaskStatusResponse]
 
 func (c *streamClient) StreamPipelineStatus(ctx context.Context, in *StreamPipelineStatusRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamPipelineStatusResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -201,11 +201,11 @@ type StreamServer interface {
 	// ping
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
 	// 实时获取任务日志流 - Server端流式推送日志给客户端
-	StreamJobLog(*StreamJobLogRequest, grpc.ServerStreamingServer[StreamJobLogResponse]) error
+	StreamTaskLog(*StreamTaskLogRequest, grpc.ServerStreamingServer[StreamTaskLogResponse]) error
 	// 上报任务日志流 - Agent端流式上报日志给Server
-	UploadJobLog(grpc.ClientStreamingServer[UploadJobLogRequest, UploadJobLogResponse]) error
+	UploadTaskLog(grpc.ClientStreamingServer[UploadTaskLogRequest, UploadTaskLogResponse]) error
 	// 实时获取任务状态流 - Server端流式推送任务状态变化
-	StreamJobStatus(*StreamJobStatusRequest, grpc.ServerStreamingServer[StreamJobStatusResponse]) error
+	StreamTaskStatus(*StreamTaskStatusRequest, grpc.ServerStreamingServer[StreamTaskStatusResponse]) error
 	// 实时获取流水线状态流 - Server端流式推送流水线状态变化
 	StreamPipelineStatus(*StreamPipelineStatusRequest, grpc.ServerStreamingServer[StreamPipelineStatusResponse]) error
 	// Agent与Server双向通信流 - 用于实时任务调度和控制
@@ -227,14 +227,14 @@ type UnimplementedStreamServer struct{}
 func (UnimplementedStreamServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
-func (UnimplementedStreamServer) StreamJobLog(*StreamJobLogRequest, grpc.ServerStreamingServer[StreamJobLogResponse]) error {
-	return status.Errorf(codes.Unimplemented, "method StreamJobLog not implemented")
+func (UnimplementedStreamServer) StreamTaskLog(*StreamTaskLogRequest, grpc.ServerStreamingServer[StreamTaskLogResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method StreamTaskLog not implemented")
 }
-func (UnimplementedStreamServer) UploadJobLog(grpc.ClientStreamingServer[UploadJobLogRequest, UploadJobLogResponse]) error {
-	return status.Errorf(codes.Unimplemented, "method UploadJobLog not implemented")
+func (UnimplementedStreamServer) UploadTaskLog(grpc.ClientStreamingServer[UploadTaskLogRequest, UploadTaskLogResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method UploadTaskLog not implemented")
 }
-func (UnimplementedStreamServer) StreamJobStatus(*StreamJobStatusRequest, grpc.ServerStreamingServer[StreamJobStatusResponse]) error {
-	return status.Errorf(codes.Unimplemented, "method StreamJobStatus not implemented")
+func (UnimplementedStreamServer) StreamTaskStatus(*StreamTaskStatusRequest, grpc.ServerStreamingServer[StreamTaskStatusResponse]) error {
+	return status.Errorf(codes.Unimplemented, "method StreamTaskStatus not implemented")
 }
 func (UnimplementedStreamServer) StreamPipelineStatus(*StreamPipelineStatusRequest, grpc.ServerStreamingServer[StreamPipelineStatusResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method StreamPipelineStatus not implemented")
@@ -287,34 +287,34 @@ func _Stream_Ping_Handler(srv interface{}, ctx context.Context, dec func(interfa
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Stream_StreamJobLog_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(StreamJobLogRequest)
+func _Stream_StreamTaskLog_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(StreamTaskLogRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(StreamServer).StreamJobLog(m, &grpc.GenericServerStream[StreamJobLogRequest, StreamJobLogResponse]{ServerStream: stream})
+	return srv.(StreamServer).StreamTaskLog(m, &grpc.GenericServerStream[StreamTaskLogRequest, StreamTaskLogResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Stream_StreamJobLogServer = grpc.ServerStreamingServer[StreamJobLogResponse]
+type Stream_StreamTaskLogServer = grpc.ServerStreamingServer[StreamTaskLogResponse]
 
-func _Stream_UploadJobLog_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(StreamServer).UploadJobLog(&grpc.GenericServerStream[UploadJobLogRequest, UploadJobLogResponse]{ServerStream: stream})
+func _Stream_UploadTaskLog_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(StreamServer).UploadTaskLog(&grpc.GenericServerStream[UploadTaskLogRequest, UploadTaskLogResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Stream_UploadJobLogServer = grpc.ClientStreamingServer[UploadJobLogRequest, UploadJobLogResponse]
+type Stream_UploadTaskLogServer = grpc.ClientStreamingServer[UploadTaskLogRequest, UploadTaskLogResponse]
 
-func _Stream_StreamJobStatus_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(StreamJobStatusRequest)
+func _Stream_StreamTaskStatus_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(StreamTaskStatusRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(StreamServer).StreamJobStatus(m, &grpc.GenericServerStream[StreamJobStatusRequest, StreamJobStatusResponse]{ServerStream: stream})
+	return srv.(StreamServer).StreamTaskStatus(m, &grpc.GenericServerStream[StreamTaskStatusRequest, StreamTaskStatusResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type Stream_StreamJobStatusServer = grpc.ServerStreamingServer[StreamJobStatusResponse]
+type Stream_StreamTaskStatusServer = grpc.ServerStreamingServer[StreamTaskStatusResponse]
 
 func _Stream_StreamPipelineStatus_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(StreamPipelineStatusRequest)
@@ -370,18 +370,18 @@ var Stream_ServiceDesc = grpc.ServiceDesc{
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "StreamJobLog",
-			Handler:       _Stream_StreamJobLog_Handler,
+			StreamName:    "StreamTaskLog",
+			Handler:       _Stream_StreamTaskLog_Handler,
 			ServerStreams: true,
 		},
 		{
-			StreamName:    "UploadJobLog",
-			Handler:       _Stream_UploadJobLog_Handler,
+			StreamName:    "UploadTaskLog",
+			Handler:       _Stream_UploadTaskLog_Handler,
 			ClientStreams: true,
 		},
 		{
-			StreamName:    "StreamJobStatus",
-			Handler:       _Stream_StreamJobStatus_Handler,
+			StreamName:    "StreamTaskStatus",
+			Handler:       _Stream_StreamTaskStatus_Handler,
 			ServerStreams: true,
 		},
 		{

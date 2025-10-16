@@ -14,7 +14,7 @@ import (
 	"github.com/observabil/arcade/pkg/log"
 )
 
-type JobConfig struct {
+type TaskConfig struct {
 	MaxWorkers    int `mapstructure:"maxWorkers"`
 	QueueSize     int `mapstructure:"queueSize"`
 	WorkerTimeout int `mapstructure:"workerTimeout"`
@@ -26,7 +26,7 @@ type AppConfig struct {
 	Http     http.Http
 	Database database.Database
 	Redis    cache.Redis
-	Job      JobConfig
+	Task     TaskConfig
 }
 
 var (

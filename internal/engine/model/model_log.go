@@ -2,10 +2,10 @@ package model
 
 import "time"
 
-// JobLog 任务日志(MongoDB Collection: job_logs)
-type JobLog struct {
+// TaskLog 任务日志(MongoDB Collection: task_logs)
+type TaskLog struct {
 	LogId         string    `bson:"log_id" json:"logId"`
-	JobId         string    `bson:"job_id" json:"jobId"`
+	TaskId        string    `bson:"task_id" json:"taskId"`
 	PipelineRunId string    `bson:"pipeline_run_id" json:"pipelineRunId"`
 	AgentId       string    `bson:"agent_id" json:"agentId"`
 	LineNumber    int       `bson:"line_number" json:"lineNumber"`
@@ -20,7 +20,7 @@ type TerminalLog struct {
 	SessionId        string              `bson:"session_id" json:"sessionId"`
 	SessionType      string              `bson:"session_type" json:"sessionType"` // build/deploy/release/debug
 	Environment      string              `bson:"environment" json:"environment"`  // dev/test/staging/prod
-	JobId            string              `bson:"job_id,omitempty" json:"jobId,omitempty"`
+	TaskId           string              `bson:"task_id,omitempty" json:"taskId,omitempty"`
 	PipelineId       string              `bson:"pipeline_id,omitempty" json:"pipelineId,omitempty"`
 	PipelineRunId    string              `bson:"pipeline_run_id,omitempty" json:"pipelineRunId,omitempty"`
 	UserId           string              `bson:"user_id" json:"userId"`
@@ -55,7 +55,7 @@ type TerminalLogMetadata struct {
 // BuildArtifactLog 产物构建日志(MongoDB Collection: build_artifacts_logs)
 type BuildArtifactLog struct {
 	ArtifactId   string    `bson:"artifact_id" json:"artifactId"`
-	JobId        string    `bson:"job_id" json:"jobId"`
+	TaskId       string    `bson:"task_id" json:"taskId"`
 	Operation    string    `bson:"operation" json:"operation"` // upload/download/delete
 	FileName     string    `bson:"file_name" json:"fileName"`
 	FileSize     int64     `bson:"file_size" json:"fileSize"`

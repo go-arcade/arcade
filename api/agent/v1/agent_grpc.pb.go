@@ -22,10 +22,10 @@ const (
 	Agent_Heartbeat_FullMethodName            = "/api.agent.v1.Agent/Heartbeat"
 	Agent_Register_FullMethodName             = "/api.agent.v1.Agent/Register"
 	Agent_Unregister_FullMethodName           = "/api.agent.v1.Agent/Unregister"
-	Agent_FetchJob_FullMethodName             = "/api.agent.v1.Agent/FetchJob"
-	Agent_ReportJobStatus_FullMethodName      = "/api.agent.v1.Agent/ReportJobStatus"
-	Agent_ReportJobLog_FullMethodName         = "/api.agent.v1.Agent/ReportJobLog"
-	Agent_CancelJob_FullMethodName            = "/api.agent.v1.Agent/CancelJob"
+	Agent_FetchTask_FullMethodName            = "/api.agent.v1.Agent/FetchTask"
+	Agent_ReportTaskStatus_FullMethodName     = "/api.agent.v1.Agent/ReportTaskStatus"
+	Agent_ReportTaskLog_FullMethodName        = "/api.agent.v1.Agent/ReportTaskLog"
+	Agent_CancelTask_FullMethodName           = "/api.agent.v1.Agent/CancelTask"
 	Agent_UpdateLabels_FullMethodName         = "/api.agent.v1.Agent/UpdateLabels"
 	Agent_DownloadPlugin_FullMethodName       = "/api.agent.v1.Agent/DownloadPlugin"
 	Agent_ListAvailablePlugins_FullMethodName = "/api.agent.v1.Agent/ListAvailablePlugins"
@@ -44,13 +44,13 @@ type AgentClient interface {
 	// Agent注销 - Agent关闭时向Server注销
 	Unregister(ctx context.Context, in *UnregisterRequest, opts ...grpc.CallOption) (*UnregisterResponse, error)
 	// 获取任务 - Agent主动拉取待执行的任务
-	FetchJob(ctx context.Context, in *FetchJobRequest, opts ...grpc.CallOption) (*FetchJobResponse, error)
+	FetchTask(ctx context.Context, in *FetchTaskRequest, opts ...grpc.CallOption) (*FetchTaskResponse, error)
 	// 上报任务状态 - Agent执行任务过程中上报状态变化
-	ReportJobStatus(ctx context.Context, in *ReportJobStatusRequest, opts ...grpc.CallOption) (*ReportJobStatusResponse, error)
+	ReportTaskStatus(ctx context.Context, in *ReportTaskStatusRequest, opts ...grpc.CallOption) (*ReportTaskStatusResponse, error)
 	// 上报任务日志 - Agent批量上报任务执行日志
-	ReportJobLog(ctx context.Context, in *ReportJobLogRequest, opts ...grpc.CallOption) (*ReportJobLogResponse, error)
+	ReportTaskLog(ctx context.Context, in *ReportTaskLogRequest, opts ...grpc.CallOption) (*ReportTaskLogResponse, error)
 	// 取消任务 - Server通知Agent取消正在执行的任务
-	CancelJob(ctx context.Context, in *CancelJobRequest, opts ...grpc.CallOption) (*CancelJobResponse, error)
+	CancelTask(ctx context.Context, in *CancelTaskRequest, opts ...grpc.CallOption) (*CancelTaskResponse, error)
 	// 更新Agent标签 - 动态更新Agent的labels和tags
 	UpdateLabels(ctx context.Context, in *UpdateLabelsRequest, opts ...grpc.CallOption) (*UpdateLabelsResponse, error)
 	// 下载插件 - Agent从Server下载插件
@@ -97,40 +97,40 @@ func (c *agentClient) Unregister(ctx context.Context, in *UnregisterRequest, opt
 	return out, nil
 }
 
-func (c *agentClient) FetchJob(ctx context.Context, in *FetchJobRequest, opts ...grpc.CallOption) (*FetchJobResponse, error) {
+func (c *agentClient) FetchTask(ctx context.Context, in *FetchTaskRequest, opts ...grpc.CallOption) (*FetchTaskResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(FetchJobResponse)
-	err := c.cc.Invoke(ctx, Agent_FetchJob_FullMethodName, in, out, cOpts...)
+	out := new(FetchTaskResponse)
+	err := c.cc.Invoke(ctx, Agent_FetchTask_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *agentClient) ReportJobStatus(ctx context.Context, in *ReportJobStatusRequest, opts ...grpc.CallOption) (*ReportJobStatusResponse, error) {
+func (c *agentClient) ReportTaskStatus(ctx context.Context, in *ReportTaskStatusRequest, opts ...grpc.CallOption) (*ReportTaskStatusResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ReportJobStatusResponse)
-	err := c.cc.Invoke(ctx, Agent_ReportJobStatus_FullMethodName, in, out, cOpts...)
+	out := new(ReportTaskStatusResponse)
+	err := c.cc.Invoke(ctx, Agent_ReportTaskStatus_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *agentClient) ReportJobLog(ctx context.Context, in *ReportJobLogRequest, opts ...grpc.CallOption) (*ReportJobLogResponse, error) {
+func (c *agentClient) ReportTaskLog(ctx context.Context, in *ReportTaskLogRequest, opts ...grpc.CallOption) (*ReportTaskLogResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ReportJobLogResponse)
-	err := c.cc.Invoke(ctx, Agent_ReportJobLog_FullMethodName, in, out, cOpts...)
+	out := new(ReportTaskLogResponse)
+	err := c.cc.Invoke(ctx, Agent_ReportTaskLog_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *agentClient) CancelJob(ctx context.Context, in *CancelJobRequest, opts ...grpc.CallOption) (*CancelJobResponse, error) {
+func (c *agentClient) CancelTask(ctx context.Context, in *CancelTaskRequest, opts ...grpc.CallOption) (*CancelTaskResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CancelJobResponse)
-	err := c.cc.Invoke(ctx, Agent_CancelJob_FullMethodName, in, out, cOpts...)
+	out := new(CancelTaskResponse)
+	err := c.cc.Invoke(ctx, Agent_CancelTask_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -180,13 +180,13 @@ type AgentServer interface {
 	// Agent注销 - Agent关闭时向Server注销
 	Unregister(context.Context, *UnregisterRequest) (*UnregisterResponse, error)
 	// 获取任务 - Agent主动拉取待执行的任务
-	FetchJob(context.Context, *FetchJobRequest) (*FetchJobResponse, error)
+	FetchTask(context.Context, *FetchTaskRequest) (*FetchTaskResponse, error)
 	// 上报任务状态 - Agent执行任务过程中上报状态变化
-	ReportJobStatus(context.Context, *ReportJobStatusRequest) (*ReportJobStatusResponse, error)
+	ReportTaskStatus(context.Context, *ReportTaskStatusRequest) (*ReportTaskStatusResponse, error)
 	// 上报任务日志 - Agent批量上报任务执行日志
-	ReportJobLog(context.Context, *ReportJobLogRequest) (*ReportJobLogResponse, error)
+	ReportTaskLog(context.Context, *ReportTaskLogRequest) (*ReportTaskLogResponse, error)
 	// 取消任务 - Server通知Agent取消正在执行的任务
-	CancelJob(context.Context, *CancelJobRequest) (*CancelJobResponse, error)
+	CancelTask(context.Context, *CancelTaskRequest) (*CancelTaskResponse, error)
 	// 更新Agent标签 - 动态更新Agent的labels和tags
 	UpdateLabels(context.Context, *UpdateLabelsRequest) (*UpdateLabelsResponse, error)
 	// 下载插件 - Agent从Server下载插件
@@ -212,17 +212,17 @@ func (UnimplementedAgentServer) Register(context.Context, *RegisterRequest) (*Re
 func (UnimplementedAgentServer) Unregister(context.Context, *UnregisterRequest) (*UnregisterResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Unregister not implemented")
 }
-func (UnimplementedAgentServer) FetchJob(context.Context, *FetchJobRequest) (*FetchJobResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method FetchJob not implemented")
+func (UnimplementedAgentServer) FetchTask(context.Context, *FetchTaskRequest) (*FetchTaskResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FetchTask not implemented")
 }
-func (UnimplementedAgentServer) ReportJobStatus(context.Context, *ReportJobStatusRequest) (*ReportJobStatusResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ReportJobStatus not implemented")
+func (UnimplementedAgentServer) ReportTaskStatus(context.Context, *ReportTaskStatusRequest) (*ReportTaskStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReportTaskStatus not implemented")
 }
-func (UnimplementedAgentServer) ReportJobLog(context.Context, *ReportJobLogRequest) (*ReportJobLogResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ReportJobLog not implemented")
+func (UnimplementedAgentServer) ReportTaskLog(context.Context, *ReportTaskLogRequest) (*ReportTaskLogResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReportTaskLog not implemented")
 }
-func (UnimplementedAgentServer) CancelJob(context.Context, *CancelJobRequest) (*CancelJobResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CancelJob not implemented")
+func (UnimplementedAgentServer) CancelTask(context.Context, *CancelTaskRequest) (*CancelTaskResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CancelTask not implemented")
 }
 func (UnimplementedAgentServer) UpdateLabels(context.Context, *UpdateLabelsRequest) (*UpdateLabelsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateLabels not implemented")
@@ -308,74 +308,74 @@ func _Agent_Unregister_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Agent_FetchJob_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FetchJobRequest)
+func _Agent_FetchTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FetchTaskRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AgentServer).FetchJob(ctx, in)
+		return srv.(AgentServer).FetchTask(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Agent_FetchJob_FullMethodName,
+		FullMethod: Agent_FetchTask_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AgentServer).FetchJob(ctx, req.(*FetchJobRequest))
+		return srv.(AgentServer).FetchTask(ctx, req.(*FetchTaskRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Agent_ReportJobStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReportJobStatusRequest)
+func _Agent_ReportTaskStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReportTaskStatusRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AgentServer).ReportJobStatus(ctx, in)
+		return srv.(AgentServer).ReportTaskStatus(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Agent_ReportJobStatus_FullMethodName,
+		FullMethod: Agent_ReportTaskStatus_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AgentServer).ReportJobStatus(ctx, req.(*ReportJobStatusRequest))
+		return srv.(AgentServer).ReportTaskStatus(ctx, req.(*ReportTaskStatusRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Agent_ReportJobLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReportJobLogRequest)
+func _Agent_ReportTaskLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReportTaskLogRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AgentServer).ReportJobLog(ctx, in)
+		return srv.(AgentServer).ReportTaskLog(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Agent_ReportJobLog_FullMethodName,
+		FullMethod: Agent_ReportTaskLog_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AgentServer).ReportJobLog(ctx, req.(*ReportJobLogRequest))
+		return srv.(AgentServer).ReportTaskLog(ctx, req.(*ReportTaskLogRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Agent_CancelJob_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CancelJobRequest)
+func _Agent_CancelTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CancelTaskRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AgentServer).CancelJob(ctx, in)
+		return srv.(AgentServer).CancelTask(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Agent_CancelJob_FullMethodName,
+		FullMethod: Agent_CancelTask_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AgentServer).CancelJob(ctx, req.(*CancelJobRequest))
+		return srv.(AgentServer).CancelTask(ctx, req.(*CancelTaskRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -454,20 +454,20 @@ var Agent_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Agent_Unregister_Handler,
 		},
 		{
-			MethodName: "FetchJob",
-			Handler:    _Agent_FetchJob_Handler,
+			MethodName: "FetchTask",
+			Handler:    _Agent_FetchTask_Handler,
 		},
 		{
-			MethodName: "ReportJobStatus",
-			Handler:    _Agent_ReportJobStatus_Handler,
+			MethodName: "ReportTaskStatus",
+			Handler:    _Agent_ReportTaskStatus_Handler,
 		},
 		{
-			MethodName: "ReportJobLog",
-			Handler:    _Agent_ReportJobLog_Handler,
+			MethodName: "ReportTaskLog",
+			Handler:    _Agent_ReportTaskLog_Handler,
 		},
 		{
-			MethodName: "CancelJob",
-			Handler:    _Agent_CancelJob_Handler,
+			MethodName: "CancelTask",
+			Handler:    _Agent_CancelTask_Handler,
 		},
 		{
 			MethodName: "UpdateLabels",

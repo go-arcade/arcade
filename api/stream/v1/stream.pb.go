@@ -8,8 +8,8 @@ package v1
 
 import (
 	v12 "github.com/observabil/arcade/api/agent/v1"
-	v1 "github.com/observabil/arcade/api/job/v1"
 	v11 "github.com/observabil/arcade/api/pipeline/v1"
+	v1 "github.com/observabil/arcade/api/task/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -254,7 +254,7 @@ func (x *PingResponse) GetTimestamp() int64 {
 }
 
 // 实时获取任务日志流请求
-type StreamJobLogRequest struct {
+type StreamTaskLogRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	JobId         string                 `protobuf:"bytes,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`           // 任务ID
 	FromLine      int32                  `protobuf:"varint,2,opt,name=from_line,json=fromLine,proto3" json:"from_line,omitempty"` // 从第几行开始（0表示从头开始）
@@ -263,20 +263,20 @@ type StreamJobLogRequest struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *StreamJobLogRequest) Reset() {
-	*x = StreamJobLogRequest{}
+func (x *StreamTaskLogRequest) Reset() {
+	*x = StreamTaskLogRequest{}
 	mi := &file_api_stream_v1_proto_stream_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *StreamJobLogRequest) String() string {
+func (x *StreamTaskLogRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*StreamJobLogRequest) ProtoMessage() {}
+func (*StreamTaskLogRequest) ProtoMessage() {}
 
-func (x *StreamJobLogRequest) ProtoReflect() protoreflect.Message {
+func (x *StreamTaskLogRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_api_stream_v1_proto_stream_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -288,26 +288,26 @@ func (x *StreamJobLogRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StreamJobLogRequest.ProtoReflect.Descriptor instead.
-func (*StreamJobLogRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use StreamTaskLogRequest.ProtoReflect.Descriptor instead.
+func (*StreamTaskLogRequest) Descriptor() ([]byte, []int) {
 	return file_api_stream_v1_proto_stream_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *StreamJobLogRequest) GetJobId() string {
+func (x *StreamTaskLogRequest) GetJobId() string {
 	if x != nil {
 		return x.JobId
 	}
 	return ""
 }
 
-func (x *StreamJobLogRequest) GetFromLine() int32 {
+func (x *StreamTaskLogRequest) GetFromLine() int32 {
 	if x != nil {
 		return x.FromLine
 	}
 	return 0
 }
 
-func (x *StreamJobLogRequest) GetFollow() bool {
+func (x *StreamTaskLogRequest) GetFollow() bool {
 	if x != nil {
 		return x.Follow
 	}
@@ -315,29 +315,29 @@ func (x *StreamJobLogRequest) GetFollow() bool {
 }
 
 // 实时获取任务日志流响应
-type StreamJobLogResponse struct {
+type StreamTaskLogResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	JobId         string                 `protobuf:"bytes,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
+	TaskId        string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
 	LogChunk      *LogChunk              `protobuf:"bytes,2,opt,name=log_chunk,json=logChunk,proto3" json:"log_chunk,omitempty"`        // 日志块
 	IsComplete    bool                   `protobuf:"varint,3,opt,name=is_complete,json=isComplete,proto3" json:"is_complete,omitempty"` // 日志是否已完整传输
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *StreamJobLogResponse) Reset() {
-	*x = StreamJobLogResponse{}
+func (x *StreamTaskLogResponse) Reset() {
+	*x = StreamTaskLogResponse{}
 	mi := &file_api_stream_v1_proto_stream_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *StreamJobLogResponse) String() string {
+func (x *StreamTaskLogResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*StreamJobLogResponse) ProtoMessage() {}
+func (*StreamTaskLogResponse) ProtoMessage() {}
 
-func (x *StreamJobLogResponse) ProtoReflect() protoreflect.Message {
+func (x *StreamTaskLogResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_api_stream_v1_proto_stream_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -349,26 +349,26 @@ func (x *StreamJobLogResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StreamJobLogResponse.ProtoReflect.Descriptor instead.
-func (*StreamJobLogResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use StreamTaskLogResponse.ProtoReflect.Descriptor instead.
+func (*StreamTaskLogResponse) Descriptor() ([]byte, []int) {
 	return file_api_stream_v1_proto_stream_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *StreamJobLogResponse) GetJobId() string {
+func (x *StreamTaskLogResponse) GetTaskId() string {
 	if x != nil {
-		return x.JobId
+		return x.TaskId
 	}
 	return ""
 }
 
-func (x *StreamJobLogResponse) GetLogChunk() *LogChunk {
+func (x *StreamTaskLogResponse) GetLogChunk() *LogChunk {
 	if x != nil {
 		return x.LogChunk
 	}
 	return nil
 }
 
-func (x *StreamJobLogResponse) GetIsComplete() bool {
+func (x *StreamTaskLogResponse) GetIsComplete() bool {
 	if x != nil {
 		return x.IsComplete
 	}
@@ -453,29 +453,29 @@ func (x *LogChunk) GetStream() string {
 }
 
 // 上报任务日志流请求
-type UploadJobLogRequest struct {
+type UploadTaskLogRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	JobId         string                 `protobuf:"bytes,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
+	TaskId        string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
 	AgentId       string                 `protobuf:"bytes,2,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
 	Logs          []*LogChunk            `protobuf:"bytes,3,rep,name=logs,proto3" json:"logs,omitempty"` // 日志块列表
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *UploadJobLogRequest) Reset() {
-	*x = UploadJobLogRequest{}
+func (x *UploadTaskLogRequest) Reset() {
+	*x = UploadTaskLogRequest{}
 	mi := &file_api_stream_v1_proto_stream_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *UploadJobLogRequest) String() string {
+func (x *UploadTaskLogRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*UploadJobLogRequest) ProtoMessage() {}
+func (*UploadTaskLogRequest) ProtoMessage() {}
 
-func (x *UploadJobLogRequest) ProtoReflect() protoreflect.Message {
+func (x *UploadTaskLogRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_api_stream_v1_proto_stream_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -487,26 +487,26 @@ func (x *UploadJobLogRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use UploadJobLogRequest.ProtoReflect.Descriptor instead.
-func (*UploadJobLogRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use UploadTaskLogRequest.ProtoReflect.Descriptor instead.
+func (*UploadTaskLogRequest) Descriptor() ([]byte, []int) {
 	return file_api_stream_v1_proto_stream_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *UploadJobLogRequest) GetJobId() string {
+func (x *UploadTaskLogRequest) GetTaskId() string {
 	if x != nil {
-		return x.JobId
+		return x.TaskId
 	}
 	return ""
 }
 
-func (x *UploadJobLogRequest) GetAgentId() string {
+func (x *UploadTaskLogRequest) GetAgentId() string {
 	if x != nil {
 		return x.AgentId
 	}
 	return ""
 }
 
-func (x *UploadJobLogRequest) GetLogs() []*LogChunk {
+func (x *UploadTaskLogRequest) GetLogs() []*LogChunk {
 	if x != nil {
 		return x.Logs
 	}
@@ -514,7 +514,7 @@ func (x *UploadJobLogRequest) GetLogs() []*LogChunk {
 }
 
 // 上报任务日志流响应
-type UploadJobLogResponse struct {
+type UploadTaskLogResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
 	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
@@ -523,20 +523,20 @@ type UploadJobLogResponse struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *UploadJobLogResponse) Reset() {
-	*x = UploadJobLogResponse{}
+func (x *UploadTaskLogResponse) Reset() {
+	*x = UploadTaskLogResponse{}
 	mi := &file_api_stream_v1_proto_stream_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *UploadJobLogResponse) String() string {
+func (x *UploadTaskLogResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*UploadJobLogResponse) ProtoMessage() {}
+func (*UploadTaskLogResponse) ProtoMessage() {}
 
-func (x *UploadJobLogResponse) ProtoReflect() protoreflect.Message {
+func (x *UploadTaskLogResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_api_stream_v1_proto_stream_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -548,26 +548,26 @@ func (x *UploadJobLogResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use UploadJobLogResponse.ProtoReflect.Descriptor instead.
-func (*UploadJobLogResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use UploadTaskLogResponse.ProtoReflect.Descriptor instead.
+func (*UploadTaskLogResponse) Descriptor() ([]byte, []int) {
 	return file_api_stream_v1_proto_stream_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *UploadJobLogResponse) GetSuccess() bool {
+func (x *UploadTaskLogResponse) GetSuccess() bool {
 	if x != nil {
 		return x.Success
 	}
 	return false
 }
 
-func (x *UploadJobLogResponse) GetMessage() string {
+func (x *UploadTaskLogResponse) GetMessage() string {
 	if x != nil {
 		return x.Message
 	}
 	return ""
 }
 
-func (x *UploadJobLogResponse) GetReceivedLines() int32 {
+func (x *UploadTaskLogResponse) GetReceivedLines() int32 {
 	if x != nil {
 		return x.ReceivedLines
 	}
@@ -575,28 +575,28 @@ func (x *UploadJobLogResponse) GetReceivedLines() int32 {
 }
 
 // 实时获取任务状态流请求
-type StreamJobStatusRequest struct {
+type StreamTaskStatusRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	JobIds        []string               `protobuf:"bytes,1,rep,name=job_ids,json=jobIds,proto3" json:"job_ids,omitempty"`             // 任务ID列表（为空则监控所有任务）
+	TaskIds       []string               `protobuf:"bytes,1,rep,name=task_ids,json=taskIds,proto3" json:"task_ids,omitempty"`          // 任务ID列表（为空则监控所有任务）
 	PipelineId    string                 `protobuf:"bytes,2,opt,name=pipeline_id,json=pipelineId,proto3" json:"pipeline_id,omitempty"` // 流水线ID（可选，监控特定流水线的所有任务）
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *StreamJobStatusRequest) Reset() {
-	*x = StreamJobStatusRequest{}
+func (x *StreamTaskStatusRequest) Reset() {
+	*x = StreamTaskStatusRequest{}
 	mi := &file_api_stream_v1_proto_stream_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *StreamJobStatusRequest) String() string {
+func (x *StreamTaskStatusRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*StreamJobStatusRequest) ProtoMessage() {}
+func (*StreamTaskStatusRequest) ProtoMessage() {}
 
-func (x *StreamJobStatusRequest) ProtoReflect() protoreflect.Message {
+func (x *StreamTaskStatusRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_api_stream_v1_proto_stream_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -608,19 +608,19 @@ func (x *StreamJobStatusRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StreamJobStatusRequest.ProtoReflect.Descriptor instead.
-func (*StreamJobStatusRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use StreamTaskStatusRequest.ProtoReflect.Descriptor instead.
+func (*StreamTaskStatusRequest) Descriptor() ([]byte, []int) {
 	return file_api_stream_v1_proto_stream_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *StreamJobStatusRequest) GetJobIds() []string {
+func (x *StreamTaskStatusRequest) GetTaskIds() []string {
 	if x != nil {
-		return x.JobIds
+		return x.TaskIds
 	}
 	return nil
 }
 
-func (x *StreamJobStatusRequest) GetPipelineId() string {
+func (x *StreamTaskStatusRequest) GetPipelineId() string {
 	if x != nil {
 		return x.PipelineId
 	}
@@ -628,12 +628,12 @@ func (x *StreamJobStatusRequest) GetPipelineId() string {
 }
 
 // 实时获取任务状态流响应
-type StreamJobStatusResponse struct {
+type StreamTaskStatusResponse struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	JobId          string                 `protobuf:"bytes,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
-	JobName        string                 `protobuf:"bytes,2,opt,name=job_name,json=jobName,proto3" json:"job_name,omitempty"`
-	Status         v1.JobStatus           `protobuf:"varint,3,opt,name=status,proto3,enum=api.job.v1.JobStatus" json:"status,omitempty"`                                                   // 任务状态
-	PreviousStatus v1.JobStatus           `protobuf:"varint,4,opt,name=previous_status,json=previousStatus,proto3,enum=api.job.v1.JobStatus" json:"previous_status,omitempty"`             // 之前的状态
+	TaskId         string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	TaskName       string                 `protobuf:"bytes,2,opt,name=task_name,json=taskName,proto3" json:"task_name,omitempty"`
+	Status         v1.TaskStatus          `protobuf:"varint,3,opt,name=status,proto3,enum=api.task.v1.TaskStatus" json:"status,omitempty"`                                                 // 任务状态
+	PreviousStatus v1.TaskStatus          `protobuf:"varint,4,opt,name=previous_status,json=previousStatus,proto3,enum=api.task.v1.TaskStatus" json:"previous_status,omitempty"`           // 之前的状态
 	Timestamp      int64                  `protobuf:"varint,5,opt,name=timestamp,proto3" json:"timestamp,omitempty"`                                                                       // 状态变化时间戳
 	AgentId        string                 `protobuf:"bytes,6,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`                                                             // 执行的Agent ID
 	ExitCode       int32                  `protobuf:"varint,7,opt,name=exit_code,json=exitCode,proto3" json:"exit_code,omitempty"`                                                         // 退出码
@@ -644,20 +644,20 @@ type StreamJobStatusResponse struct {
 	sizeCache      protoimpl.SizeCache
 }
 
-func (x *StreamJobStatusResponse) Reset() {
-	*x = StreamJobStatusResponse{}
+func (x *StreamTaskStatusResponse) Reset() {
+	*x = StreamTaskStatusResponse{}
 	mi := &file_api_stream_v1_proto_stream_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *StreamJobStatusResponse) String() string {
+func (x *StreamTaskStatusResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*StreamJobStatusResponse) ProtoMessage() {}
+func (*StreamTaskStatusResponse) ProtoMessage() {}
 
-func (x *StreamJobStatusResponse) ProtoReflect() protoreflect.Message {
+func (x *StreamTaskStatusResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_api_stream_v1_proto_stream_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -669,75 +669,75 @@ func (x *StreamJobStatusResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StreamJobStatusResponse.ProtoReflect.Descriptor instead.
-func (*StreamJobStatusResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use StreamTaskStatusResponse.ProtoReflect.Descriptor instead.
+func (*StreamTaskStatusResponse) Descriptor() ([]byte, []int) {
 	return file_api_stream_v1_proto_stream_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *StreamJobStatusResponse) GetJobId() string {
+func (x *StreamTaskStatusResponse) GetTaskId() string {
 	if x != nil {
-		return x.JobId
+		return x.TaskId
 	}
 	return ""
 }
 
-func (x *StreamJobStatusResponse) GetJobName() string {
+func (x *StreamTaskStatusResponse) GetTaskName() string {
 	if x != nil {
-		return x.JobName
+		return x.TaskName
 	}
 	return ""
 }
 
-func (x *StreamJobStatusResponse) GetStatus() v1.JobStatus {
+func (x *StreamTaskStatusResponse) GetStatus() v1.TaskStatus {
 	if x != nil {
 		return x.Status
 	}
-	return v1.JobStatus(0)
+	return v1.TaskStatus(0)
 }
 
-func (x *StreamJobStatusResponse) GetPreviousStatus() v1.JobStatus {
+func (x *StreamTaskStatusResponse) GetPreviousStatus() v1.TaskStatus {
 	if x != nil {
 		return x.PreviousStatus
 	}
-	return v1.JobStatus(0)
+	return v1.TaskStatus(0)
 }
 
-func (x *StreamJobStatusResponse) GetTimestamp() int64 {
+func (x *StreamTaskStatusResponse) GetTimestamp() int64 {
 	if x != nil {
 		return x.Timestamp
 	}
 	return 0
 }
 
-func (x *StreamJobStatusResponse) GetAgentId() string {
+func (x *StreamTaskStatusResponse) GetAgentId() string {
 	if x != nil {
 		return x.AgentId
 	}
 	return ""
 }
 
-func (x *StreamJobStatusResponse) GetExitCode() int32 {
+func (x *StreamTaskStatusResponse) GetExitCode() int32 {
 	if x != nil {
 		return x.ExitCode
 	}
 	return 0
 }
 
-func (x *StreamJobStatusResponse) GetErrorMessage() string {
+func (x *StreamTaskStatusResponse) GetErrorMessage() string {
 	if x != nil {
 		return x.ErrorMessage
 	}
 	return ""
 }
 
-func (x *StreamJobStatusResponse) GetDuration() int64 {
+func (x *StreamTaskStatusResponse) GetDuration() int64 {
 	if x != nil {
 		return x.Duration
 	}
 	return 0
 }
 
-func (x *StreamJobStatusResponse) GetMetrics() map[string]string {
+func (x *StreamTaskStatusResponse) GetMetrics() map[string]string {
 	if x != nil {
 		return x.Metrics
 	}
@@ -938,9 +938,9 @@ type AgentChannelRequest struct {
 	// Types that are valid to be assigned to Payload:
 	//
 	//	*AgentChannelRequest_Heartbeat
-	//	*AgentChannelRequest_JobStatus
+	//	*AgentChannelRequest_TaskStatus
 	//	*AgentChannelRequest_LogData
-	//	*AgentChannelRequest_JobFetch
+	//	*AgentChannelRequest_TaskFetch
 	//	*AgentChannelRequest_Metrics
 	Payload       isAgentChannelRequest_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
@@ -1007,10 +1007,10 @@ func (x *AgentChannelRequest) GetHeartbeat() *HeartbeatData {
 	return nil
 }
 
-func (x *AgentChannelRequest) GetJobStatus() *JobStatusUpdate {
+func (x *AgentChannelRequest) GetTaskStatus() *TaskStatusUpdate {
 	if x != nil {
-		if x, ok := x.Payload.(*AgentChannelRequest_JobStatus); ok {
-			return x.JobStatus
+		if x, ok := x.Payload.(*AgentChannelRequest_TaskStatus); ok {
+			return x.TaskStatus
 		}
 	}
 	return nil
@@ -1025,10 +1025,10 @@ func (x *AgentChannelRequest) GetLogData() *LogData {
 	return nil
 }
 
-func (x *AgentChannelRequest) GetJobFetch() *JobFetchRequest {
+func (x *AgentChannelRequest) GetTaskFetch() *TaskFetchRequest {
 	if x != nil {
-		if x, ok := x.Payload.(*AgentChannelRequest_JobFetch); ok {
-			return x.JobFetch
+		if x, ok := x.Payload.(*AgentChannelRequest_TaskFetch); ok {
+			return x.TaskFetch
 		}
 	}
 	return nil
@@ -1051,16 +1051,16 @@ type AgentChannelRequest_Heartbeat struct {
 	Heartbeat *HeartbeatData `protobuf:"bytes,3,opt,name=heartbeat,proto3,oneof"` // 心跳数据
 }
 
-type AgentChannelRequest_JobStatus struct {
-	JobStatus *JobStatusUpdate `protobuf:"bytes,4,opt,name=job_status,json=jobStatus,proto3,oneof"` // 任务状态更新
+type AgentChannelRequest_TaskStatus struct {
+	TaskStatus *TaskStatusUpdate `protobuf:"bytes,4,opt,name=task_status,json=taskStatus,proto3,oneof"` // 任务状态更新
 }
 
 type AgentChannelRequest_LogData struct {
 	LogData *LogData `protobuf:"bytes,5,opt,name=log_data,json=logData,proto3,oneof"` // 日志数据
 }
 
-type AgentChannelRequest_JobFetch struct {
-	JobFetch *JobFetchRequest `protobuf:"bytes,6,opt,name=job_fetch,json=jobFetch,proto3,oneof"` // 获取任务请求
+type AgentChannelRequest_TaskFetch struct {
+	TaskFetch *TaskFetchRequest `protobuf:"bytes,6,opt,name=task_fetch,json=taskFetch,proto3,oneof"` // 获取任务请求
 }
 
 type AgentChannelRequest_Metrics struct {
@@ -1069,11 +1069,11 @@ type AgentChannelRequest_Metrics struct {
 
 func (*AgentChannelRequest_Heartbeat) isAgentChannelRequest_Payload() {}
 
-func (*AgentChannelRequest_JobStatus) isAgentChannelRequest_Payload() {}
+func (*AgentChannelRequest_TaskStatus) isAgentChannelRequest_Payload() {}
 
 func (*AgentChannelRequest_LogData) isAgentChannelRequest_Payload() {}
 
-func (*AgentChannelRequest_JobFetch) isAgentChannelRequest_Payload() {}
+func (*AgentChannelRequest_TaskFetch) isAgentChannelRequest_Payload() {}
 
 func (*AgentChannelRequest_Metrics) isAgentChannelRequest_Payload() {}
 
@@ -1147,10 +1147,10 @@ func (x *HeartbeatData) GetMaxConcurrentJobs() int32 {
 }
 
 // 任务状态更新
-type JobStatusUpdate struct {
+type TaskStatusUpdate struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	JobId         string                 `protobuf:"bytes,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
-	Status        v1.JobStatus           `protobuf:"varint,2,opt,name=status,proto3,enum=api.job.v1.JobStatus" json:"status,omitempty"`
+	TaskId        string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	Status        v1.TaskStatus          `protobuf:"varint,2,opt,name=status,proto3,enum=api.task.v1.TaskStatus" json:"status,omitempty"`
 	ExitCode      int32                  `protobuf:"varint,3,opt,name=exit_code,json=exitCode,proto3" json:"exit_code,omitempty"`
 	ErrorMessage  string                 `protobuf:"bytes,4,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
 	Timestamp     int64                  `protobuf:"varint,5,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
@@ -1158,20 +1158,20 @@ type JobStatusUpdate struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *JobStatusUpdate) Reset() {
-	*x = JobStatusUpdate{}
+func (x *TaskStatusUpdate) Reset() {
+	*x = TaskStatusUpdate{}
 	mi := &file_api_stream_v1_proto_stream_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *JobStatusUpdate) String() string {
+func (x *TaskStatusUpdate) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*JobStatusUpdate) ProtoMessage() {}
+func (*TaskStatusUpdate) ProtoMessage() {}
 
-func (x *JobStatusUpdate) ProtoReflect() protoreflect.Message {
+func (x *TaskStatusUpdate) ProtoReflect() protoreflect.Message {
 	mi := &file_api_stream_v1_proto_stream_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1183,40 +1183,40 @@ func (x *JobStatusUpdate) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use JobStatusUpdate.ProtoReflect.Descriptor instead.
-func (*JobStatusUpdate) Descriptor() ([]byte, []int) {
+// Deprecated: Use TaskStatusUpdate.ProtoReflect.Descriptor instead.
+func (*TaskStatusUpdate) Descriptor() ([]byte, []int) {
 	return file_api_stream_v1_proto_stream_proto_rawDescGZIP(), []int{13}
 }
 
-func (x *JobStatusUpdate) GetJobId() string {
+func (x *TaskStatusUpdate) GetTaskId() string {
 	if x != nil {
-		return x.JobId
+		return x.TaskId
 	}
 	return ""
 }
 
-func (x *JobStatusUpdate) GetStatus() v1.JobStatus {
+func (x *TaskStatusUpdate) GetStatus() v1.TaskStatus {
 	if x != nil {
 		return x.Status
 	}
-	return v1.JobStatus(0)
+	return v1.TaskStatus(0)
 }
 
-func (x *JobStatusUpdate) GetExitCode() int32 {
+func (x *TaskStatusUpdate) GetExitCode() int32 {
 	if x != nil {
 		return x.ExitCode
 	}
 	return 0
 }
 
-func (x *JobStatusUpdate) GetErrorMessage() string {
+func (x *TaskStatusUpdate) GetErrorMessage() string {
 	if x != nil {
 		return x.ErrorMessage
 	}
 	return ""
 }
 
-func (x *JobStatusUpdate) GetTimestamp() int64 {
+func (x *TaskStatusUpdate) GetTimestamp() int64 {
 	if x != nil {
 		return x.Timestamp
 	}
@@ -1277,28 +1277,28 @@ func (x *LogData) GetLogs() []*LogChunk {
 }
 
 // 获取任务请求
-type JobFetchRequest struct {
+type TaskFetchRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	MaxJobs       int32                  `protobuf:"varint,1,opt,name=max_jobs,json=maxJobs,proto3" json:"max_jobs,omitempty"`
+	MaxTasks      int32                  `protobuf:"varint,1,opt,name=max_tasks,json=maxTasks,proto3" json:"max_tasks,omitempty"`
 	Tags          []string               `protobuf:"bytes,2,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *JobFetchRequest) Reset() {
-	*x = JobFetchRequest{}
+func (x *TaskFetchRequest) Reset() {
+	*x = TaskFetchRequest{}
 	mi := &file_api_stream_v1_proto_stream_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *JobFetchRequest) String() string {
+func (x *TaskFetchRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*JobFetchRequest) ProtoMessage() {}
+func (*TaskFetchRequest) ProtoMessage() {}
 
-func (x *JobFetchRequest) ProtoReflect() protoreflect.Message {
+func (x *TaskFetchRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_api_stream_v1_proto_stream_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1310,19 +1310,19 @@ func (x *JobFetchRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use JobFetchRequest.ProtoReflect.Descriptor instead.
-func (*JobFetchRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use TaskFetchRequest.ProtoReflect.Descriptor instead.
+func (*TaskFetchRequest) Descriptor() ([]byte, []int) {
 	return file_api_stream_v1_proto_stream_proto_rawDescGZIP(), []int{15}
 }
 
-func (x *JobFetchRequest) GetMaxJobs() int32 {
+func (x *TaskFetchRequest) GetMaxTasks() int32 {
 	if x != nil {
-		return x.MaxJobs
+		return x.MaxTasks
 	}
 	return 0
 }
 
-func (x *JobFetchRequest) GetTags() []string {
+func (x *TaskFetchRequest) GetTags() []string {
 	if x != nil {
 		return x.Tags
 	}
@@ -1335,7 +1335,7 @@ type AgentMetrics struct {
 	CpuUsage      float64                `protobuf:"fixed64,1,opt,name=cpu_usage,json=cpuUsage,proto3" json:"cpu_usage,omitempty"`                                                                                        // CPU使用率（百分比）
 	MemoryUsage   float64                `protobuf:"fixed64,2,opt,name=memory_usage,json=memoryUsage,proto3" json:"memory_usage,omitempty"`                                                                               // 内存使用率（百分比）
 	DiskUsage     float64                `protobuf:"fixed64,3,opt,name=disk_usage,json=diskUsage,proto3" json:"disk_usage,omitempty"`                                                                                     // 磁盘使用率（百分比）
-	RunningJobs   int32                  `protobuf:"varint,4,opt,name=running_jobs,json=runningJobs,proto3" json:"running_jobs,omitempty"`                                                                                // 运行中的任务数
+	RunningTasks  int32                  `protobuf:"varint,4,opt,name=running_tasks,json=runningTasks,proto3" json:"running_tasks,omitempty"`                                                                             // 运行中的任务数
 	CustomMetrics map[string]string      `protobuf:"bytes,5,rep,name=custom_metrics,json=customMetrics,proto3" json:"custom_metrics,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // 自定义指标
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1392,9 +1392,9 @@ func (x *AgentMetrics) GetDiskUsage() float64 {
 	return 0
 }
 
-func (x *AgentMetrics) GetRunningJobs() int32 {
+func (x *AgentMetrics) GetRunningTasks() int32 {
 	if x != nil {
-		return x.RunningJobs
+		return x.RunningTasks
 	}
 	return 0
 }
@@ -1414,8 +1414,8 @@ type AgentChannelResponse struct {
 	// Types that are valid to be assigned to Payload:
 	//
 	//	*AgentChannelResponse_HeartbeatAck
-	//	*AgentChannelResponse_JobAssignment
-	//	*AgentChannelResponse_CancelCommand
+	//	*AgentChannelResponse_TaskAssignment
+	//	*AgentChannelResponse_TaskCancelCommand
 	//	*AgentChannelResponse_ConfigUpdate
 	Payload       isAgentChannelResponse_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
@@ -1482,19 +1482,19 @@ func (x *AgentChannelResponse) GetHeartbeatAck() *HeartbeatAck {
 	return nil
 }
 
-func (x *AgentChannelResponse) GetJobAssignment() *JobAssignment {
+func (x *AgentChannelResponse) GetTaskAssignment() *TaskAssignment {
 	if x != nil {
-		if x, ok := x.Payload.(*AgentChannelResponse_JobAssignment); ok {
-			return x.JobAssignment
+		if x, ok := x.Payload.(*AgentChannelResponse_TaskAssignment); ok {
+			return x.TaskAssignment
 		}
 	}
 	return nil
 }
 
-func (x *AgentChannelResponse) GetCancelCommand() *JobCancelCommand {
+func (x *AgentChannelResponse) GetTaskCancelCommand() *TaskCancelCommand {
 	if x != nil {
-		if x, ok := x.Payload.(*AgentChannelResponse_CancelCommand); ok {
-			return x.CancelCommand
+		if x, ok := x.Payload.(*AgentChannelResponse_TaskCancelCommand); ok {
+			return x.TaskCancelCommand
 		}
 	}
 	return nil
@@ -1517,12 +1517,12 @@ type AgentChannelResponse_HeartbeatAck struct {
 	HeartbeatAck *HeartbeatAck `protobuf:"bytes,3,opt,name=heartbeat_ack,json=heartbeatAck,proto3,oneof"` // 心跳确认
 }
 
-type AgentChannelResponse_JobAssignment struct {
-	JobAssignment *JobAssignment `protobuf:"bytes,4,opt,name=job_assignment,json=jobAssignment,proto3,oneof"` // 任务分配
+type AgentChannelResponse_TaskAssignment struct {
+	TaskAssignment *TaskAssignment `protobuf:"bytes,4,opt,name=task_assignment,json=taskAssignment,proto3,oneof"` // 任务分配
 }
 
-type AgentChannelResponse_CancelCommand struct {
-	CancelCommand *JobCancelCommand `protobuf:"bytes,5,opt,name=cancel_command,json=cancelCommand,proto3,oneof"` // 取消任务命令
+type AgentChannelResponse_TaskCancelCommand struct {
+	TaskCancelCommand *TaskCancelCommand `protobuf:"bytes,5,opt,name=task_cancel_command,json=taskCancelCommand,proto3,oneof"` // 取消任务命令
 }
 
 type AgentChannelResponse_ConfigUpdate struct {
@@ -1531,9 +1531,9 @@ type AgentChannelResponse_ConfigUpdate struct {
 
 func (*AgentChannelResponse_HeartbeatAck) isAgentChannelResponse_Payload() {}
 
-func (*AgentChannelResponse_JobAssignment) isAgentChannelResponse_Payload() {}
+func (*AgentChannelResponse_TaskAssignment) isAgentChannelResponse_Payload() {}
 
-func (*AgentChannelResponse_CancelCommand) isAgentChannelResponse_Payload() {}
+func (*AgentChannelResponse_TaskCancelCommand) isAgentChannelResponse_Payload() {}
 
 func (*AgentChannelResponse_ConfigUpdate) isAgentChannelResponse_Payload() {}
 
@@ -1591,27 +1591,27 @@ func (x *HeartbeatAck) GetSuccess() bool {
 }
 
 // 任务分配
-type JobAssignment struct {
+type TaskAssignment struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Jobs          []*JobInfo             `protobuf:"bytes,1,rep,name=jobs,proto3" json:"jobs,omitempty"`
+	Tasks         []*TaskInfo            `protobuf:"bytes,1,rep,name=tasks,proto3" json:"tasks,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *JobAssignment) Reset() {
-	*x = JobAssignment{}
+func (x *TaskAssignment) Reset() {
+	*x = TaskAssignment{}
 	mi := &file_api_stream_v1_proto_stream_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *JobAssignment) String() string {
+func (x *TaskAssignment) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*JobAssignment) ProtoMessage() {}
+func (*TaskAssignment) ProtoMessage() {}
 
-func (x *JobAssignment) ProtoReflect() protoreflect.Message {
+func (x *TaskAssignment) ProtoReflect() protoreflect.Message {
 	mi := &file_api_stream_v1_proto_stream_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1623,22 +1623,22 @@ func (x *JobAssignment) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use JobAssignment.ProtoReflect.Descriptor instead.
-func (*JobAssignment) Descriptor() ([]byte, []int) {
+// Deprecated: Use TaskAssignment.ProtoReflect.Descriptor instead.
+func (*TaskAssignment) Descriptor() ([]byte, []int) {
 	return file_api_stream_v1_proto_stream_proto_rawDescGZIP(), []int{19}
 }
 
-func (x *JobAssignment) GetJobs() []*JobInfo {
+func (x *TaskAssignment) GetTasks() []*TaskInfo {
 	if x != nil {
-		return x.Jobs
+		return x.Tasks
 	}
 	return nil
 }
 
 // 任务信息
-type JobInfo struct {
+type TaskInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	JobId         string                 `protobuf:"bytes,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
+	TaskId        string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	PipelineId    string                 `protobuf:"bytes,3,opt,name=pipeline_id,json=pipelineId,proto3" json:"pipeline_id,omitempty"`
 	Stage         int32                  `protobuf:"varint,4,opt,name=stage,proto3" json:"stage,omitempty"`
@@ -1653,20 +1653,20 @@ type JobInfo struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *JobInfo) Reset() {
-	*x = JobInfo{}
+func (x *TaskInfo) Reset() {
+	*x = TaskInfo{}
 	mi := &file_api_stream_v1_proto_stream_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *JobInfo) String() string {
+func (x *TaskInfo) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*JobInfo) ProtoMessage() {}
+func (*TaskInfo) ProtoMessage() {}
 
-func (x *JobInfo) ProtoReflect() protoreflect.Message {
+func (x *TaskInfo) ProtoReflect() protoreflect.Message {
 	mi := &file_api_stream_v1_proto_stream_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1678,82 +1678,82 @@ func (x *JobInfo) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use JobInfo.ProtoReflect.Descriptor instead.
-func (*JobInfo) Descriptor() ([]byte, []int) {
+// Deprecated: Use TaskInfo.ProtoReflect.Descriptor instead.
+func (*TaskInfo) Descriptor() ([]byte, []int) {
 	return file_api_stream_v1_proto_stream_proto_rawDescGZIP(), []int{20}
 }
 
-func (x *JobInfo) GetJobId() string {
+func (x *TaskInfo) GetTaskId() string {
 	if x != nil {
-		return x.JobId
+		return x.TaskId
 	}
 	return ""
 }
 
-func (x *JobInfo) GetName() string {
+func (x *TaskInfo) GetName() string {
 	if x != nil {
 		return x.Name
 	}
 	return ""
 }
 
-func (x *JobInfo) GetPipelineId() string {
+func (x *TaskInfo) GetPipelineId() string {
 	if x != nil {
 		return x.PipelineId
 	}
 	return ""
 }
 
-func (x *JobInfo) GetStage() int32 {
+func (x *TaskInfo) GetStage() int32 {
 	if x != nil {
 		return x.Stage
 	}
 	return 0
 }
 
-func (x *JobInfo) GetCommands() []string {
+func (x *TaskInfo) GetCommands() []string {
 	if x != nil {
 		return x.Commands
 	}
 	return nil
 }
 
-func (x *JobInfo) GetEnv() map[string]string {
+func (x *TaskInfo) GetEnv() map[string]string {
 	if x != nil {
 		return x.Env
 	}
 	return nil
 }
 
-func (x *JobInfo) GetWorkspace() string {
+func (x *TaskInfo) GetWorkspace() string {
 	if x != nil {
 		return x.Workspace
 	}
 	return ""
 }
 
-func (x *JobInfo) GetTimeout() int32 {
+func (x *TaskInfo) GetTimeout() int32 {
 	if x != nil {
 		return x.Timeout
 	}
 	return 0
 }
 
-func (x *JobInfo) GetTags() []string {
+func (x *TaskInfo) GetTags() []string {
 	if x != nil {
 		return x.Tags
 	}
 	return nil
 }
 
-func (x *JobInfo) GetImage() string {
+func (x *TaskInfo) GetImage() string {
 	if x != nil {
 		return x.Image
 	}
 	return ""
 }
 
-func (x *JobInfo) GetSecrets() map[string]string {
+func (x *TaskInfo) GetSecrets() map[string]string {
 	if x != nil {
 		return x.Secrets
 	}
@@ -1761,28 +1761,28 @@ func (x *JobInfo) GetSecrets() map[string]string {
 }
 
 // 取消任务命令
-type JobCancelCommand struct {
+type TaskCancelCommand struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	JobId         string                 `protobuf:"bytes,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
+	TaskId        string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
 	Reason        string                 `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *JobCancelCommand) Reset() {
-	*x = JobCancelCommand{}
+func (x *TaskCancelCommand) Reset() {
+	*x = TaskCancelCommand{}
 	mi := &file_api_stream_v1_proto_stream_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *JobCancelCommand) String() string {
+func (x *TaskCancelCommand) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*JobCancelCommand) ProtoMessage() {}
+func (*TaskCancelCommand) ProtoMessage() {}
 
-func (x *JobCancelCommand) ProtoReflect() protoreflect.Message {
+func (x *TaskCancelCommand) ProtoReflect() protoreflect.Message {
 	mi := &file_api_stream_v1_proto_stream_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1794,19 +1794,19 @@ func (x *JobCancelCommand) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use JobCancelCommand.ProtoReflect.Descriptor instead.
-func (*JobCancelCommand) Descriptor() ([]byte, []int) {
+// Deprecated: Use TaskCancelCommand.ProtoReflect.Descriptor instead.
+func (*TaskCancelCommand) Descriptor() ([]byte, []int) {
 	return file_api_stream_v1_proto_stream_proto_rawDescGZIP(), []int{21}
 }
 
-func (x *JobCancelCommand) GetJobId() string {
+func (x *TaskCancelCommand) GetTaskId() string {
 	if x != nil {
-		return x.JobId
+		return x.TaskId
 	}
 	return ""
 }
 
-func (x *JobCancelCommand) GetReason() string {
+func (x *TaskCancelCommand) GetReason() string {
 	if x != nil {
 		return x.Reason
 	}
@@ -2210,18 +2210,18 @@ var File_api_stream_v1_proto_stream_proto protoreflect.FileDescriptor
 
 const file_api_stream_v1_proto_stream_proto_rawDesc = "" +
 	"\n" +
-	" api/stream/v1/proto/stream.proto\x12\rapi.stream.v1\x1a\x1aapi/job/v1/proto/job.proto\x1a\x1eapi/agent/v1/proto/agent.proto\x1a$api/pipeline/v1/proto/pipeline.proto\"'\n" +
+	" api/stream/v1/proto/stream.proto\x12\rapi.stream.v1\x1a\x1capi/task/v1/proto/task.proto\x1a\x1eapi/agent/v1/proto/agent.proto\x1a$api/pipeline/v1/proto/pipeline.proto\"'\n" +
 	"\vPingRequest\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\"F\n" +
 	"\fPingResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\x12\x1c\n" +
-	"\ttimestamp\x18\x02 \x01(\x03R\ttimestamp\"a\n" +
-	"\x13StreamJobLogRequest\x12\x15\n" +
+	"\ttimestamp\x18\x02 \x01(\x03R\ttimestamp\"b\n" +
+	"\x14StreamTaskLogRequest\x12\x15\n" +
 	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x12\x1b\n" +
 	"\tfrom_line\x18\x02 \x01(\x05R\bfromLine\x12\x16\n" +
-	"\x06follow\x18\x03 \x01(\bR\x06follow\"\x84\x01\n" +
-	"\x14StreamJobLogResponse\x12\x15\n" +
-	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x124\n" +
+	"\x06follow\x18\x03 \x01(\bR\x06follow\"\x87\x01\n" +
+	"\x15StreamTaskLogResponse\x12\x17\n" +
+	"\atask_id\x18\x01 \x01(\tR\x06taskId\x124\n" +
 	"\tlog_chunk\x18\x02 \x01(\v2\x17.api.stream.v1.LogChunkR\blogChunk\x12\x1f\n" +
 	"\vis_complete\x18\x03 \x01(\bR\n" +
 	"isComplete\"\x91\x01\n" +
@@ -2231,31 +2231,31 @@ const file_api_stream_v1_proto_stream_proto_rawDesc = "" +
 	"lineNumber\x12\x14\n" +
 	"\x05level\x18\x03 \x01(\tR\x05level\x12\x18\n" +
 	"\acontent\x18\x04 \x01(\tR\acontent\x12\x16\n" +
-	"\x06stream\x18\x05 \x01(\tR\x06stream\"t\n" +
-	"\x13UploadJobLogRequest\x12\x15\n" +
-	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x12\x19\n" +
+	"\x06stream\x18\x05 \x01(\tR\x06stream\"w\n" +
+	"\x14UploadTaskLogRequest\x12\x17\n" +
+	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x19\n" +
 	"\bagent_id\x18\x02 \x01(\tR\aagentId\x12+\n" +
-	"\x04logs\x18\x03 \x03(\v2\x17.api.stream.v1.LogChunkR\x04logs\"q\n" +
-	"\x14UploadJobLogResponse\x12\x18\n" +
+	"\x04logs\x18\x03 \x03(\v2\x17.api.stream.v1.LogChunkR\x04logs\"r\n" +
+	"\x15UploadTaskLogResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12%\n" +
-	"\x0ereceived_lines\x18\x03 \x01(\x05R\rreceivedLines\"R\n" +
-	"\x16StreamJobStatusRequest\x12\x17\n" +
-	"\ajob_ids\x18\x01 \x03(\tR\x06jobIds\x12\x1f\n" +
+	"\x0ereceived_lines\x18\x03 \x01(\x05R\rreceivedLines\"U\n" +
+	"\x17StreamTaskStatusRequest\x12\x19\n" +
+	"\btask_ids\x18\x01 \x03(\tR\ataskIds\x12\x1f\n" +
 	"\vpipeline_id\x18\x02 \x01(\tR\n" +
-	"pipelineId\"\xdc\x03\n" +
-	"\x17StreamJobStatusResponse\x12\x15\n" +
-	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x12\x19\n" +
-	"\bjob_name\x18\x02 \x01(\tR\ajobName\x12-\n" +
-	"\x06status\x18\x03 \x01(\x0e2\x15.api.job.v1.JobStatusR\x06status\x12>\n" +
-	"\x0fprevious_status\x18\x04 \x01(\x0e2\x15.api.job.v1.JobStatusR\x0epreviousStatus\x12\x1c\n" +
+	"pipelineId\"\xe6\x03\n" +
+	"\x18StreamTaskStatusResponse\x12\x17\n" +
+	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x1b\n" +
+	"\ttask_name\x18\x02 \x01(\tR\btaskName\x12/\n" +
+	"\x06status\x18\x03 \x01(\x0e2\x17.api.task.v1.TaskStatusR\x06status\x12@\n" +
+	"\x0fprevious_status\x18\x04 \x01(\x0e2\x17.api.task.v1.TaskStatusR\x0epreviousStatus\x12\x1c\n" +
 	"\ttimestamp\x18\x05 \x01(\x03R\ttimestamp\x12\x19\n" +
 	"\bagent_id\x18\x06 \x01(\tR\aagentId\x12\x1b\n" +
 	"\texit_code\x18\a \x01(\x05R\bexitCode\x12#\n" +
 	"\rerror_message\x18\b \x01(\tR\ferrorMessage\x12\x1a\n" +
-	"\bduration\x18\t \x01(\x03R\bduration\x12M\n" +
+	"\bduration\x18\t \x01(\x03R\bduration\x12N\n" +
 	"\ametrics\x18\n" +
-	" \x03(\v23.api.stream.v1.StreamJobStatusResponse.MetricsEntryR\ametrics\x1a:\n" +
+	" \x03(\v24.api.stream.v1.StreamTaskStatusResponse.MetricsEntryR\ametrics\x1a:\n" +
 	"\fMetricsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"@\n" +
@@ -2278,82 +2278,83 @@ const file_api_stream_v1_proto_stream_proto_rawDesc = "" +
 	" \x01(\x05R\vrunningJobs\x12#\n" +
 	"\rcurrent_stage\x18\v \x01(\x05R\fcurrentStage\x12!\n" +
 	"\ftotal_stages\x18\f \x01(\x05R\vtotalStages\x12\x1a\n" +
-	"\bduration\x18\r \x01(\x03R\bduration\"\x86\x03\n" +
+	"\bduration\x18\r \x01(\x03R\bduration\"\x8c\x03\n" +
 	"\x13AgentChannelRequest\x12\x19\n" +
 	"\bagent_id\x18\x01 \x01(\tR\aagentId\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x02 \x01(\tR\trequestId\x12<\n" +
-	"\theartbeat\x18\x03 \x01(\v2\x1c.api.stream.v1.HeartbeatDataH\x00R\theartbeat\x12?\n" +
+	"\theartbeat\x18\x03 \x01(\v2\x1c.api.stream.v1.HeartbeatDataH\x00R\theartbeat\x12B\n" +
+	"\vtask_status\x18\x04 \x01(\v2\x1f.api.stream.v1.TaskStatusUpdateH\x00R\n" +
+	"taskStatus\x123\n" +
+	"\blog_data\x18\x05 \x01(\v2\x16.api.stream.v1.LogDataH\x00R\alogData\x12@\n" +
 	"\n" +
-	"job_status\x18\x04 \x01(\v2\x1e.api.stream.v1.JobStatusUpdateH\x00R\tjobStatus\x123\n" +
-	"\blog_data\x18\x05 \x01(\v2\x16.api.stream.v1.LogDataH\x00R\alogData\x12=\n" +
-	"\tjob_fetch\x18\x06 \x01(\v2\x1e.api.stream.v1.JobFetchRequestH\x00R\bjobFetch\x127\n" +
+	"task_fetch\x18\x06 \x01(\v2\x1f.api.stream.v1.TaskFetchRequestH\x00R\ttaskFetch\x127\n" +
 	"\ametrics\x18\a \x01(\v2\x1b.api.stream.v1.AgentMetricsH\x00R\ametricsB\t\n" +
 	"\apayload\"\xbe\x01\n" +
 	"\rHeartbeatData\x12\x1c\n" +
 	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\x121\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x19.api.agent.v1.AgentStatusR\x06status\x12,\n" +
 	"\x12running_jobs_count\x18\x03 \x01(\x05R\x10runningJobsCount\x12.\n" +
-	"\x13max_concurrent_jobs\x18\x04 \x01(\x05R\x11maxConcurrentJobs\"\xb7\x01\n" +
-	"\x0fJobStatusUpdate\x12\x15\n" +
-	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x12-\n" +
-	"\x06status\x18\x02 \x01(\x0e2\x15.api.job.v1.JobStatusR\x06status\x12\x1b\n" +
+	"\x13max_concurrent_jobs\x18\x04 \x01(\x05R\x11maxConcurrentJobs\"\xbc\x01\n" +
+	"\x10TaskStatusUpdate\x12\x17\n" +
+	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12/\n" +
+	"\x06status\x18\x02 \x01(\x0e2\x17.api.task.v1.TaskStatusR\x06status\x12\x1b\n" +
 	"\texit_code\x18\x03 \x01(\x05R\bexitCode\x12#\n" +
 	"\rerror_message\x18\x04 \x01(\tR\ferrorMessage\x12\x1c\n" +
 	"\ttimestamp\x18\x05 \x01(\x03R\ttimestamp\"M\n" +
 	"\aLogData\x12\x15\n" +
 	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x12+\n" +
-	"\x04logs\x18\x02 \x03(\v2\x17.api.stream.v1.LogChunkR\x04logs\"@\n" +
-	"\x0fJobFetchRequest\x12\x19\n" +
-	"\bmax_jobs\x18\x01 \x01(\x05R\amaxJobs\x12\x12\n" +
-	"\x04tags\x18\x02 \x03(\tR\x04tags\"\xa9\x02\n" +
+	"\x04logs\x18\x02 \x03(\v2\x17.api.stream.v1.LogChunkR\x04logs\"C\n" +
+	"\x10TaskFetchRequest\x12\x1b\n" +
+	"\tmax_tasks\x18\x01 \x01(\x05R\bmaxTasks\x12\x12\n" +
+	"\x04tags\x18\x02 \x03(\tR\x04tags\"\xab\x02\n" +
 	"\fAgentMetrics\x12\x1b\n" +
 	"\tcpu_usage\x18\x01 \x01(\x01R\bcpuUsage\x12!\n" +
 	"\fmemory_usage\x18\x02 \x01(\x01R\vmemoryUsage\x12\x1d\n" +
 	"\n" +
-	"disk_usage\x18\x03 \x01(\x01R\tdiskUsage\x12!\n" +
-	"\frunning_jobs\x18\x04 \x01(\x05R\vrunningJobs\x12U\n" +
+	"disk_usage\x18\x03 \x01(\x01R\tdiskUsage\x12#\n" +
+	"\rrunning_tasks\x18\x04 \x01(\x05R\frunningTasks\x12U\n" +
 	"\x0ecustom_metrics\x18\x05 \x03(\v2..api.stream.v1.AgentMetrics.CustomMetricsEntryR\rcustomMetrics\x1a@\n" +
 	"\x12CustomMetricsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xf6\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x83\x03\n" +
 	"\x14AgentChannelResponse\x12\x19\n" +
 	"\bagent_id\x18\x01 \x01(\tR\aagentId\x12\x1f\n" +
 	"\vresponse_id\x18\x02 \x01(\tR\n" +
 	"responseId\x12B\n" +
-	"\rheartbeat_ack\x18\x03 \x01(\v2\x1b.api.stream.v1.HeartbeatAckH\x00R\fheartbeatAck\x12E\n" +
-	"\x0ejob_assignment\x18\x04 \x01(\v2\x1c.api.stream.v1.JobAssignmentH\x00R\rjobAssignment\x12H\n" +
-	"\x0ecancel_command\x18\x05 \x01(\v2\x1f.api.stream.v1.JobCancelCommandH\x00R\rcancelCommand\x12B\n" +
+	"\rheartbeat_ack\x18\x03 \x01(\v2\x1b.api.stream.v1.HeartbeatAckH\x00R\fheartbeatAck\x12H\n" +
+	"\x0ftask_assignment\x18\x04 \x01(\v2\x1d.api.stream.v1.TaskAssignmentH\x00R\x0etaskAssignment\x12R\n" +
+	"\x13task_cancel_command\x18\x05 \x01(\v2 .api.stream.v1.TaskCancelCommandH\x00R\x11taskCancelCommand\x12B\n" +
 	"\rconfig_update\x18\x06 \x01(\v2\x1b.api.stream.v1.ConfigUpdateH\x00R\fconfigUpdateB\t\n" +
 	"\apayload\"I\n" +
 	"\fHeartbeatAck\x12\x1f\n" +
 	"\vserver_time\x18\x01 \x01(\x03R\n" +
 	"serverTime\x12\x18\n" +
-	"\asuccess\x18\x02 \x01(\bR\asuccess\";\n" +
-	"\rJobAssignment\x12*\n" +
-	"\x04jobs\x18\x01 \x03(\v2\x16.api.stream.v1.JobInfoR\x04jobs\"\xcf\x03\n" +
-	"\aJobInfo\x12\x15\n" +
-	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x12\x12\n" +
+	"\asuccess\x18\x02 \x01(\bR\asuccess\"?\n" +
+	"\x0eTaskAssignment\x12-\n" +
+	"\x05tasks\x18\x01 \x03(\v2\x17.api.stream.v1.TaskInfoR\x05tasks\"\xd4\x03\n" +
+	"\bTaskInfo\x12\x17\n" +
+	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1f\n" +
 	"\vpipeline_id\x18\x03 \x01(\tR\n" +
 	"pipelineId\x12\x14\n" +
 	"\x05stage\x18\x04 \x01(\x05R\x05stage\x12\x1a\n" +
-	"\bcommands\x18\x05 \x03(\tR\bcommands\x121\n" +
-	"\x03env\x18\x06 \x03(\v2\x1f.api.stream.v1.JobInfo.EnvEntryR\x03env\x12\x1c\n" +
+	"\bcommands\x18\x05 \x03(\tR\bcommands\x122\n" +
+	"\x03env\x18\x06 \x03(\v2 .api.stream.v1.TaskInfo.EnvEntryR\x03env\x12\x1c\n" +
 	"\tworkspace\x18\a \x01(\tR\tworkspace\x12\x18\n" +
 	"\atimeout\x18\b \x01(\x05R\atimeout\x12\x12\n" +
 	"\x04tags\x18\t \x03(\tR\x04tags\x12\x14\n" +
 	"\x05image\x18\n" +
-	" \x01(\tR\x05image\x12=\n" +
-	"\asecrets\x18\v \x03(\v2#.api.stream.v1.JobInfo.SecretsEntryR\asecrets\x1a6\n" +
+	" \x01(\tR\x05image\x12>\n" +
+	"\asecrets\x18\v \x03(\v2$.api.stream.v1.TaskInfo.SecretsEntryR\asecrets\x1a6\n" +
 	"\bEnvEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a:\n" +
 	"\fSecretsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"A\n" +
-	"\x10JobCancelCommand\x12\x15\n" +
-	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x12\x16\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"D\n" +
+	"\x11TaskCancelCommand\x12\x17\n" +
+	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x16\n" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\"\xe9\x01\n" +
 	"\fConfigUpdate\x12-\n" +
 	"\x12heartbeat_interval\x18\x01 \x01(\x03R\x11heartbeatInterval\x12.\n" +
@@ -2418,12 +2419,12 @@ const file_api_stream_v1_proto_stream_proto_rawDesc = "" +
 	"\x1bEVENT_TYPE_AGENT_REGISTERED\x10\t\x12!\n" +
 	"\x1dEVENT_TYPE_AGENT_UNREGISTERED\x10\n" +
 	"\x12\x1c\n" +
-	"\x18EVENT_TYPE_AGENT_OFFLINE\x10\v2\x88\x06\n" +
+	"\x18EVENT_TYPE_AGENT_OFFLINE\x10\v2\x91\x06\n" +
 	"\x06Stream\x12A\n" +
-	"\x04Ping\x12\x1a.api.stream.v1.PingRequest\x1a\x1b.api.stream.v1.PingResponse\"\x00\x12[\n" +
-	"\fStreamJobLog\x12\".api.stream.v1.StreamJobLogRequest\x1a#.api.stream.v1.StreamJobLogResponse\"\x000\x01\x12[\n" +
-	"\fUploadJobLog\x12\".api.stream.v1.UploadJobLogRequest\x1a#.api.stream.v1.UploadJobLogResponse\"\x00(\x01\x12d\n" +
-	"\x0fStreamJobStatus\x12%.api.stream.v1.StreamJobStatusRequest\x1a&.api.stream.v1.StreamJobStatusResponse\"\x000\x01\x12s\n" +
+	"\x04Ping\x12\x1a.api.stream.v1.PingRequest\x1a\x1b.api.stream.v1.PingResponse\"\x00\x12^\n" +
+	"\rStreamTaskLog\x12#.api.stream.v1.StreamTaskLogRequest\x1a$.api.stream.v1.StreamTaskLogResponse\"\x000\x01\x12^\n" +
+	"\rUploadTaskLog\x12#.api.stream.v1.UploadTaskLogRequest\x1a$.api.stream.v1.UploadTaskLogResponse\"\x00(\x01\x12g\n" +
+	"\x10StreamTaskStatus\x12&.api.stream.v1.StreamTaskStatusRequest\x1a'.api.stream.v1.StreamTaskStatusResponse\"\x000\x01\x12s\n" +
 	"\x14StreamPipelineStatus\x12*.api.stream.v1.StreamPipelineStatusRequest\x1a+.api.stream.v1.StreamPipelineStatusResponse\"\x000\x01\x12]\n" +
 	"\fAgentChannel\x12\".api.stream.v1.AgentChannelRequest\x1a#.api.stream.v1.AgentChannelResponse\"\x00(\x010\x01\x12j\n" +
 	"\x11StreamAgentStatus\x12'.api.stream.v1.StreamAgentStatusRequest\x1a(.api.stream.v1.StreamAgentStatusResponse\"\x000\x01\x12[\n" +
@@ -2448,66 +2449,66 @@ var file_api_stream_v1_proto_stream_proto_goTypes = []any{
 	(EventType)(0),                       // 1: api.stream.v1.EventType
 	(*PingRequest)(nil),                  // 2: api.stream.v1.PingRequest
 	(*PingResponse)(nil),                 // 3: api.stream.v1.PingResponse
-	(*StreamJobLogRequest)(nil),          // 4: api.stream.v1.StreamJobLogRequest
-	(*StreamJobLogResponse)(nil),         // 5: api.stream.v1.StreamJobLogResponse
+	(*StreamTaskLogRequest)(nil),         // 4: api.stream.v1.StreamTaskLogRequest
+	(*StreamTaskLogResponse)(nil),        // 5: api.stream.v1.StreamTaskLogResponse
 	(*LogChunk)(nil),                     // 6: api.stream.v1.LogChunk
-	(*UploadJobLogRequest)(nil),          // 7: api.stream.v1.UploadJobLogRequest
-	(*UploadJobLogResponse)(nil),         // 8: api.stream.v1.UploadJobLogResponse
-	(*StreamJobStatusRequest)(nil),       // 9: api.stream.v1.StreamJobStatusRequest
-	(*StreamJobStatusResponse)(nil),      // 10: api.stream.v1.StreamJobStatusResponse
+	(*UploadTaskLogRequest)(nil),         // 7: api.stream.v1.UploadTaskLogRequest
+	(*UploadTaskLogResponse)(nil),        // 8: api.stream.v1.UploadTaskLogResponse
+	(*StreamTaskStatusRequest)(nil),      // 9: api.stream.v1.StreamTaskStatusRequest
+	(*StreamTaskStatusResponse)(nil),     // 10: api.stream.v1.StreamTaskStatusResponse
 	(*StreamPipelineStatusRequest)(nil),  // 11: api.stream.v1.StreamPipelineStatusRequest
 	(*StreamPipelineStatusResponse)(nil), // 12: api.stream.v1.StreamPipelineStatusResponse
 	(*AgentChannelRequest)(nil),          // 13: api.stream.v1.AgentChannelRequest
 	(*HeartbeatData)(nil),                // 14: api.stream.v1.HeartbeatData
-	(*JobStatusUpdate)(nil),              // 15: api.stream.v1.JobStatusUpdate
+	(*TaskStatusUpdate)(nil),             // 15: api.stream.v1.TaskStatusUpdate
 	(*LogData)(nil),                      // 16: api.stream.v1.LogData
-	(*JobFetchRequest)(nil),              // 17: api.stream.v1.JobFetchRequest
+	(*TaskFetchRequest)(nil),             // 17: api.stream.v1.TaskFetchRequest
 	(*AgentMetrics)(nil),                 // 18: api.stream.v1.AgentMetrics
 	(*AgentChannelResponse)(nil),         // 19: api.stream.v1.AgentChannelResponse
 	(*HeartbeatAck)(nil),                 // 20: api.stream.v1.HeartbeatAck
-	(*JobAssignment)(nil),                // 21: api.stream.v1.JobAssignment
-	(*JobInfo)(nil),                      // 22: api.stream.v1.JobInfo
-	(*JobCancelCommand)(nil),             // 23: api.stream.v1.JobCancelCommand
+	(*TaskAssignment)(nil),               // 21: api.stream.v1.TaskAssignment
+	(*TaskInfo)(nil),                     // 22: api.stream.v1.TaskInfo
+	(*TaskCancelCommand)(nil),            // 23: api.stream.v1.TaskCancelCommand
 	(*ConfigUpdate)(nil),                 // 24: api.stream.v1.ConfigUpdate
 	(*StreamAgentStatusRequest)(nil),     // 25: api.stream.v1.StreamAgentStatusRequest
 	(*StreamAgentStatusResponse)(nil),    // 26: api.stream.v1.StreamAgentStatusResponse
 	(*StreamEventsRequest)(nil),          // 27: api.stream.v1.StreamEventsRequest
 	(*StreamEventsResponse)(nil),         // 28: api.stream.v1.StreamEventsResponse
-	nil,                                  // 29: api.stream.v1.StreamJobStatusResponse.MetricsEntry
+	nil,                                  // 29: api.stream.v1.StreamTaskStatusResponse.MetricsEntry
 	nil,                                  // 30: api.stream.v1.AgentMetrics.CustomMetricsEntry
-	nil,                                  // 31: api.stream.v1.JobInfo.EnvEntry
-	nil,                                  // 32: api.stream.v1.JobInfo.SecretsEntry
+	nil,                                  // 31: api.stream.v1.TaskInfo.EnvEntry
+	nil,                                  // 32: api.stream.v1.TaskInfo.SecretsEntry
 	nil,                                  // 33: api.stream.v1.ConfigUpdate.ConfigEntry
 	nil,                                  // 34: api.stream.v1.StreamAgentStatusResponse.LabelsEntry
 	nil,                                  // 35: api.stream.v1.StreamEventsResponse.MetadataEntry
-	(v1.JobStatus)(0),                    // 36: api.job.v1.JobStatus
+	(v1.TaskStatus)(0),                   // 36: api.task.v1.TaskStatus
 	(v11.PipelineStatus)(0),              // 37: api.pipeline.v1.PipelineStatus
 	(v12.AgentStatus)(0),                 // 38: api.agent.v1.AgentStatus
 }
 var file_api_stream_v1_proto_stream_proto_depIdxs = []int32{
-	6,  // 0: api.stream.v1.StreamJobLogResponse.log_chunk:type_name -> api.stream.v1.LogChunk
-	6,  // 1: api.stream.v1.UploadJobLogRequest.logs:type_name -> api.stream.v1.LogChunk
-	36, // 2: api.stream.v1.StreamJobStatusResponse.status:type_name -> api.job.v1.JobStatus
-	36, // 3: api.stream.v1.StreamJobStatusResponse.previous_status:type_name -> api.job.v1.JobStatus
-	29, // 4: api.stream.v1.StreamJobStatusResponse.metrics:type_name -> api.stream.v1.StreamJobStatusResponse.MetricsEntry
+	6,  // 0: api.stream.v1.StreamTaskLogResponse.log_chunk:type_name -> api.stream.v1.LogChunk
+	6,  // 1: api.stream.v1.UploadTaskLogRequest.logs:type_name -> api.stream.v1.LogChunk
+	36, // 2: api.stream.v1.StreamTaskStatusResponse.status:type_name -> api.task.v1.TaskStatus
+	36, // 3: api.stream.v1.StreamTaskStatusResponse.previous_status:type_name -> api.task.v1.TaskStatus
+	29, // 4: api.stream.v1.StreamTaskStatusResponse.metrics:type_name -> api.stream.v1.StreamTaskStatusResponse.MetricsEntry
 	37, // 5: api.stream.v1.StreamPipelineStatusResponse.status:type_name -> api.pipeline.v1.PipelineStatus
 	37, // 6: api.stream.v1.StreamPipelineStatusResponse.previous_status:type_name -> api.pipeline.v1.PipelineStatus
 	14, // 7: api.stream.v1.AgentChannelRequest.heartbeat:type_name -> api.stream.v1.HeartbeatData
-	15, // 8: api.stream.v1.AgentChannelRequest.job_status:type_name -> api.stream.v1.JobStatusUpdate
+	15, // 8: api.stream.v1.AgentChannelRequest.task_status:type_name -> api.stream.v1.TaskStatusUpdate
 	16, // 9: api.stream.v1.AgentChannelRequest.log_data:type_name -> api.stream.v1.LogData
-	17, // 10: api.stream.v1.AgentChannelRequest.job_fetch:type_name -> api.stream.v1.JobFetchRequest
+	17, // 10: api.stream.v1.AgentChannelRequest.task_fetch:type_name -> api.stream.v1.TaskFetchRequest
 	18, // 11: api.stream.v1.AgentChannelRequest.metrics:type_name -> api.stream.v1.AgentMetrics
 	38, // 12: api.stream.v1.HeartbeatData.status:type_name -> api.agent.v1.AgentStatus
-	36, // 13: api.stream.v1.JobStatusUpdate.status:type_name -> api.job.v1.JobStatus
+	36, // 13: api.stream.v1.TaskStatusUpdate.status:type_name -> api.task.v1.TaskStatus
 	6,  // 14: api.stream.v1.LogData.logs:type_name -> api.stream.v1.LogChunk
 	30, // 15: api.stream.v1.AgentMetrics.custom_metrics:type_name -> api.stream.v1.AgentMetrics.CustomMetricsEntry
 	20, // 16: api.stream.v1.AgentChannelResponse.heartbeat_ack:type_name -> api.stream.v1.HeartbeatAck
-	21, // 17: api.stream.v1.AgentChannelResponse.job_assignment:type_name -> api.stream.v1.JobAssignment
-	23, // 18: api.stream.v1.AgentChannelResponse.cancel_command:type_name -> api.stream.v1.JobCancelCommand
+	21, // 17: api.stream.v1.AgentChannelResponse.task_assignment:type_name -> api.stream.v1.TaskAssignment
+	23, // 18: api.stream.v1.AgentChannelResponse.task_cancel_command:type_name -> api.stream.v1.TaskCancelCommand
 	24, // 19: api.stream.v1.AgentChannelResponse.config_update:type_name -> api.stream.v1.ConfigUpdate
-	22, // 20: api.stream.v1.JobAssignment.jobs:type_name -> api.stream.v1.JobInfo
-	31, // 21: api.stream.v1.JobInfo.env:type_name -> api.stream.v1.JobInfo.EnvEntry
-	32, // 22: api.stream.v1.JobInfo.secrets:type_name -> api.stream.v1.JobInfo.SecretsEntry
+	22, // 20: api.stream.v1.TaskAssignment.tasks:type_name -> api.stream.v1.TaskInfo
+	31, // 21: api.stream.v1.TaskInfo.env:type_name -> api.stream.v1.TaskInfo.EnvEntry
+	32, // 22: api.stream.v1.TaskInfo.secrets:type_name -> api.stream.v1.TaskInfo.SecretsEntry
 	33, // 23: api.stream.v1.ConfigUpdate.config:type_name -> api.stream.v1.ConfigUpdate.ConfigEntry
 	0,  // 24: api.stream.v1.StreamAgentStatusResponse.status:type_name -> api.stream.v1.AgentStatus
 	0,  // 25: api.stream.v1.StreamAgentStatusResponse.previous_status:type_name -> api.stream.v1.AgentStatus
@@ -2517,17 +2518,17 @@ var file_api_stream_v1_proto_stream_proto_depIdxs = []int32{
 	1,  // 29: api.stream.v1.StreamEventsResponse.event_type:type_name -> api.stream.v1.EventType
 	35, // 30: api.stream.v1.StreamEventsResponse.metadata:type_name -> api.stream.v1.StreamEventsResponse.MetadataEntry
 	2,  // 31: api.stream.v1.Stream.Ping:input_type -> api.stream.v1.PingRequest
-	4,  // 32: api.stream.v1.Stream.StreamJobLog:input_type -> api.stream.v1.StreamJobLogRequest
-	7,  // 33: api.stream.v1.Stream.UploadJobLog:input_type -> api.stream.v1.UploadJobLogRequest
-	9,  // 34: api.stream.v1.Stream.StreamJobStatus:input_type -> api.stream.v1.StreamJobStatusRequest
+	4,  // 32: api.stream.v1.Stream.StreamTaskLog:input_type -> api.stream.v1.StreamTaskLogRequest
+	7,  // 33: api.stream.v1.Stream.UploadTaskLog:input_type -> api.stream.v1.UploadTaskLogRequest
+	9,  // 34: api.stream.v1.Stream.StreamTaskStatus:input_type -> api.stream.v1.StreamTaskStatusRequest
 	11, // 35: api.stream.v1.Stream.StreamPipelineStatus:input_type -> api.stream.v1.StreamPipelineStatusRequest
 	13, // 36: api.stream.v1.Stream.AgentChannel:input_type -> api.stream.v1.AgentChannelRequest
 	25, // 37: api.stream.v1.Stream.StreamAgentStatus:input_type -> api.stream.v1.StreamAgentStatusRequest
 	27, // 38: api.stream.v1.Stream.StreamEvents:input_type -> api.stream.v1.StreamEventsRequest
 	3,  // 39: api.stream.v1.Stream.Ping:output_type -> api.stream.v1.PingResponse
-	5,  // 40: api.stream.v1.Stream.StreamJobLog:output_type -> api.stream.v1.StreamJobLogResponse
-	8,  // 41: api.stream.v1.Stream.UploadJobLog:output_type -> api.stream.v1.UploadJobLogResponse
-	10, // 42: api.stream.v1.Stream.StreamJobStatus:output_type -> api.stream.v1.StreamJobStatusResponse
+	5,  // 40: api.stream.v1.Stream.StreamTaskLog:output_type -> api.stream.v1.StreamTaskLogResponse
+	8,  // 41: api.stream.v1.Stream.UploadTaskLog:output_type -> api.stream.v1.UploadTaskLogResponse
+	10, // 42: api.stream.v1.Stream.StreamTaskStatus:output_type -> api.stream.v1.StreamTaskStatusResponse
 	12, // 43: api.stream.v1.Stream.StreamPipelineStatus:output_type -> api.stream.v1.StreamPipelineStatusResponse
 	19, // 44: api.stream.v1.Stream.AgentChannel:output_type -> api.stream.v1.AgentChannelResponse
 	26, // 45: api.stream.v1.Stream.StreamAgentStatus:output_type -> api.stream.v1.StreamAgentStatusResponse
@@ -2546,15 +2547,15 @@ func file_api_stream_v1_proto_stream_proto_init() {
 	}
 	file_api_stream_v1_proto_stream_proto_msgTypes[11].OneofWrappers = []any{
 		(*AgentChannelRequest_Heartbeat)(nil),
-		(*AgentChannelRequest_JobStatus)(nil),
+		(*AgentChannelRequest_TaskStatus)(nil),
 		(*AgentChannelRequest_LogData)(nil),
-		(*AgentChannelRequest_JobFetch)(nil),
+		(*AgentChannelRequest_TaskFetch)(nil),
 		(*AgentChannelRequest_Metrics)(nil),
 	}
 	file_api_stream_v1_proto_stream_proto_msgTypes[17].OneofWrappers = []any{
 		(*AgentChannelResponse_HeartbeatAck)(nil),
-		(*AgentChannelResponse_JobAssignment)(nil),
-		(*AgentChannelResponse_CancelCommand)(nil),
+		(*AgentChannelResponse_TaskAssignment)(nil),
+		(*AgentChannelResponse_TaskCancelCommand)(nil),
 		(*AgentChannelResponse_ConfigUpdate)(nil),
 	}
 	type x struct{}
