@@ -56,30 +56,11 @@ func NewLog(conf *LogConfig) *zap.Logger {
 		writeSyncer = zapcore.AddSync(os.Stdout)
 	case "file":
 		writeSyncer = getFileLogWriter(conf)
-	case "kafka":
-		kafkaSyncer, err := getKafkaLogWriter(conf)
-		if err != nil {
-			return nil
-		}
-		writeSyncer = kafkaSyncer
 	default:
 		writeSyncer = zapcore.AddSync(os.Stdout)
 	}
 
-	switch conf.Level {
-	case "DEBUG":
-		core = zapcore.NewCore(encoder, writeSyncer, zapcore.DebugLevel)
-	case "INFO":
-		core = zapcore.NewCore(encoder, writeSyncer, zapcore.InfoLevel)
-	case "WARN":
-		core = zapcore.NewCore(encoder, writeSyncer, zapcore.WarnLevel)
-	case "ERROR":
-		core = zapcore.NewCore(encoder, writeSyncer, zapcore.ErrorLevel)
-	case "FATAL":
-		core = zapcore.NewCore(encoder, writeSyncer, zapcore.FatalLevel)
-	default:
-		core = zapcore.NewCore(encoder, writeSyncer, zapcore.InfoLevel)
-	}
+	core = zapcore.NewCore(encoder, writeSyncer, zapcore.Level(parseLogLevel(conf.Level)))
 
 	logger = zap.New(core, zap.AddCallerSkip(1), zap.AddCaller())
 	fmt.Printf("[Init] log output: %s\n", conf.Output)
