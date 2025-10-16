@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package api.stream.v1;
 
-import "api/job/v1/proto/job.proto";
+import "api/task/v1/proto/task.proto";
 import "api/agent/v1/proto/agent.proto";
 import "api/pipeline/v1/proto/pipeline.proto";
 
@@ -14,13 +14,13 @@ service Stream {
   rpc Ping(PingRequest) returns (PingResponse) {}
 
   // 实时获取任务日志流 - Server端流式推送日志给客户端
-  rpc StreamJobLog(StreamJobLogRequest) returns (stream StreamJobLogResponse) {}
+  rpc StreamTaskLog(StreamTaskLogRequest) returns (stream StreamTaskLogResponse) {}
 
   // 上报任务日志流 - Agent端流式上报日志给Server
-  rpc UploadJobLog(stream UploadJobLogRequest) returns (UploadJobLogResponse) {}
+  rpc UploadTaskLog(stream UploadTaskLogRequest) returns (UploadTaskLogResponse) {}
 
   // 实时获取任务状态流 - Server端流式推送任务状态变化
-  rpc StreamJobStatus(StreamJobStatusRequest) returns (stream StreamJobStatusResponse) {}
+  rpc StreamTaskStatus(StreamTaskStatusRequest) returns (stream StreamTaskStatusResponse) {}
 
   // 实时获取流水线状态流 - Server端流式推送流水线状态变化
   rpc StreamPipelineStatus(StreamPipelineStatusRequest) returns (stream StreamPipelineStatusResponse) {}
@@ -72,15 +72,15 @@ message PingResponse {
 // ============ 任务日志流相关 ============
 
 // 实时获取任务日志流请求
-message StreamJobLogRequest {
+message StreamTaskLogRequest {
   string job_id = 1;                    // 任务ID
   int32 from_line = 2;                  // 从第几行开始（0表示从头开始）
   bool follow = 3;                      // 是否持续跟踪（类似tail -f）
 }
 
 // 实时获取任务日志流响应
-message StreamJobLogResponse {
-  string job_id = 1;
+message StreamTaskLogResponse {
+  string task_id = 1;
   LogChunk log_chunk = 2;               // 日志块
   bool is_complete = 3;                 // 日志是否已完整传输
 }
@@ -95,14 +95,14 @@ message LogChunk {
 }
 
 // 上报任务日志流请求
-message UploadJobLogRequest {
-  string job_id = 1;
+message UploadTaskLogRequest {
+  string task_id = 1;
   string agent_id = 2;
   repeated LogChunk logs = 3;           // 日志块列表
 }
 
 // 上报任务日志流响应
-message UploadJobLogResponse {
+message UploadTaskLogResponse {
   bool success = 1;
   string message = 2;
   int32 received_lines = 3;             // 已接收的日志行数
@@ -111,17 +111,17 @@ message UploadJobLogResponse {
 // ============ 任务状态流相关 ============
 
 // 实时获取任务状态流请求
-message StreamJobStatusRequest {
-  repeated string job_ids = 1;          // 任务ID列表（为空则监控所有任务）
+message StreamTaskStatusRequest {
+  repeated string task_ids = 1;          // 任务ID列表（为空则监控所有任务）
   string pipeline_id = 2;               // 流水线ID（可选，监控特定流水线的所有任务）
 }
 
 // 实时获取任务状态流响应
-message StreamJobStatusResponse {
-  string job_id = 1;
-  string job_name = 2;
-  api.job.v1.JobStatus status = 3;                 // 任务状态
-  api.job.v1.JobStatus previous_status = 4;        // 之前的状态
+message StreamTaskStatusResponse {
+  string task_id = 1;
+  string task_name = 2;
+  api.task.v1.TaskStatus status = 3;                 // 任务状态
+  api.task.v1.TaskStatus previous_status = 4;        // 之前的状态
   int64 timestamp = 5;                  // 状态变化时间戳
   string agent_id = 6;                  // 执行的Agent ID
   int32 exit_code = 7;                  // 退出码
@@ -162,9 +162,9 @@ message AgentChannelRequest {
   string request_id = 2;                // 请求ID（用于匹配请求和响应）
   oneof payload {
     HeartbeatData heartbeat = 3;        // 心跳数据
-    JobStatusUpdate job_status = 4;     // 任务状态更新
+    TaskStatusUpdate task_status = 4;     // 任务状态更新
     LogData log_data = 5;               // 日志数据
-    JobFetchRequest job_fetch = 6;      // 获取任务请求
+    TaskFetchRequest task_fetch = 6;      // 获取任务请求
     AgentMetrics metrics = 7;           // Agent指标
   }
 }
@@ -178,9 +178,9 @@ message HeartbeatData {
 }
 
 // 任务状态更新
-message JobStatusUpdate {
-  string job_id = 1;
-  api.job.v1.JobStatus status = 2;
+message TaskStatusUpdate {
+  string task_id = 1;
+  api.task.v1.TaskStatus status = 2;
   int32 exit_code = 3;
   string error_message = 4;
   int64 timestamp = 5;
@@ -193,8 +193,8 @@ message LogData {
 }
 
 // 获取任务请求
-message JobFetchRequest {
-  int32 max_jobs = 1;
+message TaskFetchRequest {
+  int32 max_tasks = 1;
   repeated string tags = 2;
 }
 
@@ -203,7 +203,7 @@ message AgentMetrics {
   double cpu_usage = 1;                 // CPU使用率（百分比）
   double memory_usage = 2;              // 内存使用率（百分比）
   double disk_usage = 3;                // 磁盘使用率（百分比）
-  int32 running_jobs = 4;               // 运行中的任务数
+  int32 running_tasks = 4;               // 运行中的任务数
   map<string, string> custom_metrics = 5; // 自定义指标
 }
 
@@ -213,8 +213,8 @@ message AgentChannelResponse {
   string response_id = 2;               // 响应ID（对应请求ID）
   oneof payload {
     HeartbeatAck heartbeat_ack = 3;     // 心跳确认
-    JobAssignment job_assignment = 4;   // 任务分配
-    JobCancelCommand cancel_command = 5; // 取消任务命令
+    TaskAssignment task_assignment = 4;   // 任务分配
+    TaskCancelCommand task_cancel_command = 5; // 取消任务命令
     ConfigUpdate config_update = 6;     // 配置更新
   }
 }
@@ -226,13 +226,13 @@ message HeartbeatAck {
 }
 
 // 任务分配
-message JobAssignment {
-  repeated JobInfo jobs = 1;
+message TaskAssignment {
+  repeated TaskInfo tasks = 1;
 }
 
 // 任务信息
-message JobInfo {
-  string job_id = 1;
+message TaskInfo {
+  string task_id = 1;
   string name = 2;
   string pipeline_id = 3;
   int32 stage = 4;
@@ -246,8 +246,8 @@ message JobInfo {
 }
 
 // 取消任务命令
-message JobCancelCommand {
-  string job_id = 1;
+message TaskCancelCommand {
+  string task_id = 1;
   string reason = 2;
 }
 

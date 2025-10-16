@@ -159,26 +159,26 @@ func (s *PluginDownloadService) ListAvailablePlugins(pluginType string) ([]*v1.P
 }
 
 // GetPluginsForJob 获取任务所需的插件列表
-func (s *PluginDownloadService) GetPluginsForJob(jobID string) ([]*v1.PluginInfo, error) {
-	log.Infof("[PluginDownload] getting plugins for job: %s", jobID)
+func (s *PluginDownloadService) GetPluginsForTask(taskID string) ([]*v1.PluginInfo, error) {
+	log.Infof("[PluginDownload] getting plugins for task: %s", taskID)
 
 	// 从任务插件关联表获取
-	jobPlugins, err := s.pluginRepo.GetJobPlugins(jobID)
+	taskPlugins, err := s.pluginRepo.GetTaskPlugins(taskID)
 	if err != nil {
-		log.Errorf("[PluginDownload] failed to get job plugins: %v", err)
+		log.Errorf("[PluginDownload] failed to get task plugins: %v", err)
 		return nil, err
 	}
 
-	if len(jobPlugins) == 0 {
-		log.Infof("[PluginDownload] no plugins required for job %s", jobID)
+	if len(taskPlugins) == 0 {
+		log.Infof("[PluginDownload] no plugins required for task %s", taskID)
 		return []*v1.PluginInfo{}, nil
 	}
 
-	result := make([]*v1.PluginInfo, 0, len(jobPlugins))
-	for _, jp := range jobPlugins {
-		plugin, err := s.pluginRepo.GetPluginByID(jp.PluginId)
+	result := make([]*v1.PluginInfo, 0, len(taskPlugins))
+	for _, tp := range taskPlugins {
+		plugin, err := s.pluginRepo.GetPluginByID(tp.PluginId)
 		if err != nil {
-			log.Warnf("[PluginDownload] failed to get plugin %s: %v", jp.PluginId, err)
+			log.Warnf("[PluginDownload] failed to get plugin %s: %v", tp.PluginId, err)
 			continue
 		}
 
@@ -201,7 +201,7 @@ func (s *PluginDownloadService) GetPluginsForJob(jobID string) ([]*v1.PluginInfo
 		})
 	}
 
-	log.Infof("[PluginDownload] job %s requires %d plugins", jobID, len(result))
+	log.Infof("[PluginDownload] task %s requires %d plugins", taskID, len(result))
 	return result, nil
 }
 

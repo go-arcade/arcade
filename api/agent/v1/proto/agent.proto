@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package api.agent.v1;
 
-import "api/job/v1/proto/job.proto";
+import "api/task/v1/proto/task.proto";
 
 option go_package = "github.com/observabil/arcade/api/agent/v1;v1";
 
@@ -18,16 +18,16 @@ service Agent {
     rpc Unregister(UnregisterRequest) returns (UnregisterResponse) {}
 
     // 获取任务 - Agent主动拉取待执行的任务
-    rpc FetchJob(FetchJobRequest) returns (FetchJobResponse) {}
+    rpc FetchTask(FetchTaskRequest) returns (FetchTaskResponse) {}
 
     // 上报任务状态 - Agent执行任务过程中上报状态变化
-    rpc ReportJobStatus(ReportJobStatusRequest) returns (ReportJobStatusResponse) {}
+    rpc ReportTaskStatus(ReportTaskStatusRequest) returns (ReportTaskStatusResponse) {}
 
     // 上报任务日志 - Agent批量上报任务执行日志
-    rpc ReportJobLog(ReportJobLogRequest) returns (ReportJobLogResponse) {}
+    rpc ReportTaskLog(ReportTaskLogRequest) returns (ReportTaskLogResponse) {}
 
     // 取消任务 - Server通知Agent取消正在执行的任务
-    rpc CancelJob(CancelJobRequest) returns (CancelJobResponse) {}
+    rpc CancelTask(CancelTaskRequest) returns (CancelTaskResponse) {}
 
     // 更新Agent标签 - 动态更新Agent的labels和tags
     rpc UpdateLabels(UpdateLabelsRequest) returns (UpdateLabelsResponse) {}
@@ -100,7 +100,7 @@ message UnregisterResponse {
 }
 
 // 获取任务请求
-message FetchJobRequest {
+message FetchTaskRequest {
   string agent_id = 1;
   int32 max_jobs = 2;                 // 最多获取的任务数
   repeated string tags = 3;           // Agent支持的标签（已废弃，建议使用labels）
@@ -108,14 +108,14 @@ message FetchJobRequest {
 }
 
 // 获取任务响应
-message FetchJobResponse {
+message FetchTaskResponse {
   bool success = 1;
   string message = 2;
-  repeated Job jobs = 3;              // 待执行的任务列表
+  repeated Task tasks = 3;              // 待执行的任务列表
 }
 
 // 任务定义
-message Job {
+message Task {
   string job_id = 1;                  // 任务ID
   string name = 2;                    // 任务名称
   string pipeline_id = 3;             // 所属流水线ID
@@ -140,10 +140,10 @@ message Artifact {
 }
 
 // 上报任务状态请求
-message ReportJobStatusRequest {
+message ReportTaskStatusRequest {
   string agent_id = 1;
-  string job_id = 2;
-  api.job.v1.JobStatus status = 3;               // 任务状态
+  string task_id = 2;
+  api.task.v1.TaskStatus status = 3;               // 任务状态
   int32 exit_code = 4;                // 退出码
   string error_message = 5;           // 错误信息
   int64 start_time = 6;               // 开始时间（Unix时间戳）
@@ -152,15 +152,15 @@ message ReportJobStatusRequest {
 }
 
 // 上报任务状态响应
-message ReportJobStatusResponse {
+message ReportTaskStatusResponse {
   bool success = 1;
   string message = 2;
 }
 
 // 上报任务日志请求
-message ReportJobLogRequest {
+message ReportTaskLogRequest {
   string agent_id = 1;
-  string job_id = 2;
+  string task_id = 2;
   repeated LogEntry logs = 3;         // 日志条目
 }
 
@@ -173,20 +173,20 @@ message LogEntry {
 }
 
 // 上报任务日志响应
-message ReportJobLogResponse {
+message ReportTaskLogResponse {
   bool success = 1;
   string message = 2;
 }
 
 // 取消任务请求
-message CancelJobRequest {
+message CancelTaskRequest {
   string agent_id = 1;
   string job_id = 2;
   string reason = 3;                  // 取消原因
 }
 
 // 取消任务响应
-message CancelJobResponse {
+message CancelTaskResponse {
   bool success = 1;
   string message = 2;
 }

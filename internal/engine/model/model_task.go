@@ -5,14 +5,14 @@ import "time"
 /**
  * @author: gagral.x@gmail.com
  * @time: 2025/01/13
- * @file: model_job.go
- * @description: job model
+ * @file: model_task.go
+ * @description: task model
  */
 
-// Job 任务表
-type Job struct {
+// Task 任务表
+type Task struct {
 	BaseModel
-	JobId         string     `gorm:"column:job_id" json:"jobId"`
+	TaskId        string     `gorm:"column:task_id" json:"taskId"`
 	Name          string     `gorm:"column:name" json:"name"`
 	PipelineId    string     `gorm:"column:pipeline_id" json:"pipelineId"`
 	PipelineRunId string     `gorm:"column:pipeline_run_id" json:"pipelineRunId"`
@@ -41,15 +41,15 @@ type Job struct {
 	CreatedBy     string     `gorm:"column:created_by" json:"createdBy"`
 }
 
-func (Job) TableName() string {
-	return "t_job"
+func (Task) TableName() string {
+	return "t_task"
 }
 
-// JobArtifact 任务产物表
-type JobArtifact struct {
+// TaskArtifact 任务产物表
+type TaskArtifact struct {
 	BaseModel
 	ArtifactId    string     `gorm:"column:artifact_id" json:"artifactId"`
-	JobId         string     `gorm:"column:job_id" json:"jobId"`
+	TaskId        string     `gorm:"column:task_id" json:"taskId"`
 	PipelineRunId string     `gorm:"column:pipeline_run_id" json:"pipelineRunId"`
 	Name          string     `gorm:"column:name" json:"name"`
 	Path          string     `gorm:"column:path" json:"path"`
@@ -62,6 +62,6 @@ type JobArtifact struct {
 	ExpiredAt     *time.Time `gorm:"column:expired_at" json:"expiredAt"`
 }
 
-func (JobArtifact) TableName() string {
-	return "t_job_artifact"
+func (TaskArtifact) TableName() string {
+	return "t_task_artifact"
 }

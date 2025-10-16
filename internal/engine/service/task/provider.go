@@ -1,4 +1,4 @@
-package job
+package task
 
 import (
 	"fmt"
@@ -12,23 +12,23 @@ import (
  * @author: gagral.x@gmail.com
  * @time: 2025/01/13
  * @file: provider.go
- * @description: Job service provider for dependency injection
+ * @description: Task service provider for dependency injection
  */
 
-// JobPoolConfig Job 池配置
-type JobPoolConfig struct {
+// TaskPoolConfig Task 池配置
+type TaskPoolConfig struct {
 	MaxWorkers    int
 	QueueSize     int
 	WorkerTimeout int
 }
 
-// ProviderSet 提供 Job 服务相关依赖
+// ProviderSet 提供 Task 服务相关依赖
 var ProviderSet = wire.NewSet(
-	ProvideJobWorkerPool,
+	ProvideTaskWorkerPool,
 )
 
-// ProvideJobWorkerPool 提供 Job 协程池实例
-func ProvideJobWorkerPool(config JobPoolConfig) *JobWorkerPool {
+// ProvideTaskWorkerPool 提供 Task 协程池实例
+func ProvideTaskWorkerPool(config TaskPoolConfig) *TaskWorkerPool {
 	// 如果配置中 maxWorkers 为 0，则根据 CPU 核心数计算
 	maxWorkers := config.MaxWorkers
 	if maxWorkers <= 0 {
@@ -44,17 +44,17 @@ func ProvideJobWorkerPool(config JobPoolConfig) *JobWorkerPool {
 		log.Infof("queueSize not configured, calculated as maxWorkers * 10: %d", queueSize)
 	}
 
-	log.Infof("initializing job worker pool: workers=%d, queue_size=%d, timeout=%ds",
+	log.Infof("initializing task worker pool: workers=%d, queue_size=%d, timeout=%ds",
 		maxWorkers, queueSize, config.WorkerTimeout)
 
-	pool := NewJobWorkerPool(maxWorkers, queueSize)
+	pool := NewTaskWorkerPool(maxWorkers, queueSize)
 
 	// 启动协程池
 	if err := pool.Start(); err != nil {
-		panic(fmt.Sprintf("failed to start job worker pool: %v", err))
+		panic(fmt.Sprintf("failed to start task worker pool: %v", err))
 	}
 
-	log.Info("job worker pool started successfully")
+	log.Info("task worker pool started successfully")
 
 	return pool
 }

@@ -53,10 +53,10 @@ func (PluginConfig) TableName() string {
 	return "t_plugin_config"
 }
 
-// JobPlugin 任务插件关联表
-type JobPlugin struct {
+// TaskPlugin 任务插件关联表
+type TaskPlugin struct {
 	BaseModel
-	JobId          string        `gorm:"column:job_id" json:"jobId"`
+	TaskId         string        `gorm:"column:task_id" json:"taskId"`
 	PluginId       string        `gorm:"column:plugin_id" json:"pluginId"`
 	PluginConfigId string        `gorm:"column:plugin_config_id" json:"pluginConfigId"`
 	Params         datatype.JSON `gorm:"column:params;type:json" json:"params"` // 任务特定参数
@@ -69,8 +69,8 @@ type JobPlugin struct {
 	CompletedAt    *string       `gorm:"column:completed_at" json:"completedAt"`
 }
 
-func (JobPlugin) TableName() string {
-	return "t_job_plugin"
+func (TaskPlugin) TableName() string {
+	return "t_task_plugin"
 }
 
 // PluginSchema 插件Schema结构（用于解析config_schema和params_schema）
@@ -105,10 +105,10 @@ const (
 	PluginTypeCustom = "custom" // 自定义插件
 )
 
-// JobPluginStatus 任务插件执行状态
+// TaskPluginStatus 任务插件执行状态
 const (
-	JobPluginStatusPending = 0 // 未执行
-	JobPluginStatusRunning = 1 // 执行中
-	JobPluginStatusSuccess = 2 // 成功
-	JobPluginStatusFailed  = 3 // 失败
+	TaskPluginStatusPending = 0 // 未执行
+	TaskPluginStatusRunning = 1 // 执行中
+	TaskPluginStatusSuccess = 2 // 成功
+	TaskPluginStatusFailed  = 3 // 失败
 )
