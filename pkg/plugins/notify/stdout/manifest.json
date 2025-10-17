@@ -1,0 +1,61 @@
+{
+  "name": "stdout",
+  "version": "1.0.0",
+  "description": "标准输出通知插件，将消息打印到标准输出，适用于调试和日志记录",
+  "author": "Arcade Team <team@arcade.io>",
+  "homepage": "https://github.com/observabil/arcade",
+  "repository": "https://github.com/observabil/arcade",
+  "pluginType": "notify",
+  "entryPoint": "stdout",
+  "dependencies": [],
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "prefix": {
+        "type": "string",
+        "description": "消息前缀，用于区分不同来源的日志",
+        "default": ""
+      },
+      "json": {
+        "type": "boolean",
+        "description": "是否以 JSON 格式输出消息",
+        "default": false
+      }
+    },
+    "required": []
+  },
+  "paramsSchema": {
+    "type": "object",
+    "properties": {
+      "message": {
+        "type": ["string", "object"],
+        "description": "要发送的消息内容，可以是字符串或对象"
+      },
+      "template": {
+        "type": "string",
+        "description": "消息模板（使用 Go text/template 语法）"
+      },
+      "data": {
+        "type": "object",
+        "description": "模板渲染所需的数据"
+      }
+    },
+    "anyOf": [
+      {
+        "required": ["message"]
+      },
+      {
+        "required": ["template", "data"]
+      }
+    ]
+  },
+  "icon": "https://cdn.example.com/icons/stdout.png",
+  "tags": ["notify", "stdout", "logging", "debug", "console"],
+  "minVersion": "1.0.0",
+  "resources": {
+    "cpu": "10m",
+    "memory": "32Mi",
+    "disk": "5Mi"
+  }
+}
+

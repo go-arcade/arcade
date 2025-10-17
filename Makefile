@@ -2,7 +2,7 @@ SHELL := /bin/sh
 .ONESHELL:
 .SHELLFLAGS := -eu -o pipefail -c
 
-.PHONY: help prebuild build plugins plugins-clean proto proto-clean proto-install wire wire-install wire-clean
+.PHONY: help prebuild build plugins plugins-clean plugins-package proto proto-clean proto-install wire wire-install wire-clean
 
 # git
 VERSION    = $(shell git describe --tags --always)
@@ -15,7 +15,7 @@ BUILD_TIME := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 PLUGINS_SRC_DIR := pkg/plugins
 PLUGINS_OUT_DIR := plugins
 
-# 用 go list 只挑出 package=main 的插件目录
+# use go list to only pick out plugin directories with package=main
 PLUGINS_MAIN_DIRS := $(shell go list -f '{{if eq .Name "main"}}{{.Dir}}{{end}}' ./$(PLUGINS_SRC_DIR)/... | sed '/^$$/d')
 
 # proto
@@ -38,25 +38,25 @@ deps-sync:
 	go mod tidy
 	go mod verify
 
-help: ## 显示帮助信息
-	@echo "Arcade CI/CD 平台 Makefile 命令"
+help: ## show help information
+	@echo "Arcade CI/CD platform Makefile commands"
 	@echo ""
-	@echo "使用方法: make [命令]"
+	@echo "Usage: make [command]"
 	@echo ""
-	@echo "可用命令:"
+	@echo "Available commands:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo ""
-	@echo "示例:"
-	@echo "  make proto-install  # 安装proto工具"
-	@echo "  make proto          # 生成proto代码"
-	@echo "  make all            # 完整构建"
+	@echo "Examples:"
+	@echo "  make proto-install  # install proto tool"
+	@echo "  make proto          # generate proto code"
+	@echo "  make all            # full build"
 
-all: deps-sync prebuild plugins build ## 完整构建（前端+插件+主程序）
+all: deps-sync prebuild plugins build ## full build (frontend+plugins+main program)
 
 JOBS ?= $(shell getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)
 
-plugins: ## 构建所有插件
-	@echo ">> building plugins from $(PLUGINS_SRC_DIR) into $(PLUGINS_OUT_DIR)"
+plugins: ## build all RPC plugins (executable files)
+	@echo ">> building RPC plugins from $(PLUGINS_SRC_DIR) into $(PLUGINS_OUT_DIR)"
 	@mkdir -p "$(PLUGINS_OUT_DIR)"
 	@go list -f '{{if eq .Name "main"}}{{.Dir}} {{range .GoFiles}}{{.}} {{end}}{{end}}' ./$(PLUGINS_SRC_DIR)/... \
 	| sed -e '/^[[:space:]]*$$/d' \
@@ -67,87 +67,108 @@ plugins: ## 构建所有插件
 	  for(i=2;i<=NF;i++){ if($$i=="main.go"){ outbase="main"; break } } \
 	  if(outbase==""){ for(i=2;i<=NF;i++){ f=$$i; sub(/\.go$$/,"",f); if(f ~ /^main.*/){ outbase=f; break } } } \
 	  if(outbase==""){ outbase=basename(dir) } \
-	  printf "%s %s/%s.so\n", dir, "$(PLUGINS_OUT_DIR)", outbase; \
+	  printf "%s %s/%s_1.0.0\n", dir, "$(PLUGINS_OUT_DIR)", outbase; \
 	}' \
 	| xargs -P $(JOBS) -n 2 sh -c '\
 		dir="$$1"; out="$$2"; \
 		echo "   -> $$dir  ==>  $$out"; \
 		cd "$$(git rev-parse --show-toplevel)" && \
-		go build -buildmode=plugin -o "$$out" "$$dir" \
+		go build -o "$$out" "$$dir" \
 	' sh
-	@echo ">> plugins build done."
+	@echo ">> RPC plugins build done."
+	@echo ">> built plugins:"
+	@ls -lh $(PLUGINS_OUT_DIR)/ | grep -v "^total" | grep -v "^d" || true
 
-plugins-clean: ## 清理插件构建产物
-	@echo ">> cleaning $(PLUGINS_OUT_DIR)/*.so"
-	@rm -f $(PLUGINS_OUT_DIR)/*.so || true
+plugins-package: plugins ## package plugins to zip files
+	@echo ">> packaging plugins..."
+	@for plugin_path in $(PLUGINS_OUT_DIR)/*_*; do \
+		if [ -f "$$plugin_path" ] && [ -x "$$plugin_path" ]; then \
+			plugin_name=$$(basename $$plugin_path); \
+			plugin_base=$$(echo $$plugin_name | sed 's/_[0-9.]*$$//'); \
+			src_dir=$$(find $(PLUGINS_SRC_DIR) -type d -name $$plugin_base | head -1); \
+			if [ -n "$$src_dir" ] && [ -f "$$src_dir/manifest.json" ]; then \
+				zip_file=$(PLUGINS_OUT_DIR)/$${plugin_base}.zip; \
+				echo "   -> packaging $$plugin_name to $$zip_file"; \
+				cd $$(git rev-parse --show-toplevel) && \
+				zip -j $$zip_file $$plugin_path $$src_dir/manifest.json; \
+			else \
+				echo "   !! manifest.json not found for $$plugin_name, skipping"; \
+			fi; \
+		fi; \
+	done
+	@echo ">> plugin packaging done."
 
-prebuild: ## 下载并嵌入前端文件
+plugins-clean: ## clean plugin build artifacts
+	@echo ">> cleaning $(PLUGINS_OUT_DIR)/*"
+	@rm -f $(PLUGINS_OUT_DIR)/* || true
+	@rm -rf $(PLUGINS_OUT_DIR)/.tmp || true
+
+prebuild: ## download and embed the front-end file
 	echo "begin download and embed the front-end file..."
 	sh dl.sh
 	echo "web file download and embedding completed."
 
-build: wire plugins ## 构建主程序
+build: wire plugins ## build main program
 	go build -ldflags "${LDFLAGS}" -o arcade ./cmd/arcade/
 
-build-cli: ## 构建CLI工具
+build-cli: ## build CLI tool
 	go build -ldflags "${LDFLAGS}" -o arcade-cli ./cmd/cli/
 
 run: deps-sync wire 
 	go run ./cmd/arcade/
 
-release: ## 创建发布版本
+release: ## create release version
 	goreleaser --skip-validate --skip-publish --snapshot
 
-# proto代码生成
-buf-install: ## 安装buf相关插件
+# proto code generation
+buf-install: ## install buf related plugins
 	@echo ">> installing buf..."
 	@go install github.com/bufbuild/buf/cmd/buf@latest
 	@echo ">> buf installed: $$(which buf)"
 
-buf: buf-check ## 生成buf代码
+buf: buf-check ## generate buf code
 	@echo ">> generating buf code from $(PROTO_DIR)"
 	@cd $(PROTO_DIR) && buf generate --template buf.gen.yaml
 	@echo ">> buf code generation done."
 
-buf-check: ## 检查buf工具是否已安装
+buf-check: ## check if buf tool is installed
 	@command -v buf >/dev/null 2>&1 || { \
-		echo "错误: buf 未安装，请先运行 make buf-install"; \
+		echo "error: buf is not installed, please run make buf-install"; \
 		exit 1; \
 	}
 	@echo ">> buf installed: $$(which buf)"
 
-buf-lint: ## 检查buf代码风格
+buf-lint: ## check buf code style
 	@echo ">> linting buf code..."
 	@cd $(PROTO_DIR) && buf lint
 	@echo ">> buf code linting done."
 
-buf-breaking: ## 检查buf代码破坏性变更
+buf-breaking: ## check buf code breaking changes
 	@echo ">> checking buf code breaking changes..."
 	@cd $(PROTO_DIR) && buf breaking
 	@echo ">> buf code breaking changes checking done."
 
-buf-push: ## 推送buf代码
+buf-push: ## push buf code
 	@echo ">> pushing buf code..."
 	@cd $(PROTO_DIR) && buf push
 	@echo ">> buf code pushing done."
 
-buf-clean: ## 清理生成的buf代码
+buf-clean: ## clean generated buf code
 	@echo ">> cleaning generated protobuf files..."
 	@find $(PROTO_DIR) -type f \( -name "*.pb.go" -o -name "*_grpc.pb.go" \) -delete 2>/dev/null || true
 	@echo ">> protobuf files cleaned."
 
-# wire依赖注入代码生成
-wire-install: ## 安装wire工具
+wire-install: ## install wire tool
 	@echo ">> installing wire..."
 	@go install github.com/google/wire/cmd/wire@latest
 	@echo ">> wire installed: $$(which wire)"
 
-wire: ## 生成wire依赖注入代码
+wire: ## generate wire dependency injection code
 	@echo ">> generating wire code..."
 	@cd cmd/arcade && wire
 	@echo ">> wire code generation done."
 
-wire-clean: ## 清理wire生成的代码
+wire-clean: ## clean wire generated code
 	@echo ">> cleaning wire generated files..."
 	@find . -name "wire_gen.go" -type f -delete
 	@echo ">> wire files cleaned."

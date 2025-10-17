@@ -7,8 +7,6 @@
 package main
 
 import (
-	"context"
-
 	"github.com/google/wire"
 	"github.com/observabil/arcade/internal/app"
 	"github.com/observabil/arcade/internal/engine/conf"
@@ -22,6 +20,7 @@ import (
 	"github.com/observabil/arcade/pkg/plugin"
 	"github.com/observabil/arcade/pkg/storage"
 	"go.uber.org/zap"
+	"time"
 )
 
 // Injectors from wire.go:
@@ -29,11 +28,9 @@ import (
 func initApp(configPath string, appCtx *ctx.Context, logger *zap.Logger) (*app.App, func(), error) {
 	appConfig := provideConf(configPath)
 	http := provideHttpConfig(appConfig)
-	router := provideRouter(http, appCtx)
-	pluginRepo := providePluginRepo(appCtx)
-	pluginRepoAdapter := providePluginRepoAdapter(pluginRepo)
-	pluginRepository := providePluginRepository(pluginRepoAdapter)
-	manager := providePluginManager(pluginRepository)
+	pluginConfig := providePluginConfig(appConfig)
+	manager := providePluginManager(appConfig)
+	router := provideRouter(http, appCtx, pluginConfig, manager)
 	grpcConf := provideGrpcConfig(appConfig)
 	serverWrapper := provideGrpcServer(grpcConf, logger)
 	storageRepo := provideStorageRepo(appCtx)
@@ -41,7 +38,7 @@ func initApp(configPath string, appCtx *ctx.Context, logger *zap.Logger) (*app.A
 	if err != nil {
 		return nil, nil, err
 	}
-	appApp, cleanup, err := app.NewApp(router, logger, manager, serverWrapper, storageProvider)
+	appApp, cleanup, err := app.NewApp(router, logger, manager, serverWrapper, storageProvider, appCtx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -85,7 +82,6 @@ var repoProviderSet = wire.NewSet(
 	provideAgentRepo,
 	provideUserRepo,
 	providePluginRepo,
-	providePluginRepoAdapter,
 	provideSSORepo,
 	provideStorageRepo,
 )
@@ -102,10 +98,6 @@ func providePluginRepo(appCtx *ctx.Context) *repo.PluginRepo {
 	return repo.NewPluginRepo(appCtx)
 }
 
-func providePluginRepoAdapter(pluginRepo *repo.PluginRepo) *repo.PluginRepoAdapter {
-	return repo.NewPluginRepoAdapter(pluginRepo)
-}
-
 func provideSSORepo(appCtx *ctx.Context) *repo.SSORepo {
 	return repo.NewSSORepo(appCtx)
 }
@@ -117,10 +109,15 @@ func provideStorageRepo(appCtx *ctx.Context) *repo.StorageRepo {
 // routerProviderSet 路由层 ProviderSet
 var routerProviderSet = wire.NewSet(
 	provideRouter,
+	providePluginConfig,
 )
 
-func provideRouter(httpConf *http.Http, appCtx *ctx.Context) *router.Router {
-	return router.NewRouter(httpConf, appCtx)
+func providePluginConfig(appConf conf.AppConfig) *conf.PluginConfig {
+	return &appConf.Plugin
+}
+
+func provideRouter(httpConf *http.Http, appCtx *ctx.Context, pluginConfig *conf.PluginConfig, pluginManager *plugin.Manager) *router.Router {
+	return router.NewRouter(httpConf, appCtx, pluginConfig, pluginManager)
 }
 
 // storageProviderSet 存储层 ProviderSet
@@ -150,28 +147,27 @@ func provideGrpcServer(cfg *grpc.GrpcConf, logger *zap.Logger) *grpc.ServerWrapp
 // pluginProviderSet 插件层 ProviderSet
 var pluginProviderSet = wire.NewSet(
 	providePluginManager,
-	providePluginRepository,
 )
 
-func providePluginRepository(adapter *repo.PluginRepoAdapter) plugin.PluginRepository {
-	return adapter
-}
-
-func providePluginManager(pluginRepo plugin.PluginRepository) *plugin.Manager {
-	m := plugin.NewManager()
-	m.SetPluginRepository(pluginRepo)
-
-	if err := m.LoadPluginsFromDatabase(); err != nil {
-		log.Warnf("failed to load plugins from database: %v, will try file system", err)
-
-		if err := m.LoadPluginsFromDir("./plugins"); err != nil {
-			log.Warnf("failed to load plugins from directory: %v", err)
-		}
+func providePluginManager(appConf conf.AppConfig) *plugin.Manager {
+	pluginDir2 := "/var/lib/arcade/plugins"
+	if appConf.Plugin.CacheDir != "" {
+		pluginDir2 = appConf.Plugin.CacheDir
 	}
 
-	if err := m.Init(context.Background()); err != nil {
-		log.Errorf("failed to initialize plugins: %v", err)
+	config := &plugin.ManagerConfig{
+		PluginDir:       pluginDir2,
+		HandshakeConfig: plugin.RPCHandshake,
+		PluginConfig:    make(map[string]any),
+		Timeout:         30 * time.Second,
+		MaxRetries:      3,
 	}
 
+	m := plugin.NewManager(config)
+
+	if err := m.LoadPluginsFromDir(); err != nil {
+		log.Warnf("failed to auto-load plugins: %v", err)
+	}
+	log.Infof("plugin manager initialized with directory: %s", pluginDir2)
 	return m
 }

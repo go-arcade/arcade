@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/google/wire"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -18,10 +17,10 @@ func ProvideDatabase(conf Database, logger *zap.Logger) (*gorm.DB, error) {
 }
 
 // ProvideMongoDB 提供 MongoDB 实例
-func ProvideMongoDB(conf Database, ctx context.Context) (*mongo.Database, error) {
+func ProvideMongoDB(conf Database, ctx context.Context) (*MongoClient, error) {
 	client, err := NewMongoDB(conf.MongoDB, ctx)
 	if err != nil {
 		return nil, err
 	}
-	return client.Database(conf.MongoDB.DB), nil
+	return client, nil
 }

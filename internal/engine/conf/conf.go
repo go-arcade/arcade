@@ -15,9 +15,13 @@ import (
 )
 
 type TaskConfig struct {
-	MaxWorkers    int `mapstructure:"maxWorkers"`
-	QueueSize     int `mapstructure:"queueSize"`
-	WorkerTimeout int `mapstructure:"workerTimeout"`
+	MaxWorkers    int
+	QueueSize     int
+	WorkerTimeout int
+}
+
+type PluginConfig struct {
+	CacheDir string `mapstructure:"cacheDir"` // 插件本地缓存目录
 }
 
 type AppConfig struct {
@@ -27,6 +31,7 @@ type AppConfig struct {
 	Database database.Database
 	Redis    cache.Redis
 	Task     TaskConfig
+	Plugin   PluginConfig
 }
 
 var (

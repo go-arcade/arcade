@@ -3,11 +3,16 @@ package storage
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io"
 	"mime/multipart"
+	"os"
+	"path/filepath"
+	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/observabil/arcade/pkg/ctx"
+	"github.com/observabil/arcade/pkg/log"
 	"google.golang.org/api/option"
 )
 
@@ -78,7 +83,101 @@ func (g *GCSStorage) PutObject(ctx *ctx.Context, objectName string, file *multip
 }
 
 func (g *GCSStorage) Upload(ctx *ctx.Context, objectName string, file *multipart.FileHeader, contentType string) (string, error) {
-	return g.PutObject(ctx, objectName, file, contentType)
+	src, err := file.Open()
+	if err != nil {
+		return "", err
+	}
+	defer src.Close()
+
+	fullPath := getFullPath(g.s.BasePath, objectName)
+	fileSize := file.Size
+
+	// 小文件直接PutObject
+	if fileSize <= defaultPartSize {
+		writer := g.Bucket.Object(fullPath).NewWriter(ctx.ContextIns())
+		writer.ContentType = contentType
+
+		if _, err := io.Copy(writer, src); err != nil {
+			writer.Close()
+			return "", err
+		}
+
+		if err := writer.Close(); err != nil {
+			return "", err
+		}
+		log.Debugf("GCS upload completed: %s - 100.00%% (%d bytes)", fullPath, fileSize)
+		return fullPath, nil
+	}
+
+	// 否则分片上传 (GCS 使用组合对象实现)
+	checkpointPath := filepath.Join(os.TempDir(), fullPath+".upload.json")
+	var checkpoint uploadCheckpoint
+
+	// 如果有断点记录则加载
+	if data, err := os.ReadFile(checkpointPath); err == nil {
+		_ = json.Unmarshal(data, &checkpoint)
+	}
+
+	if checkpoint.UploadID == "" {
+		checkpoint = uploadCheckpoint{
+			UploadID: fullPath, // GCS 使用对象名作为标识
+			Key:      fullPath,
+			FileSize: fileSize,
+		}
+		_ = os.WriteFile(checkpointPath, mustJSON(checkpoint), 0644)
+	}
+
+	// 使用分段写入器，支持断点续传
+	writer := g.Bucket.Object(fullPath).NewWriter(ctx.ContextIns())
+	writer.ContentType = contentType
+	writer.ChunkSize = int(defaultPartSize) // 设置分片大小
+
+	buf := make([]byte, defaultPartSize)
+	partNumber := int32(1)
+
+	// 如果有已上传的分片，跳过它们
+	uploadedSize := int64(0)
+	for _, part := range checkpoint.Parts {
+		if part >= partNumber {
+			n, _ := src.Read(buf)
+			if n > 0 {
+				uploadedSize += int64(n)
+				partNumber++
+			}
+		}
+	}
+
+	// 创建进度跟踪的 reader
+	progressReader := newProgressReader(src, uploadedSize, fileSize, fullPath, "GCS", func(uploaded int64) {
+		currentPart := int32(uploaded / defaultPartSize)
+		if currentPart > partNumber {
+			checkpoint.Parts = append(checkpoint.Parts, currentPart)
+			checkpoint.UploadedBytes = uploaded
+			checkpoint.UploadProgress = float64(uploaded) / float64(fileSize) * 100
+			_ = os.WriteFile(checkpointPath, mustJSON(checkpoint), 0644)
+
+			// 记录上传进度日志
+			// log.Debugf("GCS upload progress: %s - %.2f%% (%d/%d bytes)",
+			// 	fullPath, checkpoint.UploadProgress, uploaded, fileSize)
+
+			partNumber = currentPart
+		}
+	})
+
+	// 上传剩余数据
+	if _, err := io.Copy(writer, progressReader); err != nil {
+		writer.Close()
+		return "", err
+	}
+
+	if err := writer.Close(); err != nil {
+		return "", err
+	}
+
+	log.Debugf("GCS upload completed: %s - 100.00%% (%d bytes)", fullPath, fileSize)
+	// 成功则删除断点文件
+	_ = os.Remove(checkpointPath)
+	return fullPath, nil
 }
 
 func (g *GCSStorage) Download(ctx *ctx.Context, objectName string) ([]byte, error) {
@@ -95,4 +194,26 @@ func (g *GCSStorage) Download(ctx *ctx.Context, objectName string) ([]byte, erro
 func (g *GCSStorage) Delete(ctx *ctx.Context, objectName string) error {
 	fullPath := getFullPath(g.s.BasePath, objectName)
 	return g.Bucket.Object(fullPath).Delete(ctx.ContextIns())
+}
+
+func (g *GCSStorage) GetPresignedURL(ctx *ctx.Context, objectName string, expiry time.Duration) (string, error) {
+	fullPath := getFullPath(g.s.BasePath, objectName)
+
+	// GCS 使用 SignedURL 生成预签名链接
+	opts := &storage.SignedURLOptions{
+		Method:  "GET",
+		Expires: time.Now().Add(expiry),
+	}
+
+	// 如果提供了 AccessKey（服务账号 JSON 文件路径），使用它进行签名
+	if g.s.AccessKey != "" {
+		opts.GoogleAccessID = g.s.AccessKey
+	}
+
+	signedURL, err := g.Bucket.SignedURL(fullPath, opts)
+	if err != nil {
+		return "", err
+	}
+
+	return signedURL, nil
 }

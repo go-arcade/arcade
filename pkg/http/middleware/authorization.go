@@ -22,54 +22,46 @@ func AuthorizationMiddleware(secretKey, tokenPrefix string, client redis.Client)
 	return func(c *fiber.Ctx) error {
 		aToken := c.Get("Authorization")
 		if aToken == "" {
-			http.WithRepErrMsg(c, http.TokenBeEmpty.Code, http.TokenBeEmpty.Msg, c.Path())
-			return fiber.ErrUnauthorized
+			return http.WithRepErrMsg(c, http.TokenBeEmpty.Code, http.TokenBeEmpty.Msg, c.Path())
 		}
 
 		// 按空格分割
 		parts := strings.SplitN(aToken, " ", 2)
 		if !(len(parts) == 2 && parts[0] == "Bearer") {
-			http.WithRepErrMsg(c, http.TokenBeEmpty.Code, http.TokenBeEmpty.Msg, c.Path())
-			return fiber.ErrUnauthorized
+			return http.WithRepErrMsg(c, http.TokenBeEmpty.Code, http.TokenBeEmpty.Msg, c.Path())
 		}
 
 		claims, err := jwt.ParseToken(parts[1], secretKey)
 		if err != nil {
 			// 检查是否是令牌过期错误
 			if errors.Is(err, goJwt.ErrTokenExpired) {
-				http.WithRepErrMsg(c, http.TokenExpired.Code, http.TokenExpired.Msg, c.Path())
-				return fiber.ErrUnauthorized
+				return http.WithRepErrMsg(c, http.TokenExpired.Code, http.TokenExpired.Msg, c.Path())
 			}
-			// 其他令牌无效的情况
-			http.WithRepErrMsg(c, http.InvalidToken.Code, http.InvalidToken.Msg, c.Path())
 			log.Errorf("parse token failed: %v", err)
-			return fiber.ErrUnauthorized
+			// 其他令牌无效的情况
+			return http.WithRepErrMsg(c, http.InvalidToken.Code, http.InvalidToken.Msg, c.Path())
 		}
 
 		// 检查 Redis 中是否存在 Token
 		tokenKey := tokenPrefix + claims.UserId
 		exists, err := client.Exists(context.Background(), tokenKey).Result()
 		if err != nil {
-			http.WithRepErrMsg(c, http.InternalError.Code, http.InternalError.Msg, c.Path())
 			log.Errorf("redis check token exists failed: %v", err)
-			return fiber.ErrInternalServerError
+			return http.WithRepErrMsg(c, http.InternalError.Code, http.InternalError.Msg, c.Path())
 		}
 		if exists == 0 {
-			http.WithRepErrMsg(c, http.TokenExpired.Code, http.TokenExpired.Msg, c.Path())
-			return fiber.ErrUnauthorized
+			return http.WithRepErrMsg(c, http.TokenExpired.Code, http.TokenExpired.Msg, c.Path())
 		}
 
 		// 检查 Redis 中的 Token 是否过期
 		ttl, err := client.TTL(context.Background(), tokenKey).Result()
 		if err != nil {
-			http.WithRepErrMsg(c, http.InternalError.Code, http.InternalError.Msg, c.Path())
 			log.Errorf("redis check token TTL failed: %v", err)
-			return fiber.ErrInternalServerError
+			return http.WithRepErrMsg(c, http.InternalError.Code, http.InternalError.Msg, c.Path())
 		}
 		if ttl <= 0 {
-			http.WithRepErrMsg(c, http.TokenExpired.Code, http.TokenExpired.Msg, c.Path())
 			log.Warnf("token has expired in Redis for user: %s", claims.UserId)
-			return fiber.ErrUnauthorized
+			return http.WithRepErrMsg(c, http.TokenExpired.Code, http.TokenExpired.Msg, c.Path())
 		}
 
 		c.Locals("claims", claims)

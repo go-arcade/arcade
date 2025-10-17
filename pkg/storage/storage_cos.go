@@ -102,6 +102,9 @@ func (c *COSStorage) Upload(ctx *ctx.Context, objectName string, file *multipart
 			},
 		}
 		_, err = c.Client.Object.Put(context.Background(), fullPath, src, opt)
+		if err == nil {
+			log.Debugf("COS upload completed: %s - 100.00%% (%d bytes)", fullPath, fileSize)
+		}
 		return fullPath, err
 	}
 
@@ -183,8 +186,8 @@ func (c *COSStorage) Upload(ctx *ctx.Context, objectName string, file *multipart
 			_ = os.WriteFile(checkpointPath, mustJSON(checkpoint), 0644)
 
 			// 记录上传进度日志
-			log.Debugf("COS upload progress: %s - %.2f%% (%d/%d bytes)",
-				fullPath, checkpoint.UploadProgress, uploadedBytes, fileSize)
+			// log.Debugf("COS upload progress: %s - %.2f%% (%d/%d bytes)",
+			// 	fullPath, checkpoint.UploadProgress, uploadedBytes, fileSize)
 		}
 
 		partNumber++
@@ -204,6 +207,7 @@ func (c *COSStorage) Upload(ctx *ctx.Context, objectName string, file *multipart
 		opt,
 	)
 	if err == nil {
+		log.Debugf("COS upload completed: %s - 100.00%% (%d bytes)", fullPath, fileSize)
 		_ = os.Remove(checkpointPath) // 成功则删除断点文件
 	}
 	return fullPath, err

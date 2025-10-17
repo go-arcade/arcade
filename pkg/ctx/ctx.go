@@ -2,8 +2,8 @@ package ctx
 
 import (
 	"github.com/google/wire"
+	"github.com/observabil/arcade/pkg/database"
 	"github.com/redis/go-redis/v9"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 	"gorm.io/gorm"
@@ -20,23 +20,23 @@ func ProvideBaseContext() context.Context {
 // ProvideContext 提供应用上下文
 func ProvideContext(
 	baseCtx context.Context,
-	mongodb *mongo.Database,
+	mongodb *database.MongoClient,
 	redis *redis.Client,
 	db *gorm.DB,
 	logger *zap.SugaredLogger,
 ) *Context {
-	return NewContext(baseCtx, mongodb.Client(), redis, db, logger)
+	return NewContext(baseCtx, mongodb, redis, db, logger)
 }
 
 type Context struct {
 	DB    *gorm.DB
-	Mongo *mongo.Client
+	Mongo *database.MongoClient
 	Redis *redis.Client
 	Ctx   context.Context
 	Log   *zap.SugaredLogger
 }
 
-func NewContext(ctx context.Context, mongodb *mongo.Client, redis *redis.Client, mysql *gorm.DB, log *zap.SugaredLogger) *Context {
+func NewContext(ctx context.Context, mongodb *database.MongoClient, redis *redis.Client, mysql *gorm.DB, log *zap.SugaredLogger) *Context {
 	return &Context{
 		DB:    mysql,
 		Mongo: mongodb,
@@ -58,11 +58,11 @@ func (c *Context) DBSession() *gorm.DB {
 	return c.DB
 }
 
-func (c *Context) SetMongoSession(client *mongo.Client) {
+func (c *Context) SetMongoSession(client *database.MongoClient) {
 	c.Mongo = client
 }
 
-func (c *Context) MongoSession() *mongo.Client {
+func (c *Context) MongoSession() *database.MongoClient {
 	return c.Mongo
 }
 

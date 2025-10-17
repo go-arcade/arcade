@@ -1,6 +1,6 @@
 package model
 
-import "github.com/observabil/arcade/pkg/datatype"
+import "gorm.io/datatypes"
 
 /**
  * @author: gagral.x@gmail.com
@@ -12,13 +12,13 @@ import "github.com/observabil/arcade/pkg/datatype"
 // StorageConfig 对象存储配置表
 type StorageConfig struct {
 	BaseModel
-	StorageId   string        `gorm:"column:storage_id" json:"storageId"`
-	Name        string        `gorm:"column:name" json:"name"`
-	StorageType string        `gorm:"column:storage_type" json:"storageType"` // minio/s3/oss/gcs/cos
-	Config      datatype.JSON `gorm:"column:config" json:"config"`
-	Description string        `gorm:"column:description" json:"description"`
-	IsDefault   int           `gorm:"column:is_default" json:"isDefault"` // 0:否 1:是
-	IsEnabled   int           `gorm:"column:is_enabled" json:"isEnabled"` // 0:禁用 1:启用
+	StorageId   string         `gorm:"column:storage_id" json:"storageId"`
+	Name        string         `gorm:"column:name" json:"name"`
+	StorageType string         `gorm:"column:storage_type" json:"storageType"` // minio/s3/oss/gcs/cos
+	Config      datatypes.JSON `gorm:"column:config" json:"config"`
+	Description string         `gorm:"column:description" json:"description"`
+	IsDefault   int            `gorm:"column:is_default" json:"isDefault"` // 0:否 1:是
+	IsEnabled   int            `gorm:"column:is_enabled" json:"isEnabled"` // 0:禁用 1:启用
 }
 
 func (StorageConfig) TableName() string {
