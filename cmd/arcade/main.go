@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"time"
 
 	"github.com/observabil/arcade/internal/engine/conf"
 	"github.com/observabil/arcade/pkg/cache"
@@ -53,11 +54,9 @@ func main() {
 	}
 	defer cleanup()
 
-	// 启动插件系统
-	app.PluginMgr.SetContext(context.Background())
-	app.PluginMgr.Init(context.Background())
-	app.PluginMgr.StartAutoWatch([]string{pluginDir})
-	defer app.PluginMgr.StopAutoWatch()
+	// 插件管理器已在 wire 中初始化完成
+	// 可选：启动心跳检查
+	app.PluginMgr.StartHeartbeat(30 * time.Second)
 
 	// 启动 gRPC 服务
 	if app.GrpcServer != nil && appConf.Grpc.Port > 0 {

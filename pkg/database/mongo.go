@@ -15,7 +15,13 @@ type MongoDB struct {
 	PoolSize    uint64
 }
 
-func NewMongoDB(cfg MongoDB, ctx context.Context) (*mongo.Client, error) {
+// MongoClient 包装MongoDB客户端和数据库
+type MongoClient struct {
+	Client *mongo.Client
+	DB     *mongo.Database
+}
+
+func NewMongoDB(cfg MongoDB, ctx context.Context) (*MongoClient, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
 
@@ -24,21 +30,29 @@ func NewMongoDB(cfg MongoDB, ctx context.Context) (*mongo.Client, error) {
 	clientOption.SetMaxPoolSize(cfg.PoolSize)
 	client, err := mongo.Connect(ctx, clientOption)
 	if err != nil {
-		return client, err
+		return nil, err
 	}
 
 	err = client.Ping(ctx, nil)
 	if err != nil {
-		return client, err
+		return nil, err
 	}
 
-	defer func() {
-		if err = client.Disconnect(ctx); err != nil {
-			panic(err)
-		}
-	}()
+	// 获取数据库实例
+	database := client.Database(cfg.DB)
 
-	client.Database(cfg.DB)
+	return &MongoClient{
+		Client: client,
+		DB:     database,
+	}, nil
+}
 
-	return client, nil
+// GetCollection 获取集合，无需再指定数据库
+func (mc *MongoClient) GetCollection(name string) *mongo.Collection {
+	return mc.DB.Collection(name)
+}
+
+// Close 关闭连接
+func (mc *MongoClient) Close(ctx context.Context) error {
+	return mc.Client.Disconnect(ctx)
 }

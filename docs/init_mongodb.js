@@ -1,41 +1,41 @@
 // ================================================================
 // Arcade CI/CD 平台 MongoDB 初始化脚本
-// 数据库: arcade_job_log
+// 数据库: arcade_task_log
 // 用途: 创建索引和配置 TTL
 // ================================================================
 
 // 使用数据库
-db = db.getSiblingDB('arcade_job_log');
+db = db.getSiblingDB('arcade');
 
-print('开始初始化 MongoDB 数据库: arcade_job_log');
+print('开始初始化 MongoDB 数据库: arcade');
 print('===================================');
 
 // ================================================================
-// Collection 1: job_logs (任务执行日志)
+// Collection 1: task_logs (任务执行日志)
 // ================================================================
-print('\n初始化 Collection: job_logs');
+print('\n初始化 Collection: task_logs');
 
 // 创建索引
-db.job_logs.createIndex(
-  { job_id: 1, timestamp: 1 },
-  { name: 'idx_job_id_timestamp', background: true }
+db.task_logs.createIndex(
+  { task_id: 1, timestamp: 1 },
+  { name: 'idx_task_id_timestamp', background: true }
 );
-print('✓ 创建索引: idx_job_id_timestamp');
+print('✓ 创建索引: idx_task_id_timestamp');
 
-db.job_logs.createIndex(
+db.task_logs.createIndex(
   { agent_id: 1, timestamp: -1 },
   { name: 'idx_agent_id_timestamp', background: true }
 );
 print('✓ 创建索引: idx_agent_id_timestamp');
 
-db.job_logs.createIndex(
+db.task_logs.createIndex(
   { pipeline_run_id: 1, timestamp: 1 },
   { name: 'idx_pipeline_run_id_timestamp', background: true }
 );
 print('✓ 创建索引: idx_pipeline_run_id_timestamp');
 
 // TTL 索引 - 90天后自动删除
-db.job_logs.createIndex(
+db.task_logs.createIndex(
   { timestamp: 1 },
   { 
     name: 'idx_timestamp_ttl',
@@ -64,10 +64,10 @@ db.terminal_logs.createIndex(
 print('✓ 创建索引: idx_environment_timestamp');
 
 db.terminal_logs.createIndex(
-  { job_id: 1, timestamp: -1 },
-  { name: 'idx_job_id_timestamp', background: true, sparse: true }
+  { task_id: 1, timestamp: -1 },
+  { name: 'idx_task_id_timestamp', background: true, sparse: true }
 );
-print('✓ 创建索引: idx_job_id_timestamp');
+print('✓ 创建索引: idx_task_id_timestamp');
 
 db.terminal_logs.createIndex(
   { pipeline_run_id: 1, timestamp: -1 },
@@ -111,10 +111,10 @@ db.build_artifacts_logs.createIndex(
 print('✓ 创建索引: idx_artifact_id_timestamp');
 
 db.build_artifacts_logs.createIndex(
-  { job_id: 1, timestamp: -1 },
-  { name: 'idx_job_id_timestamp', background: true }
+  { task_id: 1, timestamp: -1 },
+  { name: 'idx_task_id_timestamp', background: true }
 );
-print('✓ 创建索引: idx_job_id_timestamp');
+print('✓ 创建索引: idx_task_id_timestamp');
 
 db.build_artifacts_logs.createIndex(
   { operation: 1, timestamp: -1 },
@@ -158,7 +158,7 @@ print('\n数据库统计信息:');
 printjson(db.stats());
 
 print('\n提示: TTL 索引将自动删除过期数据');
-print('  - job_logs: 90天后自动删除');
+print('  - task_logs: 90天后自动删除');
 print('  - terminal_logs: 180天后自动删除');
 print('  - build_artifacts_logs: 90天后自动删除');
 

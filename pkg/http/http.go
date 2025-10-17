@@ -26,6 +26,7 @@ type Http struct {
 	WriteTimeout    int
 	IdleTimeout     int
 	ShutdownTimeout int
+	BodyLimit       int // 请求体大小限制（字节），默认 100MB
 	TLS             TLS
 	Auth            Auth
 	Ctx             ctx.Context

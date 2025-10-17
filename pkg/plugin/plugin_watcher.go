@@ -1,7 +1,9 @@
+// Package plugin directory monitoring implementation
 package plugin
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -12,20 +14,30 @@ import (
 	"github.com/observabil/arcade/pkg/log"
 )
 
-// Watcher 插件目录监控器
+// Watcher is the plugin directory monitor
+// Automatically monitors plugin directory changes, supports hot loading and unloading of plugins
 type Watcher struct {
-	manager      *Manager
-	watcher      *fsnotify.Watcher
-	dirs         []string
-	ctx          context.Context
-	cancel       context.CancelFunc
-	wg           sync.WaitGroup
+	// Plugin manager reference
+	manager *Manager
+	// Filesystem watcher
+	watcher *fsnotify.Watcher
+	// List of monitored directories
+	dirs []string
+	// Context
+	ctx context.Context
+	// Cancel function
+	cancel context.CancelFunc
+	// Wait group
+	wg sync.WaitGroup
+	// Debounce delay time
 	debounceTime time.Duration
-	mu           sync.Mutex
-	pendingOps   map[string]time.Time // 文件路径 -> 最后操作时间
+	// Mutex
+	mu sync.Mutex
+	// Pending operations mapping (file path -> last operation time)
+	pendingOps map[string]time.Time
 }
 
-// NewWatcher 创建新的插件监控器
+// NewWatcher creates a new plugin watcher
 func NewWatcher(manager *Manager) (*Watcher, error) {
 	fw, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -40,12 +52,12 @@ func NewWatcher(manager *Manager) (*Watcher, error) {
 		dirs:         []string{},
 		ctx:          ctx,
 		cancel:       cancel,
-		debounceTime: 500 * time.Millisecond, // 防抖延迟
+		debounceTime: 500 * time.Millisecond, // Debounce delay
 		pendingOps:   make(map[string]time.Time),
 	}, nil
 }
 
-// AddWatchDir 添加要监控的插件目录
+// AddWatchDir adds a plugin directory to watch
 func (w *Watcher) AddWatchDir(dir string) error {
 	absDir, err := filepath.Abs(dir)
 	if err != nil {
@@ -61,17 +73,17 @@ func (w *Watcher) AddWatchDir(dir string) error {
 	return nil
 }
 
-// Start 启动监控
+// Start starts the monitoring
 func (w *Watcher) Start() {
 	w.wg.Add(1)
 	go w.watchLoop()
 
-	// 启动防抖处理协程
+	// Start debounce processing goroutine
 	w.wg.Add(1)
 	go w.debounceLoop()
 }
 
-// Stop 停止监控
+// Stop stops the monitoring
 func (w *Watcher) Stop() {
 	w.cancel()
 	w.watcher.Close()
@@ -79,7 +91,7 @@ func (w *Watcher) Stop() {
 	log.Info("plugin watcher stopped")
 }
 
-// watchLoop 监控事件循环
+// watchLoop monitors the event loop
 func (w *Watcher) watchLoop() {
 	defer w.wg.Done()
 
@@ -103,33 +115,39 @@ func (w *Watcher) watchLoop() {
 	}
 }
 
-// handleEvent 处理文件系统事件
+// handleEvent handles filesystem events
 func (w *Watcher) handleEvent(event fsnotify.Event) {
-	// 过滤临时文件和非 .so 文件
+	// Filter temporary files
 	if w.shouldIgnore(event.Name) {
 		return
 	}
 
 	log.Debugf("detected file event: %s %s", event.Op.String(), event.Name)
 
-	// 处理插件文件变化
-	if !strings.HasSuffix(event.Name, ".so") {
+	// Handle plugin file changes
+	// RPC plugins are executable binaries, check if it's likely a plugin file
+	base := filepath.Base(event.Name)
+	ext := filepath.Ext(base)
+
+	// Skip common non-executable files
+	if ext == ".json" || ext == ".md" || ext == ".txt" ||
+		ext == ".log" || ext == ".zip" || strings.HasPrefix(base, ".") {
 		return
 	}
 
 	w.schedulePluginOperation(event)
 }
 
-// schedulePluginOperation 调度插件操作（防抖）
+// schedulePluginOperation schedules plugin operations (with debounce)
 func (w *Watcher) schedulePluginOperation(event fsnotify.Event) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	// 记录操作时间，用于防抖
+	// Record operation time for debouncing
 	w.pendingOps[event.Name] = time.Now()
 }
 
-// debounceLoop 防抖处理循环
+// debounceLoop debounce processing loop
 func (w *Watcher) debounceLoop() {
 	defer w.wg.Done()
 
@@ -147,14 +165,14 @@ func (w *Watcher) debounceLoop() {
 	}
 }
 
-// processPendingOps 处理待处理的操作
+// processPendingOps processes pending operations
 func (w *Watcher) processPendingOps() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
 	now := time.Now()
 	for path, opTime := range w.pendingOps {
-		// 如果操作时间已经超过防抖时间
+		// If the operation time has exceeded the debounce time
 		if now.Sub(opTime) >= w.debounceTime {
 			w.reloadPlugin(path)
 			delete(w.pendingOps, path)
@@ -162,58 +180,78 @@ func (w *Watcher) processPendingOps() {
 	}
 }
 
-// reloadPlugin 重新加载插件
+// reloadPlugin reloads a plugin
 func (w *Watcher) reloadPlugin(path string) {
-	// 先尝试卸载旧插件
 	pluginName := w.getPluginNameFromPath(path)
-	if pluginName != "" {
-		if err := w.manager.AntiRegister(pluginName); err != nil {
-			log.Debugf("unload plugin %s failed (maybe not loaded): %v", pluginName, err)
-		} else {
-			log.Infof("plugin %s unloaded", pluginName)
-		}
-	}
-
-	// 加载新插件
-	if err := w.manager.Register(path, pluginName, nil); err != nil {
-		log.Errorf("load plugin %s failed: %v", path, err)
+	if pluginName == "" {
+		log.Warnf("cannot determine plugin name from path: %s", path)
 		return
 	}
 
-	// 初始化插件
-	if err := w.manager.Init(w.ctx); err != nil {
-		log.Errorf("init plugin %s failed: %v", path, err)
-		return
-	}
+	// Try to unload the old plugin
+	w.unloadPlugin(pluginName)
 
-	log.Infof("plugin %s loaded successfully", path)
+	// Load new plugin directly (RPC plugins don't have path limitations)
+	w.loadPlugin(pluginName, path)
 }
 
-// getPluginNameFromPath 从路径获取插件名称
+// unloadPlugin unloads a plugin
+func (w *Watcher) unloadPlugin(pluginName string) {
+	if err := w.manager.UnregisterPlugin(pluginName); err != nil {
+		log.Debugf("unload plugin %s failed (maybe not loaded): %v", pluginName, err)
+	} else {
+		log.Infof("plugin %s unloaded", pluginName)
+	}
+}
+
+// loadPlugin loads a plugin
+func (w *Watcher) loadPlugin(pluginName, pluginPath string) {
+	config := PluginConfig{
+		Name:   pluginName,
+		Type:   "", // Default type is empty, will be retrieved from plugin itself
+		Config: json.RawMessage("{}"),
+	}
+
+	if err := w.manager.RegisterPlugin(pluginName, pluginPath, config); err != nil {
+		log.Errorf("load plugin %s failed: %v", pluginName, err)
+		return
+	}
+
+	log.Infof("plugin %s loaded successfully from %s", pluginName, pluginPath)
+}
+
+// getPluginNameFromPath extracts the plugin name from file path
 func (w *Watcher) getPluginNameFromPath(path string) string {
-	// 遍历所有已注册插件，查找匹配的路径
+	// Iterate through all registered plugins to find matching path
 	plugins := w.manager.ListPlugins()
-	for _, p := range plugins {
-		if p.Path == path {
-			return p.Name
+	for name := range plugins {
+		// Match plugin name based on path
+		if strings.Contains(path, name) {
+			return name
 		}
 	}
 
-	// 如果找不到，使用文件名作为插件名
+	// If no registered plugin is found, use the filename as the plugin name
 	base := filepath.Base(path)
-	return strings.TrimSuffix(base, ".so")
+	// For executable binaries, the filename is the plugin name (may contain version)
+	// e.g., "stdout_1.0.0" -> extract plugin name before version
+	parts := strings.Split(base, "_")
+	if len(parts) > 0 {
+		return parts[0]
+	}
+	return base
 }
 
-// shouldIgnore 判断是否应该忽略该文件
+// shouldIgnore determines if the file should be ignored
 func (w *Watcher) shouldIgnore(path string) bool {
 	base := filepath.Base(path)
 
-	// 忽略隐藏文件
+	// Ignore hidden files
 	if strings.HasPrefix(base, ".") {
 		return true
 	}
 
-	// 忽略临时文件
+	// Ignore temporary files
 	if strings.HasSuffix(base, "~") ||
 		strings.HasSuffix(base, ".tmp") ||
 		strings.HasSuffix(base, ".swp") {

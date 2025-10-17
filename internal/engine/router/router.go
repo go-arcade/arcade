@@ -11,19 +11,23 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/observabil/arcade/internal/engine/conf"
 	"github.com/observabil/arcade/internal/engine/service"
 	"github.com/observabil/arcade/pkg/ctx"
 	httpx "github.com/observabil/arcade/pkg/http"
 	"github.com/observabil/arcade/pkg/http/middleware"
 	"github.com/observabil/arcade/pkg/http/ws"
+	pluginpkg "github.com/observabil/arcade/pkg/plugin"
 	"github.com/observabil/arcade/pkg/version"
 	"go.uber.org/zap"
 )
 
 type Router struct {
-	Http        *httpx.Http
-	Ctx         *ctx.Context
-	PermService *service.PermissionService
+	Http          *httpx.Http
+	Ctx           *ctx.Context
+	Plugin        *conf.PluginConfig
+	PermService   *service.PermissionService
+	PluginManager *pluginpkg.Manager
 }
 
 const (
@@ -34,19 +38,28 @@ const (
 //go:embed all:static
 var web embed.FS
 
-func NewRouter(httpConf *httpx.Http, ctx *ctx.Context) *Router {
+func NewRouter(httpConf *httpx.Http, ctx *ctx.Context, pluginConfig *conf.PluginConfig, pluginManager *pluginpkg.Manager) *Router {
 	return &Router{
-		Http: httpConf,
-		Ctx:  ctx,
+		Http:          httpConf,
+		Ctx:           ctx,
+		Plugin:        pluginConfig,
+		PluginManager: pluginManager,
 	}
 }
 
 func (rt *Router) Router(log *zap.Logger) *fiber.App {
+	// 设置默认的 BodyLimit（100MB）
+	bodyLimit := rt.Http.BodyLimit
+	if bodyLimit <= 0 {
+		bodyLimit = 100 * 1024 * 1024 // 100MB 默认值
+	}
+
 	app := fiber.New(fiber.Config{
 		AppName:      "Arcade",
 		ReadTimeout:  time.Duration(rt.Http.ReadTimeout) * time.Second,
 		WriteTimeout: time.Duration(rt.Http.WriteTimeout) * time.Second,
 		IdleTimeout:  time.Duration(rt.Http.IdleTimeout) * time.Second,
+		BodyLimit:    bodyLimit, // 请求体大小限制，用于插件上传等
 	})
 
 	// 访问日志 - 必须在最前面
@@ -146,8 +159,11 @@ func (rt *Router) routerGroup(r fiber.Router) {
 	// agent
 	rt.agentRouter(r, auth)
 
-	// storage (需要认证)
+	// storag
 	rt.storageRouter(r, auth)
+
+	// plugin
+	rt.pluginRouter(r, auth)
 }
 
 func (rt *Router) storageRouter(r fiber.Router, auth fiber.Handler) {

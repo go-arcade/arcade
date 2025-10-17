@@ -1,8 +1,8 @@
 package model
 
 import (
-	"github.com/observabil/arcade/pkg/datatype"
 	"golang.org/x/oauth2"
+	"gorm.io/datatypes"
 )
 
 /**
@@ -15,13 +15,13 @@ import (
 // SSOProvider SSO认证提供者表
 type SSOProvider struct {
 	BaseModel
-	ProviderId   string        `gorm:"column:provider_id" json:"providerId"`
-	Name         string        `gorm:"column:name" json:"name"`
-	ProviderType string        `gorm:"column:provider_type" json:"providerType"` // oauth/ldap/oidc/saml
-	Config       datatype.JSON `gorm:"column:config" json:"config"`
-	Description  string        `gorm:"column:description" json:"description"`
-	Priority     int           `gorm:"column:priority" json:"priority"`
-	IsEnabled    int           `gorm:"column:is_enabled" json:"isEnabled"` // 0:禁用 1:启用
+	ProviderId   string         `gorm:"column:provider_id" json:"providerId"`
+	Name         string         `gorm:"column:name" json:"name"`
+	ProviderType string         `gorm:"column:provider_type" json:"providerType"` // oauth/ldap/oidc/saml
+	Config       datatypes.JSON `gorm:"column:config" json:"config"`
+	Description  string         `gorm:"column:description" json:"description"`
+	Priority     int            `gorm:"column:priority" json:"priority"`
+	IsEnabled    int            `gorm:"column:is_enabled" json:"isEnabled"` // 0:禁用 1:启用
 }
 
 func (s *SSOProvider) TableName() string {

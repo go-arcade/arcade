@@ -1,6 +1,10 @@
 package model
 
-import "github.com/observabil/arcade/pkg/datatype"
+import (
+	"time"
+
+	"gorm.io/datatypes"
+)
 
 /**
  * @author: gagral.x@gmail.com
@@ -9,26 +13,30 @@ import "github.com/observabil/arcade/pkg/datatype"
  * @description: plugin model
  */
 
+type PluginDetailModel struct {
+	*Plugin
+	*PluginConfig
+}
+
 // Plugin 插件表
 type Plugin struct {
 	BaseModel
-	PluginId      string        `gorm:"column:plugin_id" json:"pluginId"`
-	Name          string        `gorm:"column:name" json:"name"`
-	Version       string        `gorm:"column:version" json:"version"`
-	Description   string        `gorm:"column:description;type:text" json:"description"`
-	Author        string        `gorm:"column:author" json:"author"`
-	PluginType    string        `gorm:"column:plugin_type" json:"pluginType"` // notify/deploy/test/build/custom
-	EntryPoint    string        `gorm:"column:entry_point" json:"entryPoint"`
-	ConfigSchema  datatype.JSON `gorm:"column:config_schema;type:json" json:"configSchema"`   // JSON Schema
-	ParamsSchema  datatype.JSON `gorm:"column:params_schema;type:json" json:"paramsSchema"`   // JSON Schema
-	DefaultConfig datatype.JSON `gorm:"column:default_config;type:json" json:"defaultConfig"` // 默认配置
-	Icon          string        `gorm:"column:icon" json:"icon"`
-	Repository    string        `gorm:"column:repository" json:"repository"`
-	Documentation string        `gorm:"column:documentation;type:text" json:"documentation"`
-	IsEnabled     int           `gorm:"column:is_enabled" json:"isEnabled"` // 0:禁用 1:启用
-	IsBuiltin     int           `gorm:"column:is_builtin" json:"isBuiltin"` // 0:否 1:是
-	InstallPath   string        `gorm:"column:install_path" json:"installPath"`
-	Checksum      string        `gorm:"column:checksum" json:"checksum"`
+	PluginId      string         `gorm:"column:plugin_id" json:"pluginId"`
+	Name          string         `gorm:"column:name" json:"name"`
+	Version       string         `gorm:"column:version" json:"version"`
+	Description   string         `gorm:"column:description;type:text" json:"description"`
+	Author        string         `gorm:"column:author" json:"author"`
+	PluginType    string         `gorm:"column:plugin_type" json:"pluginType"` // notify/deploy/test/build/custom
+	EntryPoint    string         `gorm:"column:entry_point" json:"entryPoint"`
+	Icon          string         `gorm:"column:icon" json:"icon"`
+	Repository    string         `gorm:"column:repository" json:"repository"`
+	Documentation string         `gorm:"column:documentation;type:text" json:"documentation"`
+	IsEnabled     int            `gorm:"column:is_enabled" json:"isEnabled"`        // 0:禁用 1:启用 2:错误
+	Checksum      string         `gorm:"column:checksum" json:"checksum"`           // SHA256校验和
+	Source        string         `gorm:"column:source" json:"source"`               // 来源: local/market
+	S3Path        string         `gorm:"column:s3_path" json:"s3Path"`              // S3存储路径
+	Manifest      datatypes.JSON `gorm:"column:manifest;type:json" json:"manifest"` // 插件清单
+	InstallTime   time.Time      `gorm:"column:install_time" json:"installTime"`    // 安装时间
 }
 
 func (Plugin) TableName() string {
@@ -38,15 +46,9 @@ func (Plugin) TableName() string {
 // PluginConfig 插件配置表
 type PluginConfig struct {
 	BaseModel
-	ConfigId    string        `gorm:"column:config_id" json:"configId"`
-	PluginId    string        `gorm:"column:plugin_id" json:"pluginId"`
-	Name        string        `gorm:"column:name" json:"name"`
-	ConfigItems datatype.JSON `gorm:"column:config_items;type:json" json:"configItems"` // key-value配置
-	Description string        `gorm:"column:description" json:"description"`
-	Scope       string        `gorm:"column:scope" json:"scope"`          // global/pipeline/user
-	ScopeId     string        `gorm:"column:scope_id" json:"scopeId"`     // 作用域ID
-	IsDefault   int           `gorm:"column:is_default" json:"isDefault"` // 0:否 1:是
-	CreatedBy   string        `gorm:"column:created_by" json:"createdBy"`
+	PluginId     string         `gorm:"column:plugin_id" json:"pluginId"`
+	ParamsSchema datatypes.JSON `gorm:"column:params_schema;type:json" json:"paramsSchema"` // JSON Schema
+	ConfigSchema datatypes.JSON `gorm:"column:config_schema;type:json" json:"configSchema"` // JSON Schema
 }
 
 func (PluginConfig) TableName() string {
@@ -56,17 +58,17 @@ func (PluginConfig) TableName() string {
 // TaskPlugin 任务插件关联表
 type TaskPlugin struct {
 	BaseModel
-	TaskId         string        `gorm:"column:task_id" json:"taskId"`
-	PluginId       string        `gorm:"column:plugin_id" json:"pluginId"`
-	PluginConfigId string        `gorm:"column:plugin_config_id" json:"pluginConfigId"`
-	Params         datatype.JSON `gorm:"column:params;type:json" json:"params"` // 任务特定参数
-	ExecutionOrder int           `gorm:"column:execution_order" json:"executionOrder"`
-	ExecutionStage string        `gorm:"column:execution_stage" json:"executionStage"` // before/after/on_success/on_failure
-	Status         int           `gorm:"column:status" json:"status"`                  // 0:未执行 1:执行中 2:成功 3:失败
-	Result         string        `gorm:"column:result;type:text" json:"result"`
-	ErrorMessage   string        `gorm:"column:error_message;type:text" json:"errorMessage"`
-	StartedAt      *string       `gorm:"column:started_at" json:"startedAt"`
-	CompletedAt    *string       `gorm:"column:completed_at" json:"completedAt"`
+	TaskId         string         `gorm:"column:task_id" json:"taskId"`
+	PluginId       string         `gorm:"column:plugin_id" json:"pluginId"`
+	PluginConfigId string         `gorm:"column:plugin_config_id" json:"pluginConfigId"`
+	Params         datatypes.JSON `gorm:"column:params;type:json" json:"params"` // 任务特定参数
+	ExecutionOrder int            `gorm:"column:execution_order" json:"executionOrder"`
+	ExecutionStage string         `gorm:"column:execution_stage" json:"executionStage"` // before/after/on_success/on_failure
+	Status         int            `gorm:"column:status" json:"status"`                  // 0:未执行 1:执行中 2:成功 3:失败
+	Result         string         `gorm:"column:result;type:text" json:"result"`
+	ErrorMessage   string         `gorm:"column:error_message;type:text" json:"errorMessage"`
+	StartedAt      *string        `gorm:"column:started_at" json:"startedAt"`
+	CompletedAt    *string        `gorm:"column:completed_at" json:"completedAt"`
 }
 
 func (TaskPlugin) TableName() string {
@@ -84,7 +86,7 @@ type PluginSchema struct {
 type SchemaProperty struct {
 	Type        string          `json:"type"`
 	Description string          `json:"description,omitempty"`
-	Default     interface{}     `json:"default,omitempty"`
+	Default     any             `json:"default,omitempty"`
 	Items       *SchemaProperty `json:"items,omitempty"` // 用于array类型
 }
 

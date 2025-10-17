@@ -55,6 +55,10 @@ idleTimeout = 60
 # shutdown timeout
 # unit: second
 shutdownTimeout = 10
+# request body size limit (bytes)
+# default: 104857600 (100MB) - for plugin uploads
+# unit: bytes
+bodyLimit = 104857600
 
 [http.tls]
 certFile = ''
@@ -102,7 +106,7 @@ maxIdleTime = 60
 uri = "mongodb://mongo:muP4woo9Aidiph2jeX8u@localhost:27017"
 # uri = "mongodb://127.0.0.1:27017"
 compressors = ["snappy", "zstd", "zlib"]
-db = "arcade_job_log"
+db = "arcade"
 poolSize = 100
 
 [redis]
@@ -148,3 +152,8 @@ maxWorkers = 0
 queueSize = 0
 # unit: second
 workerTimeout = 1800
+
+[plugin]
+# Plugin cache directory for storing downloaded plugin files
+# Default: /var/lib/arcade/plugins
+cacheDir = "plugins"

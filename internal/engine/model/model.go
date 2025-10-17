@@ -10,7 +10,7 @@ import "time"
  */
 
 type BaseModel struct {
-	ID         int       `gorm:"primaryKey" json:"id"`
-	CreateTime time.Time `gorm:"column:create_time" json:"createTime,omitempty"`
-	UpdateTime time.Time `gorm:"column:update_time" json:"updateTime,omitempty"`
+	ID        uint64    `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
+	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime" json:"createdAt"`
+	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime" json:"updatedAt"`
 }

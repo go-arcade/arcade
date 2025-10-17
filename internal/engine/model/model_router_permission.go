@@ -1,6 +1,6 @@
 package model
 
-import "github.com/observabil/arcade/pkg/datatype"
+import "gorm.io/datatypes"
 
 /**
  * @author: gagral.x@gmail.com
@@ -12,18 +12,18 @@ import "github.com/observabil/arcade/pkg/datatype"
 // RouterPermission 路由权限映射表
 type RouterPermission struct {
 	BaseModel
-	RouteId             string        `gorm:"column:route_id;uniqueIndex" json:"routeId"`
-	Path                string        `gorm:"column:path" json:"path"`                                          // 路由路径
-	Method              string        `gorm:"column:method" json:"method"`                                      // HTTP方法
-	Name                string        `gorm:"column:name" json:"name"`                                          // 路由名称
-	Group               string        `gorm:"column:group" json:"group"`                                        // 路由分组（如：project, org, team）
-	Category            string        `gorm:"column:category" json:"category"`                                  // 路由分类（如：管理, 开发, 监控）
-	RequiredPermissions datatype.JSON `gorm:"column:required_permissions;type:json" json:"requiredPermissions"` // 所需权限列表
-	Icon                string        `gorm:"column:icon" json:"icon"`                                          // 图标
-	Order               int           `gorm:"column:order" json:"order"`                                        // 排序
-	IsMenu              int           `gorm:"column:is_menu" json:"isMenu"`                                     // 是否显示在菜单 0:否 1:是
-	IsEnabled           int           `gorm:"column:is_enabled" json:"isEnabled"`                               // 是否启用 0:否 1:是
-	Description         string        `gorm:"column:description" json:"description"`                            // 描述
+	RouteId             string         `gorm:"column:route_id;uniqueIndex" json:"routeId"`
+	Path                string         `gorm:"column:path" json:"path"`                                          // 路由路径
+	Method              string         `gorm:"column:method" json:"method"`                                      // HTTP方法
+	Name                string         `gorm:"column:name" json:"name"`                                          // 路由名称
+	Group               string         `gorm:"column:group" json:"group"`                                        // 路由分组（如：project, org, team）
+	Category            string         `gorm:"column:category" json:"category"`                                  // 路由分类（如：管理, 开发, 监控）
+	RequiredPermissions datatypes.JSON `gorm:"column:required_permissions;type:json" json:"requiredPermissions"` // 所需权限列表
+	Icon                string         `gorm:"column:icon" json:"icon"`                                          // 图标
+	Order               int            `gorm:"column:order" json:"order"`                                        // 排序
+	IsMenu              int            `gorm:"column:is_menu" json:"isMenu"`                                     // 是否显示在菜单 0:否 1:是
+	IsEnabled           int            `gorm:"column:is_enabled" json:"isEnabled"`                               // 是否启用 0:否 1:是
+	Description         string         `gorm:"column:description" json:"description"`                            // 描述
 }
 
 func (RouterPermission) TableName() string {

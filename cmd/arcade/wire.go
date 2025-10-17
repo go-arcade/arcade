@@ -4,7 +4,7 @@
 package main
 
 import (
-	"context"
+	"time"
 
 	"github.com/google/wire"
 	"github.com/observabil/arcade/internal/app"
@@ -73,7 +73,6 @@ var repoProviderSet = wire.NewSet(
 	provideAgentRepo,
 	provideUserRepo,
 	providePluginRepo,
-	providePluginRepoAdapter,
 	provideSSORepo,
 	provideStorageRepo,
 )
@@ -90,10 +89,6 @@ func providePluginRepo(appCtx *ctx.Context) *repo.PluginRepo {
 	return repo.NewPluginRepo(appCtx)
 }
 
-func providePluginRepoAdapter(pluginRepo *repo.PluginRepo) *repo.PluginRepoAdapter {
-	return repo.NewPluginRepoAdapter(pluginRepo)
-}
-
 func provideSSORepo(appCtx *ctx.Context) *repo.SSORepo {
 	return repo.NewSSORepo(appCtx)
 }
@@ -105,10 +100,15 @@ func provideStorageRepo(appCtx *ctx.Context) *repo.StorageRepo {
 // routerProviderSet 路由层 ProviderSet
 var routerProviderSet = wire.NewSet(
 	provideRouter,
+	providePluginConfig,
 )
 
-func provideRouter(httpConf *http.Http, appCtx *ctx.Context) *router.Router {
-	return router.NewRouter(httpConf, appCtx)
+func providePluginConfig(appConf conf.AppConfig) *conf.PluginConfig {
+	return &appConf.Plugin
+}
+
+func provideRouter(httpConf *http.Http, appCtx *ctx.Context, pluginConfig *conf.PluginConfig, pluginManager *plugin.Manager) *router.Router {
+	return router.NewRouter(httpConf, appCtx, pluginConfig, pluginManager)
 }
 
 // storageProviderSet 存储层 ProviderSet
@@ -138,30 +138,32 @@ func provideGrpcServer(cfg *grpc.GrpcConf, logger *zap.Logger) *grpc.ServerWrapp
 // pluginProviderSet 插件层 ProviderSet
 var pluginProviderSet = wire.NewSet(
 	providePluginManager,
-	providePluginRepository,
 )
 
-func providePluginRepository(adapter *repo.PluginRepoAdapter) plugin.PluginRepository {
-	return adapter
-}
-
-func providePluginManager(pluginRepo plugin.PluginRepository) *plugin.Manager {
-	m := plugin.NewManager()
-	m.SetPluginRepository(pluginRepo)
-
-	// 从数据库加载插件
-	if err := m.LoadPluginsFromDatabase(); err != nil {
-		log.Warnf("failed to load plugins from database: %v, will try file system", err)
-		// 如果数据库加载失败，尝试从文件系统加载（向后兼容）
-		if err := m.LoadPluginsFromDir("./plugins"); err != nil {
-			log.Warnf("failed to load plugins from directory: %v", err)
-		}
+func providePluginManager(appConf conf.AppConfig) *plugin.Manager {
+	// Get plugin directory from configuration (use default if not set)
+	pluginDir := "/var/lib/arcade/plugins"
+	if appConf.Plugin.CacheDir != "" {
+		pluginDir = appConf.Plugin.CacheDir
 	}
 
-	// 初始化所有插件
-	if err := m.Init(context.Background()); err != nil {
-		log.Errorf("failed to initialize plugins: %v", err)
+	// Create plugin manager configuration
+	config := &plugin.ManagerConfig{
+		PluginDir:       pluginDir,
+		HandshakeConfig: plugin.RPCHandshake,
+		PluginConfig:    make(map[string]any),
+		Timeout:         30 * time.Second,
+		MaxRetries:      3,
 	}
 
+	// Create plugin manager
+	m := plugin.NewManager(config)
+
+	// Auto-load plugins from directory on startup
+	if err := m.LoadPluginsFromDir(); err != nil {
+		log.Warnf("failed to auto-load plugins: %v", err)
+	}
+
+	log.Infof("plugin manager initialized with directory: %s", pluginDir)
 	return m
 }

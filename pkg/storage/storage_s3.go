@@ -93,6 +93,9 @@ func (s *S3Storage) Upload(ctx *ctx.Context, objectName string, file *multipart.
 			Body:        src,
 			ContentType: aws.String(contentType),
 		})
+		if err == nil {
+			log.Debugf("S3 upload completed: %s - 100.00%% (%d bytes)", fullPath, fileSize)
+		}
 		return fullPath, err
 	}
 
@@ -183,6 +186,7 @@ func (s *S3Storage) Upload(ctx *ctx.Context, objectName string, file *multipart.
 		},
 	})
 	if err == nil {
+		// log.Debugf("S3 upload completed: %s - 100.00%% (%d bytes)", fullPath, fileSize)
 		_ = os.Remove(checkpointPath) // 成功则删除断点文件
 	}
 	return fullPath, err

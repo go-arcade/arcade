@@ -1,6 +1,8 @@
 package model
 
-import "github.com/observabil/arcade/pkg/datatype"
+import (
+	"gorm.io/datatypes"
+)
 
 /**
  * @author: gagral.x@gmail.com
@@ -12,9 +14,9 @@ import "github.com/observabil/arcade/pkg/datatype"
 // AgentConfig Agent配置表（每个Agent一条记录）
 type AgentConfig struct {
 	BaseModel
-	AgentId     string        `gorm:"column:agent_id" json:"agentId"`
-	ConfigItems datatype.JSON `gorm:"column:config_items;type:json" json:"configItems"` // 所有配置在一个JSON中
-	Description string        `gorm:"column:description" json:"description"`
+	AgentId     string         `gorm:"column:agent_id" json:"agentId"`
+	ConfigItems datatypes.JSON `gorm:"column:config_items;type:json" json:"configItems"` // 所有配置在一个JSON中
+	Description string         `gorm:"column:description" json:"description"`
 }
 
 func (AgentConfig) TableName() string {

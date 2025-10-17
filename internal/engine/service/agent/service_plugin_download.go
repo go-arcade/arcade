@@ -67,24 +67,8 @@ func (s *PluginDownloadService) GetPluginForDownload(pluginID, version string) (
 		}, nil
 	}
 
-	// 4. 获取插件文件路径
-	pluginPath := plugin.InstallPath
-	if pluginPath == "" {
-		pluginPath = plugin.EntryPoint
-	}
-
-	// 转换为绝对路径
-	if !filepath.IsAbs(pluginPath) {
-		workDir, err := os.Getwd()
-		if err != nil {
-			log.Errorf("[PluginDownload] failed to get working directory: %v", err)
-			return &v1.DownloadPluginResponse{
-				Success: false,
-				Message: "internal error: cannot determine plugin path",
-			}, nil
-		}
-		pluginPath = filepath.Join(workDir, pluginPath)
-	}
+	// 4. 获取插件文件路径（动态生成）
+	pluginPath := s.getPluginLocalPath(pluginID, plugin.Version)
 
 	// 5. 读取插件文件
 	pluginData, err := os.ReadFile(pluginPath)
@@ -141,8 +125,9 @@ func (s *PluginDownloadService) ListAvailablePlugins(pluginType string) ([]*v1.P
 
 	result := make([]*v1.PluginInfo, 0, len(plugins))
 	for _, p := range plugins {
-		// 计算文件大小
-		size := s.getPluginFileSize(p.InstallPath)
+		// 计算文件大小（动态生成路径）
+		localPath := s.getPluginLocalPath(p.PluginId, p.Version)
+		size := s.getPluginFileSize(localPath)
 
 		result = append(result, &v1.PluginInfo{
 			PluginId: p.PluginId,
@@ -188,8 +173,9 @@ func (s *PluginDownloadService) GetPluginsForTask(taskID string) ([]*v1.PluginIn
 			continue
 		}
 
-		// 计算文件大小
-		size := s.getPluginFileSize(plugin.InstallPath)
+		// 计算文件大小（动态生成路径）
+		localPath := s.getPluginLocalPath(plugin.PluginId, plugin.Version)
+		size := s.getPluginFileSize(localPath)
 
 		result = append(result, &v1.PluginInfo{
 			PluginId: plugin.PluginId,
@@ -213,15 +199,18 @@ func (s *PluginDownloadService) CheckPluginPermission(agentID string, pluginID s
 	return nil
 }
 
+// getPluginLocalPath 获取插件本地缓存路径（动态生成）
+func (s *PluginDownloadService) getPluginLocalPath(pluginID, version string) string {
+	// TODO: 从配置中获取本地缓存目录
+	localCacheDir := "/var/lib/arcade/plugins"
+	filename := fmt.Sprintf("%s_%s.so", pluginID, version)
+	return filepath.Join(localCacheDir, filename)
+}
+
 // getPluginFileSize 获取插件文件大小
 func (s *PluginDownloadService) getPluginFileSize(pluginPath string) int64 {
 	if pluginPath == "" {
 		return 0
-	}
-
-	if !filepath.IsAbs(pluginPath) {
-		workDir, _ := os.Getwd()
-		pluginPath = filepath.Join(workDir, pluginPath)
 	}
 
 	info, err := os.Stat(pluginPath)
@@ -270,11 +259,8 @@ func (s *PluginDownloadService) UpdatePluginChecksum(pluginID string) error {
 		return err
 	}
 
-	pluginPath := plugin.InstallPath
-	if !filepath.IsAbs(pluginPath) {
-		workDir, _ := os.Getwd()
-		pluginPath = filepath.Join(workDir, pluginPath)
-	}
+	// 动态生成本地路径
+	pluginPath := s.getPluginLocalPath(pluginID, plugin.Version)
 
 	checksum, err := s.CalculatePluginChecksum(pluginPath)
 	if err != nil {
