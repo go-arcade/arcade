@@ -5,3 +5,4 @@
 !/internal/engine/router/static/.gitkeep
 /logs
 /plugins/*
+docs/*.md
