@@ -3,13 +3,16 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/observabil/arcade/internal/engine/conf"
 	"github.com/observabil/arcade/pkg/cache"
 	"github.com/observabil/arcade/pkg/ctx"
 	"github.com/observabil/arcade/pkg/database"
-	"github.com/observabil/arcade/pkg/http"
 	"github.com/observabil/arcade/pkg/log"
 )
 
@@ -52,7 +55,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer cleanup()
 
 	// 插件管理器已在 wire 中初始化完成
 	// 可选：启动心跳检查
@@ -67,7 +69,35 @@ func main() {
 		}()
 	}
 
-	// 启动 HTTP 服务
-	httpCleanup := http.NewHttp(appConf.Http, app.HttpApp)
-	httpCleanup()
+	// 设置信号监听（优雅关闭）
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	// 启动 HTTP 服务（异步）
+	go func() {
+		addr := appConf.Http.Host + ":" + fmt.Sprintf("%d", appConf.Http.Port)
+		logger.Sugar().Infof("HTTP server starting at %s", addr)
+		if err := app.HttpApp.Listen(addr); err != nil {
+			logger.Sugar().Errorf("HTTP server failed: %v", err)
+		}
+	}()
+
+	// 等待退出信号
+	sig := <-quit
+	logger.Sugar().Infof("Received signal: %v, shutting down gracefully...", sig)
+
+	// 按顺序关闭各个组件
+	// 1. 关闭 HTTP 服务器
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer shutdownCancel()
+	if err := app.HttpApp.ShutdownWithContext(shutdownCtx); err != nil {
+		logger.Sugar().Errorf("HTTP server shutdown error: %v", err)
+	} else {
+		logger.Info("HTTP server shut down gracefully")
+	}
+
+	// 2. 关闭插件管理器和其他资源
+	cleanup()
+
+	logger.Info("Server shutdown complete")
 }

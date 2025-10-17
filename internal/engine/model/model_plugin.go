@@ -21,22 +21,24 @@ type PluginDetailModel struct {
 // Plugin 插件表
 type Plugin struct {
 	BaseModel
-	PluginId      string         `gorm:"column:plugin_id" json:"pluginId"`
-	Name          string         `gorm:"column:name" json:"name"`
-	Version       string         `gorm:"column:version" json:"version"`
-	Description   string         `gorm:"column:description;type:text" json:"description"`
-	Author        string         `gorm:"column:author" json:"author"`
-	PluginType    string         `gorm:"column:plugin_type" json:"pluginType"` // notify/deploy/test/build/custom
-	EntryPoint    string         `gorm:"column:entry_point" json:"entryPoint"`
-	Icon          string         `gorm:"column:icon" json:"icon"`
-	Repository    string         `gorm:"column:repository" json:"repository"`
-	Documentation string         `gorm:"column:documentation;type:text" json:"documentation"`
-	IsEnabled     int            `gorm:"column:is_enabled" json:"isEnabled"`        // 0:禁用 1:启用 2:错误
-	Checksum      string         `gorm:"column:checksum" json:"checksum"`           // SHA256校验和
-	Source        string         `gorm:"column:source" json:"source"`               // 来源: local/market
-	S3Path        string         `gorm:"column:s3_path" json:"s3Path"`              // S3存储路径
-	Manifest      datatypes.JSON `gorm:"column:manifest;type:json" json:"manifest"` // 插件清单
-	InstallTime   time.Time      `gorm:"column:install_time" json:"installTime"`    // 安装时间
+	PluginId       string         `gorm:"column:plugin_id" json:"pluginId"`
+	Name           string         `gorm:"column:name" json:"name"`
+	Version        string         `gorm:"column:version" json:"version"`
+	Description    string         `gorm:"column:description;type:text" json:"description"`
+	Author         string         `gorm:"column:author" json:"author"`
+	PluginType     string         `gorm:"column:plugin_type" json:"pluginType"` // notify/deploy/test/build/custom
+	EntryPoint     string         `gorm:"column:entry_point" json:"entryPoint"`
+	Icon           string         `gorm:"column:icon" json:"icon"`
+	Repository     string         `gorm:"column:repository" json:"repository"`
+	Documentation  string         `gorm:"column:documentation;type:text" json:"documentation"`
+	IsEnabled      int            `gorm:"column:is_enabled" json:"isEnabled"`                   // 0:禁用 1:启用 2:错误
+	RegisterStatus int            `gorm:"column:register_status" json:"registerStatus"`         // 注册状态: 0:未注册 1:注册中 2:已注册 3:注册失败
+	RegisterError  string         `gorm:"column:register_error;type:text" json:"registerError"` // 注册错误信息
+	Checksum       string         `gorm:"column:checksum" json:"checksum"`                      // SHA256校验和
+	Source         string         `gorm:"column:source" json:"source"`                          // 来源: local/market
+	S3Path         string         `gorm:"column:s3_path" json:"s3Path"`                         // S3存储路径
+	Manifest       datatypes.JSON `gorm:"column:manifest;type:json" json:"manifest"`            // 插件清单
+	InstallTime    time.Time      `gorm:"column:install_time" json:"installTime"`               // 安装时间
 }
 
 func (Plugin) TableName() string {
@@ -113,4 +115,12 @@ const (
 	TaskPluginStatusRunning = 1 // 执行中
 	TaskPluginStatusSuccess = 2 // 成功
 	TaskPluginStatusFailed  = 3 // 失败
+)
+
+// PluginRegisterStatus 插件注册状态
+const (
+	PluginRegisterStatusUnregistered = 0 // 未注册
+	PluginRegisterStatusRegistering  = 1 // 注册中
+	PluginRegisterStatusRegistered   = 2 // 已注册
+	PluginRegisterStatusFailed       = 3 // 注册失败
 )

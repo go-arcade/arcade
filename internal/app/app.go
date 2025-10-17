@@ -2,10 +2,11 @@ package app
 
 import (
 	"github.com/gofiber/fiber/v2"
-	service_plugin "github.com/observabil/arcade/internal/engine/service/plugin"
 	"github.com/observabil/arcade/internal/engine/router"
+	service_plugin "github.com/observabil/arcade/internal/engine/service/plugin"
 	"github.com/observabil/arcade/internal/pkg/grpc"
 	"github.com/observabil/arcade/pkg/ctx"
+	"github.com/observabil/arcade/pkg/log"
 	"github.com/observabil/arcade/pkg/plugin"
 	"github.com/observabil/arcade/pkg/storage"
 	"go.uber.org/zap"
@@ -34,6 +35,17 @@ func NewApp(
 	logger.Info("Plugin task manager initialized with MongoDB persistence")
 
 	cleanup := func() {
+		// 停止所有插件
+		if pluginMgr != nil {
+			logger.Info("Shutting down plugin manager...")
+			if err := pluginMgr.Close(); err != nil {
+				log.Errorf("Failed to close plugin manager: %v", err)
+			} else {
+				logger.Info("Plugin manager stopped successfully")
+			}
+		}
+
+		// 停止 gRPC 服务器
 		if grpcServer != nil {
 			logger.Info("Shutting down gRPC server...")
 			grpcServer.Stop()
