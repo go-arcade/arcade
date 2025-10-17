@@ -175,42 +175,67 @@ func (m *Manager) UnregisterPlugin(name string) error {
 	return nil
 }
 
-// ReloadPlugin reloads a plugin by name
+// ReloadPlugin safely reloads a plugin by name
 func (m *Manager) ReloadPlugin(name string) error {
 	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	// Get existing plugin
-	pluginClient, exists := m.plugins[name]
+	oldClient, exists := m.plugins[name]
 	if !exists {
+		m.mu.Unlock()
 		return fmt.Errorf("plugin %s not found", name)
 	}
 
-	// Save plugin path and config for re-registration
-	pluginPath := pluginClient.pluginPath
-	pluginConfig := pluginClient.config
+	// Snapshot plugin metadata
+	pluginPath := oldClient.pluginPath
+	pluginConfig := oldClient.config
+	m.mu.Unlock()
 
-	// Cleanup old plugin
-	if err := m.cleanupPlugin(pluginClient); err != nil {
-		log.Warnf("cleanup plugin %s failed: %v", name, err)
+	log.Infof("[plugin] reloading %s from %s ...", name, pluginPath)
+
+	// graceful cleanup
+	if err := m.cleanupPlugin(oldClient); err != nil {
+		log.Warnf("[plugin] cleanup failed for %s: %v", name, err)
 	}
 
-	// Close old connection
-	if pluginClient.pluginClient != nil {
-		pluginClient.pluginClient.Kill()
+	// stop old client
+	if oldClient.pluginClient != nil {
+		oldClient.pluginClient.Kill()
 	}
 
-	// Remove from maps
+	// wait for graceful exit
+	waitStart := time.Now()
+	for {
+		proc := oldClient.pluginClient.Exited()
+		if proc {
+			break
+		}
+		if time.Since(waitStart) > 5*time.Second {
+			log.Warnf("[plugin] wait for old %s to exit timeout, continuing reload", name)
+			break
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+
+	// unregister old instance
+	m.mu.Lock()
 	delete(m.plugins, name)
 	delete(m.clients, name)
+	m.mu.Unlock()
 
-	// Re-register plugin with saved path and config (using internal locked version)
-	if err := m.registerPluginLocked(name, pluginPath, pluginConfig); err != nil {
-		return fmt.Errorf("re-register plugin %s failed: %w", name, err)
+	// re-register (with retry)
+	var lastErr error
+	for i := 0; i < 3; i++ {
+		err := m.RegisterPlugin(name, pluginPath, pluginConfig)
+		if err == nil {
+			log.Infof("[plugin] reloaded %s successfully after %d attempt(s)", name, i+1)
+			return nil
+		}
+		lastErr = err
+		log.Warnf("[plugin] retry reload %s (%d/3): %v", name, i+1, err)
+		time.Sleep(time.Second)
 	}
 
-	log.Infof("plugin %s reloaded successfully", name)
-	return nil
+	log.Errorf("[plugin] failed to reload %s after 3 attempts: %v", name, lastErr)
+	return fmt.Errorf("reload plugin %s failed: %w", name, lastErr)
 }
 
 // ReloadAllPlugins reloads all registered plugins

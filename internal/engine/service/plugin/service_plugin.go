@@ -755,9 +755,25 @@ func (s *PluginService) hotReloadPlugin(pluginName, localPath string, defaultCon
 		// Type and Version will be retrieved from plugin instance, here no need to set
 	}
 
+	// 获取插件记录以更新注册状态
+	pluginRecord, err := s.pluginRepo.GetPluginByName(pluginName)
+	if err == nil && pluginRecord != nil {
+		// 更新为注册中
+		_ = s.pluginRepo.UpdatePluginRegistrationStatus(pluginRecord.PluginId, model.PluginRegisterStatusRegistering, "")
+	}
+
 	// register new plugin (directly use original path, RPC plugin has no path limitation)
 	if err := s.pluginManager.RegisterPlugin(pluginName, localPath, pluginConfig); err != nil {
+		// 注册失败，更新数据库状态
+		if pluginRecord != nil {
+			_ = s.pluginRepo.UpdatePluginRegistrationStatus(pluginRecord.PluginId, model.PluginRegisterStatusFailed, err.Error())
+		}
 		return fmt.Errorf("failed to register plugin: %v", err)
+	}
+
+	// 注册成功，更新数据库状态
+	if pluginRecord != nil {
+		_ = s.pluginRepo.UpdatePluginRegistrationStatus(pluginRecord.PluginId, model.PluginRegisterStatusRegistered, "")
 	}
 
 	log.Infof("[PluginService] hot reloaded plugin: %s from %s", pluginName, localPath)

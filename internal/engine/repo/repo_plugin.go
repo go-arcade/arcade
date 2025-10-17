@@ -166,3 +166,18 @@ func (r *PluginRepo) UpdatePluginConfig(pluginID string, updates map[string]inte
 		Where("plugin_id = ?", pluginID).
 		Updates(updates).Error
 }
+
+// UpdatePluginRegistrationStatus 更新插件注册状态
+func (r *PluginRepo) UpdatePluginRegistrationStatus(pluginID string, status int, errorMsg string) error {
+	updates := map[string]interface{}{
+		"register_status": status,
+	}
+	if errorMsg != "" {
+		updates["register_error"] = errorMsg
+	} else {
+		updates["register_error"] = ""
+	}
+	return r.Ctx.DBSession().Table(r.PluginModel.TableName()).
+		Where("plugin_id = ?", pluginID).
+		Updates(updates).Error
+}
