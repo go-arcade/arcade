@@ -7,19 +7,27 @@ import "encoding/json"
 type PluginType string
 
 const (
-	// TypeCI is the CI plugin type
-	TypeCI PluginType = "ci"
-	// TypeCD is the CD plugin type
-	TypeCD PluginType = "cd"
-	// TypeSecurity is the security plugin type
+	// Source plugin type
+	TypeSource PluginType = "source"
+	// Build plugin type
+	TypeBuild PluginType = "build"
+	// Test plugin type
+	TypeTest PluginType = "test"
+	// Deploy plugin type
+	TypeDeploy PluginType = "deploy"
+	// Security plugin type
 	TypeSecurity PluginType = "security"
-	// TypeNotify is the notification plugin type
+	// Notify plugin type
 	TypeNotify PluginType = "notify"
-	// TypeStorage is the storage plugin type
-	TypeStorage PluginType = "storage"
-	// TypeApproval is the approval plugin type
+	// Approval plugin type
 	TypeApproval PluginType = "approval"
-	// TypeCustom is the custom plugin type
+	// Storage plugin type
+	TypeStorage PluginType = "storage"
+	// Analytics plugin type
+	TypeAnalytics PluginType = "analytics"
+	// Integration plugin type
+	TypeIntegration PluginType = "integration"
+	// Custom plugin type
 	TypeCustom PluginType = "custom"
 )
 
@@ -66,4 +74,66 @@ type RPCError struct {
 // Error implements the error interface
 func (e *RPCError) Error() string {
 	return e.Message
+}
+
+// AllPluginTypes returns all supported plugin types
+func AllPluginTypes() []PluginType {
+	return []PluginType{
+		TypeSource,
+		TypeBuild,
+		TypeTest,
+		TypeDeploy,
+		TypeSecurity,
+		TypeNotify,
+		TypeApproval,
+		TypeStorage,
+		TypeAnalytics,
+		TypeIntegration,
+		TypeCustom,
+	}
+}
+
+// IsValidPluginType checks if a plugin type is valid
+func IsValidPluginType(t string) bool {
+	for _, validType := range AllPluginTypes() {
+		if string(validType) == t {
+			return true
+		}
+	}
+	return false
+}
+
+// GetPluginTypeDescription returns a description for a plugin type
+func GetPluginTypeDescription(t PluginType) string {
+	descriptions := map[PluginType]string{
+		TypeSource:      "源码管理插件，用于代码仓库操作（克隆、拉取、分支切换等）",
+		TypeBuild:       "构建插件，用于编译和构建项目（编译、打包、生成产物等）",
+		TypeTest:        "测试插件，用于运行测试和生成报告（单元测试、集成测试、覆盖率等）",
+		TypeDeploy:      "部署插件，用于应用部署和管理（部署、回滚、扩缩容等）",
+		TypeSecurity:    "安全插件，用于安全扫描和审计（漏洞扫描、合规检查等）",
+		TypeNotify:      "通知插件，用于发送各类通知（邮件、Webhook、即时消息等）",
+		TypeApproval:    "审批插件，用于审批流程管理（创建审批、批准、拒绝等）",
+		TypeStorage:     "存储插件，用于数据存储和管理（保存、加载、删除、列表等）",
+		TypeAnalytics:   "分析插件，用于数据分析和报告（事件追踪、查询、指标、报告等）",
+		TypeIntegration: "集成插件，用于第三方服务集成（连接、调用、订阅等）",
+		TypeCustom:      "自定义插件，用于特殊用途的定制化功能",
+	}
+	return descriptions[t]
+}
+
+// String returns the string representation of PluginType
+func (pt PluginType) String() string {
+	return string(pt)
+}
+
+// Validate validates the PluginType
+func (pt PluginType) Validate() error {
+	if !IsValidPluginType(string(pt)) {
+		return &RPCError{
+			Code:    400,
+			Message: "invalid plugin type",
+			Data:    string(pt),
+		}
+	}
+	return nil
 }
