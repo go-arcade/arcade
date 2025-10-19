@@ -1,7 +1,11 @@
 // Package plugin RPC interface definitions
 package plugin
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	streamv1 "github.com/observabil/arcade/api/stream/v1"
+)
 
 // RPC interface definitions - based on HashiCorp go-plugin
 // All RPC interfaces use json.RawMessage to support dynamic type conversion
@@ -14,6 +18,12 @@ type BasePluginRPC interface {
 	Type() (string, error)
 	Init(config json.RawMessage) error
 	Cleanup() error
+}
+
+type LogStreamWriter struct {
+	PipelineID string
+	StepID     string
+	Client     streamv1.StreamServiceClient
 }
 
 // SourcePluginRPCInterface is the source code management plugin RPC interface

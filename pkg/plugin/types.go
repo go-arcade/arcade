@@ -38,6 +38,8 @@ type PluginConfig struct {
 	Type        string            `json:"type"`
 	Config      json.RawMessage   `json:"config"`
 	Environment map[string]string `json:"environment"`
+	TaskID      string            `json:"task_id"` // 任务ID，用于日志关联
+	LogHandlers []LogHandler      `json:"-"`       // 日志处理器（不序列化）
 }
 
 // PluginInfo contains plugin information

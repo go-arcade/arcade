@@ -70,16 +70,42 @@ func (m *Manager) registerPluginLocked(name string, pluginPath string, config Pl
 		return fmt.Errorf("plugin %s already registered", name)
 	}
 
-	// Create go-plugin client
+	// 创建日志捕获器
+	taskID := config.TaskID
+	if taskID == "" {
+		taskID = "unknown"
+	}
+	logCapture := NewLogCapture(name, taskID)
+
+	// Create go-plugin client with stdout/stderr capture
+	cmd := exec.Command(pluginPath)
+	stdoutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("create stdout pipe for plugin %s: %w", name, err)
+	}
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("create stderr pipe for plugin %s: %w", name, err)
+	}
+
 	client := plugin.NewClient(&plugin.ClientConfig{
-		Cmd:             exec.Command(pluginPath),
+		Cmd:             cmd,
 		HandshakeConfig: m.config.HandshakeConfig,
 		Plugins:         m.getPluginMap(),
 		AllowedProtocols: []plugin.Protocol{
 			plugin.ProtocolNetRPC,
 		},
-		// TODO: add logger
+		// not set SyncStdout/SyncStderr, use our own pipes
 	})
+
+	// add log handlers
+	for _, handler := range config.LogHandlers {
+		logCapture.AddHandler(handler)
+	}
+
+	// start log capture goroutine
+	go logCapture.CaptureReader(stdoutPipe, "stdout")
+	go logCapture.CaptureReader(stderrPipe, "stderr")
 
 	// Connect to plugin
 	rpcClient, err := client.Client()
