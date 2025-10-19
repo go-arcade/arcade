@@ -29,7 +29,7 @@ service AgentService {
     // 取消任务 - Server通知Agent取消正在执行的任务
     rpc CancelTask(CancelTaskRequest) returns (CancelTaskResponse) {}
 
-    // 更新Agent标签 - 动态更新Agent的labels和tags
+    // 更新Agent标签 - 动态更新Agent的labels
     rpc UpdateLabels(UpdateLabelsRequest) returns (UpdateLabelsResponse) {}
 
     // 下载插件 - Agent从Server下载插件
@@ -73,10 +73,9 @@ message RegisterRequest {
   string os = 4;                      // 操作系统
   string arch = 5;                    // 架构（amd64、arm64等）
   string version = 6;                 // Agent版本
-  repeated string tags = 7;           // Agent标签（用于任务路由）
-  int32 max_concurrent_jobs = 8;      // 最大并发任务数
-  map<string, string> labels = 9;     // 自定义标签
-  repeated string installed_plugins = 10; // Agent已安装的插件列表
+  int32 max_concurrent_jobs = 7;      // 最大并发任务数
+  map<string, string> labels = 8;     // 自定义标签
+  repeated string installed_plugins = 9; // Agent已安装的插件列表
 }
 
 // Agent注册响应
@@ -103,8 +102,7 @@ message UnregisterResponse {
 message FetchTaskRequest {
   string agent_id = 1;
   int32 max_jobs = 2;                 // 最多获取的任务数
-  repeated string tags = 3;           // Agent支持的标签（已废弃，建议使用labels）
-  map<string, string> labels = 4;     // Agent标签（用于任务匹配）
+  map<string, string> labels = 3;     // Agent标签（用于任务匹配）
 }
 
 // 获取任务响应
@@ -124,12 +122,11 @@ message Task {
   map<string, string> env = 6;        // 环境变量
   string workspace = 7;               // 工作目录
   int32 timeout = 8;                  // 超时时间（秒）
-  repeated string tags = 9;           // 任务标签（已废弃，建议使用label_selector）
-  string image = 10;                  // Docker镜像（如果需要容器执行）
-  map<string, string> secrets = 11;   // 密钥信息
-  repeated Artifact artifacts = 12;   // 产物配置
-  LabelSelector label_selector = 13;  // 标签选择器（用于匹配Agent）
-  repeated PluginInfo plugins = 14;   // 任务所需插件列表
+  string image = 9;                   // Docker镜像（如果需要容器执行）
+  map<string, string> secrets = 10;   // 密钥信息
+  repeated Artifact artifacts = 11;   // 产物配置
+  LabelSelector label_selector = 12;  // 标签选择器（用于匹配Agent）
+  repeated PluginInfo plugins = 13;   // 任务所需插件列表
 }
 
 // 产物定义
@@ -195,8 +192,7 @@ message CancelTaskResponse {
 message UpdateLabelsRequest {
   string agent_id = 1;
   map<string, string> labels = 2;     // 要更新的标签（完全替换）
-  repeated string tags = 3;           // 要更新的标签列表（完全替换）
-  bool merge = 4;                     // 是否合并模式（true=合并，false=替换）
+  bool merge = 3;                     // 是否合并模式（true=合并，false=替换）
 }
 
 // 更新Agent标签响应

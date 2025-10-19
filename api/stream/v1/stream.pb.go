@@ -1280,7 +1280,6 @@ func (x *LogData) GetLogs() []*LogChunk {
 type TaskFetchRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	MaxTasks      int32                  `protobuf:"varint,1,opt,name=max_tasks,json=maxTasks,proto3" json:"max_tasks,omitempty"`
-	Tags          []string               `protobuf:"bytes,2,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1320,13 +1319,6 @@ func (x *TaskFetchRequest) GetMaxTasks() int32 {
 		return x.MaxTasks
 	}
 	return 0
-}
-
-func (x *TaskFetchRequest) GetTags() []string {
-	if x != nil {
-		return x.Tags
-	}
-	return nil
 }
 
 // Agent指标
@@ -1646,9 +1638,8 @@ type TaskInfo struct {
 	Env           map[string]string      `protobuf:"bytes,6,rep,name=env,proto3" json:"env,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Workspace     string                 `protobuf:"bytes,7,opt,name=workspace,proto3" json:"workspace,omitempty"`
 	Timeout       int32                  `protobuf:"varint,8,opt,name=timeout,proto3" json:"timeout,omitempty"`
-	Tags          []string               `protobuf:"bytes,9,rep,name=tags,proto3" json:"tags,omitempty"`
-	Image         string                 `protobuf:"bytes,10,opt,name=image,proto3" json:"image,omitempty"`
-	Secrets       map[string]string      `protobuf:"bytes,11,rep,name=secrets,proto3" json:"secrets,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Image         string                 `protobuf:"bytes,9,opt,name=image,proto3" json:"image,omitempty"`
+	Secrets       map[string]string      `protobuf:"bytes,10,rep,name=secrets,proto3" json:"secrets,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1737,13 +1728,6 @@ func (x *TaskInfo) GetTimeout() int32 {
 		return x.Timeout
 	}
 	return 0
-}
-
-func (x *TaskInfo) GetTags() []string {
-	if x != nil {
-		return x.Tags
-	}
-	return nil
 }
 
 func (x *TaskInfo) GetImage() string {
@@ -2304,10 +2288,9 @@ const file_stream_v1_stream_proto_rawDesc = "" +
 	"\ttimestamp\x18\x05 \x01(\x03R\ttimestamp\"I\n" +
 	"\aLogData\x12\x15\n" +
 	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x12'\n" +
-	"\x04logs\x18\x02 \x03(\v2\x13.stream.v1.LogChunkR\x04logs\"C\n" +
+	"\x04logs\x18\x02 \x03(\v2\x13.stream.v1.LogChunkR\x04logs\"/\n" +
 	"\x10TaskFetchRequest\x12\x1b\n" +
-	"\tmax_tasks\x18\x01 \x01(\x05R\bmaxTasks\x12\x12\n" +
-	"\x04tags\x18\x02 \x03(\tR\x04tags\"\xa7\x02\n" +
+	"\tmax_tasks\x18\x01 \x01(\x05R\bmaxTasks\"\xa7\x02\n" +
 	"\fAgentMetrics\x12\x1b\n" +
 	"\tcpu_usage\x18\x01 \x01(\x01R\bcpuUsage\x12!\n" +
 	"\fmemory_usage\x18\x02 \x01(\x01R\vmemoryUsage\x12\x1d\n" +
@@ -2332,7 +2315,7 @@ const file_stream_v1_stream_proto_rawDesc = "" +
 	"serverTime\x12\x18\n" +
 	"\asuccess\x18\x02 \x01(\bR\asuccess\";\n" +
 	"\x0eTaskAssignment\x12)\n" +
-	"\x05tasks\x18\x01 \x03(\v2\x13.stream.v1.TaskInfoR\x05tasks\"\xcc\x03\n" +
+	"\x05tasks\x18\x01 \x03(\v2\x13.stream.v1.TaskInfoR\x05tasks\"\xb8\x03\n" +
 	"\bTaskInfo\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1f\n" +
@@ -2342,11 +2325,10 @@ const file_stream_v1_stream_proto_rawDesc = "" +
 	"\bcommands\x18\x05 \x03(\tR\bcommands\x12.\n" +
 	"\x03env\x18\x06 \x03(\v2\x1c.stream.v1.TaskInfo.EnvEntryR\x03env\x12\x1c\n" +
 	"\tworkspace\x18\a \x01(\tR\tworkspace\x12\x18\n" +
-	"\atimeout\x18\b \x01(\x05R\atimeout\x12\x12\n" +
-	"\x04tags\x18\t \x03(\tR\x04tags\x12\x14\n" +
-	"\x05image\x18\n" +
-	" \x01(\tR\x05image\x12:\n" +
-	"\asecrets\x18\v \x03(\v2 .stream.v1.TaskInfo.SecretsEntryR\asecrets\x1a6\n" +
+	"\atimeout\x18\b \x01(\x05R\atimeout\x12\x14\n" +
+	"\x05image\x18\t \x01(\tR\x05image\x12:\n" +
+	"\asecrets\x18\n" +
+	" \x03(\v2 .stream.v1.TaskInfo.SecretsEntryR\asecrets\x1a6\n" +
 	"\bEnvEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a:\n" +

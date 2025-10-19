@@ -51,7 +51,7 @@ type AgentServiceClient interface {
 	ReportTaskLog(ctx context.Context, in *ReportTaskLogRequest, opts ...grpc.CallOption) (*ReportTaskLogResponse, error)
 	// 取消任务 - Server通知Agent取消正在执行的任务
 	CancelTask(ctx context.Context, in *CancelTaskRequest, opts ...grpc.CallOption) (*CancelTaskResponse, error)
-	// 更新Agent标签 - 动态更新Agent的labels和tags
+	// 更新Agent标签 - 动态更新Agent的labels
 	UpdateLabels(ctx context.Context, in *UpdateLabelsRequest, opts ...grpc.CallOption) (*UpdateLabelsResponse, error)
 	// 下载插件 - Agent从Server下载插件
 	DownloadPlugin(ctx context.Context, in *DownloadPluginRequest, opts ...grpc.CallOption) (*DownloadPluginResponse, error)
@@ -187,7 +187,7 @@ type AgentServiceServer interface {
 	ReportTaskLog(context.Context, *ReportTaskLogRequest) (*ReportTaskLogResponse, error)
 	// 取消任务 - Server通知Agent取消正在执行的任务
 	CancelTask(context.Context, *CancelTaskRequest) (*CancelTaskResponse, error)
-	// 更新Agent标签 - 动态更新Agent的labels和tags
+	// 更新Agent标签 - 动态更新Agent的labels
 	UpdateLabels(context.Context, *UpdateLabelsRequest) (*UpdateLabelsResponse, error)
 	// 下载插件 - Agent从Server下载插件
 	DownloadPlugin(context.Context, *DownloadPluginRequest) (*DownloadPluginResponse, error)

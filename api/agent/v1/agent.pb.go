@@ -348,10 +348,9 @@ type RegisterRequest struct {
 	Os                string                 `protobuf:"bytes,4,opt,name=os,proto3" json:"os,omitempty"`                                                                                   // 操作系统
 	Arch              string                 `protobuf:"bytes,5,opt,name=arch,proto3" json:"arch,omitempty"`                                                                               // 架构（amd64、arm64等）
 	Version           string                 `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`                                                                         // Agent版本
-	Tags              []string               `protobuf:"bytes,7,rep,name=tags,proto3" json:"tags,omitempty"`                                                                               // Agent标签（用于任务路由）
-	MaxConcurrentJobs int32                  `protobuf:"varint,8,opt,name=max_concurrent_jobs,json=maxConcurrentJobs,proto3" json:"max_concurrent_jobs,omitempty"`                         // 最大并发任务数
-	Labels            map[string]string      `protobuf:"bytes,9,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // 自定义标签
-	InstalledPlugins  []string               `protobuf:"bytes,10,rep,name=installed_plugins,json=installedPlugins,proto3" json:"installed_plugins,omitempty"`                              // Agent已安装的插件列表
+	MaxConcurrentJobs int32                  `protobuf:"varint,7,opt,name=max_concurrent_jobs,json=maxConcurrentJobs,proto3" json:"max_concurrent_jobs,omitempty"`                         // 最大并发任务数
+	Labels            map[string]string      `protobuf:"bytes,8,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // 自定义标签
+	InstalledPlugins  []string               `protobuf:"bytes,9,rep,name=installed_plugins,json=installedPlugins,proto3" json:"installed_plugins,omitempty"`                               // Agent已安装的插件列表
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -426,13 +425,6 @@ func (x *RegisterRequest) GetVersion() string {
 		return x.Version
 	}
 	return ""
-}
-
-func (x *RegisterRequest) GetTags() []string {
-	if x != nil {
-		return x.Tags
-	}
-	return nil
 }
 
 func (x *RegisterRequest) GetMaxConcurrentJobs() int32 {
@@ -636,8 +628,7 @@ type FetchTaskRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AgentId       string                 `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
 	MaxJobs       int32                  `protobuf:"varint,2,opt,name=max_jobs,json=maxJobs,proto3" json:"max_jobs,omitempty"`                                                         // 最多获取的任务数
-	Tags          []string               `protobuf:"bytes,3,rep,name=tags,proto3" json:"tags,omitempty"`                                                                               // Agent支持的标签（已废弃，建议使用labels）
-	Labels        map[string]string      `protobuf:"bytes,4,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // Agent标签（用于任务匹配）
+	Labels        map[string]string      `protobuf:"bytes,3,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // Agent标签（用于任务匹配）
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -684,13 +675,6 @@ func (x *FetchTaskRequest) GetMaxJobs() int32 {
 		return x.MaxJobs
 	}
 	return 0
-}
-
-func (x *FetchTaskRequest) GetTags() []string {
-	if x != nil {
-		return x.Tags
-	}
-	return nil
 }
 
 func (x *FetchTaskRequest) GetLabels() map[string]string {
@@ -772,12 +756,11 @@ type Task struct {
 	Env           map[string]string      `protobuf:"bytes,6,rep,name=env,proto3" json:"env,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`          // 环境变量
 	Workspace     string                 `protobuf:"bytes,7,opt,name=workspace,proto3" json:"workspace,omitempty"`                                                                        // 工作目录
 	Timeout       int32                  `protobuf:"varint,8,opt,name=timeout,proto3" json:"timeout,omitempty"`                                                                           // 超时时间（秒）
-	Tags          []string               `protobuf:"bytes,9,rep,name=tags,proto3" json:"tags,omitempty"`                                                                                  // 任务标签（已废弃，建议使用label_selector）
-	Image         string                 `protobuf:"bytes,10,opt,name=image,proto3" json:"image,omitempty"`                                                                               // Docker镜像（如果需要容器执行）
-	Secrets       map[string]string      `protobuf:"bytes,11,rep,name=secrets,proto3" json:"secrets,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // 密钥信息
-	Artifacts     []*Artifact            `protobuf:"bytes,12,rep,name=artifacts,proto3" json:"artifacts,omitempty"`                                                                       // 产物配置
-	LabelSelector *LabelSelector         `protobuf:"bytes,13,opt,name=label_selector,json=labelSelector,proto3" json:"label_selector,omitempty"`                                          // 标签选择器（用于匹配Agent）
-	Plugins       []*PluginInfo          `protobuf:"bytes,14,rep,name=plugins,proto3" json:"plugins,omitempty"`                                                                           // 任务所需插件列表
+	Image         string                 `protobuf:"bytes,9,opt,name=image,proto3" json:"image,omitempty"`                                                                                // Docker镜像（如果需要容器执行）
+	Secrets       map[string]string      `protobuf:"bytes,10,rep,name=secrets,proto3" json:"secrets,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // 密钥信息
+	Artifacts     []*Artifact            `protobuf:"bytes,11,rep,name=artifacts,proto3" json:"artifacts,omitempty"`                                                                       // 产物配置
+	LabelSelector *LabelSelector         `protobuf:"bytes,12,opt,name=label_selector,json=labelSelector,proto3" json:"label_selector,omitempty"`                                          // 标签选择器（用于匹配Agent）
+	Plugins       []*PluginInfo          `protobuf:"bytes,13,rep,name=plugins,proto3" json:"plugins,omitempty"`                                                                           // 任务所需插件列表
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -866,13 +849,6 @@ func (x *Task) GetTimeout() int32 {
 		return x.Timeout
 	}
 	return 0
-}
-
-func (x *Task) GetTags() []string {
-	if x != nil {
-		return x.Tags
-	}
-	return nil
 }
 
 func (x *Task) GetImage() string {
@@ -1427,8 +1403,7 @@ type UpdateLabelsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AgentId       string                 `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
 	Labels        map[string]string      `protobuf:"bytes,2,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // 要更新的标签（完全替换）
-	Tags          []string               `protobuf:"bytes,3,rep,name=tags,proto3" json:"tags,omitempty"`                                                                               // 要更新的标签列表（完全替换）
-	Merge         bool                   `protobuf:"varint,4,opt,name=merge,proto3" json:"merge,omitempty"`                                                                            // 是否合并模式（true=合并，false=替换）
+	Merge         bool                   `protobuf:"varint,3,opt,name=merge,proto3" json:"merge,omitempty"`                                                                            // 是否合并模式（true=合并，false=替换）
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1473,13 +1448,6 @@ func (x *UpdateLabelsRequest) GetAgentId() string {
 func (x *UpdateLabelsRequest) GetLabels() map[string]string {
 	if x != nil {
 		return x.Labels
-	}
-	return nil
-}
-
-func (x *UpdateLabelsRequest) GetTags() []string {
-	if x != nil {
-		return x.Tags
 	}
 	return nil
 }
@@ -2042,19 +2010,17 @@ const file_agent_v1_agent_proto_rawDesc = "" +
 	"\x11HeartbeatResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x1c\n" +
-	"\ttimestamp\x18\x03 \x01(\x03R\ttimestamp\"\x81\x03\n" +
+	"\ttimestamp\x18\x03 \x01(\x03R\ttimestamp\"\xed\x02\n" +
 	"\x0fRegisterRequest\x12\x19\n" +
 	"\bagent_id\x18\x01 \x01(\tR\aagentId\x12\x1a\n" +
 	"\bhostname\x18\x02 \x01(\tR\bhostname\x12\x0e\n" +
 	"\x02ip\x18\x03 \x01(\tR\x02ip\x12\x0e\n" +
 	"\x02os\x18\x04 \x01(\tR\x02os\x12\x12\n" +
 	"\x04arch\x18\x05 \x01(\tR\x04arch\x12\x18\n" +
-	"\aversion\x18\x06 \x01(\tR\aversion\x12\x12\n" +
-	"\x04tags\x18\a \x03(\tR\x04tags\x12.\n" +
-	"\x13max_concurrent_jobs\x18\b \x01(\x05R\x11maxConcurrentJobs\x12=\n" +
-	"\x06labels\x18\t \x03(\v2%.agent.v1.RegisterRequest.LabelsEntryR\x06labels\x12+\n" +
-	"\x11installed_plugins\x18\n" +
-	" \x03(\tR\x10installedPlugins\x1a9\n" +
+	"\aversion\x18\x06 \x01(\tR\aversion\x12.\n" +
+	"\x13max_concurrent_jobs\x18\a \x01(\x05R\x11maxConcurrentJobs\x12=\n" +
+	"\x06labels\x18\b \x03(\v2%.agent.v1.RegisterRequest.LabelsEntryR\x06labels\x12+\n" +
+	"\x11installed_plugins\x18\t \x03(\tR\x10installedPlugins\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x90\x01\n" +
@@ -2068,19 +2034,18 @@ const file_agent_v1_agent_proto_rawDesc = "" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\"H\n" +
 	"\x12UnregisterResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"\xd7\x01\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"\xc3\x01\n" +
 	"\x10FetchTaskRequest\x12\x19\n" +
 	"\bagent_id\x18\x01 \x01(\tR\aagentId\x12\x19\n" +
-	"\bmax_jobs\x18\x02 \x01(\x05R\amaxJobs\x12\x12\n" +
-	"\x04tags\x18\x03 \x03(\tR\x04tags\x12>\n" +
-	"\x06labels\x18\x04 \x03(\v2&.agent.v1.FetchTaskRequest.LabelsEntryR\x06labels\x1a9\n" +
+	"\bmax_jobs\x18\x02 \x01(\x05R\amaxJobs\x12>\n" +
+	"\x06labels\x18\x03 \x03(\v2&.agent.v1.FetchTaskRequest.LabelsEntryR\x06labels\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"m\n" +
 	"\x11FetchTaskResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12$\n" +
-	"\x05tasks\x18\x03 \x03(\v2\x0e.agent.v1.TaskR\x05tasks\"\xde\x04\n" +
+	"\x05tasks\x18\x03 \x03(\v2\x0e.agent.v1.TaskR\x05tasks\"\xca\x04\n" +
 	"\x04Task\x12\x15\n" +
 	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1f\n" +
@@ -2090,14 +2055,13 @@ const file_agent_v1_agent_proto_rawDesc = "" +
 	"\bcommands\x18\x05 \x03(\tR\bcommands\x12)\n" +
 	"\x03env\x18\x06 \x03(\v2\x17.agent.v1.Task.EnvEntryR\x03env\x12\x1c\n" +
 	"\tworkspace\x18\a \x01(\tR\tworkspace\x12\x18\n" +
-	"\atimeout\x18\b \x01(\x05R\atimeout\x12\x12\n" +
-	"\x04tags\x18\t \x03(\tR\x04tags\x12\x14\n" +
-	"\x05image\x18\n" +
-	" \x01(\tR\x05image\x125\n" +
-	"\asecrets\x18\v \x03(\v2\x1b.agent.v1.Task.SecretsEntryR\asecrets\x120\n" +
-	"\tartifacts\x18\f \x03(\v2\x12.agent.v1.ArtifactR\tartifacts\x12>\n" +
-	"\x0elabel_selector\x18\r \x01(\v2\x17.agent.v1.LabelSelectorR\rlabelSelector\x12.\n" +
-	"\aplugins\x18\x0e \x03(\v2\x14.agent.v1.PluginInfoR\aplugins\x1a6\n" +
+	"\atimeout\x18\b \x01(\x05R\atimeout\x12\x14\n" +
+	"\x05image\x18\t \x01(\tR\x05image\x125\n" +
+	"\asecrets\x18\n" +
+	" \x03(\v2\x1b.agent.v1.Task.SecretsEntryR\asecrets\x120\n" +
+	"\tartifacts\x18\v \x03(\v2\x12.agent.v1.ArtifactR\tartifacts\x12>\n" +
+	"\x0elabel_selector\x18\f \x01(\v2\x17.agent.v1.LabelSelectorR\rlabelSelector\x12.\n" +
+	"\aplugins\x18\r \x03(\v2\x14.agent.v1.PluginInfoR\aplugins\x1a6\n" +
 	"\bEnvEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a:\n" +
@@ -2143,12 +2107,11 @@ const file_agent_v1_agent_proto_rawDesc = "" +
 	"\x06reason\x18\x03 \x01(\tR\x06reason\"H\n" +
 	"\x12CancelTaskResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"\xd8\x01\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"\xc4\x01\n" +
 	"\x13UpdateLabelsRequest\x12\x19\n" +
 	"\bagent_id\x18\x01 \x01(\tR\aagentId\x12A\n" +
-	"\x06labels\x18\x02 \x03(\v2).agent.v1.UpdateLabelsRequest.LabelsEntryR\x06labels\x12\x12\n" +
-	"\x04tags\x18\x03 \x03(\tR\x04tags\x12\x14\n" +
-	"\x05merge\x18\x04 \x01(\bR\x05merge\x1a9\n" +
+	"\x06labels\x18\x02 \x03(\v2).agent.v1.UpdateLabelsRequest.LabelsEntryR\x06labels\x12\x14\n" +
+	"\x05merge\x18\x03 \x01(\bR\x05merge\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc9\x01\n" +

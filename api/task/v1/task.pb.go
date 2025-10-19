@@ -306,21 +306,20 @@ func (x *PingResponse) GetTimestamp() int64 {
 // 创建任务请求
 type CreateTaskRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`                                                                                  // 任务名称
-	PipelineId    string                 `protobuf:"bytes,2,opt,name=pipeline_id,json=pipelineId,proto3" json:"pipeline_id,omitempty"`                                                    // 所属流水线ID
-	Stage         int32                  `protobuf:"varint,3,opt,name=stage,proto3" json:"stage,omitempty"`                                                                               // 阶段序号
-	Commands      []string               `protobuf:"bytes,4,rep,name=commands,proto3" json:"commands,omitempty"`                                                                          // 执行命令列表
-	Env           map[string]string      `protobuf:"bytes,5,rep,name=env,proto3" json:"env,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`          // 环境变量
-	Workspace     string                 `protobuf:"bytes,6,opt,name=workspace,proto3" json:"workspace,omitempty"`                                                                        // 工作目录
-	Timeout       int32                  `protobuf:"varint,7,opt,name=timeout,proto3" json:"timeout,omitempty"`                                                                           // 超时时间（秒，默认3600）
-	Tags          []string               `protobuf:"bytes,8,rep,name=tags,proto3" json:"tags,omitempty"`                                                                                  // 任务标签（已废弃，建议使用label_selector）
-	Image         string                 `protobuf:"bytes,9,opt,name=image,proto3" json:"image,omitempty"`                                                                                // Docker镜像
-	Secrets       map[string]string      `protobuf:"bytes,10,rep,name=secrets,proto3" json:"secrets,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // 密钥信息
-	Artifacts     []*ArtifactConfig      `protobuf:"bytes,11,rep,name=artifacts,proto3" json:"artifacts,omitempty"`                                                                       // 产物配置
-	DependsOn     []string               `protobuf:"bytes,12,rep,name=depends_on,json=dependsOn,proto3" json:"depends_on,omitempty"`                                                      // 依赖的任务ID列表
-	AllowFailure  bool                   `protobuf:"varint,13,opt,name=allow_failure,json=allowFailure,proto3" json:"allow_failure,omitempty"`                                            // 是否允许失败
-	RetryCount    int32                  `protobuf:"varint,14,opt,name=retry_count,json=retryCount,proto3" json:"retry_count,omitempty"`                                                  // 重试次数
-	LabelSelector *LabelSelector         `protobuf:"bytes,15,opt,name=label_selector,json=labelSelector,proto3" json:"label_selector,omitempty"`                                          // 标签选择器（用于匹配Agent）
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`                                                                                 // 任务名称
+	PipelineId    string                 `protobuf:"bytes,2,opt,name=pipeline_id,json=pipelineId,proto3" json:"pipeline_id,omitempty"`                                                   // 所属流水线ID
+	Stage         int32                  `protobuf:"varint,3,opt,name=stage,proto3" json:"stage,omitempty"`                                                                              // 阶段序号
+	Commands      []string               `protobuf:"bytes,4,rep,name=commands,proto3" json:"commands,omitempty"`                                                                         // 执行命令列表
+	Env           map[string]string      `protobuf:"bytes,5,rep,name=env,proto3" json:"env,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`         // 环境变量
+	Workspace     string                 `protobuf:"bytes,6,opt,name=workspace,proto3" json:"workspace,omitempty"`                                                                       // 工作目录
+	Timeout       int32                  `protobuf:"varint,7,opt,name=timeout,proto3" json:"timeout,omitempty"`                                                                          // 超时时间（秒，默认3600）
+	Image         string                 `protobuf:"bytes,8,opt,name=image,proto3" json:"image,omitempty"`                                                                               // Docker镜像
+	Secrets       map[string]string      `protobuf:"bytes,9,rep,name=secrets,proto3" json:"secrets,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // 密钥信息
+	Artifacts     []*ArtifactConfig      `protobuf:"bytes,10,rep,name=artifacts,proto3" json:"artifacts,omitempty"`                                                                      // 产物配置
+	DependsOn     []string               `protobuf:"bytes,11,rep,name=depends_on,json=dependsOn,proto3" json:"depends_on,omitempty"`                                                     // 依赖的任务ID列表
+	AllowFailure  bool                   `protobuf:"varint,12,opt,name=allow_failure,json=allowFailure,proto3" json:"allow_failure,omitempty"`                                           // 是否允许失败
+	RetryCount    int32                  `protobuf:"varint,13,opt,name=retry_count,json=retryCount,proto3" json:"retry_count,omitempty"`                                                 // 重试次数
+	LabelSelector *LabelSelector         `protobuf:"bytes,14,opt,name=label_selector,json=labelSelector,proto3" json:"label_selector,omitempty"`                                         // 标签选择器（用于匹配Agent）
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -402,13 +401,6 @@ func (x *CreateTaskRequest) GetTimeout() int32 {
 		return x.Timeout
 	}
 	return 0
-}
-
-func (x *CreateTaskRequest) GetTags() []string {
-	if x != nil {
-		return x.Tags
-	}
-	return nil
 }
 
 func (x *CreateTaskRequest) GetImage() string {
@@ -716,23 +708,22 @@ type TaskDetail struct {
 	Env           map[string]string      `protobuf:"bytes,7,rep,name=env,proto3" json:"env,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`                                     // 环境变量
 	Workspace     string                 `protobuf:"bytes,8,opt,name=workspace,proto3" json:"workspace,omitempty"`                                                                                                   // 工作目录
 	Timeout       int32                  `protobuf:"varint,9,opt,name=timeout,proto3" json:"timeout,omitempty"`                                                                                                      // 超时时间（秒）
-	Tags          []string               `protobuf:"bytes,10,rep,name=tags,proto3" json:"tags,omitempty"`                                                                                                            // 任务标签（已废弃）
-	Image         string                 `protobuf:"bytes,11,opt,name=image,proto3" json:"image,omitempty"`                                                                                                          // Docker镜像
-	Artifacts     []*ArtifactConfig      `protobuf:"bytes,12,rep,name=artifacts,proto3" json:"artifacts,omitempty"`                                                                                                  // 产物配置
-	DependsOn     []string               `protobuf:"bytes,13,rep,name=depends_on,json=dependsOn,proto3" json:"depends_on,omitempty"`                                                                                 // 依赖的任务ID列表
-	AllowFailure  bool                   `protobuf:"varint,14,opt,name=allow_failure,json=allowFailure,proto3" json:"allow_failure,omitempty"`                                                                       // 是否允许失败
-	RetryCount    int32                  `protobuf:"varint,15,opt,name=retry_count,json=retryCount,proto3" json:"retry_count,omitempty"`                                                                             // 重试次数
-	RetriedTimes  int32                  `protobuf:"varint,16,opt,name=retried_times,json=retriedTimes,proto3" json:"retried_times,omitempty"`                                                                       // 已重试次数
-	AgentId       string                 `protobuf:"bytes,17,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`                                                                                       // 执行的Agent ID
-	ExitCode      int32                  `protobuf:"varint,18,opt,name=exit_code,json=exitCode,proto3" json:"exit_code,omitempty"`                                                                                   // 退出码
-	ErrorMessage  string                 `protobuf:"bytes,19,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`                                                                        // 错误信息
-	CreatedAt     int64                  `protobuf:"varint,20,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`                                                                                // 创建时间
-	StartedAt     int64                  `protobuf:"varint,21,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`                                                                                // 开始时间
-	FinishedAt    int64                  `protobuf:"varint,22,opt,name=finished_at,json=finishedAt,proto3" json:"finished_at,omitempty"`                                                                             // 结束时间
-	Duration      int64                  `protobuf:"varint,23,opt,name=duration,proto3" json:"duration,omitempty"`                                                                                                   // 执行时长（毫秒）
-	CreatedBy     string                 `protobuf:"bytes,24,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`                                                                                 // 创建者
-	LabelSelector *LabelSelector         `protobuf:"bytes,25,opt,name=label_selector,json=labelSelector,proto3" json:"label_selector,omitempty"`                                                                     // 标签选择器
-	AgentLabels   map[string]string      `protobuf:"bytes,26,rep,name=agent_labels,json=agentLabels,proto3" json:"agent_labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // 执行任务的Agent标签
+	Image         string                 `protobuf:"bytes,10,opt,name=image,proto3" json:"image,omitempty"`                                                                                                          // Docker镜像
+	Artifacts     []*ArtifactConfig      `protobuf:"bytes,11,rep,name=artifacts,proto3" json:"artifacts,omitempty"`                                                                                                  // 产物配置
+	DependsOn     []string               `protobuf:"bytes,12,rep,name=depends_on,json=dependsOn,proto3" json:"depends_on,omitempty"`                                                                                 // 依赖的任务ID列表
+	AllowFailure  bool                   `protobuf:"varint,13,opt,name=allow_failure,json=allowFailure,proto3" json:"allow_failure,omitempty"`                                                                       // 是否允许失败
+	RetryCount    int32                  `protobuf:"varint,14,opt,name=retry_count,json=retryCount,proto3" json:"retry_count,omitempty"`                                                                             // 重试次数
+	RetriedTimes  int32                  `protobuf:"varint,15,opt,name=retried_times,json=retriedTimes,proto3" json:"retried_times,omitempty"`                                                                       // 已重试次数
+	AgentId       string                 `protobuf:"bytes,16,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`                                                                                       // 执行的Agent ID
+	ExitCode      int32                  `protobuf:"varint,17,opt,name=exit_code,json=exitCode,proto3" json:"exit_code,omitempty"`                                                                                   // 退出码
+	ErrorMessage  string                 `protobuf:"bytes,18,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`                                                                        // 错误信息
+	CreatedAt     int64                  `protobuf:"varint,19,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`                                                                                // 创建时间
+	StartedAt     int64                  `protobuf:"varint,20,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`                                                                                // 开始时间
+	FinishedAt    int64                  `protobuf:"varint,21,opt,name=finished_at,json=finishedAt,proto3" json:"finished_at,omitempty"`                                                                             // 结束时间
+	Duration      int64                  `protobuf:"varint,22,opt,name=duration,proto3" json:"duration,omitempty"`                                                                                                   // 执行时长（毫秒）
+	CreatedBy     string                 `protobuf:"bytes,23,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`                                                                                 // 创建者
+	LabelSelector *LabelSelector         `protobuf:"bytes,24,opt,name=label_selector,json=labelSelector,proto3" json:"label_selector,omitempty"`                                                                     // 标签选择器
+	AgentLabels   map[string]string      `protobuf:"bytes,25,rep,name=agent_labels,json=agentLabels,proto3" json:"agent_labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // 执行任务的Agent标签
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -828,13 +819,6 @@ func (x *TaskDetail) GetTimeout() int32 {
 		return x.Timeout
 	}
 	return 0
-}
-
-func (x *TaskDetail) GetTags() []string {
-	if x != nil {
-		return x.Tags
-	}
-	return nil
 }
 
 func (x *TaskDetail) GetImage() string {
@@ -1135,7 +1119,6 @@ type UpdateTaskRequest struct {
 	Commands      []string               `protobuf:"bytes,3,rep,name=commands,proto3" json:"commands,omitempty"`                                                                 // 执行命令列表（可选）
 	Env           map[string]string      `protobuf:"bytes,4,rep,name=env,proto3" json:"env,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // 环境变量（可选）
 	Timeout       int32                  `protobuf:"varint,5,opt,name=timeout,proto3" json:"timeout,omitempty"`                                                                  // 超时时间（可选）
-	Tags          []string               `protobuf:"bytes,6,rep,name=tags,proto3" json:"tags,omitempty"`                                                                         // 任务标签（可选）
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1203,13 +1186,6 @@ func (x *UpdateTaskRequest) GetTimeout() int32 {
 		return x.Timeout
 	}
 	return 0
-}
-
-func (x *UpdateTaskRequest) GetTags() []string {
-	if x != nil {
-		return x.Tags
-	}
-	return nil
 }
 
 // 更新任务响应
@@ -2050,12 +2026,11 @@ type TaskConfig struct {
 	Env           map[string]string      `protobuf:"bytes,3,rep,name=env,proto3" json:"env,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // 环境变量
 	Workspace     string                 `protobuf:"bytes,4,opt,name=workspace,proto3" json:"workspace,omitempty"`                                                               // 工作目录
 	Timeout       int32                  `protobuf:"varint,5,opt,name=timeout,proto3" json:"timeout,omitempty"`                                                                  // 超时时间
-	Tags          []string               `protobuf:"bytes,6,rep,name=tags,proto3" json:"tags,omitempty"`                                                                         // 任务标签（已废弃，建议使用label_selector）
-	Image         string                 `protobuf:"bytes,7,opt,name=image,proto3" json:"image,omitempty"`                                                                       // Docker镜像
-	Artifacts     []*ArtifactConfig      `protobuf:"bytes,8,rep,name=artifacts,proto3" json:"artifacts,omitempty"`                                                               // 产物配置
-	AllowFailure  bool                   `protobuf:"varint,9,opt,name=allow_failure,json=allowFailure,proto3" json:"allow_failure,omitempty"`                                    // 是否允许失败
-	RetryCount    int32                  `protobuf:"varint,10,opt,name=retry_count,json=retryCount,proto3" json:"retry_count,omitempty"`                                         // 重试次数
-	LabelSelector *LabelSelector         `protobuf:"bytes,11,opt,name=label_selector,json=labelSelector,proto3" json:"label_selector,omitempty"`                                 // 标签选择器（用于匹配Agent）
+	Image         string                 `protobuf:"bytes,6,opt,name=image,proto3" json:"image,omitempty"`                                                                       // Docker镜像
+	Artifacts     []*ArtifactConfig      `protobuf:"bytes,7,rep,name=artifacts,proto3" json:"artifacts,omitempty"`                                                               // 产物配置
+	AllowFailure  bool                   `protobuf:"varint,8,opt,name=allow_failure,json=allowFailure,proto3" json:"allow_failure,omitempty"`                                    // 是否允许失败
+	RetryCount    int32                  `protobuf:"varint,9,opt,name=retry_count,json=retryCount,proto3" json:"retry_count,omitempty"`                                          // 重试次数
+	LabelSelector *LabelSelector         `protobuf:"bytes,10,opt,name=label_selector,json=labelSelector,proto3" json:"label_selector,omitempty"`                                 // 标签选择器（用于匹配Agent）
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2123,13 +2098,6 @@ func (x *TaskConfig) GetTimeout() int32 {
 		return x.Timeout
 	}
 	return 0
-}
-
-func (x *TaskConfig) GetTags() []string {
-	if x != nil {
-		return x.Tags
-	}
-	return nil
 }
 
 func (x *TaskConfig) GetImage() string {
@@ -2292,7 +2260,7 @@ const file_task_v1_task_proto_rawDesc = "" +
 	"\amessage\x18\x01 \x01(\tR\amessage\"F\n" +
 	"\fPingResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\x12\x1c\n" +
-	"\ttimestamp\x18\x02 \x01(\x03R\ttimestamp\"\xa5\x05\n" +
+	"\ttimestamp\x18\x02 \x01(\x03R\ttimestamp\"\x91\x05\n" +
 	"\x11CreateTaskRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1f\n" +
 	"\vpipeline_id\x18\x02 \x01(\tR\n" +
@@ -2301,18 +2269,17 @@ const file_task_v1_task_proto_rawDesc = "" +
 	"\bcommands\x18\x04 \x03(\tR\bcommands\x125\n" +
 	"\x03env\x18\x05 \x03(\v2#.task.v1.CreateTaskRequest.EnvEntryR\x03env\x12\x1c\n" +
 	"\tworkspace\x18\x06 \x01(\tR\tworkspace\x12\x18\n" +
-	"\atimeout\x18\a \x01(\x05R\atimeout\x12\x12\n" +
-	"\x04tags\x18\b \x03(\tR\x04tags\x12\x14\n" +
-	"\x05image\x18\t \x01(\tR\x05image\x12A\n" +
-	"\asecrets\x18\n" +
-	" \x03(\v2'.task.v1.CreateTaskRequest.SecretsEntryR\asecrets\x125\n" +
-	"\tartifacts\x18\v \x03(\v2\x17.task.v1.ArtifactConfigR\tartifacts\x12\x1d\n" +
+	"\atimeout\x18\a \x01(\x05R\atimeout\x12\x14\n" +
+	"\x05image\x18\b \x01(\tR\x05image\x12A\n" +
+	"\asecrets\x18\t \x03(\v2'.task.v1.CreateTaskRequest.SecretsEntryR\asecrets\x125\n" +
+	"\tartifacts\x18\n" +
+	" \x03(\v2\x17.task.v1.ArtifactConfigR\tartifacts\x12\x1d\n" +
 	"\n" +
-	"depends_on\x18\f \x03(\tR\tdependsOn\x12#\n" +
-	"\rallow_failure\x18\r \x01(\bR\fallowFailure\x12\x1f\n" +
-	"\vretry_count\x18\x0e \x01(\x05R\n" +
+	"depends_on\x18\v \x03(\tR\tdependsOn\x12#\n" +
+	"\rallow_failure\x18\f \x01(\bR\fallowFailure\x12\x1f\n" +
+	"\vretry_count\x18\r \x01(\x05R\n" +
 	"retryCount\x12=\n" +
-	"\x0elabel_selector\x18\x0f \x01(\v2\x16.task.v1.LabelSelectorR\rlabelSelector\x1a6\n" +
+	"\x0elabel_selector\x18\x0e \x01(\v2\x16.task.v1.LabelSelectorR\rlabelSelector\x1a6\n" +
 	"\bEnvEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a:\n" +
@@ -2335,7 +2302,7 @@ const file_task_v1_task_proto_rawDesc = "" +
 	"\x0fGetTaskResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12'\n" +
-	"\x04task\x18\x03 \x01(\v2\x13.task.v1.TaskDetailR\x04task\"\x83\b\n" +
+	"\x04task\x18\x03 \x01(\v2\x13.task.v1.TaskDetailR\x04task\"\xef\a\n" +
 	"\n" +
 	"TaskDetail\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x12\n" +
@@ -2347,31 +2314,30 @@ const file_task_v1_task_proto_rawDesc = "" +
 	"\bcommands\x18\x06 \x03(\tR\bcommands\x12.\n" +
 	"\x03env\x18\a \x03(\v2\x1c.task.v1.TaskDetail.EnvEntryR\x03env\x12\x1c\n" +
 	"\tworkspace\x18\b \x01(\tR\tworkspace\x12\x18\n" +
-	"\atimeout\x18\t \x01(\x05R\atimeout\x12\x12\n" +
-	"\x04tags\x18\n" +
-	" \x03(\tR\x04tags\x12\x14\n" +
-	"\x05image\x18\v \x01(\tR\x05image\x125\n" +
-	"\tartifacts\x18\f \x03(\v2\x17.task.v1.ArtifactConfigR\tartifacts\x12\x1d\n" +
+	"\atimeout\x18\t \x01(\x05R\atimeout\x12\x14\n" +
+	"\x05image\x18\n" +
+	" \x01(\tR\x05image\x125\n" +
+	"\tartifacts\x18\v \x03(\v2\x17.task.v1.ArtifactConfigR\tartifacts\x12\x1d\n" +
 	"\n" +
-	"depends_on\x18\r \x03(\tR\tdependsOn\x12#\n" +
-	"\rallow_failure\x18\x0e \x01(\bR\fallowFailure\x12\x1f\n" +
-	"\vretry_count\x18\x0f \x01(\x05R\n" +
+	"depends_on\x18\f \x03(\tR\tdependsOn\x12#\n" +
+	"\rallow_failure\x18\r \x01(\bR\fallowFailure\x12\x1f\n" +
+	"\vretry_count\x18\x0e \x01(\x05R\n" +
 	"retryCount\x12#\n" +
-	"\rretried_times\x18\x10 \x01(\x05R\fretriedTimes\x12\x19\n" +
-	"\bagent_id\x18\x11 \x01(\tR\aagentId\x12\x1b\n" +
-	"\texit_code\x18\x12 \x01(\x05R\bexitCode\x12#\n" +
-	"\rerror_message\x18\x13 \x01(\tR\ferrorMessage\x12\x1d\n" +
+	"\rretried_times\x18\x0f \x01(\x05R\fretriedTimes\x12\x19\n" +
+	"\bagent_id\x18\x10 \x01(\tR\aagentId\x12\x1b\n" +
+	"\texit_code\x18\x11 \x01(\x05R\bexitCode\x12#\n" +
+	"\rerror_message\x18\x12 \x01(\tR\ferrorMessage\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x14 \x01(\x03R\tcreatedAt\x12\x1d\n" +
+	"created_at\x18\x13 \x01(\x03R\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"started_at\x18\x15 \x01(\x03R\tstartedAt\x12\x1f\n" +
-	"\vfinished_at\x18\x16 \x01(\x03R\n" +
+	"started_at\x18\x14 \x01(\x03R\tstartedAt\x12\x1f\n" +
+	"\vfinished_at\x18\x15 \x01(\x03R\n" +
 	"finishedAt\x12\x1a\n" +
-	"\bduration\x18\x17 \x01(\x03R\bduration\x12\x1d\n" +
+	"\bduration\x18\x16 \x01(\x03R\bduration\x12\x1d\n" +
 	"\n" +
-	"created_by\x18\x18 \x01(\tR\tcreatedBy\x12=\n" +
-	"\x0elabel_selector\x18\x19 \x01(\v2\x16.task.v1.LabelSelectorR\rlabelSelector\x12G\n" +
-	"\fagent_labels\x18\x1a \x03(\v2$.task.v1.TaskDetail.AgentLabelsEntryR\vagentLabels\x1a6\n" +
+	"created_by\x18\x17 \x01(\tR\tcreatedBy\x12=\n" +
+	"\x0elabel_selector\x18\x18 \x01(\v2\x16.task.v1.LabelSelectorR\rlabelSelector\x12G\n" +
+	"\fagent_labels\x18\x19 \x03(\v2$.task.v1.TaskDetail.AgentLabelsEntryR\vagentLabels\x1a6\n" +
 	"\bEnvEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a>\n" +
@@ -2393,14 +2359,13 @@ const file_task_v1_task_proto_rawDesc = "" +
 	"\x05tasks\x18\x03 \x03(\v2\x13.task.v1.TaskDetailR\x05tasks\x12\x14\n" +
 	"\x05total\x18\x04 \x01(\x05R\x05total\x12\x12\n" +
 	"\x04page\x18\x05 \x01(\x05R\x04page\x12\x1b\n" +
-	"\tpage_size\x18\x06 \x01(\x05R\bpageSize\"\xf9\x01\n" +
+	"\tpage_size\x18\x06 \x01(\x05R\bpageSize\"\xe5\x01\n" +
 	"\x11UpdateTaskRequest\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1a\n" +
 	"\bcommands\x18\x03 \x03(\tR\bcommands\x125\n" +
 	"\x03env\x18\x04 \x03(\v2#.task.v1.UpdateTaskRequest.EnvEntryR\x03env\x12\x18\n" +
-	"\atimeout\x18\x05 \x01(\x05R\atimeout\x12\x12\n" +
-	"\x04tags\x18\x06 \x03(\tR\x04tags\x1a6\n" +
+	"\atimeout\x18\x05 \x01(\x05R\atimeout\x1a6\n" +
 	"\bEnvEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"H\n" +
@@ -2460,22 +2425,21 @@ const file_task_v1_task_proto_rawDesc = "" +
 	"\x05Stage\x12\x14\n" +
 	"\x05order\x18\x01 \x01(\x05R\x05order\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12)\n" +
-	"\x05tasks\x18\x03 \x03(\v2\x13.task.v1.TaskConfigR\x05tasks\"\xc2\x03\n" +
+	"\x05tasks\x18\x03 \x03(\v2\x13.task.v1.TaskConfigR\x05tasks\"\xae\x03\n" +
 	"\n" +
 	"TaskConfig\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\bcommands\x18\x02 \x03(\tR\bcommands\x12.\n" +
 	"\x03env\x18\x03 \x03(\v2\x1c.task.v1.TaskConfig.EnvEntryR\x03env\x12\x1c\n" +
 	"\tworkspace\x18\x04 \x01(\tR\tworkspace\x12\x18\n" +
-	"\atimeout\x18\x05 \x01(\x05R\atimeout\x12\x12\n" +
-	"\x04tags\x18\x06 \x03(\tR\x04tags\x12\x14\n" +
-	"\x05image\x18\a \x01(\tR\x05image\x125\n" +
-	"\tartifacts\x18\b \x03(\v2\x17.task.v1.ArtifactConfigR\tartifacts\x12#\n" +
-	"\rallow_failure\x18\t \x01(\bR\fallowFailure\x12\x1f\n" +
-	"\vretry_count\x18\n" +
-	" \x01(\x05R\n" +
+	"\atimeout\x18\x05 \x01(\x05R\atimeout\x12\x14\n" +
+	"\x05image\x18\x06 \x01(\tR\x05image\x125\n" +
+	"\tartifacts\x18\a \x03(\v2\x17.task.v1.ArtifactConfigR\tartifacts\x12#\n" +
+	"\rallow_failure\x18\b \x01(\bR\fallowFailure\x12\x1f\n" +
+	"\vretry_count\x18\t \x01(\x05R\n" +
 	"retryCount\x12=\n" +
-	"\x0elabel_selector\x18\v \x01(\v2\x16.task.v1.LabelSelectorR\rlabelSelector\x1a6\n" +
+	"\x0elabel_selector\x18\n" +
+	" \x01(\v2\x16.task.v1.LabelSelectorR\rlabelSelector\x1a6\n" +
 	"\bEnvEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xeb\x01\n" +

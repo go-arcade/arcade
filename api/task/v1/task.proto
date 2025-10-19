@@ -77,14 +77,13 @@ message CreateTaskRequest {
   map<string, string> env = 5;          // 环境变量
   string workspace = 6;                 // 工作目录
   int32 timeout = 7;                    // 超时时间（秒，默认3600）
-  repeated string tags = 8;             // 任务标签（已废弃，建议使用label_selector）
-  string image = 9;                     // Docker镜像
-  map<string, string> secrets = 10;     // 密钥信息
-  repeated ArtifactConfig artifacts = 11; // 产物配置
-  repeated string depends_on = 12;      // 依赖的任务ID列表
-  bool allow_failure = 13;              // 是否允许失败
-  int32 retry_count = 14;               // 重试次数
-  LabelSelector label_selector = 15;    // 标签选择器（用于匹配Agent）
+  string image = 8;                     // Docker镜像
+  map<string, string> secrets = 9;      // 密钥信息
+  repeated ArtifactConfig artifacts = 10; // 产物配置
+  repeated string depends_on = 11;      // 依赖的任务ID列表
+  bool allow_failure = 12;              // 是否允许失败
+  int32 retry_count = 13;               // 重试次数
+  LabelSelector label_selector = 14;    // 标签选择器（用于匹配Agent）
 }
 
 // 产物配置
@@ -126,23 +125,22 @@ message TaskDetail {
   map<string, string> env = 7;          // 环境变量
   string workspace = 8;                 // 工作目录
   int32 timeout = 9;                    // 超时时间（秒）
-  repeated string tags = 10;            // 任务标签（已废弃）
-  string image = 11;                    // Docker镜像
-  repeated ArtifactConfig artifacts = 12; // 产物配置
-  repeated string depends_on = 13;      // 依赖的任务ID列表
-  bool allow_failure = 14;              // 是否允许失败
-  int32 retry_count = 15;               // 重试次数
-  int32 retried_times = 16;             // 已重试次数
-  string agent_id = 17;                 // 执行的Agent ID
-  int32 exit_code = 18;                 // 退出码
-  string error_message = 19;            // 错误信息
-  int64 created_at = 20;                // 创建时间
-  int64 started_at = 21;                // 开始时间
-  int64 finished_at = 22;               // 结束时间
-  int64 duration = 23;                  // 执行时长（毫秒）
-  string created_by = 24;               // 创建者
-  LabelSelector label_selector = 25;    // 标签选择器
-  map<string, string> agent_labels = 26; // 执行任务的Agent标签
+  string image = 10;                    // Docker镜像
+  repeated ArtifactConfig artifacts = 11; // 产物配置
+  repeated string depends_on = 12;      // 依赖的任务ID列表
+  bool allow_failure = 13;              // 是否允许失败
+  int32 retry_count = 14;               // 重试次数
+  int32 retried_times = 15;             // 已重试次数
+  string agent_id = 16;                 // 执行的Agent ID
+  int32 exit_code = 17;                 // 退出码
+  string error_message = 18;            // 错误信息
+  int64 created_at = 19;                // 创建时间
+  int64 started_at = 20;                // 开始时间
+  int64 finished_at = 21;               // 结束时间
+  int64 duration = 22;                  // 执行时长（毫秒）
+  string created_by = 23;               // 创建者
+  LabelSelector label_selector = 24;    // 标签选择器
+  map<string, string> agent_labels = 25; // 执行任务的Agent标签
 }
 
 // 列出任务请求
@@ -173,7 +171,6 @@ message UpdateTaskRequest {
   repeated string commands = 3;         // 执行命令列表（可选）
   map<string, string> env = 4;          // 环境变量（可选）
   int32 timeout = 5;                    // 超时时间（可选）
-  repeated string tags = 6;             // 任务标签（可选）
 }
 
 // 更新任务响应
@@ -278,12 +275,11 @@ message TaskConfig {
   map<string, string> env = 3;          // 环境变量
   string workspace = 4;                 // 工作目录
   int32 timeout = 5;                    // 超时时间
-  repeated string tags = 6;             // 任务标签（已废弃，建议使用label_selector）
-  string image = 7;                     // Docker镜像
-  repeated ArtifactConfig artifacts = 8; // 产物配置
-  bool allow_failure = 9;               // 是否允许失败
-  int32 retry_count = 10;               // 重试次数
-  LabelSelector label_selector = 11;    // 标签选择器（用于匹配Agent）
+  string image = 6;                     // Docker镜像
+  repeated ArtifactConfig artifacts = 7; // 产物配置
+  bool allow_failure = 8;               // 是否允许失败
+  int32 retry_count = 9;                // 重试次数
+  LabelSelector label_selector = 10;    // 标签选择器（用于匹配Agent）
 }
 
 // ============ 标签选择器相关 ============

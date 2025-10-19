@@ -195,7 +195,6 @@ message LogData {
 // 获取任务请求
 message TaskFetchRequest {
   int32 max_tasks = 1;
-  repeated string tags = 2;
 }
 
 // Agent指标
@@ -240,9 +239,8 @@ message TaskInfo {
   map<string, string> env = 6;
   string workspace = 7;
   int32 timeout = 8;
-  repeated string tags = 9;
-  string image = 10;
-  map<string, string> secrets = 11;
+  string image = 9;
+  map<string, string> secrets = 10;
 }
 
 // 取消任务命令
