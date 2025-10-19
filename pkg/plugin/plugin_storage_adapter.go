@@ -1,7 +1,3 @@
-// Package plugin storage adapter implementation
-// Author: gagral.x@gmail.com
-// Date: 2025/01/16
-// Description: Storage service adapter that allows storage services to be used by the plugin manager
 package plugin
 
 import (
