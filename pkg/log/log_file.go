@@ -2,26 +2,37 @@ package log
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/6/8 1:21
- * @file: log_file.go
- * @description: logger writer file
- */
-const filename string = "arcade.LOG"
+const defaultFilename string = "log.LOG"
 
 // getFileLogWriter returns the WriteSyncer for logging to a file.
-func getFileLogWriter(config *LogConfig) zapcore.WriteSyncer {
+func getFileLogWriter(config *Conf) (zapcore.WriteSyncer, error) {
+	// 确保日志目录存在
+	if err := os.MkdirAll(config.Path, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create log directory: %w", err)
+	}
+
+	// 如果 filename 为空，使用默认值
+	filename := config.Filename
+	if filename == "" {
+		filename = defaultFilename
+	}
+
+	logPath := filepath.Join(config.Path, filename)
+
 	lumberJackLogger := &lumberjack.Logger{
-		Filename:   fmt.Sprintf("%s/%s", config.Path, filename),
-		MaxSize:    config.rotateSize,
-		MaxBackups: config.rotateNum,
-		MaxAge:     config.keepHours,
+		Filename:   logPath,
+		MaxSize:    config.RotateSize, // MB
+		MaxBackups: config.RotateNum,
+		MaxAge:     config.KeepHours, // days
 		Compress:   true,
 	}
-	return zapcore.AddSync(lumberJackLogger)
+
+	return zapcore.AddSync(lumberJackLogger), nil
 }

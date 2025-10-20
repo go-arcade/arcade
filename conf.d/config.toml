@@ -5,6 +5,8 @@ output = "stdout"
 level = "DEBUG"
 # log write directory
 path = "logs"
+# log file name
+filename = "arcade.LOG"
 # rotate by time
 keepHours = 4
 # rotate by size
