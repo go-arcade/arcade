@@ -33,7 +33,10 @@ func main() {
 	appConf := conf.NewConf(configFile)
 
 	// 初始化日志
-	logger := log.NewLog(&appConf.Log)
+	logger, err := log.NewLog(&appConf.Log)
+	if err != nil {
+		panic(err)
+	}
 
 	// 初始化 Redis、数据库、context
 	redis, err := cache.NewRedis(appConf.Redis)
