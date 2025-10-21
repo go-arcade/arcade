@@ -19,9 +19,9 @@ func (rt *Router) authRouter(r fiber.Router, auth fiber.Handler) {
 		authGroup.Get("/providers/:name", auth, rt.getProvider)       // 获取指定 provider
 
 		// 认证流程（无需认证）
-		authGroup.Get("/authorize/:provider", rt.authorize) // 发起授权（OAuth/OIDC）
-		authGroup.Get("/callback/:provider", rt.callback)   // 授权回调
-		authGroup.Post("/ldap/login/:provider", rt.ldapLogin)        // 登录（LDAP 或其他）
+		authGroup.Get("/authorize/:provider", rt.authorize)   // 发起授权（OAuth/OIDC）
+		authGroup.Get("/callback/:provider", rt.callback)     // 授权回调
+		authGroup.Post("/ldap/login/:provider", rt.ldapLogin) // 登录（LDAP 或其他）
 	}
 }
 
@@ -36,7 +36,7 @@ func (rt *Router) authorize(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.ProviderIsRequired.Code, http.ProviderIsRequired.Msg, c.Path())
 	}
 
-	url, err := authService.Redirect(providerName)
+	url, err := authService.Authorize(providerName)
 	if err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
 	}

@@ -28,7 +28,7 @@ func NewAuthService(authRepo *repo.SSORepo, userRepo *repo.UserRepo) *AuthServic
 	}
 }
 
-func (as *AuthService) Redirect(providerName string) (string, error) {
+func (as *AuthService) Authorize(providerName string) (string, error) {
 	ssoProvider, err := as.authRepo.GetProvider(providerName)
 	if err != nil {
 		log.Errorf("failed to get oauth provider: %v", err)
