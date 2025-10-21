@@ -13,9 +13,9 @@ import (
 
 	"github.com/observabil/arcade/pkg/log"
 
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
-	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpcrecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	grpcctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	agentv1 "github.com/observabil/arcade/api/agent/v1"
 	pipelinev1 "github.com/observabil/arcade/api/pipeline/v1"
 	streamv1 "github.com/observabil/arcade/api/stream/v1"
@@ -27,8 +27,8 @@ import (
 	"github.com/observabil/arcade/internal/pkg/grpc/middleware"
 )
 
-// gRPC 配置
-type GrpcConf struct {
+// Conf 配置
+type Conf struct {
 	Host             string
 	Port             int
 	MaxConnections   int
@@ -40,21 +40,21 @@ type ServerWrapper struct {
 }
 
 // NewGrpcServer 创建 gRPC 服务
-func NewGrpcServer(cfg GrpcConf, log *zap.Logger) *ServerWrapper {
+func NewGrpcServer(cfg Conf, log *zap.Logger) *ServerWrapper {
 	opts := []grpc.ServerOption{
 		grpc.MaxConcurrentStreams(uint32(cfg.MaxConnections)),
-		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+		grpc.StreamInterceptor(grpcmiddleware.ChainStreamServer(
 			// 注意顺序，先 tags，再 logging，再 auth，最后 recovery
-			grpc_ctxtags.StreamServerInterceptor(),
+			grpcctxtags.StreamServerInterceptor(),
 			middleware.LoggingStreamInterceptor(log), // 使用自定义日志拦截器，可过滤心跳接口
 			middleware.AuthStreamInterceptor(),       // 使用自定义认证拦截器，可跳过心跳接口
-			grpc_recovery.StreamServerInterceptor(),
+			grpcrecovery.StreamServerInterceptor(),
 		)),
-		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
-			grpc_ctxtags.UnaryServerInterceptor(),
+		grpc.UnaryInterceptor(grpcmiddleware.ChainUnaryServer(
+			grpcctxtags.UnaryServerInterceptor(),
 			middleware.LoggingUnaryInterceptor(log), // 使用自定义日志拦截器，可过滤心跳接口
 			middleware.AuthUnaryInterceptor(),       // 使用自定义认证拦截器，可跳过心跳接口
-			grpc_recovery.UnaryServerInterceptor(),
+			grpcrecovery.UnaryServerInterceptor(),
 		)),
 	}
 
@@ -62,7 +62,7 @@ func NewGrpcServer(cfg GrpcConf, log *zap.Logger) *ServerWrapper {
 	return &ServerWrapper{svr: s}
 }
 
-// RegisterAll 注册所有 gRPC 服务
+// Register 注册所有 gRPC 服务
 func (s *ServerWrapper) Register() {
 	agentv1.RegisterAgentServiceServer(s.svr, &agent.AgentServiceImpl{})
 	taskv1.RegisterTaskServiceServer(s.svr, &task.TaskServiceImpl{})
@@ -73,7 +73,7 @@ func (s *ServerWrapper) Register() {
 }
 
 // Start 启动服务
-func (s *ServerWrapper) Start(cfg GrpcConf) error {
+func (s *ServerWrapper) Start(cfg Conf) error {
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {

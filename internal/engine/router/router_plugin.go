@@ -8,7 +8,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/observabil/arcade/internal/engine/repo"
-	service_plugin "github.com/observabil/arcade/internal/engine/service/plugin"
+	serviceplugin "github.com/observabil/arcade/internal/engine/service/plugin"
 	httpx "github.com/observabil/arcade/pkg/http"
 	"github.com/observabil/arcade/pkg/http/middleware"
 	"github.com/observabil/arcade/pkg/log"
@@ -52,7 +52,7 @@ func (rt *Router) pluginRouter(r fiber.Router, auth fiber.Handler) {
 }
 
 // getPluginService 获取插件服务实例
-func (rt *Router) getPluginService() *service_plugin.PluginService {
+func (rt *Router) getPluginService() *serviceplugin.PluginService {
 	pluginRepo := repo.NewPluginRepo(rt.Ctx)
 
 	// Use shared plugin manager from router
@@ -75,7 +75,7 @@ func (rt *Router) getPluginService() *service_plugin.PluginService {
 		return nil
 	}
 
-	return service_plugin.NewPluginService(rt.Ctx, pluginRepo, rt.PluginManager, storageProvider)
+	return serviceplugin.NewPluginService(rt.Ctx, pluginRepo, rt.PluginManager, storageProvider)
 }
 
 // listPlugins 列出所有插件
@@ -137,13 +137,13 @@ func (rt *Router) installPlugin(c *fiber.Ctx) error {
 		return httpx.WithRepErrMsg(c, httpx.BadRequest.Code, "source is required", c.Path())
 	}
 
-	req := &service_plugin.InstallPluginRequest{
-		Source: service_plugin.PluginSource(source),
+	req := &serviceplugin.InstallPluginRequest{
+		Source: serviceplugin.PluginSource(source),
 	}
 
 	// 根据来源处理
-	switch service_plugin.PluginSource(source) {
-	case service_plugin.PluginSourceLocal:
+	switch serviceplugin.PluginSource(source) {
+	case serviceplugin.PluginSourceLocal:
 		// 获取上传的zip文件
 		file, err := c.FormFile("file")
 		if err != nil {
@@ -156,7 +156,7 @@ func (rt *Router) installPlugin(c *fiber.Ctx) error {
 		req.File = file
 
 		// marketplace source 暂未实现
-	case service_plugin.PluginSourceMarket:
+	case serviceplugin.PluginSourceMarket:
 		// 	// 获取市场插件ID
 		// 	marketID := c.FormValue("marketId")
 		// 	if marketID == "" {
@@ -292,8 +292,8 @@ func (rt *Router) updatePlugin(c *fiber.Ctx) error {
 		return httpx.WithRepErrMsg(c, httpx.BadRequest.Code, "source is required", c.Path())
 	}
 
-	req := &service_plugin.InstallPluginRequest{
-		Source: service_plugin.PluginSource(source),
+	req := &serviceplugin.InstallPluginRequest{
+		Source: serviceplugin.PluginSource(source),
 		File:   nil, // 从上传文件获取
 	}
 
@@ -318,7 +318,7 @@ func (rt *Router) validateManifest(c *fiber.Ctx) error {
 	// 可以接收JSON格式的manifest，或者上传zip包进行验证
 	contentType := c.Get("Content-Type")
 
-	var manifest service_plugin.PluginManifest
+	var manifest serviceplugin.PluginManifest
 
 	if strings.Contains(contentType, "application/json") {
 		// JSON格式
@@ -403,7 +403,7 @@ func (rt *Router) createPluginConfig(c *fiber.Ctx) error {
 		return httpx.WithRepErrMsg(c, httpx.BadRequest.Code, "pluginId is required", c.Path())
 	}
 
-	var req service_plugin.UpdatePluginConfigRequest
+	var req serviceplugin.UpdatePluginConfigRequest
 	if err := c.BodyParser(&req); err != nil {
 		return httpx.WithRepErrMsg(c, httpx.BadRequest.Code, fmt.Sprintf("invalid request: %v", err), c.Path())
 	}
@@ -434,7 +434,7 @@ func (rt *Router) updatePluginConfig(c *fiber.Ctx) error {
 		return httpx.WithRepErrMsg(c, httpx.BadRequest.Code, "pluginId is required", c.Path())
 	}
 
-	var req service_plugin.UpdatePluginConfigRequest
+	var req serviceplugin.UpdatePluginConfigRequest
 	if err := c.BodyParser(&req); err != nil {
 		return httpx.WithRepErrMsg(c, httpx.BadRequest.Code, fmt.Sprintf("invalid request: %v", err), c.Path())
 	}

@@ -16,7 +16,6 @@ import (
 	"github.com/observabil/arcade/pkg/ctx"
 	httpx "github.com/observabil/arcade/pkg/http"
 	"github.com/observabil/arcade/pkg/http/middleware"
-	"github.com/observabil/arcade/pkg/http/ws"
 	pluginpkg "github.com/observabil/arcade/pkg/plugin"
 	"github.com/observabil/arcade/pkg/version"
 	"go.uber.org/zap"
@@ -55,7 +54,8 @@ func (rt *Router) Router(log *zap.Logger) *fiber.App {
 	}
 
 	app := fiber.New(fiber.Config{
-		AppName:      "Arcade",
+		AppName: "Arcade",
+		// DisableStartupMessage: true,
 		ReadTimeout:  time.Duration(rt.Http.ReadTimeout) * time.Second,
 		WriteTimeout: time.Duration(rt.Http.WriteTimeout) * time.Second,
 		IdleTimeout:  time.Duration(rt.Http.IdleTimeout) * time.Second,
@@ -120,7 +120,7 @@ func (rt *Router) Router(log *zap.Logger) *fiber.App {
 	api := app.Group(apiContextPath)
 	{
 		// WebSocket
-		api.Post("/ws", ws.Handle)
+		// api.Post("/ws", ws.Handle)
 
 		// 核心路由
 		rt.routerGroup(api)

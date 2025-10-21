@@ -3,7 +3,7 @@ package app
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/observabil/arcade/internal/engine/router"
-	service_plugin "github.com/observabil/arcade/internal/engine/service/plugin"
+	serviceplugin "github.com/observabil/arcade/internal/engine/service/plugin"
 	"github.com/observabil/arcade/internal/pkg/grpc"
 	"github.com/observabil/arcade/pkg/ctx"
 	"github.com/observabil/arcade/pkg/log"
@@ -31,7 +31,7 @@ func NewApp(
 	httpApp := rt.Router(logger)
 
 	// 初始化插件任务管理器（MongoDB持久化）
-	service_plugin.InitTaskManager(appCtx)
+	serviceplugin.InitTaskManager(appCtx)
 	logger.Info("Plugin task manager initialized with MongoDB persistence")
 
 	cleanup := func() {

@@ -25,8 +25,8 @@ type PluginConfig struct {
 }
 
 type AppConfig struct {
-	Log      log.LogConfig
-	Grpc     grpc.GrpcConf
+	Log      log.Conf
+	Grpc     grpc.Conf
 	Http     http.Http
 	Database database.Database
 	Redis    cache.Redis
@@ -75,8 +75,4 @@ func LoadConfigFile(confDir string) (AppConfig, error) {
 	fmt.Printf("[Init] config file path: %s\n", confDir)
 
 	return cfg, nil
-}
-
-func GetString(key string) string {
-	return viper.GetString(key)
 }
