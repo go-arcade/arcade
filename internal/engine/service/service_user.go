@@ -78,7 +78,7 @@ func (ul *UserService) Login(login *model.Login, auth http.Auth) (*model.LoginRe
 	}
 
 	go func() {
-		if err = ul.userRepo.SetLoginRespInfo(auth.RedisKeyPrefix, auth.AccessExpire, resp); err != nil {
+		if err = ul.userRepo.SetLoginRespInfo(auth.AccessExpire, resp); err != nil {
 			log.Errorf("failed to set login response info: %v", err)
 			return
 		}
@@ -88,8 +88,11 @@ func (ul *UserService) Login(login *model.Login, auth http.Auth) (*model.LoginRe
 }
 
 func (ul *UserService) Refresh(userId, rToken string, auth *http.Auth) (map[string]string, error) {
-	var err error
 	token, err := jwt.RefreshToken(auth, userId, rToken)
+	if err != nil {
+		log.Errorf("failed to refresh token: %v", err)
+		return nil, err
+	}
 
 	k, err := ul.userRepo.SetToken(userId, token["accessToken"], *auth)
 	log.Debugf("token key: %v", k)
@@ -98,7 +101,7 @@ func (ul *UserService) Refresh(userId, rToken string, auth *http.Auth) (map[stri
 		return token, err
 	}
 
-	return token, err
+	return token, nil
 }
 
 func (ul *UserService) Register(register *model.Register) error {

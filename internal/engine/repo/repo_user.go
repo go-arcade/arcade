@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bytedance/sonic"
+	"github.com/observabil/arcade/internal/engine/consts"
 	"github.com/observabil/arcade/internal/engine/model"
 	"github.com/observabil/arcade/pkg/ctx"
 	"github.com/observabil/arcade/pkg/http"
@@ -34,21 +36,20 @@ func (ur *UserRepo) UpdateUser(userId string, user *model.User) error {
 
 func (ur *UserRepo) GetUserInfo(userId string) (*model.UserInfo, error) {
 
-	userKey := "userInfo:" + userId
+	key := consts.UserInfoKey + userId
 	user := &model.UserInfo{UserId: userId}
 
-	userInfo, err := ur.RedisSession().HGetAll(ur.Ctx, userKey).Result()
-	if err != nil {
-		log.Errorf("failed to get user info from Redis: %v", err)
-	} else if len(userInfo) > 0 {
-		user.Username = userInfo["username"]
-		user.Nickname = userInfo["nickname"]
-		user.Avatar = userInfo["avatar"]
-		user.Email = userInfo["email"]
-		user.Phone = userInfo["phone"]
-		return user, nil
+	// 从 Redis 获取用户信息
+	userInfoStr, err := ur.RedisSession().Get(ur.Ctx, key).Result()
+	if err == nil && userInfoStr != "" {
+		if err := sonic.UnmarshalString(userInfoStr, user); err != nil {
+			log.Errorf("failed to unmarshal user info from Redis: %v", err)
+		} else {
+			return user, nil
+		}
 	}
 
+	// 从数据库获取
 	err = ur.Context.DBSession().Table(ur.userModel.TableName()).
 		Select("user_id, username, nick_name AS nickname, avatar, email, phone").
 		Where("user_id = ?", userId).First(user).Error
@@ -56,18 +57,14 @@ func (ur *UserRepo) GetUserInfo(userId string) (*model.UserInfo, error) {
 		return nil, fmt.Errorf("failed to get user info: %w", err)
 	}
 
-	userInfoMap := map[string]interface{}{
-		"username": user.Username,
-		"nickname": user.Nickname,
-		"avatar":   user.Avatar,
-		"email":    user.Email,
-		"phone":    user.Phone,
-	}
-	err = ur.RedisSession().HMSet(ur.Ctx, userKey, userInfoMap).Err()
+	// 缓存到 Redis
+	userInfoJson, err := sonic.MarshalString(user)
 	if err != nil {
-		log.Errorf("failed to cache user info: %v", err)
+		log.Errorf("failed to marshal user info: %v", err)
 	} else {
-		ur.RedisSession().Expire(ur.Ctx, userKey, time.Hour)
+		if err := ur.RedisSession().Set(ur.Ctx, key, userInfoJson, time.Hour).Err(); err != nil {
+			log.Errorf("failed to cache user info: %v", err)
+		}
 	}
 
 	return user, nil
@@ -126,38 +123,34 @@ func (ur *UserRepo) GetUserList(offset int, pageSize int) ([]model.User, int64, 
 
 func (ur *UserRepo) SetToken(userId, aToken string, auth http.Auth) (string, error) {
 
-	key := auth.RedisKeyPrefix + userId
+	key := consts.UserInfoKey + userId
 	if err := ur.RedisSession().Set(ur.Ctx, key, aToken, auth.AccessExpire*time.Second).Err(); err != nil {
 		return "", fmt.Errorf("failed to set token in Redis: %w", err)
 	}
 	return key, nil
 }
 
-func (ur *UserRepo) SetLoginRespInfo(tokenKeyPrefix string, accessExpire time.Duration, loginResp *model.LoginResp) error {
+func (ur *UserRepo) SetLoginRespInfo(accessExpire time.Duration, loginResp *model.LoginResp) error {
 
 	pipe := ur.RedisSession().Pipeline()
 
+	// 设置 token
+	key := consts.UserInfoKey + loginResp.UserInfo.UserId
 	if err := pipe.
-		Set(ur.Ctx, tokenKeyPrefix+loginResp.UserInfo.UserId, loginResp.Token["accessToken"], accessExpire*time.Minute).
+		Set(ur.Ctx, key, loginResp.Token["accessToken"], accessExpire*time.Minute).
 		Err(); err != nil {
-		return fmt.Errorf("failed to set refresh token in Redis: %w", err)
+		return fmt.Errorf("failed to set token in Redis: %w", err)
 	}
 
-	userInfoKey := "userInfo:" + loginResp.UserInfo.UserId
-	userInfoMap := map[string]interface{}{
-		"username": loginResp.UserInfo.Username,
-		"email":    loginResp.UserInfo.Email,
-		"nickname": loginResp.UserInfo.Nickname,
-		"avatar":   loginResp.UserInfo.Avatar,
-		"phone":    loginResp.UserInfo.Phone,
+	// 序列化用户信息为 JSON
+	userInfoJson, err := sonic.MarshalString(&loginResp.UserInfo)
+	if err != nil {
+		return fmt.Errorf("failed to marshal user info: %w", err)
 	}
-	if err := pipe.HSet(ur.Ctx, userInfoKey, userInfoMap).Err(); err != nil {
+
+	// 设置用户信息
+	if err := pipe.Set(ur.Ctx, key, userInfoJson, accessExpire*time.Minute).Err(); err != nil {
 		return fmt.Errorf("failed to set user info in Redis: %w", err)
-	}
-
-	// 设置用户信息过期时间
-	if err := pipe.Expire(ur.Ctx, userInfoKey, accessExpire*time.Minute).Err(); err != nil {
-		return fmt.Errorf("failed to set user info expire time in Redis: %w", err)
 	}
 
 	if _, err := pipe.Exec(ur.Ctx); err != nil {
