@@ -72,3 +72,82 @@ const (
 	RoleDisabled = 0 // 禁用
 	RoleEnabled  = 1 // 启用
 )
+
+// BuiltinRolePermissions 内置角色的默认权限映射
+var BuiltinRolePermissions = map[string][]string{
+	// 项目角色权限
+	BuiltinProjectOwner: {
+		"project.view", "project.edit", "project.delete", "project.settings",
+		"project.member.view", "project.member.manage",
+		"pipeline.view", "pipeline.create", "pipeline.edit", "pipeline.delete", "pipeline.run", "pipeline.cancel",
+		"build.view", "build.trigger", "build.cancel", "build.log",
+		"deploy.view", "deploy.run", "deploy.rollback", "deploy.approve",
+	},
+	BuiltinProjectMaintainer: {
+		"project.view", "project.edit", "project.settings",
+		"project.member.view",
+		"pipeline.view", "pipeline.create", "pipeline.edit", "pipeline.run", "pipeline.cancel",
+		"build.view", "build.trigger", "build.cancel", "build.log",
+		"deploy.view", "deploy.run", "deploy.rollback",
+	},
+	BuiltinProjectDeveloper: {
+		"project.view",
+		"pipeline.view", "pipeline.run",
+		"build.view", "build.trigger", "build.log",
+		"deploy.view",
+	},
+	BuiltinProjectReporter: {
+		"project.view",
+		"pipeline.view",
+		"build.view", "build.log",
+		"deploy.view",
+	},
+	BuiltinProjectGuest: {
+		"project.view",
+		"pipeline.view",
+		"build.view",
+	},
+
+	// 团队角色权限
+	BuiltinTeamOwner: {
+		"team.view", "team.edit", "team.delete", "team.settings",
+		"team.member.view", "team.member.manage",
+		"project.view", "project.create", "project.edit", "project.delete",
+	},
+	BuiltinTeamMaintainer: {
+		"team.view", "team.edit",
+		"team.member.view",
+		"project.view", "project.create", "project.edit",
+	},
+	BuiltinTeamDeveloper: {
+		"team.view",
+		"project.view", "project.create",
+	},
+	BuiltinTeamReporter: {
+		"team.view",
+		"project.view",
+	},
+	BuiltinTeamGuest: {
+		"team.view",
+		"project.view",
+	},
+
+	// 组织角色权限
+	BuiltinOrgOwner: {
+		"organization.view", "organization.edit", "organization.delete", "organization.settings",
+		"organization.member.view", "organization.member.invite", "organization.member.manage",
+		"team.view", "team.create", "team.edit", "team.delete",
+		"project.view", "project.create", "project.edit", "project.delete",
+	},
+	BuiltinOrgAdmin: {
+		"organization.view", "organization.edit",
+		"organization.member.view", "organization.member.invite",
+		"team.view", "team.create", "team.edit",
+		"project.view", "project.create", "project.edit",
+	},
+	BuiltinOrgMember: {
+		"organization.view",
+		"team.view",
+		"project.view",
+	},
+}

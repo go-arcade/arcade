@@ -13,15 +13,20 @@ import (
 func (rt *Router) authRouter(r fiber.Router, auth fiber.Handler) {
 	authGroup := r.Group("/auth")
 	{
-		authGroup.Get("/oauth/:provider", rt.oauth)
+
+		// 获取提供者列表 公共
+		authGroup.Get("/getProvider/:type", auth, rt.getProvider)
+		authGroup.Get("/getProviderList", auth, rt.getProviderList)
+		authGroup.Get("/getProvider/:name", auth, rt.getProvider)
+		authGroup.Get("/getProviderTypeList", auth, rt.getProviderTypeList)
 		authGroup.Get("/callback/:provider", rt.callback)
-		authGroup.Post("/revise", auth, rt.updateUser)
-		authGroup.Get("/getProvider/:provider", auth, rt.getOauthProvider)
-		authGroup.Get("/getProviderList", auth, rt.getOauthProviderList)
+		// authGroup.Post("/revise", auth, rt.updateUser)
+
+		authGroup.Get("/redirect/:provider", rt.redirect)
 	}
 }
 
-func (rt *Router) oauth(c *fiber.Ctx) error {
+func (rt *Router) redirect(c *fiber.Ctx) error {
 	authRepo := repo.NewSSORepo(rt.Ctx)
 	userRepo := repo.NewUserRepo(rt.Ctx)
 	authService := service.NewAuthService(authRepo, userRepo)
@@ -31,7 +36,7 @@ func (rt *Router) oauth(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.ProviderIsRequired.Code, http.ProviderIsRequired.Msg, c.Path())
 	}
 
-	url, err := authService.Oauth(providerName)
+	url, err := authService.Redirect(providerName)
 	if err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
 	}
@@ -39,6 +44,7 @@ func (rt *Router) oauth(c *fiber.Ctx) error {
 	return c.Redirect(url, http2.StatusTemporaryRedirect)
 }
 
+// callback 统一的 OAuth/OIDC 回调处理
 func (rt *Router) callback(c *fiber.Ctx) error {
 	authRepo := repo.NewSSORepo(rt.Ctx)
 	userRepo := repo.NewUserRepo(rt.Ctx)
@@ -60,35 +66,100 @@ func (rt *Router) callback(c *fiber.Ctx) error {
 	return nil
 }
 
-func (rt *Router) getOauthProvider(c *fiber.Ctx) error {
+// getProvider 获取提供者列表
+func (rt *Router) getProvider(c *fiber.Ctx) error {
 	authRepo := repo.NewSSORepo(rt.Ctx)
 	userRepo := repo.NewUserRepo(rt.Ctx)
 	authService := service.NewAuthService(authRepo, userRepo)
 
-	name := c.Params("provider")
-	if name == "" {
-		return http.WithRepErrMsg(c, http.ProviderIsRequired.Code, http.ProviderIsRequired.Msg, c.Path())
+	providerType := c.Params("type")
+	if providerType == "" {
+		return http.WithRepErrMsg(c, http.ProviderTypeIsRequired.Code, http.ProviderTypeIsRequired.Msg, c.Path())
 	}
 
-	authConfig, err := authService.GetOauthProvider(name)
+	ssoProviders, err := authService.GetProviderByType(providerType)
 	if err != nil {
-		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
+		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
 	}
 
-	c.Locals(middleware.DETAIL, authConfig)
+	c.Locals(middleware.DETAIL, ssoProviders)
 	return nil
 }
 
-func (rt *Router) getOauthProviderList(c *fiber.Ctx) error {
+// getProviderList 获取提供者列表
+func (rt *Router) getProviderList(c *fiber.Ctx) error {
 	authRepo := repo.NewSSORepo(rt.Ctx)
 	userRepo := repo.NewUserRepo(rt.Ctx)
 	authService := service.NewAuthService(authRepo, userRepo)
 
-	authConfigs, err := authService.GetOauthProviderList()
+	ssoProviders, err := authService.GetProviderList()
 	if err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
 
-	c.Locals(middleware.DETAIL, authConfigs)
+	c.Locals(middleware.DETAIL, ssoProviders)
+	return nil
+}
+
+// getProviderTypeList 获取提供者类型列表
+func (rt *Router) getProviderTypeList(c *fiber.Ctx) error {
+	authRepo := repo.NewSSORepo(rt.Ctx)
+	userRepo := repo.NewUserRepo(rt.Ctx)
+	authService := service.NewAuthService(authRepo, userRepo)
+
+	providerTypes, err := authService.GetProviderTypeList()
+	if err != nil {
+		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
+	}
+
+	c.Locals(middleware.DETAIL, providerTypes)
+	return nil
+}
+
+func (rt *Router) oidcLogin(c *fiber.Ctx) error {
+	authRepo := repo.NewSSORepo(rt.Ctx)
+	userRepo := repo.NewUserRepo(rt.Ctx)
+	authService := service.NewAuthService(authRepo, userRepo)
+
+	providerName := c.Params("provider")
+	if providerName == "" {
+		return http.WithRepErrMsg(c, http.ProviderIsRequired.Code, http.ProviderIsRequired.Msg, c.Path())
+	}
+
+	url, err := authService.OIDCLogin(providerName)
+	if err != nil {
+		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
+	}
+
+	return c.Redirect(url, http2.StatusTemporaryRedirect)
+}
+
+// LDAP 路由处理函数
+
+func (rt *Router) ldapLogin(c *fiber.Ctx) error {
+	authRepo := repo.NewSSORepo(rt.Ctx)
+	userRepo := repo.NewUserRepo(rt.Ctx)
+	authService := service.NewAuthService(authRepo, userRepo)
+
+	providerName := c.Params("provider")
+	if providerName == "" {
+		return http.WithRepErrMsg(c, http.ProviderIsRequired.Code, http.ProviderIsRequired.Msg, c.Path())
+	}
+
+	var req service.LDAPLoginRequest
+	if err := c.BodyParser(&req); err != nil {
+		return http.WithRepErrMsg(c, http.BadRequest.Code, http.BadRequest.Msg, c.Path())
+	}
+
+	if req.Username == "" || req.Password == "" {
+		return http.WithRepErrMsg(c, http.BadRequest.Code, "username and password are required", c.Path())
+	}
+
+	userInfo, err := authService.LDAPLogin(providerName, req.Username, req.Password)
+	if err != nil {
+		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
+	}
+
+	c.Locals(middleware.DETAIL, userInfo)
 	return nil
 }

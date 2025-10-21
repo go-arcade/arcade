@@ -7,7 +7,7 @@ COPY ./ /app/
 
 RUN apt-get update && \
 apt-get install -y unzip && \
-touch ./internal/engine/router/static/arcade.js && \
+touch ./internal/app/router/static/arcade.js && \
 make -f build/Makefile build
 
 FROM golang:1.23

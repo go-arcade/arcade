@@ -217,7 +217,7 @@ var BuiltinRoutes = []RoutePermissionDTO{
 		Name:                "执行部署",
 		Group:               "deploy",
 		Category:            "部署",
-		RequiredPermissions: []string{PermDeployExecute},
+		RequiredPermissions: []string{PermDeployRun},
 		Icon:                "",
 		Order:               401,
 		IsMenu:              false,
