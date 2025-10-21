@@ -9,12 +9,12 @@ import (
 )
 
 // RegisterPermissionRoutesV2 注册权限相关路由（V2版本）
-func RegisterPermissionRoutesV2(app *fiber.App, appCtx *ctx.Context, secretKey, tokenPrefix string, redisClient redis.Client) {
+func RegisterPermissionRoutesV2(app *fiber.App, appCtx *ctx.Context, secretKey string, redisClient redis.Client) {
 	// 创建权限处理器
 	permHandler := handler.NewPermissionHandler(appCtx)
 
 	// 创建认证中间件
-	authMiddleware := middleware.AuthorizationMiddleware(secretKey, tokenPrefix, redisClient)
+	authMiddleware := middleware.AuthorizationMiddleware(secretKey, redisClient)
 
 	// ============ 用户权限查询 ============
 
@@ -95,7 +95,7 @@ func RegisterPermissionRoutesV2(app *fiber.App, appCtx *ctx.Context, secretKey, 
 // RegisterPlatformRoutesV2 注册平台级路由（V2版本）
 func RegisterPlatformRoutesV2(app *fiber.App, secretKey, tokenPrefix string, redisClient redis.Client) {
 	// 创建认证中间件
-	authMiddleware := middleware.AuthorizationMiddleware(secretKey, tokenPrefix, redisClient)
+	authMiddleware := middleware.AuthorizationMiddleware(secretKey, redisClient)
 
 	// Platform 级路由（需要超管权限）
 	platform := app.Group("/api/v1/platform")
@@ -122,7 +122,7 @@ func RegisterPlatformRoutesV2(app *fiber.App, secretKey, tokenPrefix string, red
 // RegisterOrganizationRoutesV2 注册组织级路由（V2版本）
 func RegisterOrganizationRoutesV2(app *fiber.App, secretKey, tokenPrefix string, redisClient redis.Client) {
 	// 创建认证中间件
-	authMiddleware := middleware.AuthorizationMiddleware(secretKey, tokenPrefix, redisClient)
+	authMiddleware := middleware.AuthorizationMiddleware(secretKey, redisClient)
 
 	// Organization 级路由
 	org := app.Group("/api/v1/orgs/:orgId")
@@ -208,7 +208,7 @@ func RegisterOrganizationRoutesV2(app *fiber.App, secretKey, tokenPrefix string,
 // RegisterTeamRoutesV2 注册团队级路由（V2版本）
 func RegisterTeamRoutesV2(app *fiber.App, secretKey, tokenPrefix string, redisClient redis.Client) {
 	// 创建认证中间件
-	authMiddleware := middleware.AuthorizationMiddleware(secretKey, tokenPrefix, redisClient)
+	authMiddleware := middleware.AuthorizationMiddleware(secretKey, redisClient)
 
 	// Team 级路由
 	team := app.Group("/api/v1/teams/:teamId")
@@ -262,7 +262,7 @@ func RegisterTeamRoutesV2(app *fiber.App, secretKey, tokenPrefix string, redisCl
 // RegisterProjectRoutesV2 注册项目级路由（V2版本）
 func RegisterProjectRoutesV2(app *fiber.App, secretKey, tokenPrefix string, redisClient redis.Client) {
 	// 创建认证中间件
-	authMiddleware := middleware.AuthorizationMiddleware(secretKey, tokenPrefix, redisClient)
+	authMiddleware := middleware.AuthorizationMiddleware(secretKey, redisClient)
 
 	// Project 级路由
 	project := app.Group("/api/v1/projects/:projectId")

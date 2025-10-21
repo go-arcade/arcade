@@ -2,6 +2,7 @@ package router
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/observabil/arcade/internal/engine/consts"
 	"github.com/observabil/arcade/internal/engine/model"
 	"github.com/observabil/arcade/internal/engine/repo"
 	"github.com/observabil/arcade/internal/engine/service"
@@ -89,7 +90,7 @@ func (rt *Router) logout(c *fiber.Ctx) error {
 	userRepo := repo.NewUserRepo(rt.Ctx)
 	userLogic := service.NewUserService(rt.Ctx, userRepo)
 	userId := c.FormValue("userId")
-	if err := userLogic.Logout(rt.Http.Auth.RedisKeyPrefix, userId); err != nil {
+	if err := userLogic.Logout(consts.UserInfoKey, userId); err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
 	}
 

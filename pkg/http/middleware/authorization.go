@@ -7,6 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	goJwt "github.com/golang-jwt/jwt/v5"
+	"github.com/observabil/arcade/internal/engine/consts"
 	"github.com/observabil/arcade/pkg/http"
 	"github.com/observabil/arcade/pkg/http/jwt"
 	"github.com/observabil/arcade/pkg/log"
@@ -15,10 +16,9 @@ import (
 
 // AuthorizationMiddleware 认证中间件
 // secretKey: 用于验证 JWT 的密钥
-// tokenPrefix: Redis 中存储 Token 的前缀
 // client: Redis 客户端
 // This function is used as the middleware of fiber.
-func AuthorizationMiddleware(secretKey, tokenPrefix string, client redis.Client) fiber.Handler {
+func AuthorizationMiddleware(secretKey string, client redis.Client) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		aToken := c.Get("Authorization")
 		if aToken == "" {
@@ -43,7 +43,7 @@ func AuthorizationMiddleware(secretKey, tokenPrefix string, client redis.Client)
 		}
 
 		// 检查 Redis 中是否存在 Token
-		tokenKey := tokenPrefix + claims.UserId
+		tokenKey := consts.UserInfoKey + claims.UserId
 		exists, err := client.Exists(context.Background(), tokenKey).Result()
 		if err != nil {
 			log.Errorf("redis check token exists failed: %v", err)

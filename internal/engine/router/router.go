@@ -146,7 +146,6 @@ func (rt *Router) Router(log *zap.Logger) *fiber.App {
 func (rt *Router) routerGroup(r fiber.Router) {
 	auth := middleware.AuthorizationMiddleware(
 		rt.Http.Auth.SecretKey,
-		rt.Http.Auth.RedisKeyPrefix,
 		*rt.Ctx.RedisSession(),
 	)
 

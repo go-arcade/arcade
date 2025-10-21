@@ -38,10 +38,9 @@ type TLS struct {
 }
 
 type Auth struct {
-	SecretKey      string
-	AccessExpire   time.Duration
-	RefreshExpire  time.Duration
-	RedisKeyPrefix string
+	SecretKey     string
+	AccessExpire  time.Duration
+	RefreshExpire time.Duration
 }
 
 // NewHttp 创建并启动 HTTP 服务器

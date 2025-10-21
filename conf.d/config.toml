@@ -75,8 +75,6 @@ accessExpire = 3600
 refreshExpire = 7200
 # jwt secret key
 secretKey = "bf284d03-ba65-42d4-a9fe-0d2fbfe61060"
-# redis in token prefix
-redisKeyPrefix = "token:"
 
 [database]
 # support mysql
