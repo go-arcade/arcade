@@ -29,9 +29,10 @@ var (
 
 	InternalError = failed(5000, "Internal error, please contact the administrator")
 
-	UserNotExist          = failed(4041, "User does not exist")
-	UserAlreadyExist      = failed(4042, "User already exists")
-	UserIncorrectPassword = failed(4043, "User incorrect password")
+	UserNotExist                  = failed(4041, "User does not exist")
+	UserAlreadyExist              = failed(4042, "User already exists")
+	UserIncorrectPassword         = failed(4043, "User incorrect password")
+	UsernameArePasswordIsRequired = failed(4045, "Username and password are required")
 
 	UnsupportedProviders          = failed(4501, "Unsupported provider")
 	ProviderIsRequired            = failed(4502, "Provider is required")
