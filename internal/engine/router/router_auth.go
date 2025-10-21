@@ -13,22 +13,20 @@ import (
 func (rt *Router) authRouter(r fiber.Router, auth fiber.Handler) {
 	authGroup := r.Group("/auth")
 	{
+		// Provider 资源管理（需要认证）
+		authGroup.Get("/providers", auth, rt.listProviders)           // 获取所有 providers（支持 ?type=xxx 过滤）
+		authGroup.Get("/providers/types", auth, rt.listProviderTypes) // 获取所有 provider 类型
+		authGroup.Get("/providers/:name", auth, rt.getProvider)       // 获取指定 provider
 
-		// 获取提供者列表 公共
-		authGroup.Get("/getProvider/:type", auth, rt.getProvider)
-		authGroup.Get("/getProviderList", auth, rt.getProviderList)
-		authGroup.Get("/getProvider/:name", auth, rt.getProvider)
-		authGroup.Get("/getProviderTypeList", auth, rt.getProviderTypeList)
-		authGroup.Get("/callback/:provider", rt.callback)
-		// authGroup.Post("/revise", auth, rt.updateUser)
-
-		authGroup.Get("/redirect/:provider", rt.redirect)
-
-		authGroup.Post("/ldap/login/:provider", rt.ldapLogin)
+		// 认证流程（无需认证）
+		authGroup.Get("/authorize/:provider", rt.authorize) // 发起授权（OAuth/OIDC）
+		authGroup.Get("/callback/:provider", rt.callback)   // 授权回调
+		authGroup.Post("/ldap/login/:provider", rt.ldapLogin)        // 登录（LDAP 或其他）
 	}
 }
 
-func (rt *Router) redirect(c *fiber.Ctx) error {
+// authorize 发起授权（OAuth/OIDC）
+func (rt *Router) authorize(c *fiber.Ctx) error {
 	authRepo := repo.NewSSORepo(rt.Ctx)
 	userRepo := repo.NewUserRepo(rt.Ctx)
 	authService := service.NewAuthService(authRepo, userRepo)
@@ -46,7 +44,7 @@ func (rt *Router) redirect(c *fiber.Ctx) error {
 	return c.Redirect(url, http2.StatusTemporaryRedirect)
 }
 
-// callback 统一的 OAuth/OIDC 回调处理
+// callback OAuth/OIDC 授权回调
 func (rt *Router) callback(c *fiber.Ctx) error {
 	authRepo := repo.NewSSORepo(rt.Ctx)
 	userRepo := repo.NewUserRepo(rt.Ctx)
@@ -68,18 +66,24 @@ func (rt *Router) callback(c *fiber.Ctx) error {
 	return nil
 }
 
-// getProvider 获取提供者列表
-func (rt *Router) getProvider(c *fiber.Ctx) error {
+// listProviders 获取所有 providers（支持 ?type=xxx 过滤）
+func (rt *Router) listProviders(c *fiber.Ctx) error {
 	authRepo := repo.NewSSORepo(rt.Ctx)
 	userRepo := repo.NewUserRepo(rt.Ctx)
 	authService := service.NewAuthService(authRepo, userRepo)
 
-	providerType := c.Params("type")
-	if providerType == "" {
-		return http.WithRepErrMsg(c, http.ProviderTypeIsRequired.Code, http.ProviderTypeIsRequired.Msg, c.Path())
+	// 支持通过 query 参数过滤类型
+	providerType := c.Query("type")
+
+	var err error
+	var ssoProviders any
+
+	if providerType != "" {
+		ssoProviders, err = authService.GetProviderByType(providerType)
+	} else {
+		ssoProviders, err = authService.GetProviderList()
 	}
 
-	ssoProviders, err := authService.GetProviderByType(providerType)
 	if err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
 	}
@@ -88,56 +92,42 @@ func (rt *Router) getProvider(c *fiber.Ctx) error {
 	return nil
 }
 
-// getProviderList 获取提供者列表
-func (rt *Router) getProviderList(c *fiber.Ctx) error {
+// getProvider 获取指定的 provider
+func (rt *Router) getProvider(c *fiber.Ctx) error {
 	authRepo := repo.NewSSORepo(rt.Ctx)
 	userRepo := repo.NewUserRepo(rt.Ctx)
 	authService := service.NewAuthService(authRepo, userRepo)
 
-	ssoProviders, err := authService.GetProviderList()
-	if err != nil {
-		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
+	name := c.Params("name")
+	if name == "" {
+		return http.WithRepErrMsg(c, http.ProviderIsRequired.Code, http.ProviderIsRequired.Msg, c.Path())
 	}
 
-	c.Locals(middleware.DETAIL, ssoProviders)
+	provider, err := authService.GetProvider(name)
+	if err != nil {
+		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
+	}
+
+	c.Locals(middleware.DETAIL, provider)
 	return nil
 }
 
-// getProviderTypeList 获取提供者类型列表
-func (rt *Router) getProviderTypeList(c *fiber.Ctx) error {
+// listProviderTypes 获取所有 provider 类型
+func (rt *Router) listProviderTypes(c *fiber.Ctx) error {
 	authRepo := repo.NewSSORepo(rt.Ctx)
 	userRepo := repo.NewUserRepo(rt.Ctx)
 	authService := service.NewAuthService(authRepo, userRepo)
 
 	providerTypes, err := authService.GetProviderTypeList()
 	if err != nil {
-		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
+		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
 	}
 
 	c.Locals(middleware.DETAIL, providerTypes)
 	return nil
 }
 
-func (rt *Router) oidcLogin(c *fiber.Ctx) error {
-	authRepo := repo.NewSSORepo(rt.Ctx)
-	userRepo := repo.NewUserRepo(rt.Ctx)
-	authService := service.NewAuthService(authRepo, userRepo)
-
-	providerName := c.Params("provider")
-	if providerName == "" {
-		return http.WithRepErrMsg(c, http.ProviderIsRequired.Code, http.ProviderIsRequired.Msg, c.Path())
-	}
-
-	url, err := authService.OIDCLogin(providerName)
-	if err != nil {
-		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
-	}
-
-	return c.Redirect(url, http2.StatusTemporaryRedirect)
-}
-
-// LDAP 路由处理函数
-
+// login 统一登录入口（LDAP 等需要用户名密码的认证方式）
 func (rt *Router) ldapLogin(c *fiber.Ctx) error {
 	authRepo := repo.NewSSORepo(rt.Ctx)
 	userRepo := repo.NewUserRepo(rt.Ctx)

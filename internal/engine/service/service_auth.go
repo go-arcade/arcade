@@ -62,6 +62,8 @@ func (as *AuthService) Redirect(providerName string) (string, error) {
 func (as *AuthService) Callback(providerName, state, code string) (*model.Register, error) {
 	storedProviderName, ok := util.LoadAndDeleteState(state)
 	if !ok || storedProviderName != providerName {
+		log.Warnf("invalid state parameter for %s, storedProviderName: %s, providerName: %s, state: %s",
+			providerName, storedProviderName, providerName, state)
 		return nil, fmt.Errorf("invalid state parameter")
 	}
 
@@ -73,7 +75,8 @@ func (as *AuthService) Callback(providerName, state, code string) (*model.Regist
 	// 序列化
 	var cfg sso.ProviderConfig
 	if err := sonic.Unmarshal(ssoProvider.Config, &cfg); err != nil {
-		return nil, fmt.Errorf("unmarshal provider config failed: %w", err)
+		log.Errorf("invalid provider config for %s: %v", providerName, err)
+		return nil, fmt.Errorf("provider config invalid")
 	}
 
 	provider, err := sso.NewSSOProvider(&cfg)
