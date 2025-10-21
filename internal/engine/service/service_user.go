@@ -2,6 +2,8 @@ package service
 
 import (
 	"errors"
+	"time"
+
 	"github.com/observabil/arcade/internal/engine/model"
 	"github.com/observabil/arcade/internal/engine/repo"
 	"github.com/observabil/arcade/internal/engine/tool"
@@ -11,7 +13,6 @@ import (
 	"github.com/observabil/arcade/pkg/id"
 	"github.com/observabil/arcade/pkg/log"
 	"golang.org/x/crypto/bcrypt"
-	"time"
 )
 
 type LoginService interface {

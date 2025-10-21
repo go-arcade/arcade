@@ -1,375 +1,437 @@
 package service
 
 import (
-	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/observabil/arcade/internal/engine/model"
+	"github.com/observabil/arcade/internal/engine/repo"
 	"github.com/observabil/arcade/pkg/ctx"
-	"github.com/observabil/arcade/pkg/log"
+	"github.com/observabil/arcade/pkg/id"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/10/13
- * @file: service_permission.go
- * @description: 权限服务
- */
-
-// PermissionService 权限服务
 type PermissionService struct {
-	ctx       *ctx.Context
-	roleCache map[string]*model.Role // 角色缓存
+	Ctx      *ctx.Context
+	PermRepo *repo.PermissionRepo
+	RoleRepo *repo.RoleRepo
+	UserRepo *repo.UserRepo
 }
 
-// NewPermissionService 创建权限服务实例
 func NewPermissionService(ctx *ctx.Context) *PermissionService {
 	return &PermissionService{
-		ctx:       ctx,
-		roleCache: make(map[string]*model.Role),
+		Ctx:      ctx,
+		PermRepo: repo.NewPermissionRepo(ctx),
+		RoleRepo: repo.NewRoleRepo(ctx),
+		UserRepo: repo.NewUserRepo(ctx),
 	}
 }
 
-// GetRole 获取角色信息（带缓存）
-func (ps *PermissionService) GetRole(roleId string) (*model.Role, error) {
-	// 先查缓存
-	if role, ok := ps.roleCache[roleId]; ok {
-		return role, nil
+// ============ 用户权限聚合 ============
+
+// GetUserPermissions 获取用户完整权限（带缓存）
+func (s *PermissionService) GetUserPermissions(userId string) (*model.UserPermissions, error) {
+	// 尝试从缓存读取
+	cacheKey := fmt.Sprintf("user:permissions:%s", userId)
+	cached, err := s.Ctx.Redis.Get(s.Ctx.Ctx, cacheKey).Result()
+	if err == nil && cached != "" {
+		var perms model.UserPermissions
+		if err := json.Unmarshal([]byte(cached), &perms); err == nil {
+			return &perms, nil
+		}
 	}
 
 	// 从数据库查询
-	var role model.Role
-	err := ps.ctx.DB.Where("role_id = ? AND is_enabled = ?", roleId, model.RoleEnabled).First(&role).Error
+	perms, err := s.PermRepo.GetUserPermissions(userId)
 	if err != nil {
 		return nil, err
 	}
 
-	// 加入缓存
-	ps.roleCache[roleId] = &role
-	return &role, nil
+	// 写入缓存（5分钟）
+	data, _ := json.Marshal(perms)
+	s.Ctx.Redis.Set(s.Ctx.Ctx, cacheKey, data, 5*time.Minute)
+
+	return perms, nil
 }
 
-// HasPermission 检查角色是否拥有指定权限点
-func (ps *PermissionService) HasPermission(roleId string, permissionPoint string) (bool, error) {
-	// 从关联表查询角色权限
-	var count int64
-	err := ps.ctx.DB.Table("t_role_permission rp").
-		Joins("JOIN t_permission p ON rp.permission_id = p.permission_id").
-		Where("rp.role_id = ? AND p.code = ? AND p.is_enabled = ?", roleId, permissionPoint, 1).
-		Count(&count).Error
-
+// GetUserPermissionsWithRoutes 获取用户权限和可访问路由
+func (s *PermissionService) GetUserPermissionsWithRoutes(userId string) (*model.UserPermissions, error) {
+	perms, err := s.GetUserPermissions(userId)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
-	return count > 0, nil
+	// 获取可访问的路由
+	routes, err := s.PermRepo.GetAccessibleRoutes(userId)
+	if err != nil {
+		return nil, err
+	}
+	perms.AccessibleRoutes = routes
+
+	// 获取可访问的资源
+	resources, err := s.PermRepo.GetAccessibleResources(userId)
+	if err != nil {
+		return nil, err
+	}
+	perms.AccessibleResources = resources
+
+	return perms, nil
 }
 
-// ProjectPermission 项目权限结构
-type ProjectPermission struct {
-	ProjectId   string
-	UserId      string
-	RoleId      string   // 角色ID
-	RoleName    string   // 角色名称（用于显示）
-	HasAccess   bool     // 是否有访问权限
-	Source      string   // 权限来源: direct/team/org
-	Permissions []string // 具体权限点列表
-	Priority    int      // 角色优先级
+// CheckPermission 检查用户是否拥有指定权限
+func (s *PermissionService) CheckPermission(req *model.PermissionCheckRequest) (*model.PermissionCheckResponse, error) {
+	hasPermission, err := s.PermRepo.HasPermission(req.UserId, req.PermissionCode, req.ResourceId, req.Scope)
+	if err != nil {
+		return nil, err
+	}
 
-	// 便捷的权限标志（从权限点计算得出）
-	CanView        bool // 查看权限
-	CanWrite       bool // 写入权限
-	CanManage      bool // 管理权限
-	CanDelete      bool // 删除权限
-	CanManageTeams bool // 管理团队权限
+	resp := &model.PermissionCheckResponse{
+		HasPermission: hasPermission,
+	}
+
+	if !hasPermission {
+		resp.Reason = "权限不足"
+	}
+
+	return resp, nil
 }
 
-// CheckProjectPermission 检查用户对项目的权限
-// 权限计算逻辑：MAX(直接权限, 团队权限, 组织权限)
-func (ps *PermissionService) CheckProjectPermission(ctx context.Context, userId, projectId string) (*ProjectPermission, error) {
-	// 1. 获取项目信息
-	var project model.Project
-	if err := ps.ctx.DB.Where("project_id = ?", projectId).First(&project).Error; err != nil {
-		return nil, fmt.Errorf("project not found: %w", err)
+// ============ 角色绑定管理 ============
+
+// CreateRoleBinding 创建用户角色绑定
+func (s *PermissionService) CreateRoleBinding(req *model.UserRoleBindingCreate) (*model.UserRoleBinding, error) {
+	// 验证用户存在
+	var user model.User
+	if err := s.Ctx.DB.Where("user_id = ?", req.UserId).First(&user).Error; err != nil {
+		return nil, errors.New("用户不存在")
 	}
 
-	perm := &ProjectPermission{
-		ProjectId: projectId,
-		UserId:    userId,
-		HasAccess: false,
+	// 验证角色存在
+	if _, err := s.RoleRepo.GetRole(req.RoleId); err != nil {
+		return nil, errors.New("角色不存在")
 	}
 
-	// 2. 项目所有者特殊处理（最高优先级）
-	if project.CreatedBy == userId {
-		role, _ := ps.GetRole(model.BuiltinProjectOwner)
-		if role != nil {
-			perm.RoleId = role.RoleId
-			perm.RoleName = role.Name
-			perm.Priority = role.Priority
-			perm.HasAccess = true
-			perm.Source = "direct"
-			ps.loadRolePermissions(perm, role.RoleId)
-		}
-		ps.calculatePermissionFlags(perm)
-		return perm, nil
+	// 验证资源存在（根据scope）
+	if err := s.validateResource(req.Scope, req.ResourceId); err != nil {
+		return nil, err
 	}
 
-	// 3. 检查直接权限（项目成员）
-	var directMember model.ProjectMember
-	err := ps.ctx.DB.Where("project_id = ? AND user_id = ?", projectId, userId).First(&directMember).Error
-	if err == nil {
-		// 找到直接权限
-		role, _ := ps.GetRole(directMember.RoleId)
-		if role != nil {
-			perm.RoleId = role.RoleId
-			perm.RoleName = role.Name
-			perm.Priority = role.Priority
-			perm.HasAccess = true
-			perm.Source = "direct"
-			ps.loadRolePermissions(perm, role.RoleId)
-		}
+	// 检查是否已存在
+	resourceId := ""
+	if req.ResourceId != nil {
+		resourceId = *req.ResourceId
+	}
+	exists, _ := s.PermRepo.HasRoleBinding(req.UserId, req.RoleId, req.Scope, resourceId)
+	if exists {
+		return nil, errors.New("角色绑定已存在")
 	}
 
-	// 4. 检查团队权限
-	teamRoleId, teamPriority := ps.calculateTeamPermission(ctx, userId, projectId)
-	if teamRoleId != "" && teamPriority > perm.Priority {
-		role, _ := ps.GetRole(teamRoleId)
-		if role != nil {
-			perm.RoleId = role.RoleId
-			perm.RoleName = role.Name
-			perm.Priority = role.Priority
-			perm.HasAccess = true
-			perm.Source = "team"
-			ps.loadRolePermissions(perm, role.RoleId)
-		}
+	// 创建绑定
+	binding := &model.UserRoleBinding{
+		BindingId:  id.GetUUID(),
+		UserId:     req.UserId,
+		RoleId:     req.RoleId,
+		Scope:      req.Scope,
+		ResourceId: req.ResourceId,
+		GrantedBy:  req.GrantedBy,
 	}
 
-	// 5. 检查组织权限
-	if project.AccessLevel == model.AccessLevelOrg {
-		orgRoleId, orgPriority := ps.calculateOrgPermission(ctx, userId, project.OrgId)
-		if orgRoleId != "" && orgPriority > perm.Priority {
-			role, _ := ps.GetRole(orgRoleId)
-			if role != nil {
-				perm.RoleId = role.RoleId
-				perm.RoleName = role.Name
-				perm.Priority = role.Priority
-				perm.HasAccess = true
-				perm.Source = "org"
-				ps.loadRolePermissions(perm, role.RoleId)
-			}
-		}
+	if err := s.PermRepo.CreateRoleBinding(binding); err != nil {
+		return nil, err
 	}
 
-	// 6. 根据权限点计算具体权限标志
-	ps.calculatePermissionFlags(perm)
+	// 清除用户权限缓存
+	s.PermRepo.ClearUserPermissionsCache(req.UserId)
 
-	return perm, nil
+	return binding, nil
 }
 
-// calculateTeamPermission 计算团队权限
-func (ps *PermissionService) calculateTeamPermission(ctx context.Context, userId, projectId string) (string, int) {
-	// 查找用户所在的团队
-	var teamMembers []model.TeamMember
-	ps.ctx.DB.Where("user_id = ?", userId).Find(&teamMembers)
+// DeleteRoleBinding 删除角色绑定
+func (s *PermissionService) DeleteRoleBinding(bindingId string) error {
+	// 获取绑定信息
+	binding, err := s.PermRepo.GetRoleBinding(bindingId)
+	if err != nil {
+		return errors.New("绑定不存在")
+	}
 
-	var maxRoleId string
-	var maxPriority int
+	// 删除绑定
+	if err := s.PermRepo.DeleteRoleBinding(bindingId); err != nil {
+		return err
+	}
 
-	for _, tm := range teamMembers {
-		// 查找团队对项目的访问权限
-		var teamAccess model.ProjectTeamAccess
-		err := ps.ctx.DB.Where("project_id = ? AND team_id = ?", projectId, tm.TeamId).First(&teamAccess).Error
-		if err != nil {
+	// 清除用户权限缓存
+	s.PermRepo.ClearUserPermissionsCache(binding.UserId)
+
+	return nil
+}
+
+// GetUserRoleBindings 获取用户的所有角色绑定
+func (s *PermissionService) GetUserRoleBindings(userId string) ([]*model.UserRoleBinding, error) {
+	return s.PermRepo.GetUserRoleBindings(userId)
+}
+
+// ListRoleBindings 列出角色绑定（支持多条件查询）
+func (s *PermissionService) ListRoleBindings(query *model.RoleBindingQuery) ([]*model.UserRoleBinding, int64, error) {
+	return s.PermRepo.ListRoleBindings(query)
+}
+
+// ============ 批量操作 ============
+
+// BatchAssignRoleToUsers 批量为用户分配角色
+func (s *PermissionService) BatchAssignRoleToUsers(userIds []string, roleId, scope string, resourceId *string, grantedBy *string) error {
+	var bindings []*model.UserRoleBinding
+
+	for _, userId := range userIds {
+		// 检查是否已存在
+		rid := ""
+		if resourceId != nil {
+			rid = *resourceId
+		}
+		exists, _ := s.PermRepo.HasRoleBinding(userId, roleId, scope, rid)
+		if exists {
 			continue
 		}
 
-		// 获取团队成员角色
-		teamRole, _ := ps.GetRole(tm.RoleId)
-		if teamRole == nil {
-			continue
+		binding := &model.UserRoleBinding{
+			BindingId:  id.GetUUID(),
+			UserId:     userId,
+			RoleId:     roleId,
+			Scope:      scope,
+			ResourceId: resourceId,
+			GrantedBy:  grantedBy,
 		}
-
-		// 团队成员角色 + 团队访问级别 => 项目有效角色
-		effectiveRoleId := ps.mapTeamRoleToProjectRole(tm.RoleId, teamAccess.AccessLevel)
-		effectiveRole, _ := ps.GetRole(effectiveRoleId)
-		if effectiveRole != nil && effectiveRole.Priority > maxPriority {
-			maxRoleId = effectiveRoleId
-			maxPriority = effectiveRole.Priority
-		}
+		bindings = append(bindings, binding)
 	}
 
-	return maxRoleId, maxPriority
+	if len(bindings) == 0 {
+		return nil
+	}
+
+	if err := s.PermRepo.BatchCreateRoleBindings(bindings); err != nil {
+		return err
+	}
+
+	// 清除所有用户的权限缓存
+	for _, userId := range userIds {
+		s.PermRepo.ClearUserPermissionsCache(userId)
+	}
+
+	return nil
 }
 
-// calculateOrgPermission 计算组织权限
-func (ps *PermissionService) calculateOrgPermission(ctx context.Context, userId, orgId string) (string, int) {
-	var orgMember model.OrganizationMember
-	err := ps.ctx.DB.Where("org_id = ? AND user_id = ? AND status = ?",
-		orgId, userId, model.OrgMemberStatusActive).First(&orgMember).Error
+// BatchRemoveUserFromResource 批量移除用户在资源的权限
+func (s *PermissionService) BatchRemoveUserFromResource(userIds []string, scope, resourceId string) error {
+	for _, userId := range userIds {
+		if err := s.PermRepo.DeleteUserRoleBindingsByResource(userId, scope, resourceId); err != nil {
+			return err
+		}
+		s.PermRepo.ClearUserPermissionsCache(userId)
+	}
+	return nil
+}
+
+// RemoveAllBindingsForResource 删除资源的所有角色绑定
+func (s *PermissionService) RemoveAllBindingsForResource(scope, resourceId string) error {
+	// 获取所有相关用户
+	bindings, _, err := s.PermRepo.ListRoleBindings(&model.RoleBindingQuery{
+		Scope:      scope,
+		ResourceId: resourceId,
+	})
 	if err != nil {
-		return "", 0
+		return err
 	}
 
-	// 组织角色映射到项目角色
-	var mappedRoleId string
-	switch orgMember.RoleId {
-	case model.BuiltinOrgOwner:
-		mappedRoleId = model.BuiltinProjectMaintainer
-	case model.BuiltinOrgAdmin:
-		mappedRoleId = model.BuiltinProjectDeveloper
-	case model.BuiltinOrgMember:
-		mappedRoleId = model.BuiltinProjectGuest
+	// 删除绑定
+	if err := s.PermRepo.DeleteRoleBindingsByResource(scope, resourceId); err != nil {
+		return err
+	}
+
+	// 清除用户缓存
+	userSet := make(map[string]bool)
+	for _, binding := range bindings {
+		userSet[binding.UserId] = true
+	}
+	for userId := range userSet {
+		s.PermRepo.ClearUserPermissionsCache(userId)
+	}
+
+	return nil
+}
+
+// ============ 超级管理员管理 ============
+
+// SetSuperAdmin 设置用户为超级管理员
+func (s *PermissionService) SetSuperAdmin(userId string, isSuperAdmin bool) error {
+	var user model.User
+	if err := s.Ctx.DB.Where("user_id = ?", userId).First(&user).Error; err != nil {
+		return errors.New("用户不存在")
+	}
+
+	flag := 0
+	if isSuperAdmin {
+		flag = 1
+	}
+
+	user.IsSuperAdmin = flag
+	if err := s.UserRepo.UpdateUser(userId, &user); err != nil {
+		return err
+	}
+
+	// 清除权限缓存
+	s.PermRepo.ClearUserPermissionsCache(userId)
+
+	return nil
+}
+
+// GetSuperAdminList 获取所有超级管理员列表
+func (s *PermissionService) GetSuperAdminList() ([]model.User, error) {
+	var admins []model.User
+	err := s.Ctx.DB.Where("is_superadmin = ?", 1).Find(&admins).Error
+	return admins, err
+}
+
+// ============ 辅助方法 ============
+
+// validateResource 验证资源是否存在
+func (s *PermissionService) validateResource(scope string, resourceId *string) error {
+	// Platform 级别不需要资源ID
+	if scope == model.ScopePlatform {
+		if resourceId != nil && *resourceId != "" {
+			return errors.New("Platform级别不应指定资源ID")
+		}
+		return nil
+	}
+
+	// 其他级别必须有资源ID
+	if resourceId == nil || *resourceId == "" {
+		return fmt.Errorf("%s级别必须指定资源ID", scope)
+	}
+
+	// 验证资源存在
+	switch scope {
+	case model.ScopeOrganization:
+		// 检查组织是否存在
+		var count int64
+		if err := s.Ctx.DB.Table("t_organization").Where("org_id = ?", *resourceId).Count(&count).Error; err != nil || count == 0 {
+			return errors.New("组织不存在")
+		}
+	case model.ScopeTeam:
+		// 检查团队是否存在
+		var count int64
+		if err := s.Ctx.DB.Table("t_team").Where("team_id = ?", *resourceId).Count(&count).Error; err != nil || count == 0 {
+			return errors.New("团队不存在")
+		}
+	case model.ScopeProject:
+		// 检查项目是否存在
+		var count int64
+		if err := s.Ctx.DB.Table("t_project").Where("project_id = ?", *resourceId).Count(&count).Error; err != nil || count == 0 {
+			return errors.New("项目不存在")
+		}
 	default:
-		mappedRoleId = model.BuiltinProjectGuest
+		return fmt.Errorf("无效的scope: %s", scope)
 	}
 
-	role, _ := ps.GetRole(mappedRoleId)
-	if role != nil {
-		return role.RoleId, role.Priority
-	}
-
-	return "", 0
+	return nil
 }
 
-// mapTeamRoleToProjectRole 映射团队角色到项目角色
-func (ps *PermissionService) mapTeamRoleToProjectRole(teamRoleId, accessLevel string) string {
-	// 团队访问级别限制最大权限
-	switch accessLevel {
-	case model.AccessLevelRead:
-		// 只读访问，最多给 guest 权限
-		return model.BuiltinProjectGuest
-	case model.AccessLevelWrite:
-		// 读写访问
-		switch teamRoleId {
-		case model.BuiltinTeamOwner, model.BuiltinTeamMaintainer, model.BuiltinTeamDeveloper:
-			return model.BuiltinProjectDeveloper
-		default:
-			return model.BuiltinProjectReporter
-		}
-	case model.AccessLevelAdmin:
-		// 管理员访问，映射团队角色到项目角色
-		switch teamRoleId {
-		case model.BuiltinTeamOwner, model.BuiltinTeamMaintainer:
+// GetUserAccessibleOrganizations 获取用户可访问的组织列表
+func (s *PermissionService) GetUserAccessibleOrganizations(userId string) ([]map[string]interface{}, error) {
+	resources, err := s.PermRepo.GetAccessibleResources(userId)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resources.Organizations) == 0 {
+		return []map[string]interface{}{}, nil
+	}
+
+	var orgs []map[string]interface{}
+	err = s.Ctx.DB.Table("t_organization").Where("org_id IN ?", resources.Organizations).Find(&orgs).Error
+	return orgs, err
+}
+
+// GetUserAccessibleTeams 获取用户可访问的团队列表
+func (s *PermissionService) GetUserAccessibleTeams(userId string, orgId string) ([]map[string]interface{}, error) {
+	resources, err := s.PermRepo.GetAccessibleResources(userId)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resources.Teams) == 0 {
+		return []map[string]interface{}{}, nil
+	}
+
+	query := s.Ctx.DB.Table("t_team").Where("team_id IN ?", resources.Teams)
+	if orgId != "" {
+		query = query.Where("org_id = ?", orgId)
+	}
+
+	var teams []map[string]interface{}
+	err = query.Find(&teams).Error
+	return teams, err
+}
+
+// GetUserAccessibleProjects 获取用户可访问的项目列表
+func (s *PermissionService) GetUserAccessibleProjects(userId string, orgId string) ([]map[string]interface{}, error) {
+	resources, err := s.PermRepo.GetAccessibleResources(userId)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resources.Projects) == 0 {
+		return []map[string]interface{}{}, nil
+	}
+
+	query := s.Ctx.DB.Table("t_project").Where("project_id IN ?", resources.Projects)
+	if orgId != "" {
+		query = query.Where("org_id = ?", orgId)
+	}
+
+	var projects []map[string]interface{}
+	err = query.Find(&projects).Error
+	return projects, err
+}
+
+// ClearAllUserPermissionsCache 清除所有用户权限缓存（用于角色权限变更时）
+func (s *PermissionService) ClearAllUserPermissionsCache() error {
+	// 获取所有用户
+	var users []*model.User
+	if err := s.Ctx.DB.Select("user_id").Find(&users).Error; err != nil {
+		return err
+	}
+
+	// 清除缓存
+	for _, user := range users {
+		s.PermRepo.ClearUserPermissionsCache(user.UserId)
+	}
+
+	return nil
+}
+
+// GetRole 获取角色信息
+func (s *PermissionService) GetRole(roleId string) (*model.Role, error) {
+	return s.RoleRepo.GetRole(roleId)
+}
+
+// mapTeamRoleToProjectRole 将团队角色映射到项目角色
+func (s *PermissionService) mapTeamRoleToProjectRole(teamRoleId string, accessLevel string) string {
+	// 根据团队角色和访问级别映射到项目角色
+	switch teamRoleId {
+	case model.BuiltinTeamOwner:
+		return model.BuiltinProjectOwner
+	case model.BuiltinTeamMaintainer:
+		if accessLevel == "write" {
 			return model.BuiltinProjectMaintainer
-		case model.BuiltinTeamDeveloper:
-			return model.BuiltinProjectDeveloper
-		case model.BuiltinTeamReporter:
-			return model.BuiltinProjectReporter
-		default:
-			return model.BuiltinProjectGuest
 		}
+		return model.BuiltinProjectDeveloper
+	case model.BuiltinTeamDeveloper:
+		return model.BuiltinProjectDeveloper
+	case model.BuiltinTeamReporter:
+		return model.BuiltinProjectReporter
+	case model.BuiltinTeamGuest:
+		return model.BuiltinProjectGuest
 	default:
 		return model.BuiltinProjectGuest
 	}
-}
-
-// loadRolePermissions 加载角色的权限点列表
-func (ps *PermissionService) loadRolePermissions(perm *ProjectPermission, roleId string) {
-	// 从关联表查询角色权限
-	var permissionCodes []string
-
-	err := ps.ctx.DB.Table("t_role_permission rp").
-		Select("p.code").
-		Joins("JOIN t_permission p ON rp.permission_id = p.permission_id").
-		Where("rp.role_id = ? AND p.is_enabled = ?", roleId, 1).
-		Pluck("code", &permissionCodes).Error
-
-	if err != nil {
-		log.Warnf("failed to load role permissions for %s: %v", roleId, err)
-		perm.Permissions = []string{}
-		return
-	}
-
-	perm.Permissions = permissionCodes
-}
-
-// calculatePermissionFlags 根据权限点计算具体权限标志
-func (ps *PermissionService) calculatePermissionFlags(perm *ProjectPermission) {
-	// 根据权限点列表计算标志
-	perm.CanView = ps.hasPermissionPoint(perm.Permissions, model.PermProjectView)
-
-	perm.CanWrite = ps.hasPermissionPoint(perm.Permissions, model.PermBuildTrigger) ||
-		ps.hasPermissionPoint(perm.Permissions, model.PermPipelineCreate)
-
-	perm.CanManage = ps.hasPermissionPoint(perm.Permissions, model.PermProjectSettings) ||
-		ps.hasPermissionPoint(perm.Permissions, model.PermMemberEdit)
-
-	perm.CanDelete = ps.hasPermissionPoint(perm.Permissions, model.PermProjectDelete)
-
-	perm.CanManageTeams = ps.hasPermissionPoint(perm.Permissions, model.PermTeamProject)
-}
-
-// hasPermissionPoint 检查权限点列表中是否包含指定权限
-func (ps *PermissionService) hasPermissionPoint(permissions []string, point string) bool {
-	for _, p := range permissions {
-		if p == point {
-			return true
-		}
-	}
-	return false
-}
-
-// RequireProjectPermission 要求特定项目权限（按角色ID）
-func (ps *PermissionService) RequireProjectPermission(ctx context.Context, userId, projectId string, requiredRoleId string) error {
-	perm, err := ps.CheckProjectPermission(ctx, userId, projectId)
-	if err != nil {
-		return err
-	}
-
-	if !perm.HasAccess {
-		return fmt.Errorf("access denied: user %s has no access to project %s", userId, projectId)
-	}
-
-	// 获取要求的角色优先级
-	requiredRole, _ := ps.GetRole(requiredRoleId)
-	if requiredRole == nil {
-		return fmt.Errorf("invalid required role: %s", requiredRoleId)
-	}
-
-	if perm.Priority < requiredRole.Priority {
-		return fmt.Errorf("insufficient permission: required %s, got %s", requiredRole.Name, perm.RoleName)
-	}
-
-	return nil
-}
-
-// RequirePermissionPoint 要求特定权限点
-func (ps *PermissionService) RequirePermissionPoint(ctx context.Context, userId, projectId string, permissionPoint string) error {
-	perm, err := ps.CheckProjectPermission(ctx, userId, projectId)
-	if err != nil {
-		return err
-	}
-
-	if !perm.HasAccess {
-		return fmt.Errorf("access denied: user %s has no access to project %s", userId, projectId)
-	}
-
-	if !ps.hasPermissionPoint(perm.Permissions, permissionPoint) {
-		return fmt.Errorf("permission denied: %s required", permissionPoint)
-	}
-
-	return nil
-}
-
-// CheckOrganizationPermission 检查用户是否为组织成员
-func (ps *PermissionService) CheckOrganizationPermission(ctx context.Context, userId, orgId string) (string, error) {
-	var orgMember model.OrganizationMember
-	err := ps.ctx.DB.Where("org_id = ? AND user_id = ? AND status = ?",
-		orgId, userId, model.OrgMemberStatusActive).First(&orgMember).Error
-	if err != nil {
-		return "", fmt.Errorf("user is not a member of organization")
-	}
-
-	return orgMember.RoleId, nil
-}
-
-// CheckTeamPermission 检查用户是否为团队成员
-func (ps *PermissionService) CheckTeamPermission(ctx context.Context, userId, teamId string) (string, error) {
-	var teamMember model.TeamMember
-	err := ps.ctx.DB.Where("team_id = ? AND user_id = ?", teamId, userId).First(&teamMember).Error
-	if err != nil {
-		return "", fmt.Errorf("user is not a member of team")
-	}
-
-	return teamMember.RoleId, nil
 }

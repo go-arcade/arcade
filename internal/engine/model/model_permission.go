@@ -1,213 +1,140 @@
 package model
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/10/13
- * @file: model_permission.go
- * @description: 权限点定义
- */
+import "time"
 
-// PermissionPoint 权限点（用于组合成角色）
+// UserRoleBinding 用户角色绑定（多层级统一管理）
+type UserRoleBinding struct {
+	Id         int       `json:"id" gorm:"column:id;primary_key;auto_increment"`
+	BindingId  string    `json:"binding_id" gorm:"column:binding_id;unique;not null"`
+	UserId     string    `json:"user_id" gorm:"column:user_id;not null;index"`
+	RoleId     string    `json:"role_id" gorm:"column:role_id;not null;index"`
+	Scope      string    `json:"scope" gorm:"column:scope;not null;index"` // platform/organization/team/project
+	ResourceId *string   `json:"resource_id" gorm:"column:resource_id;index"`
+	GrantedBy  *string   `json:"granted_by" gorm:"column:granted_by"`
+	CreateTime time.Time `json:"create_time" gorm:"column:create_time;autoCreateTime"`
+	UpdateTime time.Time `json:"update_time" gorm:"column:update_time;autoUpdateTime"`
+}
+
+func (UserRoleBinding) TableName() string {
+	return "t_user_role_binding"
+}
+
+// UserPermissions 用户权限聚合结果
+type UserPermissions struct {
+	UserId              string               `json:"userId"`
+	IsSuperAdmin        bool                 `json:"isSuperAdmin"`
+	PlatformPermissions []string             `json:"platformPermissions"`
+	OrgPermissions      map[string][]string  `json:"orgPermissions"`      // org_id -> permissions
+	TeamPermissions     map[string][]string  `json:"teamPermissions"`     // team_id -> permissions
+	ProjectPermissions  map[string][]string  `json:"projectPermissions"`  // project_id -> permissions
+	AllPermissions      []string             `json:"allPermissions"`      // 所有权限的并集
+	AccessibleRoutes    []*RouterPermission  `json:"accessibleRoutes"`    // 可访问的路由
+	AccessibleResources *AccessibleResources `json:"accessibleResources"` // 可访问的资源
+}
+
+// AccessibleResources 用户可访问的资源列表
+type AccessibleResources struct {
+	Organizations []string `json:"organizations"` // org_id list
+	Teams         []string `json:"teams"`         // team_id list
+	Projects      []string `json:"projects"`      // project_id list
+}
+
+// PermissionCheckRequest 权限检查请求
+type PermissionCheckRequest struct {
+	UserId         string `json:"userId" binding:"required"`
+	PermissionCode string `json:"permissionCode" binding:"required"`
+	ResourceId     string `json:"resourceId"`
+	Scope          string `json:"scope"` // platform/organization/team/project
+}
+
+// PermissionCheckResponse 权限检查响应
+type PermissionCheckResponse struct {
+	HasPermission bool   `json:"hasPermission"`
+	Reason        string `json:"reason,omitempty"`
+}
+
+// UserRoleBindingCreate 创建用户角色绑定请求
+type UserRoleBindingCreate struct {
+	UserId     string  `json:"userId" binding:"required"`
+	RoleId     string  `json:"roleId" binding:"required"`
+	Scope      string  `json:"scope" binding:"required,oneof=platform organization team project"`
+	ResourceId *string `json:"resourceId"`
+	GrantedBy  *string `json:"grantedBy"`
+}
+
+// UserRoleBindingUpdate 更新用户角色绑定请求
+type UserRoleBindingUpdate struct {
+	RoleId string `json:"roleId" binding:"required"`
+}
+
+// RoleBindingQuery 角色绑定查询条件
+type RoleBindingQuery struct {
+	UserId     string
+	RoleId     string
+	Scope      string
+	ResourceId string
+	Page       int
+	PageSize   int
+}
+
+// PermissionScope 权限作用域常量
 const (
-	// ========== 项目权限 ==========
-	PermProjectView        = "project.view"        // 查看项目
-	PermProjectEdit        = "project.edit"        // 编辑项目设置
-	PermProjectDelete      = "project.delete"      // 删除项目
-	PermProjectTransfer    = "project.transfer"    // 转移项目所有权
-	PermProjectArchive     = "project.archive"     // 归档项目
-	PermProjectSettings    = "project.settings"    // 修改项目设置
-	PermProjectVariables   = "project.variables"   // 管理项目变量
-	PermProjectWebhook     = "project.webhook"     // 管理Webhook
-	PermProjectIntegration = "project.integration" // 管理集成
-
-	// ========== 构建权限 ==========
-	PermBuildView     = "build.view"     // 查看构建
-	PermBuildTrigger  = "build.trigger"  // 触发构建
-	PermBuildCancel   = "build.cancel"   // 取消构建
-	PermBuildRetry    = "build.retry"    // 重试构建
-	PermBuildDelete   = "build.delete"   // 删除构建记录
-	PermBuildArtifact = "build.artifact" // 下载构建产物
-	PermBuildLog      = "build.log"      // 查看构建日志
-
-	// ========== 流水线权限 ==========
-	PermPipelineView   = "pipeline.view"   // 查看流水线
-	PermPipelineCreate = "pipeline.create" // 创建流水线
-	PermPipelineEdit   = "pipeline.edit"   // 编辑流水线
-	PermPipelineDelete = "pipeline.delete" // 删除流水线
-	PermPipelineRun    = "pipeline.run"    // 运行流水线
-	PermPipelineStop   = "pipeline.stop"   // 停止流水线
-
-	// ========== 部署权限 ==========
-	PermDeployView     = "deploy.view"     // 查看部署
-	PermDeployCreate   = "deploy.create"   // 创建部署
-	PermDeployExecute  = "deploy.execute"  // 执行部署
-	PermDeployRollback = "deploy.rollback" // 回滚部署
-	PermDeployApprove  = "deploy.approve"  // 审批部署
-
-	// ========== 成员权限 ==========
-	PermMemberView   = "member.view"   // 查看成员
-	PermMemberInvite = "member.invite" // 邀请成员
-	PermMemberEdit   = "member.edit"   // 编辑成员角色
-	PermMemberRemove = "member.remove" // 移除成员
-
-	// ========== 团队权限 ==========
-	PermTeamView     = "team.view"     // 查看团队
-	PermTeamCreate   = "team.create"   // 创建团队
-	PermTeamEdit     = "team.edit"     // 编辑团队
-	PermTeamDelete   = "team.delete"   // 删除团队
-	PermTeamMember   = "team.member"   // 管理团队成员
-	PermTeamProject  = "team.project"  // 管理团队项目
-	PermTeamSettings = "team.settings" // 修改团队设置
-
-	// ========== 安全权限 ==========
-	PermSecurityScan   = "security.scan"   // 安全扫描
-	PermSecurityAudit  = "security.audit"  // 安全审计
-	PermSecurityPolicy = "security.policy" // 安全策略管理
+	ScopePlatform     = "platform"
+	ScopeOrganization = "organization"
+	ScopeTeam         = "team"
+	ScopeProject      = "project"
 )
 
-// 内置角色的权限集合
-var BuiltinRolePermissions = map[string][]string{
-	// ========== 项目角色权限 ==========
-	BuiltinProjectOwner: {
-		// 所有项目权限
-		PermProjectView, PermProjectEdit, PermProjectDelete, PermProjectTransfer,
-		PermProjectArchive, PermProjectSettings, PermProjectVariables, PermProjectWebhook, PermProjectIntegration,
-		// 所有构建权限
-		PermBuildView, PermBuildTrigger, PermBuildCancel, PermBuildRetry, PermBuildDelete, PermBuildArtifact, PermBuildLog,
-		// 所有流水线权限
-		PermPipelineView, PermPipelineCreate, PermPipelineEdit, PermPipelineDelete, PermPipelineRun, PermPipelineStop,
-		// 所有部署权限
-		PermDeployView, PermDeployCreate, PermDeployExecute, PermDeployRollback, PermDeployApprove,
-		// 所有成员权限
-		PermMemberView, PermMemberInvite, PermMemberEdit, PermMemberRemove,
-		// 所有团队权限
-		PermTeamView, PermTeamProject, PermTeamSettings,
-		// 其他权限
-		PermSecurityScan, PermSecurityAudit, PermSecurityPolicy,
-	},
+// RouteType 路由类型常量
+const (
+	RouteTypeMenu   = "menu"
+	RouteTypePage   = "page"
+	RouteTypeButton = "button"
+)
 
-	BuiltinProjectMaintainer: {
-		// 项目权限（不能删除、转移）
-		PermProjectView, PermProjectEdit, PermProjectArchive, PermProjectSettings, PermProjectVariables, PermProjectWebhook, PermProjectIntegration,
-		// 构建权限
-		PermBuildView, PermBuildTrigger, PermBuildCancel, PermBuildRetry, PermBuildDelete, PermBuildArtifact, PermBuildLog,
-		// 流水线权限
-		PermPipelineView, PermPipelineCreate, PermPipelineEdit, PermPipelineDelete, PermPipelineRun, PermPipelineStop,
-		// 部署权限
-		PermDeployView, PermDeployCreate, PermDeployExecute, PermDeployRollback, PermDeployApprove,
-		// 成员权限
-		PermMemberView, PermMemberInvite, PermMemberEdit, PermMemberRemove,
-		// 团队权限
-		PermTeamView, PermTeamProject, PermTeamSettings,
-		// 其他权限
-		PermSecurityScan, PermSecurityAudit,
-	},
+// 权限常量定义
+const (
+	//
+	PermProjectView      = "project.view"
+	PermProjectEdit      = "project.edit"
+	PermProjectDelete    = "project.delete"
+	PermProjectSettings  = "project.settings"
+	PermProjectVariables = "project.variables"
 
-	BuiltinProjectDeveloper: {
-		// 基本项目权限
-		PermProjectView,
-		// 构建权限
-		PermBuildView, PermBuildTrigger, PermBuildCancel, PermBuildRetry, PermBuildArtifact, PermBuildLog,
-		// 流水线权限（不能删除）
-		PermPipelineView, PermPipelineCreate, PermPipelineEdit, PermPipelineRun, PermPipelineStop,
-		// 部署权限（不能批准）
-		PermDeployView, PermDeployCreate, PermDeployExecute,
-		// 成员权限（只读）
-		PermMemberView,
-		// 团队权限（只读）
-		PermTeamView,
-		// 其他权限
-		PermSecurityScan,
-	},
+	// 构建权限
+	PermBuildView     = "build.view"
+	PermBuildTrigger  = "build.trigger"
+	PermBuildCancel   = "build.cancel"
+	PermBuildLog      = "build.log"
+	PermBuildArtifact = "build.artifact"
 
-	BuiltinProjectReporter: {
-		// 基本查看权限
-		PermProjectView,
-		PermBuildView, PermBuildArtifact, PermBuildLog,
-		PermPipelineView,
-		PermDeployView,
-		PermMemberView,
-		PermTeamView,
-		// Issue 权限
-	},
+	// 流水线权限
+	PermPipelineView   = "pipeline.view"
+	PermPipelineCreate = "pipeline.create"
+	PermPipelineEdit   = "pipeline.edit"
+	PermPipelineDelete = "pipeline.delete"
+	PermPipelineRun    = "pipeline.run"
+	PermPipelineCancel = "pipeline.cancel"
 
-	BuiltinProjectGuest: {
-		// 仅查看权限
-		PermProjectView,
-		PermBuildView, PermBuildLog,
-		PermPipelineView,
-		PermDeployView,
-		PermMemberView,
-	},
+	// 部署权限
+	PermDeployView     = "deploy.view"
+	PermDeployRun      = "deploy.run"
+	PermDeployRollback = "deploy.rollback"
+	PermDeployApprove  = "deploy.approve"
 
-	// ========== 团队角色权限 ==========
-	BuiltinTeamOwner: {
-		PermTeamView, PermTeamEdit, PermTeamDelete, PermTeamMember, PermTeamProject, PermTeamSettings,
-	},
+	// 成员权限
+	PermMemberView   = "member.view"
+	PermMemberInvite = "member.invite"
+	PermMemberManage = "member.manage"
 
-	BuiltinTeamMaintainer: {
-		PermTeamView, PermTeamEdit, PermTeamMember, PermTeamProject, PermTeamSettings,
-	},
+	// 团队权限
+	PermTeamView   = "team.view"
+	PermTeamCreate = "team.create"
+	PermTeamEdit   = "team.edit"
+	PermTeamDelete = "team.delete"
 
-	BuiltinTeamDeveloper: {
-		PermTeamView, PermTeamProject,
-	},
-
-	BuiltinTeamReporter: {
-		PermTeamView,
-	},
-
-	BuiltinTeamGuest: {
-		PermTeamView,
-	},
-
-	// ========== 组织角色权限 ==========
-	BuiltinOrgOwner: {
-		// 拥有所有组织级权限
-		PermTeamView, PermTeamCreate, PermTeamEdit, PermTeamDelete, PermTeamMember, PermTeamProject, PermTeamSettings,
-	},
-
-	BuiltinOrgAdmin: {
-		PermTeamView, PermTeamCreate, PermTeamEdit, PermTeamMember, PermTeamProject, PermTeamSettings,
-	},
-
-	BuiltinOrgMember: {
-		PermTeamView,
-	},
-}
-
-// Permission 权限点表
-type Permission struct {
-	BaseModel
-	PermissionId string `gorm:"column:permission_id;uniqueIndex" json:"permissionId"`
-	Code         string `gorm:"column:code;uniqueIndex" json:"code"`          // 权限代码（如：project.view）
-	Name         string `gorm:"column:name" json:"name"`                      // 权限名称
-	Category     string `gorm:"column:category" json:"category"`              // 权限分类
-	Description  string `gorm:"column:description" json:"description"`        // 描述
-	IsEnabled    int    `gorm:"column:is_enabled;default:1" json:"isEnabled"` // 是否启用
-}
-
-func (Permission) TableName() string {
-	return "t_permission"
-}
-
-// RolePermission 角色权限关联表
-type RolePermission struct {
-	ID           int64  `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
-	RoleId       string `gorm:"column:role_id;index:idx_role_id" json:"roleId"`
-	PermissionId string `gorm:"column:permission_id;index:idx_permission_id" json:"permissionId"`
-	CreatedAt    string `gorm:"column:created_at" json:"createdAt"`
-}
-
-func (RolePermission) TableName() string {
-	return "t_role_permission"
-}
-
-// PermissionDTO 权限DTO
-type PermissionDTO struct {
-	PermissionId string `json:"permissionId"`
-	Code         string `json:"code"`
-	Name         string `json:"name"`
-	Category     string `json:"category"`
-	Description  string `json:"description"`
-}
+	// 组织权限
+	PermOrganizationView   = "organization.view"
+	PermOrganizationEdit   = "organization.edit"
+	PermOrganizationDelete = "organization.delete"
+)

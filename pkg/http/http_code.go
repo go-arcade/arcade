@@ -35,6 +35,7 @@ var (
 
 	UnsupportedProviders          = failed(4501, "Unsupported provider")
 	ProviderIsRequired            = failed(4502, "Provider is required")
+	ProviderTypeIsRequired        = failed(4503, "Provider type is required")
 	InvalidStatusParameter        = failed(4502, "Invalid status parameter")
 	TokenExchangeFailed           = failed(4503, "Token exchange failed")
 	FailedToObtainUserInformation = failed(4504, "Failed to obtain user information")

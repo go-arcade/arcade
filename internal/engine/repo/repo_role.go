@@ -7,13 +7,6 @@ import (
 	"github.com/observabil/arcade/pkg/ctx"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/10/13
- * @file: repo_role.go
- * @description: 角色仓储
- */
-
 type RoleRepo struct {
 	ctx *ctx.Context
 }

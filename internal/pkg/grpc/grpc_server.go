@@ -7,6 +7,10 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/observabil/arcade/internal/engine/service/agent"
+	"github.com/observabil/arcade/internal/engine/service/pipeline"
+	"github.com/observabil/arcade/internal/engine/service/stream"
+	"github.com/observabil/arcade/internal/engine/service/task"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -20,10 +24,6 @@ import (
 	pipelinev1 "github.com/observabil/arcade/api/pipeline/v1"
 	streamv1 "github.com/observabil/arcade/api/stream/v1"
 	taskv1 "github.com/observabil/arcade/api/task/v1"
-	"github.com/observabil/arcade/internal/engine/service/agent"
-	"github.com/observabil/arcade/internal/engine/service/pipeline"
-	"github.com/observabil/arcade/internal/engine/service/stream"
-	"github.com/observabil/arcade/internal/engine/service/task"
 	"github.com/observabil/arcade/internal/pkg/grpc/middleware"
 )
 

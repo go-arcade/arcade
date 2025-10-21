@@ -5,13 +5,6 @@ import (
 	"gorm.io/datatypes"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/11/6 19:33
- * @file: model_oauth_provider.go
- * @description: model sso provider (支持 OAuth, LDAP, OIDC, SAML)
- */
-
 // SSOProvider SSO认证提供者表
 type SSOProvider struct {
 	BaseModel
@@ -66,16 +59,4 @@ type OIDCConfig struct {
 	UserInfoURL  string   `json:"userInfoURL,omitempty"`
 	SkipVerify   bool     `json:"skipVerify"`
 	HostedDomain string   `json:"hostedDomain,omitempty"` // Google Workspace domain
-}
-
-// SAMLConfig SAML 配置
-type SAMLConfig struct {
-	EntityID             string `json:"entityId"`
-	SSOURL               string `json:"ssoURL"`
-	Certificate          string `json:"certificate"`
-	PrivateKey           string `json:"privateKey"`
-	MetadataURL          string `json:"metadataURL,omitempty"`
-	NameIDFormat         string `json:"nameIDFormat"`
-	AssertionConsumerURL string `json:"assertionConsumerURL"`
-	SignatureMethod      string `json:"signatureMethod,omitempty"`
 }

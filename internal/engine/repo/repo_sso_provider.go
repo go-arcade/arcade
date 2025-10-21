@@ -1,56 +1,65 @@
 package repo
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/observabil/arcade/internal/engine/model"
 	"github.com/observabil/arcade/pkg/ctx"
 )
 
 type SSORepo struct {
-	Ctx             *ctx.Context
-	AuthConfigModel model.SSOProvider
+	Ctx              *ctx.Context
+	SSOProviderModel model.SSOProvider
 }
 
 func NewSSORepo(ctx *ctx.Context) *SSORepo {
 	return &SSORepo{
-		Ctx:             ctx,
-		AuthConfigModel: model.SSOProvider{},
+		Ctx:              ctx,
+		SSOProviderModel: model.SSOProvider{},
 	}
 }
 
-func (ar *SSORepo) GetOauthProvider(name string) (*model.OAuthConfig, error) {
+func (ar *SSORepo) GetProvider(name string) (*model.SSOProvider, error) {
 	var ssoProvider model.SSOProvider
-	if err := ar.Ctx.DBSession().Table(ar.AuthConfigModel.TableName()).
-		Where("name = ? AND provider_type = ?", name, "oauth").
+	if err := ar.Ctx.DBSession().Table(ar.SSOProviderModel.TableName()).
+		Where("name = ?", name).
+		Select("provider_type, name, description, priority, is_enabled").
 		First(&ssoProvider).Error; err != nil {
 		return nil, err
 	}
-
-	var oauthConfig model.OAuthConfig
-	if err := json.Unmarshal(ssoProvider.Config, &oauthConfig); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal oauth config: %v", err)
-	}
-
-	// 构建 oauth2.Endpoint
-	if oauthConfig.Endpoint.AuthURL == "" {
-		oauthConfig.Endpoint.AuthURL = oauthConfig.AuthURL
-	}
-	if oauthConfig.Endpoint.TokenURL == "" {
-		oauthConfig.Endpoint.TokenURL = oauthConfig.TokenURL
-	}
-
-	return &oauthConfig, nil
+	return &ssoProvider, nil
 }
 
-func (ar *SSORepo) GetOauthProviderList() ([]model.SSOProvider, error) {
+func (ar *SSORepo) GetProviderByType(providerType string) ([]model.SSOProvider, error) {
 	var ssoProviders []model.SSOProvider
-	if err := ar.Ctx.DBSession().Table(ar.AuthConfigModel.TableName()).
-		Where("provider_type = ? AND is_enabled = ?", "oauth", 1).
+	if err := ar.Ctx.DBSession().Table(ar.SSOProviderModel.TableName()).
+		Where("provider_type = ? AND is_enabled = ?", providerType, 1).
 		Order("priority ASC").
+		Select("provider_type, name, description, priority, is_enabled").
 		Find(&ssoProviders).Error; err != nil {
 		return nil, err
 	}
 	return ssoProviders, nil
+}
+
+func (ar *SSORepo) GetProviderList() ([]model.SSOProvider, error) {
+	var ssoProviders []model.SSOProvider
+	if err := ar.Ctx.DBSession().Table(ar.SSOProviderModel.TableName()).
+		Where("is_enabled = ?", 1).
+		Order("priority ASC").
+		Select("provider_type, name, description, priority, is_enabled").
+		Find(&ssoProviders).Error; err != nil {
+		return nil, err
+	}
+	return ssoProviders, nil
+}
+
+func (ar *SSORepo) GetProviderTypeList() ([]string, error) {
+	var providerTypes []string
+	if err := ar.Ctx.DBSession().Table(ar.SSOProviderModel.TableName()).
+		Distinct("provider_type").
+		Where("is_enabled = ?", 1).
+		Select("provider_type").
+		Pluck("provider_type", &providerTypes).Error; err != nil {
+		return nil, err
+	}
+	return providerTypes, nil
 }
