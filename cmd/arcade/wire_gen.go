@@ -31,8 +31,8 @@ func initApp(configPath string, appCtx *ctx.Context, logger *zap.Logger) (*app.A
 	pluginConfig := providePluginConfig(appConfig)
 	manager := providePluginManager(appConfig)
 	router := provideRouter(http, appCtx, pluginConfig, manager)
-	grpcConf := provideGrpcConfig(appConfig)
-	serverWrapper := provideGrpcServer(grpcConf, logger)
+	conf := provideGrpcConfig(appConfig)
+	serverWrapper := provideGrpcServer(conf, logger)
 	storageRepo := provideStorageRepo(appCtx)
 	storageProvider, err := provideStorageFromDB(appCtx, storageRepo)
 	if err != nil {
@@ -73,7 +73,7 @@ func provideHttpConfig(appConf conf.AppConfig) *http.Http {
 	return &appConf.Http
 }
 
-func provideGrpcConfig(appConf conf.AppConfig) *grpc.GrpcConf {
+func provideGrpcConfig(appConf conf.AppConfig) *grpc.Conf {
 	return &appConf.Grpc
 }
 
@@ -138,7 +138,7 @@ var grpcProviderSet = wire.NewSet(
 	provideGrpcServer,
 )
 
-func provideGrpcServer(cfg *grpc.GrpcConf, logger *zap.Logger) *grpc.ServerWrapper {
+func provideGrpcServer(cfg *grpc.Conf, logger *zap.Logger) *grpc.ServerWrapper {
 	server := grpc.NewGrpcServer(*cfg, logger)
 	server.Register()
 	return server

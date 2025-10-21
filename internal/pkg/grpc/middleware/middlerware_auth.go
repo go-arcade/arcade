@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	grpcauth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -86,7 +86,7 @@ func (w *wrappedServerStream) Context() context.Context {
 }
 
 func AuthInterceptor(ctx context.Context) (context.Context, error) {
-	token, err := grpc_auth.AuthFromMD(ctx, "bearer")
+	token, err := grpcauth.AuthFromMD(ctx, "bearer")
 	if err != nil {
 		return nil, err
 	}

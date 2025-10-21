@@ -8,7 +8,7 @@ import (
 	"github.com/observabil/arcade/pkg/log"
 )
 
-// ExceptionInterceptor 异常中间件
+// ExceptionMiddleware 异常中间件
 // 捕获 panic 错误，返回 500 状态码和错误信息
 // This function is used as the middleware of fiber.
 func ExceptionMiddleware(c *fiber.Ctx) error {

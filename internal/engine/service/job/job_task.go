@@ -70,7 +70,7 @@ func (t *ConcreteTask) Execute(ctx context.Context) error {
 	defer t.Release()
 
 	// 更新任务状态为运行中
-	if err := t.updateTaskStatus(TaskStatusRunning, ""); err != nil {
+	if err := t.updateTaskStatus(StatusRunning, ""); err != nil {
 		return fmt.Errorf("failed to update task status: %w", err)
 	}
 
@@ -90,7 +90,7 @@ func (t *ConcreteTask) Execute(ctx context.Context) error {
 	if err != nil {
 		// 任务失败
 		log.Errorf("task %s failed after %v: %v", taskId, duration, err)
-		if updateErr := t.updateTaskStatus(TaskStatusFailed, err.Error()); updateErr != nil {
+		if updateErr := t.updateTaskStatus(StatusFailed, err.Error()); updateErr != nil {
 			log.Errorf("failed to update task status: %v", updateErr)
 		}
 		return err
@@ -98,7 +98,7 @@ func (t *ConcreteTask) Execute(ctx context.Context) error {
 
 	// 任务成功
 	log.Infof("task %s completed successfully in %v", taskId, duration)
-	if err := t.updateTaskStatus(TaskStatusSuccess, ""); err != nil {
+	if err := t.updateTaskStatus(StatusSuccess, ""); err != nil {
 		log.Errorf("failed to update task status: %v", err)
 	}
 
@@ -130,13 +130,13 @@ func (t *ConcreteTask) updateTaskStatus(status int, errorMsg string) error {
 
 // Task 状态常量
 const (
-	TaskStatusUnknown   = 0
-	TaskStatusPending   = 1
-	TaskStatusQueued    = 2
-	TaskStatusRunning   = 3
-	TaskStatusSuccess   = 4
-	TaskStatusFailed    = 5
-	TaskStatusCancelled = 6
-	TaskStatusTimeout   = 7
-	TaskStatusSkipped   = 8
+	StatusUnknown   = 0
+	StatusPending   = 1
+	StatusQueued    = 2
+	StatusRunning   = 3
+	StatusSuccess   = 4
+	StatusFailed    = 5
+	StatusCancelled = 6
+	StatusTimeout   = 7
+	StatusSkipped   = 8
 )

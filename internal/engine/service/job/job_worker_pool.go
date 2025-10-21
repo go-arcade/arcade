@@ -47,8 +47,8 @@ type statsUpdate struct {
 	activeDec int
 }
 
-// TaskWorkerPool Task 协程池
-type TaskWorkerPool struct {
+// WorkerPool Task 协程池
+type WorkerPool struct {
 	mu sync.RWMutex
 
 	// 配置
@@ -76,7 +76,7 @@ type TaskWorkerPool struct {
 // worker 工作协程
 type worker struct {
 	id       int
-	pool     *TaskWorkerPool
+	pool     *WorkerPool
 	taskChan chan Task
 	stopChan chan struct{}
 }
@@ -101,10 +101,10 @@ var workerPool = sync.Pool{
 }
 
 // NewTaskWorkerPool 创建 Task 协程池
-func NewTaskWorkerPool(maxWorkers, queueSize int) *TaskWorkerPool {
+func NewTaskWorkerPool(maxWorkers, queueSize int) *WorkerPool {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	pool := &TaskWorkerPool{
+	pool := &WorkerPool{
 		maxWorkers:    maxWorkers,
 		queueSize:     queueSize,
 		workerTimeout: 30 * time.Minute,
@@ -124,7 +124,7 @@ func NewTaskWorkerPool(maxWorkers, queueSize int) *TaskWorkerPool {
 }
 
 // Start 启动协程池
-func (p *TaskWorkerPool) Start() error {
+func (p *WorkerPool) Start() error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -159,7 +159,7 @@ func (p *TaskWorkerPool) Start() error {
 }
 
 // Stop 停止协程池
-func (p *TaskWorkerPool) Stop() {
+func (p *WorkerPool) Stop() {
 	p.mu.Lock()
 	if !p.running {
 		p.mu.Unlock()
@@ -184,7 +184,7 @@ func (p *TaskWorkerPool) Stop() {
 }
 
 // Submit 提交任务到协程池
-func (p *TaskWorkerPool) Submit(task Task) error {
+func (p *WorkerPool) Submit(task Task) error {
 	p.mu.RLock()
 	if !p.running {
 		p.mu.RUnlock()
@@ -211,7 +211,7 @@ func (p *TaskWorkerPool) Submit(task Task) error {
 }
 
 // SubmitWithPriority 提交带优先级的任务
-func (p *TaskWorkerPool) SubmitWithPriority(task Task) error {
+func (p *WorkerPool) SubmitWithPriority(task Task) error {
 	p.mu.RLock()
 	if !p.running {
 		p.mu.RUnlock()
@@ -232,7 +232,7 @@ func (p *TaskWorkerPool) SubmitWithPriority(task Task) error {
 }
 
 // CancelTask 取消指定任务
-func (p *TaskWorkerPool) CancelTask(taskId string) error {
+func (p *WorkerPool) CancelTask(taskId string) error {
 	// 从优先级队列中移除
 	if p.priorityQueue.Remove(taskId) {
 		p.stats.mu.Lock()
@@ -248,7 +248,7 @@ func (p *TaskWorkerPool) CancelTask(taskId string) error {
 }
 
 // GetStats 获取池统计信息
-func (p *TaskWorkerPool) GetStats() PoolStats {
+func (p *WorkerPool) GetStats() PoolStats {
 	p.stats.mu.RLock()
 	defer p.stats.mu.RUnlock()
 
@@ -267,7 +267,7 @@ func (p *TaskWorkerPool) GetStats() PoolStats {
 }
 
 // Resize 动态调整工作协程数量
-func (p *TaskWorkerPool) Resize(newSize int) error {
+func (p *WorkerPool) Resize(newSize int) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -318,7 +318,7 @@ func (p *TaskWorkerPool) Resize(newSize int) error {
 }
 
 // priorityScheduler 优先级队列调度器
-func (p *TaskWorkerPool) priorityScheduler() {
+func (p *WorkerPool) priorityScheduler() {
 	defer p.wg.Done()
 
 	ticker := time.NewTicker(100 * time.Millisecond)
