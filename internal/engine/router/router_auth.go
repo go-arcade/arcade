@@ -152,7 +152,7 @@ func (rt *Router) ldapLogin(c *fiber.Ctx) error {
 	}
 
 	if req.Username == "" || req.Password == "" {
-		return http.WithRepErrMsg(c, http.BadRequest.Code, "username and password are required", c.Path())
+		return http.WithRepErrMsg(c, http.UsernameArePasswordIsRequired.Code, http.UsernameArePasswordIsRequired.Msg, c.Path())
 	}
 
 	userInfo, err := authService.LDAPLogin(providerName, req.Username, req.Password)
