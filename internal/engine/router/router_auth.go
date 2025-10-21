@@ -23,6 +23,8 @@ func (rt *Router) authRouter(r fiber.Router, auth fiber.Handler) {
 		// authGroup.Post("/revise", auth, rt.updateUser)
 
 		authGroup.Get("/redirect/:provider", rt.redirect)
+
+		authGroup.Post("/ldap/login/:provider", rt.ldapLogin)
 	}
 }
 
