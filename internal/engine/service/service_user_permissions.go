@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/observabil/arcade/internal/engine/model"
+	"github.com/observabil/arcade/internal/engine/model/entity"
 	"github.com/observabil/arcade/internal/engine/repo"
 	"github.com/observabil/arcade/pkg/ctx"
 	"github.com/observabil/arcade/pkg/log"
@@ -243,7 +244,7 @@ func (s *UserPermissionsService) getUserTeams(ctx context.Context, userId string
 	result := make([]TeamPermission, 0, len(teamMembers))
 	for _, tm := range teamMembers {
 		// 获取团队信息
-		var team model.Team
+		var team entity.Team
 		if err := s.ctx.DB.Where("team_id = ?", tm.TeamId).First(&team).Error; err != nil {
 			log.Warnf("[UserPermissions] failed to get team %s: %v", tm.TeamId, err)
 			continue

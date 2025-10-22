@@ -1,50 +1,104 @@
 package model
 
-import "gorm.io/datatypes"
-
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/10/13
- * @file: model_team.go
- * @description: 团队表模型
- */
-
-// Team 团队表
-type Team struct {
-	BaseModel
-	TeamId       string         `gorm:"column:team_id" json:"teamId"`              // 团队唯一标识
-	OrgId        string         `gorm:"column:org_id" json:"orgId"`                // 所属组织ID
-	Name         string         `gorm:"column:name" json:"name"`                   // 团队名称
-	DisplayName  string         `gorm:"column:display_name" json:"displayName"`    // 团队显示名称
-	Description  string         `gorm:"column:description" json:"description"`     // 团队描述
-	Avatar       string         `gorm:"column:avatar" json:"avatar"`               // 团队头像
-	ParentTeamId string         `gorm:"column:parent_team_id" json:"parentTeamId"` // 父团队ID(支持嵌套)
-	Path         string         `gorm:"column:path" json:"path"`                   // 团队路径(用于层级关系)
-	Level        int            `gorm:"column:level" json:"level"`                 // 团队层级
-	Settings     datatypes.JSON `gorm:"column:settings;type:json" json:"settings"` // 团队设置
-	Visibility   int            `gorm:"column:visibility" json:"visibility"`       // 可见性: 0-私有, 1-内部, 2-公开
-	IsEnabled    int            `gorm:"column:is_enabled" json:"isEnabled"`        // 是否启用: 0-禁用, 1-启用
-
-	// 统计字段
-	TotalMembers  int `gorm:"column:total_members" json:"totalMembers"`   // 成员总数
-	TotalProjects int `gorm:"column:total_projects" json:"totalProjects"` // 项目总数
-}
-
-func (Team) TableName() string {
-	return "t_team"
-}
-
-// TeamSettings 团队设置结构
-type TeamSettings struct {
-	DefaultRole       string `json:"default_role"`        // 默认角色
-	AllowMemberInvite bool   `json:"allow_member_invite"` // 允许成员邀请
-	RequireApproval   bool   `json:"require_approval"`    // 需要审批
-	MaxMembers        int    `json:"max_members"`         // 最大成员数
-}
-
-// TeamVisibility 团队可见性枚举
-const (
-	TeamVisibilityPrivate  = 0 // 私有(仅成员可见)
-	TeamVisibilityInternal = 1 // 内部(组织内可见)
-	TeamVisibilityPublic   = 2 // 公开(所有人可见)
+import (
+	"github.com/bytedance/sonic"
+	"github.com/observabil/arcade/internal/engine/model/entity"
 )
+
+// CreateTeamReq create team request
+type CreateTeamReq struct {
+	OrgId        string                 `json:"orgId" validate:"required"`
+	Name         string                 `json:"name" validate:"required,min=2,max=64"`
+	DisplayName  string                 `json:"displayName"`
+	Description  string                 `json:"description"`
+	Avatar       string                 `json:"avatar"`
+	ParentTeamId string                 `json:"parentTeamId"`
+	Settings     map[string]interface{} `json:"settings"`
+	Visibility   int                    `json:"visibility"` // 0-private, 1-internal, 2-public
+}
+
+// UpdateTeamReq update team request
+type UpdateTeamReq struct {
+	Name        *string                `json:"name,omitempty"`
+	DisplayName *string                `json:"displayName,omitempty"`
+	Description *string                `json:"description,omitempty"`
+	Avatar      *string                `json:"avatar,omitempty"`
+	Settings    map[string]interface{} `json:"settings,omitempty"`
+	Visibility  *int                   `json:"visibility,omitempty"`
+	IsEnabled   *int                   `json:"isEnabled,omitempty"`
+}
+
+// TeamQueryReq query team request
+type TeamQueryReq struct {
+	OrgId        string `json:"orgId" form:"orgId"`
+	Name         string `json:"name" form:"name"`
+	ParentTeamId string `json:"parentTeamId" form:"parentTeamId"`
+	Visibility   *int   `json:"visibility" form:"visibility"`
+	IsEnabled    *int   `json:"isEnabled" form:"isEnabled"`
+	Page         int    `json:"page" form:"page"`
+	PageSize     int    `json:"pageSize" form:"pageSize"`
+}
+
+// TeamResp team response
+type TeamResp struct {
+	TeamId        string                 `json:"teamId"`
+	OrgId         string                 `json:"orgId"`
+	Name          string                 `json:"name"`
+	DisplayName   string                 `json:"displayName"`
+	Description   string                 `json:"description"`
+	Avatar        string                 `json:"avatar"`
+	ParentTeamId  string                 `json:"parentTeamId"`
+	Path          string                 `json:"path"`
+	Level         int                    `json:"level"`
+	Settings      map[string]interface{} `json:"settings"`
+	Visibility    int                    `json:"visibility"`
+	IsEnabled     int                    `json:"isEnabled"`
+	TotalMembers  int                    `json:"totalMembers"`
+	TotalProjects int                    `json:"totalProjects"`
+	CreatedAt     string                 `json:"createdAt"`
+	UpdatedAt     string                 `json:"updatedAt"`
+}
+
+// TeamListResp team list response
+type TeamListResp struct {
+	Teams      []*TeamResp `json:"teams"`
+	Total      int64       `json:"total"`
+	Page       int         `json:"page"`
+	PageSize   int         `json:"pageSize"`
+	TotalPages int         `json:"totalPages"`
+}
+
+// EntityToTeamResp convert entity.Team to TeamResp
+func EntityToTeamResp(team *entity.Team) *TeamResp {
+	if team == nil {
+		return nil
+	}
+
+	resp := &TeamResp{
+		TeamId:        team.TeamId,
+		OrgId:         team.OrgId,
+		Name:          team.Name,
+		DisplayName:   team.DisplayName,
+		Description:   team.Description,
+		Avatar:        team.Avatar,
+		ParentTeamId:  team.ParentTeamId,
+		Path:          team.Path,
+		Level:         team.Level,
+		Visibility:    team.Visibility,
+		IsEnabled:     team.IsEnabled,
+		TotalMembers:  team.TotalMembers,
+		TotalProjects: team.TotalProjects,
+		CreatedAt:     team.CreatedAt.Format("2006-01-02 15:04:05"),
+		UpdatedAt:     team.UpdatedAt.Format("2006-01-02 15:04:05"),
+	}
+
+	// parse Settings JSON
+	if len(team.Settings) > 0 {
+		settings := make(map[string]interface{})
+		if err := sonic.Unmarshal(team.Settings, &settings); err == nil {
+			resp.Settings = settings
+		}
+	}
+
+	return resp
+}

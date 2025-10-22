@@ -10,16 +10,20 @@ package http
 var (
 	StatusMovedPermanently = failed(301, "Moved Permanently")
 
-	Failed = failed(500, "Request failed")
+	Failed                        = failed(500, "Request failed")
+	RequestParameterParsingFailed = failed(5001, "Request parameter parsing failed")
+	TeamIdIsEmpty                 = failed(5002, "Team id is empty")
+	OrgIdIsEmpty                  = failed(5003, "Org id is empty")
 
 	// Unauthorized 401 sso
 	Unauthorized           = failed(4401, "Unauthorized")
-	AuthorizationIncorrect = failed(4402, "The sso format in the request header is incorrect")
-	AuthorizationEmpty     = failed(4403, "Authorization is empty")
-	InvalidToken           = failed(4404, "Invalid token")
-	TokenBeEmpty           = failed(4407, "Token cannot be empty")
-	TokenExpired           = failed(4408, "Token is expired")
-	TokenFormatIncorrect   = failed(4409, "Token format is incorrect")
+	AuthenticationFailed   = failed(4402, "Authentication failed")
+	AuthorizationIncorrect = failed(4403, "The sso format in the request header is incorrect")
+	AuthorizationEmpty     = failed(4404, "Authorization is empty")
+	InvalidToken           = failed(4405, "Invalid token")
+	TokenBeEmpty           = failed(4406, "Token cannot be empty")
+	TokenExpired           = failed(4407, "Token is expired")
+	TokenFormatIncorrect   = failed(4408, "Token format is incorrect")
 
 	// BadRequest 400
 	BadRequest = failed(4000, "Bad request")

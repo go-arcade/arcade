@@ -158,6 +158,9 @@ func (rt *Router) routerGroup(r fiber.Router) {
 	// agent
 	rt.agentRouter(r, auth)
 
+	// team
+	rt.teamRouter(r, auth)
+
 	// storag
 	rt.storageRouter(r, auth)
 
