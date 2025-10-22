@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/observabil/arcade/internal/engine/model"
+	"github.com/observabil/arcade/internal/engine/model/entity"
 	"github.com/observabil/arcade/pkg/ctx"
 	"gorm.io/datatypes"
 )
@@ -280,8 +281,8 @@ func contains(slice []string, item string) bool {
 	return false
 }
 
-func (r *PermissionRepo) getTeamById(teamId string) (*model.Team, error) {
-	var team model.Team
+func (r *PermissionRepo) getTeamById(teamId string) (*entity.Team, error) {
+	var team entity.Team
 	err := r.Ctx.DB.Where("team_id = ?", teamId).First(&team).Error
 	return &team, err
 }
