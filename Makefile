@@ -108,13 +108,13 @@ prebuild: ## download and embed the front-end file
 	sh dl.sh
 	echo "web file download and embedding completed."
 
-build: wire plugins ## build main program
+build: wire plugins buf ## build main program
 	go build -ldflags "${LDFLAGS}" -o arcade ./cmd/arcade/
 
 build-cli: ## build CLI tool
 	go build -ldflags "${LDFLAGS}" -o arcade-cli ./cmd/cli/
 
-run: deps-sync wire 
+run: deps-sync wire buf
 	go run ./cmd/arcade/
 
 release: ## create release version

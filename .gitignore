@@ -7,3 +7,4 @@
 /plugins/*
 docs/*.md
 *.so
+/api/*/*/*.pb.go
