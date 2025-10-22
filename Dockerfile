@@ -1,24 +1,20 @@
-FROM golang:1.23 AS builder
+FROM golang:1.24.4 AS builder
 
-# 设置工作目录
 WORKDIR /app
 
 COPY ./ /app/
 
-RUN apt-get update && \
-apt-get install -y unzip && \
-touch ./internal/app/router/static/arcade.js && \
-make -f build/Makefile build
+RUN apt-get install -y unzip && \
+    make build
 
-FROM golang:1.23
+FROM FROM gcr.io/distroless/static:nonroot
 
-RUN apt-get install -y tzdata && \
-mkdir -p /opt/arcade/bin /opt/arcade/conf.d
+WORKDIR /
 
-COPY --from=builder /app/arcade /opt/arcade/bin
+RUN mkdir -p /conf.d
+
+COPY --from=builder /app/arcade /arcade
 
 EXPOSE 8080
 
-WORKDIR /opt/arcade
-
-ENTRYPOINT [ "./bin/arcade -conf conf.d/config.toml" ]
+ENTRYPOINT [ "/arcade -conf /conf.d/config.toml" ]
