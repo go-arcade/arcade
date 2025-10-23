@@ -1,8 +1,8 @@
 package middleware
 
 import (
+	httpx "github.com/go-arcade/arcade/pkg/http"
 	"github.com/gofiber/fiber/v2"
-	httpx "github.com/observabil/arcade/pkg/http"
 )
 
 // UnifiedResponse 统一响应

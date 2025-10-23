@@ -1,7 +1,7 @@
 package repo
 
 import (
-	"github.com/observabil/arcade/pkg/ctx"
+	"github.com/go-arcade/arcade/pkg/ctx"
 	"gorm.io/gorm"
 )
 

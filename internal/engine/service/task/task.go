@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
-	agentv1 "github.com/observabil/arcade/api/agent/v1"
-	"github.com/observabil/arcade/internal/engine/model"
-	"github.com/observabil/arcade/internal/engine/repo"
-	"github.com/observabil/arcade/pkg/log"
+	agentv1 "github.com/go-arcade/arcade/api/agent/v1"
+	"github.com/go-arcade/arcade/internal/engine/model"
+	"github.com/go-arcade/arcade/internal/engine/repo"
+	"github.com/go-arcade/arcade/pkg/log"
 )
 
 /**

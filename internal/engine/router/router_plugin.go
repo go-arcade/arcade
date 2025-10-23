@@ -6,13 +6,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/go-arcade/arcade/internal/engine/repo"
+	serviceplugin "github.com/go-arcade/arcade/internal/engine/service/plugin"
+	httpx "github.com/go-arcade/arcade/pkg/http"
+	"github.com/go-arcade/arcade/pkg/http/middleware"
+	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/storage"
 	"github.com/gofiber/fiber/v2"
-	"github.com/observabil/arcade/internal/engine/repo"
-	serviceplugin "github.com/observabil/arcade/internal/engine/service/plugin"
-	httpx "github.com/observabil/arcade/pkg/http"
-	"github.com/observabil/arcade/pkg/http/middleware"
-	"github.com/observabil/arcade/pkg/log"
-	"github.com/observabil/arcade/pkg/storage"
 )
 
 func (rt *Router) pluginRouter(r fiber.Router, auth fiber.Handler) {

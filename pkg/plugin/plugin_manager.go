@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/hashicorp/go-plugin"
-	"github.com/observabil/arcade/pkg/log"
 )
 
 // Manager is the plugin manager

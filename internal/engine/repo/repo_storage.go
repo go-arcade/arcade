@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/observabil/arcade/internal/engine/model"
-	"github.com/observabil/arcade/pkg/ctx"
-	"github.com/observabil/arcade/pkg/log"
+	"github.com/go-arcade/arcade/internal/engine/model"
+	"github.com/go-arcade/arcade/pkg/ctx"
+	"github.com/go-arcade/arcade/pkg/log"
 )
 
 type StorageRepo struct {

@@ -3,9 +3,9 @@ package middleware
 import (
 	"runtime/debug"
 
+	"github.com/go-arcade/arcade/pkg/http"
+	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/gofiber/fiber/v2"
-	"github.com/observabil/arcade/pkg/http"
-	"github.com/observabil/arcade/pkg/log"
 )
 
 // ExceptionMiddleware 异常中间件

@@ -1,8 +1,8 @@
 package ctx
 
 import (
+	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/google/wire"
-	"github.com/observabil/arcade/pkg/database"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"

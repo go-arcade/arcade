@@ -12,8 +12,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/observabil/arcade/pkg/ctx"
-	"github.com/observabil/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/ctx"
+	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/tencentyun/cos-go-sdk-v5"
 )
 

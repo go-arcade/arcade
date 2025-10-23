@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
-	"github.com/observabil/arcade/internal/engine/consts"
-	"github.com/observabil/arcade/internal/engine/model"
-	"github.com/observabil/arcade/pkg/ctx"
-	"github.com/observabil/arcade/pkg/http"
-	"github.com/observabil/arcade/pkg/log"
+	"github.com/go-arcade/arcade/internal/engine/consts"
+	"github.com/go-arcade/arcade/internal/engine/model"
+	"github.com/go-arcade/arcade/pkg/ctx"
+	"github.com/go-arcade/arcade/pkg/http"
+	"github.com/go-arcade/arcade/pkg/log"
 	"gorm.io/gorm"
 )
 

@@ -4,9 +4,9 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/go-arcade/arcade/pkg/http"
+	"github.com/go-arcade/arcade/pkg/http/jwt"
 	"github.com/gofiber/fiber/v2"
-	"github.com/observabil/arcade/pkg/http"
-	"github.com/observabil/arcade/pkg/http/jwt"
 )
 
 /**

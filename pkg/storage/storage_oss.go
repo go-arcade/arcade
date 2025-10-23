@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	"github.com/observabil/arcade/pkg/ctx"
-	"github.com/observabil/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/ctx"
+	"github.com/go-arcade/arcade/pkg/log"
 )
 
 type OSSStorage struct {

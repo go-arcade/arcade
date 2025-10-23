@@ -4,7 +4,7 @@ package agent.v1;
 
 import "task/v1/task.proto";
 
-option go_package = "github.com/observabil/arcade/api/agent/v1;agentv1";
+option go_package = "github.com/go-arcade/arcade/api/agent/v1;agentv1";
 
 // Agent服务 - Agent端与Server端通信的主要接口
 service AgentService {

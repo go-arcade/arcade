@@ -2,7 +2,7 @@ package model
 
 import (
 	"github.com/bytedance/sonic"
-	"github.com/observabil/arcade/internal/engine/model/entity"
+	"github.com/go-arcade/arcade/internal/engine/model/entity"
 )
 
 // CreateTeamReq create team request

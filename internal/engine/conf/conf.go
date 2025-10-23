@@ -5,13 +5,13 @@ import (
 	"sync"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/observabil/arcade/internal/pkg/grpc"
-	"github.com/observabil/arcade/pkg/http"
+	"github.com/go-arcade/arcade/internal/pkg/grpc"
+	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/spf13/viper"
 
-	"github.com/observabil/arcade/pkg/cache"
-	"github.com/observabil/arcade/pkg/database"
-	"github.com/observabil/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/cache"
+	"github.com/go-arcade/arcade/pkg/database"
+	"github.com/go-arcade/arcade/pkg/log"
 )
 
 type TaskConfig struct {

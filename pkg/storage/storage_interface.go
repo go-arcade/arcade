@@ -4,7 +4,7 @@ import (
 	"mime/multipart"
 	"time"
 
-	"github.com/observabil/arcade/pkg/ctx"
+	"github.com/go-arcade/arcade/pkg/ctx"
 )
 
 type StorageProvider interface {

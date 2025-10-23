@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	taskapi "github.com/observabil/arcade/api/task/v1"
+	taskapi "github.com/go-arcade/arcade/api/task/v1"
 )
 
 type TaskServiceImpl struct {

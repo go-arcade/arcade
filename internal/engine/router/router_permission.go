@@ -1,10 +1,10 @@
 package router
 
 import (
+	"github.com/go-arcade/arcade/internal/engine/handler"
+	"github.com/go-arcade/arcade/pkg/ctx"
+	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/gofiber/fiber/v2"
-	"github.com/observabil/arcade/internal/engine/handler"
-	"github.com/observabil/arcade/pkg/ctx"
-	"github.com/observabil/arcade/pkg/http/middleware"
 	"github.com/redis/go-redis/v9"
 )
 

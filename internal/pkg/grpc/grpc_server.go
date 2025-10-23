@@ -7,24 +7,24 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/observabil/arcade/internal/engine/service/agent"
-	"github.com/observabil/arcade/internal/engine/service/pipeline"
-	"github.com/observabil/arcade/internal/engine/service/stream"
-	"github.com/observabil/arcade/internal/engine/service/task"
+	"github.com/go-arcade/arcade/internal/engine/service/agent"
+	"github.com/go-arcade/arcade/internal/engine/service/pipeline"
+	"github.com/go-arcade/arcade/internal/engine/service/stream"
+	"github.com/go-arcade/arcade/internal/engine/service/task"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	"github.com/observabil/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/log"
 
+	agentv1 "github.com/go-arcade/arcade/api/agent/v1"
+	pipelinev1 "github.com/go-arcade/arcade/api/pipeline/v1"
+	streamv1 "github.com/go-arcade/arcade/api/stream/v1"
+	taskv1 "github.com/go-arcade/arcade/api/task/v1"
+	"github.com/go-arcade/arcade/internal/pkg/grpc/middleware"
 	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpcrecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpcctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
-	agentv1 "github.com/observabil/arcade/api/agent/v1"
-	pipelinev1 "github.com/observabil/arcade/api/pipeline/v1"
-	streamv1 "github.com/observabil/arcade/api/stream/v1"
-	taskv1 "github.com/observabil/arcade/api/task/v1"
-	"github.com/observabil/arcade/internal/pkg/grpc/middleware"
 )
 
 // Conf 配置

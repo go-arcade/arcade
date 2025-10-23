@@ -4,12 +4,12 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/go-arcade/arcade/internal/engine/model"
+	"github.com/go-arcade/arcade/internal/engine/service"
+	"github.com/go-arcade/arcade/pkg/ctx"
+	"github.com/go-arcade/arcade/pkg/http"
+	"github.com/go-arcade/arcade/pkg/http/jwt"
 	"github.com/gofiber/fiber/v2"
-	"github.com/observabil/arcade/internal/engine/model"
-	"github.com/observabil/arcade/internal/engine/service"
-	"github.com/observabil/arcade/pkg/ctx"
-	"github.com/observabil/arcade/pkg/http"
-	"github.com/observabil/arcade/pkg/http/jwt"
 )
 
 // PermissionMiddlewareV2 权限验证中间件（V2版本，支持四层权限模型）

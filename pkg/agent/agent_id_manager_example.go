@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	agentv1 "github.com/observabil/arcade/api/agent/v1"
+	agentv1 "github.com/go-arcade/arcade/api/agent/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
