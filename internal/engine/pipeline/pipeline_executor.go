@@ -1,7 +1,7 @@
 package pipeline
 
 import (
-	agentv1 "github.com/observabil/arcade/api/agent/v1"
+	agentv1 "github.com/go-arcade/arcade/api/agent/v1"
 )
 
 type PipelineExecutor struct {

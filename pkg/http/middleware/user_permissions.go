@@ -3,11 +3,11 @@ package middleware
 import (
 	"fmt"
 
+	"github.com/go-arcade/arcade/internal/engine/service"
+	"github.com/go-arcade/arcade/pkg/http"
+	"github.com/go-arcade/arcade/pkg/http/jwt"
+	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/gofiber/fiber/v2"
-	"github.com/observabil/arcade/internal/engine/service"
-	"github.com/observabil/arcade/pkg/http"
-	"github.com/observabil/arcade/pkg/http/jwt"
-	"github.com/observabil/arcade/pkg/log"
 )
 
 /**

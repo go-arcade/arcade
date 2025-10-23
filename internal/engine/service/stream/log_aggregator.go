@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/observabil/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"

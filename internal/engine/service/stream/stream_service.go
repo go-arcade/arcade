@@ -6,8 +6,8 @@ import (
 	"io"
 	"sync"
 
-	streamv1 "github.com/observabil/arcade/api/stream/v1"
-	"github.com/observabil/arcade/pkg/log"
+	streamv1 "github.com/go-arcade/arcade/api/stream/v1"
+	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc"

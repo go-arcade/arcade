@@ -191,7 +191,7 @@ buf format -w
 ### buf.gen.yaml
 
 代码生成配置，定义了：
-- Go Package 前缀：`github.com/observabil/arcade/api`
+- Go Package 前缀：`github.com/go-arcade/arcade/api`
 - 插件配置：
   - `protocolbuffers/go` - 生成 Go 消息代码
   - `grpc/go` - 生成 gRPC 服务代码
@@ -209,7 +209,7 @@ import (
     "log"
     
     "google.golang.org/grpc"
-    agentv1 "github.com/observabil/arcade/api/agent/v1"
+    agentv1 "github.com/go-arcade/arcade/api/agent/v1"
 )
 
 func main() {
@@ -257,7 +257,7 @@ import (
     "net"
     
     "google.golang.org/grpc"
-    agentv1 "github.com/observabil/arcade/api/agent/v1"
+    agentv1 "github.com/go-arcade/arcade/api/agent/v1"
 )
 
 type agentService struct {

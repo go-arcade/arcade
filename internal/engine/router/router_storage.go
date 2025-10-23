@@ -1,9 +1,9 @@
 package router
 
 import (
+	"github.com/go-arcade/arcade/internal/engine/service"
+	httpx "github.com/go-arcade/arcade/pkg/http"
 	"github.com/gofiber/fiber/v2"
-	"github.com/observabil/arcade/internal/engine/service"
-	httpx "github.com/observabil/arcade/pkg/http"
 )
 
 /**

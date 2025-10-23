@@ -3,11 +3,11 @@ package router
 import (
 	http2 "net/http"
 
+	"github.com/go-arcade/arcade/internal/engine/repo"
+	"github.com/go-arcade/arcade/internal/engine/service"
+	"github.com/go-arcade/arcade/pkg/http"
+	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/gofiber/fiber/v2"
-	"github.com/observabil/arcade/internal/engine/repo"
-	"github.com/observabil/arcade/internal/engine/service"
-	"github.com/observabil/arcade/pkg/http"
-	"github.com/observabil/arcade/pkg/http/middleware"
 )
 
 func (rt *Router) authRouter(r fiber.Router, auth fiber.Handler) {

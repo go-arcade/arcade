@@ -8,9 +8,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-arcade/arcade/pkg/ctx"
+	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/gofiber/fiber/v2"
-	"github.com/observabil/arcade/pkg/ctx"
-	"github.com/observabil/arcade/pkg/log"
 )
 
 type Http struct {

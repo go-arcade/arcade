@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/observabil/arcade/internal/engine/model"
-	"github.com/observabil/arcade/internal/engine/model/entity"
-	"github.com/observabil/arcade/pkg/ctx"
+	"github.com/go-arcade/arcade/internal/engine/model"
+	"github.com/go-arcade/arcade/internal/engine/model/entity"
+	"github.com/go-arcade/arcade/pkg/ctx"
 	"gorm.io/datatypes"
 )
 

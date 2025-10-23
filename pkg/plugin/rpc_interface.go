@@ -4,7 +4,7 @@ package plugin
 import (
 	"encoding/json"
 
-	streamv1 "github.com/observabil/arcade/api/stream/v1"
+	streamv1 "github.com/go-arcade/arcade/api/stream/v1"
 )
 
 // RPC interface definitions - based on HashiCorp go-plugin

@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
+	pluginpkg "github.com/go-arcade/arcade/pkg/plugin"
 	"github.com/hashicorp/go-plugin"
-	pluginpkg "github.com/observabil/arcade/pkg/plugin"
 )
 
 // BashConfig is the plugin's configuration structure
@@ -362,7 +362,7 @@ func (s *BashPluginRPCServer) GetInfo(args string, reply *pluginpkg.PluginInfo) 
 		Version:     ver,
 		Type:        typ,
 		Author:      "Arcade Team",
-		Homepage:    "https://github.com/observabil/arcade",
+		Homepage:    "https://github.com/go-arcade/arcade",
 	}
 	return nil
 }

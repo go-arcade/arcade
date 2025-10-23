@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-arcade/arcade/pkg/http"
+	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/observabil/arcade/pkg/http"
-	"github.com/observabil/arcade/pkg/log"
 )
 
 /**

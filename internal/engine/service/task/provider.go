@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"runtime"
 
+	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/google/wire"
-	"github.com/observabil/arcade/pkg/log"
 )
 
 /**

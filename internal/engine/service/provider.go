@@ -1,10 +1,10 @@
 package service
 
 import (
+	"github.com/go-arcade/arcade/internal/engine/repo"
+	"github.com/go-arcade/arcade/internal/engine/service/agent"
+	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/google/wire"
-	"github.com/observabil/arcade/internal/engine/repo"
-	"github.com/observabil/arcade/internal/engine/service/agent"
-	"github.com/observabil/arcade/pkg/ctx"
 )
 
 // ProviderSet 提供服务层相关的依赖

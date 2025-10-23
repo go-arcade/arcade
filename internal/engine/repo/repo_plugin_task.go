@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/observabil/arcade/internal/engine/model"
-	"github.com/observabil/arcade/pkg/ctx"
+	"github.com/go-arcade/arcade/internal/engine/model"
+	"github.com/go-arcade/arcade/pkg/ctx"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"

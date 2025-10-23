@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package task.v1;
 
-option go_package = "github.com/observabil/arcade/api/task/v1;taskv1";
+option go_package = "github.com/go-arcade/arcade/api/task/v1;taskv1";
 
 // Task服务 - 任务和流水线管理接口
 service TaskService {

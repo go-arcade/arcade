@@ -1,14 +1,14 @@
 package app
 
 import (
+	"github.com/go-arcade/arcade/internal/engine/router"
+	serviceplugin "github.com/go-arcade/arcade/internal/engine/service/plugin"
+	"github.com/go-arcade/arcade/internal/pkg/grpc"
+	"github.com/go-arcade/arcade/pkg/ctx"
+	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/plugin"
+	"github.com/go-arcade/arcade/pkg/storage"
 	"github.com/gofiber/fiber/v2"
-	"github.com/observabil/arcade/internal/engine/router"
-	serviceplugin "github.com/observabil/arcade/internal/engine/service/plugin"
-	"github.com/observabil/arcade/internal/pkg/grpc"
-	"github.com/observabil/arcade/pkg/ctx"
-	"github.com/observabil/arcade/pkg/log"
-	"github.com/observabil/arcade/pkg/plugin"
-	"github.com/observabil/arcade/pkg/storage"
 	"go.uber.org/zap"
 )
 

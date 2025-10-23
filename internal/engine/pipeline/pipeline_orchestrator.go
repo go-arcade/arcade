@@ -1,8 +1,8 @@
 package pipeline
 
 import (
-	"github.com/observabil/arcade/pkg/event"
-	"github.com/observabil/arcade/pkg/statemachine"
+	"github.com/go-arcade/arcade/pkg/event"
+	"github.com/go-arcade/arcade/pkg/statemachine"
 )
 
 type PipelineOrchestrator struct {

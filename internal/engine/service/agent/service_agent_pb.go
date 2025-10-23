@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	agentapi "github.com/observabil/arcade/api/agent/v1"
+	agentapi "github.com/go-arcade/arcade/api/agent/v1"
 )
 
 type AgentServiceImpl struct {

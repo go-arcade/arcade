@@ -1,7 +1,7 @@
 package plugin
 
 import (
-	"github.com/observabil/arcade/pkg/ctx"
+	"github.com/go-arcade/arcade/pkg/ctx"
 )
 
 // StorageProvider is the storage provider interface

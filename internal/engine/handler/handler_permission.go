@@ -3,11 +3,11 @@ package handler
 import (
 	"strconv"
 
+	"github.com/go-arcade/arcade/internal/engine/model"
+	"github.com/go-arcade/arcade/internal/engine/service"
+	"github.com/go-arcade/arcade/pkg/ctx"
+	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/gofiber/fiber/v2"
-	"github.com/observabil/arcade/internal/engine/model"
-	"github.com/observabil/arcade/internal/engine/service"
-	"github.com/observabil/arcade/pkg/ctx"
-	"github.com/observabil/arcade/pkg/http"
 )
 
 // PermissionHandler 权限管理处理器

@@ -6,14 +6,14 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
-	"github.com/observabil/arcade/internal/engine/model"
-	"github.com/observabil/arcade/internal/engine/repo"
-	"github.com/observabil/arcade/pkg/id"
-	"github.com/observabil/arcade/pkg/log"
-	"github.com/observabil/arcade/pkg/sso"
-	"github.com/observabil/arcade/pkg/sso/ldap"
-	"github.com/observabil/arcade/pkg/sso/oidc"
-	"github.com/observabil/arcade/pkg/sso/util"
+	"github.com/go-arcade/arcade/internal/engine/model"
+	"github.com/go-arcade/arcade/internal/engine/repo"
+	"github.com/go-arcade/arcade/pkg/id"
+	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/sso"
+	"github.com/go-arcade/arcade/pkg/sso/ldap"
+	"github.com/go-arcade/arcade/pkg/sso/oidc"
+	"github.com/go-arcade/arcade/pkg/sso/util"
 )
 
 type AuthService struct {

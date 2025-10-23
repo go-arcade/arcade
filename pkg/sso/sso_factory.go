@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/observabil/arcade/pkg/sso/oauth"
-	"github.com/observabil/arcade/pkg/sso/oidc"
+	"github.com/go-arcade/arcade/pkg/sso/oauth"
+	"github.com/go-arcade/arcade/pkg/sso/oidc"
 	"golang.org/x/oauth2"
 )
 

@@ -6,7 +6,7 @@ import "task/v1/task.proto";
 import "agent/v1/agent.proto";
 import "pipeline/v1/pipeline.proto";
 
-option go_package = "github.com/observabil/arcade/api/stream/v1;streamv1";
+option go_package = "github.com/go-arcade/arcade/api/stream/v1;streamv1";
 
 // Stream服务 - 实时数据流传输接口
 service StreamService {

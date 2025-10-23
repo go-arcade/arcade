@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/observabil/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/log"
 )
 
 // Watcher is the plugin directory monitor

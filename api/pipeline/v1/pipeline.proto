@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package pipeline.v1;
 
-option go_package = "github.com/observabil/arcade/api/pipeline/v1;pipelinev1";
+option go_package = "github.com/go-arcade/arcade/api/pipeline/v1;pipelinev1";
 
 service PipelineService {
   // ping 

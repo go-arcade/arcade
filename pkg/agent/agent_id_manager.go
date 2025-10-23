@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/observabil/arcade/pkg/id"
+	"github.com/go-arcade/arcade/pkg/id"
 )
 
 /**

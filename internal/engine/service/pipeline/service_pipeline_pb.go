@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	pipelineapi "github.com/observabil/arcade/api/pipeline/v1"
+	pipelineapi "github.com/go-arcade/arcade/api/pipeline/v1"
 )
 
 type PipelineServiceImpl struct {

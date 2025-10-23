@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
+	pluginpkg "github.com/go-arcade/arcade/pkg/plugin"
 	"github.com/hashicorp/go-plugin"
-	pluginpkg "github.com/observabil/arcade/pkg/plugin"
 )
 
 // StdoutNotifyConfig is the plugin's configuration structure (can be passed from host via Init)
@@ -258,7 +258,7 @@ func (s *StdoutNotifyRPCServer) GetInfo(args string, reply *pluginpkg.PluginInfo
 		Version:     ver,
 		Type:        typ,
 		Author:      "Arcade Team",
-		Homepage:    "https://github.com/observabil/arcade",
+		Homepage:    "https://github.com/go-arcade/arcade",
 	}
 	return nil
 }

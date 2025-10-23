@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
+	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
-	"github.com/observabil/arcade/pkg/log"
 )
 
 // LogStreamHandler WebSocket日志流处理器
