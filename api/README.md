@@ -1,143 +1,147 @@
-# Arcade API
+# Arcade Agent API
 
-Arcade 项目的 gRPC API 定义，使用 Protocol Buffers 定义，通过 Buf 进行管理。
+English | [简体中文](./README_zh_CN.md)
 
-## 概述
+gRPC API definitions for the Arcade and Agent interaction, defined using Protocol Buffers and managed through Buf.
 
-本目录包含了 Arcade 项目所有的 gRPC API 定义，分为四个主要服务模块：
+## Overview
 
-- **Agent Service** - Agent 端与 Server 端通信的核心接口
-- **Pipeline Service** - 流水线管理接口
-- **Task Service** - 任务管理接口
-- **Stream Service** - 实时数据流传输接口
+This directory contains all gRPC API definitions for the Arcade and Agent interaction, divided into four main service modules:
 
-## 目录结构
+- **Agent Service** - Core interface for communication between Agent and Server
+- **Pipeline Service** - Pipeline management interface
+- **Task Service** - Task management interface
+- **Stream Service** - Real-time data streaming interface
+
+## Directory Structure
 
 ```
 api/
-├── buf.yaml                    # Buf 配置文件（lint 和 breaking change 检查）
-├── buf.gen.yaml                # 代码生成配置文件
-├── agent/v1/                   # Agent 服务 API
-│   ├── agent.proto             # Proto 定义文件
-│   ├── agent.pb.go             # 生成的 Go 消息代码
-│   └── agent_grpc.pb.go        # 生成的 gRPC 服务代码
-├── pipeline/v1/                # Pipeline 服务 API
+├── buf.yaml                    # Buf configuration file (lint and breaking change checks)
+├── buf.gen.yaml                # Code generation configuration file
+├── README.md                   # English documentation
+├── README_zh_CN.md             # Chinese documentation
+├── agent/v1/                   # Agent Service API
+│   ├── agent.proto             # Proto definition file
+│   ├── agent.pb.go             # Generated Go message code
+│   └── agent_grpc.pb.go        # Generated gRPC service code
+├── pipeline/v1/                # Pipeline Service API
 │   ├── pipeline.proto
 │   ├── pipeline.pb.go
 │   └── pipeline_grpc.pb.go
-├── stream/v1/                  # Stream 服务 API
+├── stream/v1/                  # Stream Service API
 │   ├── stream.proto
 │   ├── stream.pb.go
 │   └── stream_grpc.pb.go
-└── task/v1/                    # Task 服务 API
+└── task/v1/                    # Task Service API
     ├── task.proto
     ├── task.pb.go
     └── task_grpc.pb.go
 ```
 
-## API 服务说明
+## API Service Description
 
 ### 1. Agent Service (`agent/v1`)
 
-Agent 端与 Server 端通信的主要接口，负责 Agent 的生命周期管理和任务执行。
+The main interface for communication between Agent and Server, responsible for Agent lifecycle management and task execution.
 
-**主要功能：**
-- **心跳保持** (`Heartbeat`) - Agent 定期向 Server 发送心跳
-- **Agent 注册/注销** (`Register`/`Unregister`) - Agent 的生命周期管理
-- **任务获取** (`FetchTask`) - Agent 主动拉取待执行的任务
-- **状态上报** (`ReportTaskStatus`) - 上报任务执行状态
-- **日志上报** (`ReportTaskLog`) - 批量上报任务执行日志
-- **任务取消** (`CancelTask`) - Server 通知 Agent 取消任务
-- **标签更新** (`UpdateLabels`) - 动态更新 Agent 的标签和标记
-- **插件管理** (`DownloadPlugin`, `ListAvailablePlugins`) - 插件分发和查询
+**Main Features:**
+- **Heartbeat** (`Heartbeat`) - Agent periodically sends heartbeat to Server
+- **Agent Registration/Unregistration** (`Register`/`Unregister`) - Agent lifecycle management
+- **Task Fetching** (`FetchTask`) - Agent actively pulls tasks to execute
+- **Status Reporting** (`ReportTaskStatus`) - Report task execution status
+- **Log Reporting** (`ReportTaskLog`) - Batch report task execution logs
+- **Task Cancellation** (`CancelTask`) - Server notifies Agent to cancel task
+- **Label Updates** (`UpdateLabels`) - Dynamically update Agent's labels
+- **Plugin Management** (`DownloadPlugin`, `ListAvailablePlugins`) - Plugin distribution and query
 
-**核心特性：**
-- 支持标签选择器（Label Selector）进行智能任务路由
-- 支持插件动态分发
-- 完善的指标上报机制
+**Core Features:**
+- Support label selector for intelligent task routing
+- Support dynamic plugin distribution
+- Comprehensive metrics reporting mechanism
 
 ### 2. Pipeline Service (`pipeline/v1`)
 
-流水线管理接口，负责 CI/CD 流水线的创建、执行和管理。
+Pipeline management interface, responsible for creating, executing and managing CI/CD pipelines.
 
-**主要功能：**
-- **创建流水线** (`CreatePipeline`) - 定义流水线配置
-- **获取流水线** (`GetPipeline`) - 获取流水线详情
-- **列出流水线** (`ListPipelines`) - 分页查询流水线列表
-- **触发执行** (`TriggerPipeline`) - 触发流水线执行
-- **停止流水线** (`StopPipeline`) - 停止正在运行的流水线
+**Main Features:**
+- **Create Pipeline** (`CreatePipeline`) - Define pipeline configuration
+- **Get Pipeline** (`GetPipeline`) - Get pipeline details
+- **List Pipelines** (`ListPipelines`) - Paginated pipeline list query
+- **Trigger Execution** (`TriggerPipeline`) - Trigger pipeline execution
+- **Stop Pipeline** (`StopPipeline`) - Stop running pipeline
 
-**支持的触发方式：**
-- 手动触发 (Manual)
-- Webhook 触发 (Webhook)
-- 定时触发 (Schedule/Cron)
-- API 触发 (API)
+**Supported Trigger Methods:**
+- Manual trigger (Manual)
+- Webhook trigger (Webhook)
+- Schedule trigger (Schedule/Cron)
+- API trigger (API)
 
-**流水线状态：**
-- PENDING（等待执行）
-- RUNNING（执行中）
-- SUCCESS（执行成功）
-- FAILED（执行失败）
-- CANCELLED（已取消）
-- PARTIAL（部分成功）
+**Pipeline Status:**
+- PENDING (Pending)
+- RUNNING (Running)
+- SUCCESS (Success)
+- FAILED (Failed)
+- CANCELLED (Cancelled)
+- PARTIAL (Partial success)
 
 ### 3. Task Service (`task/v1`)
 
-任务管理接口，负责单个任务的 CRUD 操作和执行管理。
+Task management interface, responsible for CRUD operations and execution management of individual tasks.
 
-**主要功能：**
-- **创建任务** (`CreateTask`) - 创建新任务
-- **获取任务** (`GetTask`) - 获取任务详情
-- **列出任务** (`ListTasks`) - 分页查询任务列表
-- **更新任务** (`UpdateTask`) - 更新任务配置
-- **删除任务** (`DeleteTask`) - 删除任务
-- **取消任务** (`CancelTask`) - 取消正在执行的任务
-- **重试任务** (`RetryTask`) - 重新执行失败的任务
-- **获取日志** (`GetTaskLog`) - 获取任务执行日志
-- **产物管理** (`ListTaskArtifacts`) - 管理任务产物
+**Main Features:**
+- **Create Task** (`CreateTask`) - Create new task
+- **Get Task** (`GetTask`) - Get task details
+- **List Tasks** (`ListTasks`) - Paginated task list query
+- **Update Task** (`UpdateTask`) - Update task configuration
+- **Delete Task** (`DeleteTask`) - Delete task
+- **Cancel Task** (`CancelTask`) - Cancel running task
+- **Retry Task** (`RetryTask`) - Re-execute failed task
+- **Get Log** (`GetTaskLog`) - Get task execution log
+- **Artifact Management** (`ListTaskArtifacts`) - Manage task artifacts
 
-**任务状态：**
-- PENDING（等待执行）
-- QUEUED（已入队）
-- RUNNING（执行中）
-- SUCCESS（执行成功）
-- FAILED（执行失败）
-- CANCELLED（已取消）
-- TIMEOUT（超时）
-- SKIPPED（已跳过）
+**Task Status:**
+- PENDING (Pending)
+- QUEUED (Queued)
+- RUNNING (Running)
+- SUCCESS (Success)
+- FAILED (Failed)
+- CANCELLED (Cancelled)
+- TIMEOUT (Timeout)
+- SKIPPED (Skipped)
 
-**核心特性：**
-- 支持任务依赖关系
-- 支持失败重试机制
-- 支持产物收集和管理
-- 支持标签选择器路由
+**Core Features:**
+- Support task dependencies
+- Support failure retry mechanism
+- Support artifact collection and management
+- Support label selector routing
 
 ### 4. Stream Service (`stream/v1`)
 
-实时数据流传输接口，提供双向流式通信能力。
+Real-time data streaming interface, providing bidirectional streaming communication capability.
 
-**主要功能：**
-- **任务日志流** (`StreamTaskLog`, `UploadTaskLog`) - 实时获取和上报任务日志
-- **任务状态流** (`StreamTaskStatus`) - 实时推送任务状态变化
-- **流水线状态流** (`StreamPipelineStatus`) - 实时推送流水线状态变化
-- **Agent 通道** (`AgentChannel`) - Agent 与 Server 双向通信
-- **Agent 状态流** (`StreamAgentStatus`) - 实时监控 Agent 状态
-- **事件流** (`StreamEvents`) - 推送系统事件
+**Main Features:**
+- **Task Log Stream** (`StreamTaskLog`, `UploadTaskLog`) - Real-time get and report task logs
+- **Task Status Stream** (`StreamTaskStatus`) - Real-time push task status changes
+- **Pipeline Status Stream** (`StreamPipelineStatus`) - Real-time push pipeline status changes
+- **Agent Channel** (`AgentChannel`) - Bidirectional communication between Agent and Server
+- **Agent Status Stream** (`StreamAgentStatus`) - Real-time monitor Agent status
+- **Event Stream** (`StreamEvents`) - Push system events
 
-**支持的事件类型：**
-- 任务事件（创建、开始、完成、失败、取消）
-- 流水线事件（开始、完成、失败）
-- Agent 事件（注册、注销、离线）
+**Supported Event Types:**
+- Task events (created, started, completed, failed, cancelled)
+- Pipeline events (started, completed, failed)
+- Agent events (registered, unregistered, offline)
 
-## 快速开始
+## Quick Start
 
-### 前置要求
+### Prerequisites
 
 - [Buf CLI](https://docs.buf.build/installation) >= 1.0.0
 - [Go](https://golang.org/) >= 1.21
 - [Protocol Buffers Compiler](https://grpc.io/docs/protoc-installation/)
 
-### 安装 Buf
+### Install Buf
 
 ```bash
 # macOS
@@ -147,59 +151,59 @@ brew install bufbuild/buf/buf
 curl -sSL "https://github.com/bufbuild/buf/releases/latest/download/buf-$(uname -s)-$(uname -m)" -o /usr/local/bin/buf
 chmod +x /usr/local/bin/buf
 
-# 验证安装
+# Verify installation
 buf --version
 ```
 
-### 生成代码
+### Generate Code
 
 ```bash
-# 在项目根目录下执行
+# Execute in project root directory
 make proto
 
-# 或者在 api 目录下直接使用 buf
+# Or use buf directly in api directory
 cd api
 buf generate
 ```
 
-### 代码检查
+### Code Check
 
 ```bash
-# Lint 检查
+# Lint check
 buf lint
 
-# Breaking change 检查
+# Breaking change check
 buf breaking --against '.git#branch=main'
 ```
 
-### 格式化
+### Format
 
 ```bash
-# 格式化所有 proto 文件
+# Format all proto files
 buf format -w
 ```
 
-## 配置说明
+## Configuration Description
 
 ### buf.yaml
 
-主配置文件，定义了：
-- 模块名称：`buf.build/observabil/arcade`
-- Lint 规则：使用 STANDARD 规则集，但允许流式 RPC
-- Breaking change 检查：使用 FILE 级别检查
+Main configuration file, defines:
+- Module name: `buf.build/observabil/arcade`
+- Lint rules: Use STANDARD rule set, but allow streaming RPC
+- Breaking change check: Use FILE level check
 
 ### buf.gen.yaml
 
-代码生成配置，定义了：
-- Go Package 前缀：`github.com/go-arcade/arcade/api`
-- 插件配置：
-  - `protocolbuffers/go` - 生成 Go 消息代码
-  - `grpc/go` - 生成 gRPC 服务代码
-- 路径模式：`source_relative`（相对于源文件生成）
+Code generation configuration, defines:
+- Go Package prefix: `github.com/go-arcade/arcade/api`
+- Plugin configuration:
+  - `protocolbuffers/go` - Generate Go message code
+  - `grpc/go` - Generate gRPC service code
+- Path mode: `source_relative` (relative to source file generation)
 
-## 使用示例
+## Usage Examples
 
-### 客户端调用示例
+### Client Call Example
 
 ```go
 package main
@@ -213,17 +217,17 @@ import (
 )
 
 func main() {
-    // 连接到 gRPC 服务
+    // Connect to gRPC service
     conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
     if err != nil {
-        log.Fatalf("连接失败: %v", err)
+        log.Fatalf("Connection failed: %v", err)
     }
     defer conn.Close()
     
-    // 创建客户端
+    // Create client
     client := agentv1.NewAgentServiceClient(conn)
     
-    // 调用 Register RPC
+    // Call Register RPC
     req := &agentv1.RegisterRequest{
         Hostname:          "my-agent",
         Ip:                "192.168.1.100",
@@ -239,14 +243,14 @@ func main() {
     
     resp, err := client.Register(context.Background(), req)
     if err != nil {
-        log.Fatalf("注册失败: %v", err)
+        log.Fatalf("Registration failed: %v", err)
     }
     
-    log.Printf("注册成功，Agent ID: %s", resp.AgentId)
+    log.Printf("Registration successful, Agent ID: %s", resp.AgentId)
 }
 ```
 
-### 服务端实现示例
+### Server Implementation Example
 
 ```go
 package main
@@ -265,11 +269,11 @@ type agentService struct {
 }
 
 func (s *agentService) Register(ctx context.Context, req *agentv1.RegisterRequest) (*agentv1.RegisterResponse, error) {
-    log.Printf("收到注册请求: %+v", req)
+    log.Printf("Received registration request: %+v", req)
     
     return &agentv1.RegisterResponse{
         Success:           true,
-        Message:           "注册成功",
+        Message:           "Registration successful",
         AgentId:           "agent-12345",
         HeartbeatInterval: 30,
     }, nil
@@ -278,32 +282,32 @@ func (s *agentService) Register(ctx context.Context, req *agentv1.RegisterReques
 func main() {
     lis, err := net.Listen("tcp", ":50051")
     if err != nil {
-        log.Fatalf("监听失败: %v", err)
+        log.Fatalf("Listen failed: %v", err)
     }
     
     s := grpc.NewServer()
     agentv1.RegisterAgentServiceServer(s, &agentService{})
     
-    log.Println("gRPC 服务启动在 :50051")
+    log.Println("gRPC service started on :50051")
     if err := s.Serve(lis); err != nil {
-        log.Fatalf("服务启动失败: %v", err)
+        log.Fatalf("Service failed to start: %v", err)
     }
 }
 ```
 
-### 流式 RPC 示例
+### Streaming RPC Example
 
 ```go
-// 客户端：实时接收任务日志
+// Client: Receive task logs in real-time
 func streamTaskLog(client streamv1.StreamServiceClient, taskID string) {
     req := &streamv1.StreamTaskLogRequest{
         JobId:  taskID,
-        Follow: true, // 持续跟踪，类似 tail -f
+        Follow: true, // Continuously track, similar to tail -f
     }
     
     stream, err := client.StreamTaskLog(context.Background(), req)
     if err != nil {
-        log.Fatalf("创建流失败: %v", err)
+        log.Fatalf("Failed to create stream: %v", err)
     }
     
     for {
@@ -312,7 +316,7 @@ func streamTaskLog(client streamv1.StreamServiceClient, taskID string) {
             break
         }
         if err != nil {
-            log.Fatalf("接收失败: %v", err)
+            log.Fatalf("Receive failed: %v", err)
         }
         
         log.Printf("[%s] %s", resp.LogChunk.Level, resp.LogChunk.Content)
@@ -320,14 +324,14 @@ func streamTaskLog(client streamv1.StreamServiceClient, taskID string) {
 }
 ```
 
-## 标签选择器使用说明
+## Label Selector Usage
 
-标签选择器用于任务路由，可以精确控制任务在哪些 Agent 上执行。
+Label selectors are used for task routing, allowing precise control over which Agents execute tasks.
 
-### 简单匹配
+### Simple Matching
 
 ```go
-// 匹配具有特定标签的 Agent
+// Match Agents with specific labels
 labelSelector := &agentv1.LabelSelector{
     MatchLabels: map[string]string{
         "env":  "production",
@@ -337,10 +341,10 @@ labelSelector := &agentv1.LabelSelector{
 }
 ```
 
-### 表达式匹配
+### Expression Matching
 
 ```go
-// 使用更复杂的匹配规则
+// Use more complex matching rules
 labelSelector := &agentv1.LabelSelector{
     MatchExpressions: []*agentv1.LabelSelectorRequirement{
         {
@@ -355,67 +359,67 @@ labelSelector := &agentv1.LabelSelector{
         {
             Key:      "memory",
             Operator: agentv1.LabelOperator_LABEL_OPERATOR_GT,
-            Values:   []string{"8192"}, // 内存大于 8GB
+            Values:   []string{"8192"}, // Memory greater than 8GB
         },
     },
 }
 ```
 
-### 支持的操作符
+### Supported Operators
 
-- `IN` - 标签值在指定列表中
-- `NOT_IN` - 标签值不在指定列表中
-- `EXISTS` - 标签键存在
-- `NOT_EXISTS` - 标签键不存在
-- `GT` - 标签值大于指定值（用于数值比较）
-- `LT` - 标签值小于指定值（用于数值比较）
+- `IN` - Label value is in the specified list
+- `NOT_IN` - Label value is not in the specified list
+- `EXISTS` - Label key exists
+- `NOT_EXISTS` - Label key does not exist
+- `GT` - Label value greater than specified value (for numeric comparison)
+- `LT` - Label value less than specified value (for numeric comparison)
 
-## 插件分发机制
+## Plugin Distribution Mechanism
 
-Agent Service 支持插件动态分发，支持三种插件位置：
+Agent Service supports dynamic plugin distribution, supporting three plugin locations:
 
-1. **SERVER** - 服务端文件系统
-2. **STORAGE** - 对象存储（S3/OSS/COS/GCS）
-3. **REGISTRY** - 插件仓库
+1. **SERVER** - Server filesystem
+2. **STORAGE** - Object storage (S3/OSS/COS/GCS)
+3. **REGISTRY** - Plugin registry
 
-### 下载插件示例
+### Download Plugin Example
 
 ```go
 req := &agentv1.DownloadPluginRequest{
     AgentId:  "agent-123",
     PluginId: "notify",
-    Version:  "1.0.0", // 可选，不指定则下载最新版本
+    Version:  "1.0.0", // Optional, download latest if not specified
 }
 
 resp, err := client.DownloadPlugin(context.Background(), req)
 if err != nil {
-    log.Fatalf("下载插件失败: %v", err)
+    log.Fatalf("Failed to download plugin: %v", err)
 }
 
-// 验证校验和
+// Verify checksum
 if calculateSHA256(resp.PluginData) != resp.Checksum {
-    log.Fatal("插件校验和不匹配")
+    log.Fatal("Plugin checksum mismatch")
 }
 
-// 保存插件
+// Save plugin
 os.WriteFile("plugins/notify.so", resp.PluginData, 0755)
 ```
 
-## 开发指南
+## Development Guide
 
-### 修改 Proto 文件
+### Modifying Proto Files
 
-1. 修改对应的 `.proto` 文件
-2. 运行 `buf lint` 检查代码风格
-3. 运行 `buf breaking --against '.git#branch=main'` 检查破坏性变更
-4. 运行 `buf generate` 生成新代码
-5. 提交代码
+1. Modify the corresponding `.proto` file
+2. Run `buf lint` to check code style
+3. Run `buf breaking --against '.git#branch=main'` to check breaking changes
+4. Run `buf generate` to generate new code
+5. Commit code
 
-### 添加新的 RPC 方法
+### Adding New RPC Methods
 
 ```protobuf
 service YourService {
-  // 添加新方法
+  // Add new method
   rpc NewMethod(NewMethodRequest) returns (NewMethodResponse) {}
 }
 
@@ -429,50 +433,50 @@ message NewMethodResponse {
 }
 ```
 
-### 版本管理
+### Version Management
 
-API 使用语义化版本管理，遵循以下规则：
+API uses semantic versioning, following these rules:
 
-- **主版本号** (`v1`, `v2`) - 不兼容的 API 变更
-- **次版本号** - 向后兼容的功能新增
-- **修订号** - 向后兼容的问题修正
+- **Major version** (`v1`, `v2`) - Incompatible API changes
+- **Minor version** - Backward compatible feature additions
+- **Patch version** - Backward compatible bug fixes
 
-当需要引入破坏性变更时，创建新的版本目录（如 `agent/v2/`）。
+When introducing breaking changes, create a new version directory (e.g. `agent/v2/`).
 
-## 常见问题
+## FAQ
 
-### 1. 如何处理大文件传输？
+### 1. How to handle large file transfers?
 
-对于大文件（如插件二进制），建议：
-- 使用流式 RPC 分块传输
-- 或者返回预签名 URL，让客户端直接从对象存储下载
+For large files (such as plugin binaries), recommend:
+- Use streaming RPC for chunked transfer
+- Or return pre-signed URL, let client download directly from object storage
 
-### 2. 如何处理长时间运行的任务？
+### 2. How to handle long-running tasks?
 
-使用 Stream Service 的流式接口：
-- 实时推送任务状态更新
-- 实时推送日志输出
-- 使用双向流保持连接
+Use Stream Service's streaming interface:
+- Real-time push task status updates
+- Real-time push log output
+- Use bidirectional stream to maintain connection
 
-### 3. 如何实现任务优先级？
+### 3. How to implement task priority?
 
-在任务的 `labels` 中添加 `priority` 标签：
+Add `priority` label in task's `labels`:
 ```go
 labels: map[string]string{
     "priority": "high",
 }
 ```
 
-Agent 在 FetchTask 时可以按优先级排序。
+Agent can sort by priority when FetchTask.
 
-### 4. 如何处理 Agent 断线重连？
+### 4. How to handle Agent disconnect and reconnect?
 
-Agent 应该：
-1. 实现指数退避重连策略
-2. 重连后重新注册
-3. 上报未完成任务的状态
+Agent should:
+1. Implement exponential backoff reconnection strategy
+2. Re-register after reconnection
+3. Report status of incomplete tasks
 
-## 相关文档
+## Related Documentation
 
 - [Plugin Development Guide](../docs/PLUGIN_DEVELOPMENT.md)
 - [Plugin Distribution Guide](../docs/PLUGIN_DISTRIBUTION.md)
@@ -481,17 +485,16 @@ Agent 应该：
 - [gRPC Documentation](https://grpc.io/docs/)
 - [Protocol Buffers Documentation](https://protobuf.dev/)
 
-## 贡献指南
+## Contribution Guide
 
-欢迎贡献！在提交 PR 之前，请确保：
+Contributions welcome! Before submitting PR, please ensure:
 
-1. ✅ 所有 proto 文件通过 `buf lint` 检查
-2. ✅ 没有引入破坏性变更（或在新版本中）
-3. ✅ 添加了充分的注释
-4. ✅ 生成的代码已更新
-5. ✅ 相关文档已更新
+1. ✅ All proto files pass `buf lint` check
+2. ✅ No breaking changes introduced (or in new version)
+3. ✅ Added adequate comments
+4. ✅ Generated code is updated
+5. ✅ Related documentation is updated
 
-## 许可证
+## License
 
-本项目使用 [LICENSE](../LICENSE) 文件中定义的许可证。
-
+This project uses the license defined in the [LICENSE](../LICENSE) file.
