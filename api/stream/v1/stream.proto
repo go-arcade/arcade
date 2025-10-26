@@ -8,56 +8,56 @@ import "pipeline/v1/pipeline.proto";
 
 option go_package = "github.com/go-arcade/arcade/api/stream/v1;streamv1";
 
-// Stream服务 - 实时数据流传输接口
+// StreamService - Real-time data streaming interface
 service StreamService {
-  // ping
+  // Ping service health check
   rpc Ping(PingRequest) returns (PingResponse) {}
 
-  // 实时获取任务日志流 - Server端流式推送日志给客户端
+  // Stream task logs in real-time - Server-side streaming pushes logs to client
   rpc StreamTaskLog(StreamTaskLogRequest) returns (stream StreamTaskLogResponse) {}
 
-  // 上报任务日志流 - Agent端流式上报日志给Server
+  // Upload task log stream - Agent-side streaming uploads logs to Server
   rpc UploadTaskLog(stream UploadTaskLogRequest) returns (UploadTaskLogResponse) {}
 
-  // 实时获取任务状态流 - Server端流式推送任务状态变化
+  // Stream task status in real-time - Server-side streaming pushes task status changes
   rpc StreamTaskStatus(StreamTaskStatusRequest) returns (stream StreamTaskStatusResponse) {}
 
-  // 实时获取流水线状态流 - Server端流式推送流水线状态变化
+  // Stream pipeline status in real-time - Server-side streaming pushes pipeline status changes
   rpc StreamPipelineStatus(StreamPipelineStatusRequest) returns (stream StreamPipelineStatusResponse) {}
 
-  // Agent与Server双向通信流 - 用于实时任务调度和控制
+  // Bidirectional communication channel between Agent and Server - For real-time task scheduling and control
   rpc AgentChannel(stream AgentChannelRequest) returns (stream AgentChannelResponse) {}
 
-  // 实时监控Agent状态流 - Server端流式推送Agent状态变化
+  // Monitor agent status in real-time - Server-side streaming pushes agent status changes
   rpc StreamAgentStatus(StreamAgentStatusRequest) returns (stream StreamAgentStatusResponse) {}
 
-  // 实时事件流 - Server端推送系统事件
+  // Real-time event stream - Server pushes system events
   rpc StreamEvents(StreamEventsRequest) returns (stream StreamEventsResponse) {}
 }
 
-// Agent状态枚举
+// Agent status enum
 enum AgentStatus {
   AGENT_STATUS_UNSPECIFIED = 0;
-  AGENT_STATUS_ONLINE = 1;   // 在线
-  AGENT_STATUS_OFFLINE = 2;  // 离线
-  AGENT_STATUS_BUSY = 3;     // 忙碌
-  AGENT_STATUS_IDLE = 4;     // 空闲
+  AGENT_STATUS_ONLINE = 1;   // Online
+  AGENT_STATUS_OFFLINE = 2;  // Offline
+  AGENT_STATUS_BUSY = 3;     // Busy
+  AGENT_STATUS_IDLE = 4;     // Idle
 }
 
-// 事件类型枚举
+// Event type enum
 enum EventType {
   EVENT_TYPE_UNSPECIFIED = 0;
-  EVENT_TYPE_JOB_CREATED = 1;       // 任务创建
-  EVENT_TYPE_JOB_STARTED = 2;       // 任务开始
-  EVENT_TYPE_JOB_COMPLETED = 3;     // 任务完成
-  EVENT_TYPE_JOB_FAILED = 4;        // 任务失败
-  EVENT_TYPE_JOB_CANCELLED = 5;     // 任务取消
-  EVENT_TYPE_PIPELINE_STARTED = 6;  // 流水线开始
-  EVENT_TYPE_PIPELINE_COMPLETED = 7; // 流水线完成
-  EVENT_TYPE_PIPELINE_FAILED = 8;   // 流水线失败
-  EVENT_TYPE_AGENT_REGISTERED = 9;  // Agent注册
-  EVENT_TYPE_AGENT_UNREGISTERED = 10; // Agent注销
-  EVENT_TYPE_AGENT_OFFLINE = 11;    // Agent离线
+  EVENT_TYPE_JOB_CREATED = 1;       // Job created
+  EVENT_TYPE_JOB_STARTED = 2;       // Job started
+  EVENT_TYPE_JOB_COMPLETED = 3;     // Job completed
+  EVENT_TYPE_JOB_FAILED = 4;        // Job failed
+  EVENT_TYPE_JOB_CANCELLED = 5;     // Job cancelled
+  EVENT_TYPE_PIPELINE_STARTED = 6;  // Pipeline started
+  EVENT_TYPE_PIPELINE_COMPLETED = 7; // Pipeline completed
+  EVENT_TYPE_PIPELINE_FAILED = 8;   // Pipeline failed
+  EVENT_TYPE_AGENT_REGISTERED = 9;  // Agent registered
+  EVENT_TYPE_AGENT_UNREGISTERED = 10; // Agent unregistered
+  EVENT_TYPE_AGENT_OFFLINE = 11;    // Agent offline
 }
 
 message PingRequest {
@@ -69,107 +69,107 @@ message PingResponse {
     int64 timestamp = 2;
 }
 
-// ============ 任务日志流相关 ============
+// ============ Task Log Stream Related ============
 
-// 实时获取任务日志流请求
+// Request to stream task logs in real-time
 message StreamTaskLogRequest {
-  string job_id = 1;                    // 任务ID
-  int32 from_line = 2;                  // 从第几行开始（0表示从头开始）
-  bool follow = 3;                      // 是否持续跟踪（类似tail -f）
+  string job_id = 1;                    // Job ID
+  int32 from_line = 2;                  // Starting line number (0 means from beginning)
+  bool follow = 3;                      // Whether to continuously track (similar to tail -f)
 }
 
-// 实时获取任务日志流响应
+// Response for streaming task logs in real-time
 message StreamTaskLogResponse {
   string task_id = 1;
-  LogChunk log_chunk = 2;               // 日志块
-  bool is_complete = 3;                 // 日志是否已完整传输
+  LogChunk log_chunk = 2;               // Log chunk
+  bool is_complete = 3;                 // Whether log transmission is complete
 }
 
-// 日志块
+// Log chunk
 message LogChunk {
-  int64 timestamp = 1;                  // 时间戳（毫秒）
-  int32 line_number = 2;                // 行号
-  string level = 3;                     // 日志级别（info、warn、error、debug）
-  string content = 4;                   // 日志内容
-  string stream = 5;                    // 流类型（stdout、stderr）
+  int64 timestamp = 1;                  // Timestamp (milliseconds)
+  int32 line_number = 2;                // Line number
+  string level = 3;                     // Log level (info, warn, error, debug)
+  string content = 4;                   // Log content
+  string stream = 5;                    // Stream type (stdout, stderr)
 }
 
-// 上报任务日志流请求
+// Request to upload task log stream
 message UploadTaskLogRequest {
   string task_id = 1;
   string agent_id = 2;
-  repeated LogChunk logs = 3;           // 日志块列表
+  repeated LogChunk logs = 3;           // List of log chunks
 }
 
-// 上报任务日志流响应
+// Response for uploading task log stream
 message UploadTaskLogResponse {
   bool success = 1;
   string message = 2;
-  int32 received_lines = 3;             // 已接收的日志行数
+  int32 received_lines = 3;             // Number of log lines received
 }
 
-// ============ 任务状态流相关 ============
+// ============ Task Status Stream Related ============
 
-// 实时获取任务状态流请求
+// Request to stream task status in real-time
 message StreamTaskStatusRequest {
-  repeated string task_ids = 1;          // 任务ID列表（为空则监控所有任务）
-  string pipeline_id = 2;               // 流水线ID（可选，监控特定流水线的所有任务）
+  repeated string task_ids = 1;          // List of task IDs (empty means monitor all tasks)
+  string pipeline_id = 2;               // Pipeline ID (optional, monitor all tasks in a specific pipeline)
 }
 
-// 实时获取任务状态流响应
+// Response for streaming task status in real-time
 message StreamTaskStatusResponse {
   string task_id = 1;
   string task_name = 2;
-  task.v1.TaskStatus status = 3;                 // 任务状态
-  task.v1.TaskStatus previous_status = 4;        // 之前的状态
-  int64 timestamp = 5;                  // 状态变化时间戳
-  string agent_id = 6;                  // 执行的Agent ID
-  int32 exit_code = 7;                  // 退出码
-  string error_message = 8;             // 错误信息
-  int64 duration = 9;                   // 执行时长（毫秒）
-  map<string, string> metrics = 10;     // 执行指标
+  task.v1.TaskStatus status = 3;                 // Task status
+  task.v1.TaskStatus previous_status = 4;        // Previous status
+  int64 timestamp = 5;                  // Status change timestamp
+  string agent_id = 6;                  // Executing agent ID
+  int32 exit_code = 7;                  // Exit code
+  string error_message = 8;             // Error message
+  int64 duration = 9;                   // Execution duration (milliseconds)
+  map<string, string> metrics = 10;     // Execution metrics
 }
 
-// ============ 流水线状态流相关 ============
+// ============ Pipeline Status Stream Related ============
 
-// 实时获取流水线状态流请求
+// Request to stream pipeline status in real-time
 message StreamPipelineStatusRequest {
-  repeated string pipeline_ids = 1;     // 流水线ID列表（为空则监控所有流水线）
+  repeated string pipeline_ids = 1;     // List of pipeline IDs (empty means monitor all pipelines)
 }
 
-// 实时获取流水线状态流响应
+// Response for streaming pipeline status in real-time
 message StreamPipelineStatusResponse {
   string pipeline_id = 1;
-  string run_id = 2;                    // 流水线执行ID
+  string run_id = 2;                    // Pipeline run ID
   string pipeline_name = 3;
-  pipeline.v1.PipelineStatus status = 4;            // 流水线状态
-  pipeline.v1.PipelineStatus previous_status = 5;   // 之前的状态
-  int64 timestamp = 6;                  // 状态变化时间戳
-  int32 total_jobs = 7;                 // 总任务数
-  int32 completed_jobs = 8;             // 已完成任务数
-  int32 failed_jobs = 9;                // 失败任务数
-  int32 running_jobs = 10;              // 运行中任务数
-  int32 current_stage = 11;             // 当前阶段
-  int32 total_stages = 12;              // 总阶段数
-  int64 duration = 13;                  // 执行时长（毫秒）
+  pipeline.v1.PipelineStatus status = 4;            // Pipeline status
+  pipeline.v1.PipelineStatus previous_status = 5;   // Previous status
+  int64 timestamp = 6;                  // Status change timestamp
+  int32 total_jobs = 7;                 // Total number of jobs
+  int32 completed_jobs = 8;             // Number of completed jobs
+  int32 failed_jobs = 9;                // Number of failed jobs
+  int32 running_jobs = 10;              // Number of running jobs
+  int32 current_stage = 11;             // Current stage
+  int32 total_stages = 12;              // Total number of stages
+  int64 duration = 13;                  // Execution duration (milliseconds)
 }
 
-// ============ Agent通道相关 ============
+// ============ Agent Channel Related ============
 
-// Agent通道请求（双向流）
+// Agent channel request (bidirectional stream)
 message AgentChannelRequest {
   string agent_id = 1;
-  string request_id = 2;                // 请求ID（用于匹配请求和响应）
+  string request_id = 2;                // Request ID (for matching requests and responses)
   oneof payload {
-    HeartbeatData heartbeat = 3;        // 心跳数据
-    TaskStatusUpdate task_status = 4;     // 任务状态更新
-    LogData log_data = 5;               // 日志数据
-    TaskFetchRequest task_fetch = 6;      // 获取任务请求
-    AgentMetrics metrics = 7;           // Agent指标
+    HeartbeatData heartbeat = 3;        // Heartbeat data
+    TaskStatusUpdate task_status = 4;     // Task status update
+    LogData log_data = 5;               // Log data
+    TaskFetchRequest task_fetch = 6;      // Task fetch request
+    AgentMetrics metrics = 7;           // Agent metrics
   }
 }
 
-// 心跳数据
+// Heartbeat data
 message HeartbeatData {
   int64 timestamp = 1;
   agent.v1.AgentStatus status = 2;
@@ -177,7 +177,7 @@ message HeartbeatData {
   int32 max_concurrent_jobs = 4;
 }
 
-// 任务状态更新
+// Task status update
 message TaskStatusUpdate {
   string task_id = 1;
   task.v1.TaskStatus status = 2;
@@ -186,50 +186,50 @@ message TaskStatusUpdate {
   int64 timestamp = 5;
 }
 
-// 日志数据
+// Log data
 message LogData {
   string job_id = 1;
   repeated LogChunk logs = 2;
 }
 
-// 获取任务请求
+// Task fetch request
 message TaskFetchRequest {
   int32 max_tasks = 1;
 }
 
-// Agent指标
+// Agent metrics
 message AgentMetrics {
-  double cpu_usage = 1;                 // CPU使用率（百分比）
-  double memory_usage = 2;              // 内存使用率（百分比）
-  double disk_usage = 3;                // 磁盘使用率（百分比）
-  int32 running_tasks = 4;               // 运行中的任务数
-  map<string, string> custom_metrics = 5; // 自定义指标
+  double cpu_usage = 1;                 // CPU usage (percentage)
+  double memory_usage = 2;              // Memory usage (percentage)
+  double disk_usage = 3;                // Disk usage (percentage)
+  int32 running_tasks = 4;               // Number of running tasks
+  map<string, string> custom_metrics = 5; // Custom metrics
 }
 
-// Agent通道响应（双向流）
+// Agent channel response (bidirectional stream)
 message AgentChannelResponse {
   string agent_id = 1;
-  string response_id = 2;               // 响应ID（对应请求ID）
+  string response_id = 2;               // Response ID (corresponding to request ID)
   oneof payload {
-    HeartbeatAck heartbeat_ack = 3;     // 心跳确认
-    TaskAssignment task_assignment = 4;   // 任务分配
-    TaskCancelCommand task_cancel_command = 5; // 取消任务命令
-    ConfigUpdate config_update = 6;     // 配置更新
+    HeartbeatAck heartbeat_ack = 3;     // Heartbeat acknowledgment
+    TaskAssignment task_assignment = 4;   // Task assignment
+    TaskCancelCommand task_cancel_command = 5; // Task cancellation command
+    ConfigUpdate config_update = 6;     // Configuration update
   }
 }
 
-// 心跳确认
+// Heartbeat acknowledgment
 message HeartbeatAck {
   int64 server_time = 1;
   bool success = 2;
 }
 
-// 任务分配
+// Task assignment
 message TaskAssignment {
   repeated TaskInfo tasks = 1;
 }
 
-// 任务信息
+// Task information
 message TaskInfo {
   string task_id = 1;
   string name = 2;
@@ -243,58 +243,58 @@ message TaskInfo {
   map<string, string> secrets = 10;
 }
 
-// 取消任务命令
+// Task cancellation command
 message TaskCancelCommand {
   string task_id = 1;
   string reason = 2;
 }
 
-// 配置更新
+// Configuration update
 message ConfigUpdate {
-  int64 heartbeat_interval = 1;         // 心跳间隔
-  int32 max_concurrent_jobs = 2;        // 最大并发任务数
-  map<string, string> config = 3;       // 其他配置
+  int64 heartbeat_interval = 1;         // Heartbeat interval
+  int32 max_concurrent_jobs = 2;        // Maximum concurrent jobs
+  map<string, string> config = 3;       // Other configuration
 }
 
-// ============ Agent状态流相关 ============
+// ============ Agent Status Stream Related ============
 
-// 实时监控Agent状态流请求
+// Request to monitor agent status stream in real-time
 message StreamAgentStatusRequest {
-  repeated string agent_ids = 1;        // Agent ID列表（为空则监控所有Agent）
+  repeated string agent_ids = 1;        // List of agent IDs (empty means monitor all agents)
 }
 
-// 实时监控Agent状态流响应
+// Response for monitoring agent status stream in real-time
 message StreamAgentStatusResponse {
   string agent_id = 1;
   string hostname = 2;
   string ip = 3;
-  AgentStatus status = 4;               // Agent状态
-  AgentStatus previous_status = 5;      // 之前的状态
-  int64 timestamp = 6;                  // 状态变化时间戳
-  int32 running_jobs_count = 7;         // 运行中的任务数
-  int32 max_concurrent_jobs = 8;        // 最大并发任务数
-  AgentMetrics metrics = 9;             // Agent指标
-  int64 last_heartbeat = 10;            // 最后心跳时间
-  map<string, string> labels = 11;      // Agent标签
+  AgentStatus status = 4;               // Agent status
+  AgentStatus previous_status = 5;      // Previous status
+  int64 timestamp = 6;                  // Status change timestamp
+  int32 running_jobs_count = 7;         // Number of running jobs
+  int32 max_concurrent_jobs = 8;        // Maximum concurrent jobs
+  AgentMetrics metrics = 9;             // Agent metrics
+  int64 last_heartbeat = 10;            // Last heartbeat time
+  map<string, string> labels = 11;      // Agent labels
 }
 
-// ============ 事件流相关 ============
+// ============ Event Stream Related ============
 
-// 实时事件流请求
+// Request for real-time event stream
 message StreamEventsRequest {
-  repeated EventType event_types = 1;   // 关注的事件类型（为空则接收所有事件）
-  repeated string resource_ids = 2;     // 关注的资源ID（job_id、pipeline_id等）
+  repeated EventType event_types = 1;   // Event types to watch (empty means receive all events)
+  repeated string resource_ids = 2;     // Resource IDs to watch (job_id, pipeline_id, etc.)
 }
 
-// 实时事件流响应
+// Response for real-time event stream
 message StreamEventsResponse {
-  string event_id = 1;                  // 事件ID
-  EventType event_type = 2;             // 事件类型
-  int64 timestamp = 3;                  // 事件时间戳
-  string resource_id = 4;               // 资源ID
-  string resource_type = 5;             // 资源类型（job、pipeline、agent等）
-  string title = 6;                     // 事件标题
-  string description = 7;               // 事件描述
-  map<string, string> metadata = 8;     // 事件元数据
-  string user_id = 9;                   // 触发事件的用户ID
+  string event_id = 1;                  // Event ID
+  EventType event_type = 2;             // Event type
+  int64 timestamp = 3;                  // Event timestamp
+  string resource_id = 4;               // Resource ID
+  string resource_type = 5;             // Resource type (job, pipeline, agent, etc.)
+  string title = 6;                     // Event title
+  string description = 7;               // Event description
+  map<string, string> metadata = 8;     // Event metadata
+  string user_id = 9;                   // User ID who triggered the event
 }

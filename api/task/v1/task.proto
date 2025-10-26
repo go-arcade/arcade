@@ -4,59 +4,59 @@ package task.v1;
 
 option go_package = "github.com/go-arcade/arcade/api/task/v1;taskv1";
 
-// Task服务 - 任务和流水线管理接口
+// TaskService - Task and pipeline management interface
 service TaskService {
-    // Ping服务健康检查
+    // Ping service health check
     rpc Ping(PingRequest) returns (PingResponse) {}
 
-    // 创建任务
+    // Create task
     rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse) {}
 
-    // 获取任务详情
+    // Get task details
     rpc GetTask(GetTaskRequest) returns (GetTaskResponse) {}
 
-    // 列出任务（支持分页和过滤）
+    // List tasks (supports pagination and filtering)
     rpc ListTasks(ListTasksRequest) returns (ListTasksResponse) {}
 
-    // 更新任务
+    // Update task
     rpc UpdateTask(UpdateTaskRequest) returns (UpdateTaskResponse) {}
 
-    // 删除任务
+    // Delete task
     rpc DeleteTask(DeleteTaskRequest) returns (DeleteTaskResponse) {}
 
-    // 取消任务
+    // Cancel task
     rpc CancelTask(CancelTaskRequest) returns (CancelTaskResponse) {}
 
-    // 重试任务
+    // Retry task
     rpc RetryTask(RetryTaskRequest) returns (RetryTaskResponse) {}
 
-    // 获取任务日志
+    // Get task log
     rpc GetTaskLog(GetTaskLogRequest) returns (GetTaskLogResponse) {}
 
-    // 获取任务产物列表
+    // List task artifacts
     rpc ListTaskArtifacts(ListTaskArtifactsRequest) returns (ListTaskArtifactsResponse) {}
 }
 
-// 任务状态枚举
+// Task status enum
 enum TaskStatus {
   TASK_STATUS_UNSPECIFIED = 0;
-  TASK_STATUS_PENDING = 1;       // 等待执行
-  TASK_STATUS_QUEUED = 2;        // 已入队
-  TASK_STATUS_RUNNING = 3;       // 执行中
-  TASK_STATUS_SUCCESS = 4;       // 执行成功
-  TASK_STATUS_FAILED = 5;        // 执行失败
-  TASK_STATUS_CANCELLED = 6;     // 已取消
-  TASK_STATUS_TIMEOUT = 7;       // 超时
-  TASK_STATUS_SKIPPED = 8;       // 已跳过
+  TASK_STATUS_PENDING = 1;       // Pending
+  TASK_STATUS_QUEUED = 2;        // Queued
+  TASK_STATUS_RUNNING = 3;       // Running
+  TASK_STATUS_SUCCESS = 4;       // Success
+  TASK_STATUS_FAILED = 5;        // Failed
+  TASK_STATUS_CANCELLED = 6;     // Cancelled
+  TASK_STATUS_TIMEOUT = 7;       // Timeout
+  TASK_STATUS_SKIPPED = 8;       // Skipped
 }
 
-// 触发类型枚举
+// Trigger type enum
 enum TriggerType {
   TRIGGER_TYPE_UNSPECIFIED = 0;
-  TRIGGER_TYPE_MANUAL = 1;       // 手动触发
-  TRIGGER_TYPE_WEBHOOK = 2;      // Webhook触发
-  TRIGGER_TYPE_SCHEDULE = 3;     // 定时触发
-  TRIGGER_TYPE_API = 4;          // API触发
+  TRIGGER_TYPE_MANUAL = 1;       // Manual trigger
+  TRIGGER_TYPE_WEBHOOK = 2;      // Webhook trigger
+  TRIGGER_TYPE_SCHEDULE = 3;     // Schedule trigger
+  TRIGGER_TYPE_API = 4;          // API trigger
 }
 
 message PingRequest {
@@ -68,38 +68,38 @@ message PingResponse {
     int64 timestamp = 2;
 }
 
-// 创建任务请求
+// Create task request
 message CreateTaskRequest {
-  string name = 1;                      // 任务名称
-  string pipeline_id = 2;               // 所属流水线ID
-  int32 stage = 3;                      // 阶段序号
-  repeated string commands = 4;         // 执行命令列表
-  map<string, string> env = 5;          // 环境变量
-  string workspace = 6;                 // 工作目录
-  int32 timeout = 7;                    // 超时时间（秒，默认3600）
-  string image = 8;                     // Docker镜像
-  map<string, string> secrets = 9;      // 密钥信息
-  repeated ArtifactConfig artifacts = 10; // 产物配置
-  repeated string depends_on = 11;      // 依赖的任务ID列表
-  bool allow_failure = 12;              // 是否允许失败
-  int32 retry_count = 13;               // 重试次数
-  LabelSelector label_selector = 14;    // 标签选择器（用于匹配Agent）
+  string name = 1;                      // Task name
+  string pipeline_id = 2;               // Pipeline ID
+  int32 stage = 3;                      // Stage number
+  repeated string commands = 4;         // List of commands to execute
+  map<string, string> env = 5;          // Environment variables
+  string workspace = 6;                 // Working directory
+  int32 timeout = 7;                    // Timeout (seconds, default 3600)
+  string image = 8;                     // Docker image
+  map<string, string> secrets = 9;      // Secret information
+  repeated ArtifactConfig artifacts = 10; // Artifact configuration
+  repeated string depends_on = 11;      // List of dependent task IDs
+  bool allow_failure = 12;              // Allow failure
+  int32 retry_count = 13;               // Retry count
+  LabelSelector label_selector = 14;    // Label selector (for matching Agent)
 }
 
-// 产物配置
+// Artifact configuration
 message ArtifactConfig {
-  string name = 1;                      // 产物名称
-  string path = 2;                      // 产物路径（支持glob模式）
-  string destination = 3;               // 目标存储路径
-  bool expire = 4;                      // 是否过期
-  int64 expire_days = 5;                // 过期天数
+  string name = 1;                      // Artifact name
+  string path = 2;                      // Artifact path (supports glob pattern)
+  string destination = 3;               // Target storage path
+  bool expire = 4;                      // Whether it expires
+  int64 expire_days = 5;                // Expiration days
 }
 
-// 创建任务响应
+// Create task response
 message CreateTaskResponse {
   bool success = 1;
   string message = 2;
-  string task_id = 3;                   // 创建的任务ID
+  string task_id = 3;                   // Created task ID
 }
 
 // 获取任务请求
@@ -114,63 +114,63 @@ message GetTaskResponse {
   TaskDetail task = 3;
 }
 
-// 任务详情
+// Task details
 message TaskDetail {
-  string task_id = 1;                   // 任务ID
-  string name = 2;                      // 任务名称
-  string pipeline_id = 3;               // 所属流水线ID
-  int32 stage = 4;                      // 阶段序号
-  TaskStatus status = 5;                // 任务状态
-  repeated string commands = 6;         // 执行命令列表
-  map<string, string> env = 7;          // 环境变量
-  string workspace = 8;                 // 工作目录
-  int32 timeout = 9;                    // 超时时间（秒）
-  string image = 10;                    // Docker镜像
-  repeated ArtifactConfig artifacts = 11; // 产物配置
-  repeated string depends_on = 12;      // 依赖的任务ID列表
-  bool allow_failure = 13;              // 是否允许失败
-  int32 retry_count = 14;               // 重试次数
-  int32 retried_times = 15;             // 已重试次数
-  string agent_id = 16;                 // 执行的Agent ID
-  int32 exit_code = 17;                 // 退出码
-  string error_message = 18;            // 错误信息
-  int64 created_at = 19;                // 创建时间
-  int64 started_at = 20;                // 开始时间
-  int64 finished_at = 21;               // 结束时间
-  int64 duration = 22;                  // 执行时长（毫秒）
-  string created_by = 23;               // 创建者
-  LabelSelector label_selector = 24;    // 标签选择器
-  map<string, string> agent_labels = 25; // 执行任务的Agent标签
+  string task_id = 1;                   // Task ID
+  string name = 2;                      // Task name
+  string pipeline_id = 3;               // Pipeline ID
+  int32 stage = 4;                      // Stage number
+  TaskStatus status = 5;                // Task status
+  repeated string commands = 6;         // List of commands to execute
+  map<string, string> env = 7;          // Environment variables
+  string workspace = 8;                 // Working directory
+  int32 timeout = 9;                    // Timeout (seconds)
+  string image = 10;                    // Docker image
+  repeated ArtifactConfig artifacts = 11; // Artifact configuration
+  repeated string depends_on = 12;      // List of dependent task IDs
+  bool allow_failure = 13;              // Allow failure
+  int32 retry_count = 14;               // Retry count
+  int32 retried_times = 15;             // Times retried
+  string agent_id = 16;                 // Executing agent ID
+  int32 exit_code = 17;                 // Exit code
+  string error_message = 18;            // Error message
+  int64 created_at = 19;                // Creation time
+  int64 started_at = 20;                // Start time
+  int64 finished_at = 21;               // Finish time
+  int64 duration = 22;                  // Execution duration (milliseconds)
+  string created_by = 23;               // Creator
+  LabelSelector label_selector = 24;    // Label selector
+  map<string, string> agent_labels = 25; // Agent labels executing the task
 }
 
-// 列出任务请求
+// List tasks request
 message ListTasksRequest {
-  string pipeline_id = 1;               // 流水线ID（可选）
-  TaskStatus status = 2;                // 状态过滤（可选）
-  string agent_id = 3;                  // Agent ID过滤（可选）
-  int32 page = 4;                       // 页码（从1开始）
-  int32 page_size = 5;                  // 每页数量（默认20）
-  string sort_by = 6;                   // 排序字段（created_at、started_at等）
-  bool sort_desc = 7;                   // 是否降序
+  string pipeline_id = 1;               // Pipeline ID (optional)
+  TaskStatus status = 2;                // Status filter (optional)
+  string agent_id = 3;                  // Agent ID filter (optional)
+  int32 page = 4;                       // Page number (starting from 1)
+  int32 page_size = 5;                  // Items per page (default 20)
+  string sort_by = 6;                   // Sort field (created_at, started_at, etc.)
+  bool sort_desc = 7;                   // Descending order
 }
 
-// 列出任务响应
+// List tasks response
 message ListTasksResponse {
   bool success = 1;
   string message = 2;
   repeated TaskDetail tasks = 3;
-  int32 total = 4;                      // 总数
-  int32 page = 5;                       // 当前页
-  int32 page_size = 6;                  // 每页数量
+  int32 total = 4;                      // Total count
+  int32 page = 5;                       // Current page
+  int32 page_size = 6;                  // Items per page
 }
 
-// 更新任务请求
+// Update task request
 message UpdateTaskRequest {
   string task_id = 1;
-  string name = 2;                      // 任务名称（可选）
-  repeated string commands = 3;         // 执行命令列表（可选）
-  map<string, string> env = 4;          // 环境变量（可选）
-  int32 timeout = 5;                    // 超时时间（可选）
+  string name = 2;                      // Task name (optional)
+  repeated string commands = 3;         // List of commands to execute (optional)
+  map<string, string> env = 4;          // Environment variables (optional)
+  int32 timeout = 5;                    // Timeout (optional)
 }
 
 // 更新任务响应
@@ -190,10 +190,10 @@ message DeleteTaskResponse {
   string message = 2;
 }
 
-// 取消任务请求
+// Cancel task request
 message CancelTaskRequest {
   string task_id = 1;
-  string reason = 2;                    // 取消原因
+  string reason = 2;                    // Cancellation reason
 }
 
 // 取消任务响应
@@ -207,35 +207,35 @@ message RetryTaskRequest {
   string task_id = 1;
 }
 
-// 重试任务响应
+// Retry task response
 message RetryTaskResponse {
   bool success = 1;
   string message = 2;
-  string new_task_id = 3;               // 新创建的任务ID
+  string new_task_id = 3;               // Newly created task ID
 }
 
-// 获取任务日志请求
+// Get task log request
 message GetTaskLogRequest {
   string task_id = 1;
-  int32 offset = 2;                     // 日志偏移量（行号）
-  int32 limit = 3;                      // 获取数量（默认1000行）
+  int32 offset = 2;                     // Log offset (line number)
+  int32 limit = 3;                      // Number to fetch (default 1000 lines)
 }
 
-// 获取任务日志响应
+// Get task log response
 message GetTaskLogResponse {
   bool success = 1;
   string message = 2;
   repeated LogLine logs = 3;
-  int32 total_lines = 4;                // 总行数
-  bool has_more = 5;                    // 是否还有更多日志
+  int32 total_lines = 4;                // Total lines
+  bool has_more = 5;                    // Whether there are more logs
 }
 
-// 日志行
+// Log line
 message LogLine {
-  int32 line_number = 1;                // 行号
-  int64 timestamp = 2;                  // 时间戳
-  string level = 3;                     // 日志级别
-  string content = 4;                   // 日志内容
+  int32 line_number = 1;                // Line number
+  int64 timestamp = 2;                  // Timestamp
+  string level = 3;                     // Log level
+  string content = 4;                   // Log content
 }
 
 // 列出任务产物请求
@@ -243,70 +243,70 @@ message ListTaskArtifactsRequest {
   string task_id = 1;
 }
 
-// 列出任务产物响应
+// List task artifacts response
 message ListTaskArtifactsResponse {
   bool success = 1;
   string message = 2;
   repeated Artifact artifacts = 3;
 }
 
-// 产物
+// Artifact
 message Artifact {
-  string artifact_id = 1;               // 产物ID
-  string name = 2;                      // 产物名称
-  string path = 3;                      // 产物路径
-  int64 size = 4;                       // 文件大小（字节）
-  string download_url = 5;              // 下载URL
-  int64 created_at = 6;                 // 创建时间
-  int64 expire_at = 7;                  // 过期时间
+  string artifact_id = 1;               // Artifact ID
+  string name = 2;                      // Artifact name
+  string path = 3;                      // Artifact path
+  int64 size = 4;                       // File size (bytes)
+  string download_url = 5;              // Download URL
+  int64 created_at = 6;                 // Creation time
+  int64 expire_at = 7;                  // Expiration time
 }
 
-// 阶段配置
+// Stage configuration
 message Stage {
-  int32 order = 1;                      // 阶段序号
-  string name = 2;                      // 阶段名称
-  repeated TaskConfig tasks = 3;        // 任务配置列表
+  int32 order = 1;                      // Stage number
+  string name = 2;                      // Stage name
+  repeated TaskConfig tasks = 3;        // List of task configurations
 }
 
-// 任务配置
+// Task configuration
 message TaskConfig {
-  string name = 1;                      // 任务名称
-  repeated string commands = 2;         // 执行命令
-  map<string, string> env = 3;          // 环境变量
-  string workspace = 4;                 // 工作目录
-  int32 timeout = 5;                    // 超时时间
-  string image = 6;                     // Docker镜像
-  repeated ArtifactConfig artifacts = 7; // 产物配置
-  bool allow_failure = 8;               // 是否允许失败
-  int32 retry_count = 9;                // 重试次数
-  LabelSelector label_selector = 10;    // 标签选择器（用于匹配Agent）
+  string name = 1;                      // Task name
+  repeated string commands = 2;         // Commands to execute
+  map<string, string> env = 3;          // Environment variables
+  string workspace = 4;                 // Working directory
+  int32 timeout = 5;                    // Timeout
+  string image = 6;                     // Docker image
+  repeated ArtifactConfig artifacts = 7; // Artifact configuration
+  bool allow_failure = 8;               // Allow failure
+  int32 retry_count = 9;                // Retry count
+  LabelSelector label_selector = 10;    // Label selector (for matching Agent)
 }
 
-// ============ 标签选择器相关 ============
+// ============ Label Selector Related ============
 
-// 标签选择器 - 用于任务匹配Agent
+// Label selector - For matching Agent with task
 message LabelSelector {
-  // 匹配所有指定的标签（AND逻辑）
+  // Match all specified labels (AND logic)
   map<string, string> match_labels = 1;
 
-  // 标签表达式（支持更复杂的匹配规则）
+  // Label expressions (support more complex matching rules)
   repeated LabelSelectorRequirement match_expressions = 2;
 }
 
-// 标签选择器要求
+// Label selector requirement
 message LabelSelectorRequirement {
-  string key = 1;                     // 标签key
-  LabelOperator operator = 2;         // 操作符
-  repeated string values = 3;         // 值列表
+  string key = 1;                     // Label key
+  LabelOperator operator = 2;         // Operator
+  repeated string values = 3;         // Value list
 }
 
-// 标签操作符
+// Label operator
 enum LabelOperator {
   LABEL_OPERATOR_UNSPECIFIED = 0;
-  LABEL_OPERATOR_IN = 1;              // 标签值在values列表中
-  LABEL_OPERATOR_NOT_IN = 2;          // 标签值不在values列表中
-  LABEL_OPERATOR_EXISTS = 3;          // 标签key存在
-  LABEL_OPERATOR_NOT_EXISTS = 4;      // 标签key不存在
-  LABEL_OPERATOR_GT = 5;              // 标签值大于指定值（用于数值比较）
-  LABEL_OPERATOR_LT = 6;              // 标签值小于指定值（用于数值比较）
+  LABEL_OPERATOR_IN = 1;              // Label value is in values list
+  LABEL_OPERATOR_NOT_IN = 2;          // Label value is not in values list
+  LABEL_OPERATOR_EXISTS = 3;          // Label key exists
+  LABEL_OPERATOR_NOT_EXISTS = 4;      // Label key does not exist
+  LABEL_OPERATOR_GT = 5;              // Label value is greater than specified value (for numeric comparison)
+  LABEL_OPERATOR_LT = 6;              // Label value is less than specified value (for numeric comparison)
 }
