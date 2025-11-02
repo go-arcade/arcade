@@ -48,9 +48,9 @@ func (Plugin) TableName() string {
 // PluginConfig 插件配置表
 type PluginConfig struct {
 	BaseModel
-	PluginId     string         `gorm:"column:plugin_id" json:"pluginId"`
-	ParamsSchema datatypes.JSON `gorm:"column:params_schema;type:json" json:"paramsSchema"` // JSON Schema
-	ConfigSchema datatypes.JSON `gorm:"column:config_schema;type:json" json:"configSchema"` // JSON Schema
+	PluginId string         `gorm:"column:plugin_id" json:"pluginId"`
+	Params   datatypes.JSON `gorm:"column:params;type:json" json:"params"` // JSON Schema
+	Config   datatypes.JSON `gorm:"column:config;type:json" json:"config"` // JSON Schema
 }
 
 func (PluginConfig) TableName() string {
