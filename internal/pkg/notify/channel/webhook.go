@@ -1,0 +1,139 @@
+package channel
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+
+	"github.com/go-arcade/arcade/internal/pkg/notify/auth"
+	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-resty/resty/v2"
+)
+
+// WebhookChannel implements generic webhook notification channel
+type WebhookChannel struct {
+	webhookURL   string
+	method       string
+	authProvider auth.IAuthProvider
+	client       *resty.Client
+}
+
+// NewWebhookChannel creates a new generic webhook notification channel
+func NewWebhookChannel(webhookURL, method string) *WebhookChannel {
+	if method == "" {
+		method = http.MethodPost
+	}
+	return &WebhookChannel{
+		webhookURL: webhookURL,
+		method:     method,
+		client:     resty.New(),
+	}
+}
+
+// SetAuth sets authentication provider (supports multiple auth methods)
+func (c *WebhookChannel) SetAuth(provider auth.IAuthProvider) error {
+	if provider == nil {
+		return nil
+	}
+
+	c.authProvider = provider
+	return provider.Validate()
+}
+
+// GetAuth gets the authentication provider
+func (c *WebhookChannel) GetAuth() auth.IAuthProvider {
+	return c.authProvider
+}
+
+// Send sends message to webhook
+func (c *WebhookChannel) Send(ctx context.Context, message string) error {
+	if err := c.Validate(); err != nil {
+		return err
+	}
+
+	payload := map[string]interface{}{
+		"message": message,
+	}
+
+	return c.sendRequest(ctx, payload)
+}
+
+// SendWithTemplate sends message using template
+func (c *WebhookChannel) SendWithTemplate(ctx context.Context, template string, data map[string]interface{}) error {
+	if err := c.Validate(); err != nil {
+		return err
+	}
+
+	payload := map[string]interface{}{
+		"template": template,
+		"data":     data,
+	}
+
+	return c.sendRequest(ctx, payload)
+}
+
+// sendRequest sends HTTP request
+func (c *WebhookChannel) sendRequest(ctx context.Context, payload map[string]interface{}) error {
+	req := c.client.R().SetContext(ctx)
+
+	// Add authentication header
+	if c.authProvider != nil {
+		key, value := c.authProvider.GetAuthHeader()
+		if key != "" && value != "" {
+			req.SetHeader(key, value)
+		}
+	}
+
+	req.SetHeader("Content-Type", "application/json")
+	req.SetBody(payload)
+
+	var resp *resty.Response
+	var err error
+
+	switch c.method {
+	case http.MethodGet:
+		resp, err = req.Get(c.webhookURL)
+	case http.MethodPost:
+		resp, err = req.Post(c.webhookURL)
+	case http.MethodPut:
+		resp, err = req.Put(c.webhookURL)
+	case http.MethodPatch:
+		resp, err = req.Patch(c.webhookURL)
+	default:
+		resp, err = req.Post(c.webhookURL)
+	}
+
+	if err != nil {
+		log.Errorf("webhook send request failed: %v", err)
+		return fmt.Errorf("failed to send request: %w", err)
+	}
+
+	if resp.StatusCode() < 200 || resp.StatusCode() >= 300 {
+		log.Errorf("webhook request failed with status %d: %s", resp.StatusCode(), resp.String())
+		return fmt.Errorf("webhook request failed with status %d", resp.StatusCode())
+	}
+
+	return nil
+}
+
+// Receive receives messages (for processing webhook callbacks)
+func (c *WebhookChannel) Receive(ctx context.Context, message string) error {
+	// Implement webhook receive logic
+	return nil
+}
+
+// Validate validates the configuration
+func (c *WebhookChannel) Validate() error {
+	if c.webhookURL == "" {
+		return fmt.Errorf("webhook URL is required")
+	}
+	if c.authProvider != nil {
+		return c.authProvider.Validate()
+	}
+	return nil
+}
+
+// Close closes the connection
+func (c *WebhookChannel) Close() error {
+	return nil
+}

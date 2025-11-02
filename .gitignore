@@ -1,5 +1,6 @@
 .idea
 .vscode
+.cursor
 /bin
 /internal/engine/router/static/*
 !/internal/engine/router/static/.gitkeep
@@ -9,3 +10,4 @@ docs/*.md
 *.so
 /api/*/*/*.pb.go
 /cmd/arcade/wire_gen.go
+.DS_Store
