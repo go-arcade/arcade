@@ -5,8 +5,8 @@ import (
 	"gorm.io/datatypes"
 )
 
-// SSOProvider SSO认证提供者表
-type SSOProvider struct {
+// IdentityIntegration 身份集成提供者表
+type IdentityIntegration struct {
 	BaseModel
 	ProviderId   string         `gorm:"column:provider_id" json:"providerId"`
 	Name         string         `gorm:"column:name" json:"name"`
@@ -14,11 +14,11 @@ type SSOProvider struct {
 	Config       datatypes.JSON `gorm:"column:config" json:"config"`
 	Description  string         `gorm:"column:description" json:"description"`
 	Priority     int            `gorm:"column:priority" json:"priority"`
-	IsEnabled    int            `gorm:"column:is_enabled" json:"isEnabled"` // 0:禁用 1:启用
+	IsEnabled    int            `gorm:"column:is_enabled" json:"isEnabled"` // 0: disabled, 1: enabled
 }
 
-func (s *SSOProvider) TableName() string {
-	return "t_sso_provider"
+func (s *IdentityIntegration) TableName() string {
+	return "t_identity_integration"
 }
 
 // OAuthConfig OAuth 配置

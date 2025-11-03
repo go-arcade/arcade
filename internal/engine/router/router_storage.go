@@ -1,8 +1,10 @@
 package router
 
 import (
+	"github.com/go-arcade/arcade/internal/engine/repo"
 	"github.com/go-arcade/arcade/internal/engine/service"
 	httpx "github.com/go-arcade/arcade/pkg/http"
+	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -148,4 +150,60 @@ func getDefaultStorageConfig(storageService *service.StorageService) fiber.Handl
 		c.Locals("detail", storageConfig)
 		return httpx.WithRepJSON(c, storageConfig)
 	}
+}
+
+// uploadFile uploads a file to default storage
+func (rt *Router) uploadFile(c *fiber.Ctx) error {
+	storageRepo := repo.NewStorageRepo(rt.Ctx)
+	uploadService := service.NewUploadService(rt.Ctx, storageRepo)
+
+	// get file from form
+	file, err := c.FormFile("file")
+	if err != nil {
+		return httpx.WithRepErrMsg(c, fiber.StatusBadRequest, "file is required", c.Path())
+	}
+
+	// get optional custom path from query parameter
+	customPath := c.Query("path")
+
+	// upload file
+	response, err := uploadService.UploadFile(file, "", customPath)
+	if err != nil {
+		return httpx.WithRepErrMsg(c, fiber.StatusInternalServerError, err.Error(), c.Path())
+	}
+
+	c.Locals(middleware.DETAIL, response)
+	c.Locals(middleware.OPERATION, "upload file")
+	return nil
+}
+
+// uploadFileWithStorage uploads a file to specific storage
+func (rt *Router) uploadFileWithStorage(c *fiber.Ctx) error {
+	storageRepo := repo.NewStorageRepo(rt.Ctx)
+	uploadService := service.NewUploadService(rt.Ctx, storageRepo)
+
+	// get storage ID from path parameter
+	storageId := c.Params("storageId")
+	if storageId == "" {
+		return httpx.WithRepErrMsg(c, fiber.StatusBadRequest, "storageId is required", c.Path())
+	}
+
+	// get file from form
+	file, err := c.FormFile("file")
+	if err != nil {
+		return httpx.WithRepErrMsg(c, fiber.StatusBadRequest, "file is required", c.Path())
+	}
+
+	// get optional custom path from query parameter
+	customPath := c.Query("path")
+
+	// upload file
+	response, err := uploadService.UploadFile(file, storageId, customPath)
+	if err != nil {
+		return httpx.WithRepErrMsg(c, fiber.StatusInternalServerError, err.Error(), c.Path())
+	}
+
+	c.Locals(middleware.DETAIL, response)
+	c.Locals(middleware.OPERATION, "upload file")
+	return nil
 }

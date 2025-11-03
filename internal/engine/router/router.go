@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/go-arcade/arcade/internal/engine/conf"
+	"github.com/go-arcade/arcade/internal/engine/repo"
 	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/pkg/ctx"
 	httpx "github.com/go-arcade/arcade/pkg/http"
@@ -151,9 +152,13 @@ func (rt *Router) routerGroup(r fiber.Router) {
 
 	// user
 	rt.userRouter(r, auth)
+	rt.userExtensionRouter(r, auth)
 
-	// auth
-	rt.authRouter(r, auth)
+	// identity integration
+	rt.identityIntegrationRouter(r, auth)
+
+	// role
+	rt.roleRouter(r, auth)
 
 	// agent
 	rt.agentRouter(r, auth)
@@ -169,11 +174,16 @@ func (rt *Router) routerGroup(r fiber.Router) {
 }
 
 func (rt *Router) storageRouter(r fiber.Router, auth fiber.Handler) {
-	// 存储配置管理需要认证
-	_ = r.Group("/storage", auth)
+	storageGroup := r.Group("/storage", auth)
 	{
-		// 这里需要注入 StorageService，暂时留空
-		// 实际使用时需要在 router 初始化时注入服务
+		// File upload
+		storageGroup.Post("/upload", rt.uploadFile)                       // POST /storage/upload - upload file
+		storageGroup.Post("/upload/:storageId", rt.uploadFileWithStorage) // POST /storage/upload/:storageId - upload to specific storage
+
+		// Storage configuration management
+		storageRepo := repo.NewStorageRepo(rt.Ctx)
+		storageService := service.NewStorageService(rt.Ctx, storageRepo)
+		RegisterStorageRoutes(storageGroup, storageService)
 	}
 }
 

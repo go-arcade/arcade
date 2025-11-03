@@ -17,8 +17,8 @@ type StorageConfig struct {
 	StorageType string         `gorm:"column:storage_type" json:"storageType"` // minio/s3/oss/gcs/cos
 	Config      datatypes.JSON `gorm:"column:config" json:"config"`
 	Description string         `gorm:"column:description" json:"description"`
-	IsDefault   int            `gorm:"column:is_default" json:"isDefault"` // 0:否 1:是
-	IsEnabled   int            `gorm:"column:is_enabled" json:"isEnabled"` // 0:禁用 1:启用
+	IsDefault   int            `gorm:"column:is_default" json:"isDefault"` // 0: not default, 1: default
+	IsEnabled   int            `gorm:"column:is_enabled" json:"isEnabled"` // 0: disabled, 1: enabled
 }
 
 func (StorageConfig) TableName() string {

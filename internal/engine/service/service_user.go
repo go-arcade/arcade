@@ -50,7 +50,7 @@ func (ul *UserService) Login(login *model.Login, auth http.Auth) (*model.LoginRe
 		return nil, errors.New(http.UserNotExist.Msg)
 	}
 
-	// 比较存储的密码哈希与提供的密码
+	// compare stored password hash with provided password
 	if !comparePassword(user.Password, string(pwd)) {
 		log.Error("incorrect password provided")
 		return nil, errors.New(http.UserIncorrectPassword.Msg)
@@ -68,12 +68,13 @@ func (ul *UserService) Login(login *model.Login, auth http.Auth) (*model.LoginRe
 
 	resp := &model.LoginResp{
 		UserInfo: model.UserInfo{
-			UserId:   user.UserId,
-			Username: user.Username,
-			Nickname: user.Nickname,
-			Avatar:   user.Avatar,
-			Email:    user.Email,
-			Phone:    user.Phone,
+			UserId:    user.UserId,
+			Username:  user.Username,
+			FirstName: user.FirstName,
+			LastName:  user.LastName,
+			Avatar:    user.Avatar,
+			Email:     user.Email,
+			Phone:     user.Phone,
 		},
 		Token: map[string]string{
 			"accessToken":  aToken,
@@ -91,6 +92,14 @@ func (ul *UserService) Login(login *model.Login, auth http.Auth) (*model.LoginRe
 			log.Errorf("failed to set login response info: %v", err)
 			return
 		}
+
+		// update last login time in user extension
+		userExtRepo := repo.NewUserExtensionRepo(ul.ctx)
+		userExtService := NewUserExtensionService(userExtRepo)
+		if err := userExtService.UpdateLastLogin(user.UserId); err != nil {
+			log.Warnf("failed to update last login time: %v", err)
+			// this is not critical, continue
+		}
 	}()
 
 	return resp, nil
@@ -103,7 +112,7 @@ func (ul *UserService) Refresh(userId, rToken string, auth *http.Auth) (map[stri
 		return nil, err
 	}
 
-	// 计算token过期时间
+	// calculate token expiration time
 	expireAt := time.Now().Add(auth.AccessExpire * time.Minute).Unix()
 	token["expireAt"] = fmt.Sprintf("%d", expireAt)
 
@@ -121,7 +130,10 @@ func (ul *UserService) Register(register *model.Register) error {
 
 	var err error
 	register.UserId = id.GetUUIDWithoutDashes()
-	register.Nickname = register.Username
+	// set default values if not provided
+	if register.FirstName == "" {
+		register.FirstName = register.Username
+	}
 	register.CreateTime = time.Now()
 	password, err := getPassword(register.Password)
 	if err != nil {
@@ -136,18 +148,18 @@ func (ul *UserService) Register(register *model.Register) error {
 }
 
 func (ul *UserService) Logout(userId string) error {
-	// 删除 token
+	// delete token
 	tokenKey := consts.UserTokenKey + userId
 	if err := ul.userRepo.DelToken(tokenKey); err != nil {
 		log.Errorf("failed to delete token: %v", err)
 		return errors.New(http.TokenBeEmpty.Msg)
 	}
 
-	// 删除用户信息缓存
+	// delete user info cache
 	userInfoKey := consts.UserInfoKey + userId
 	if err := ul.userRepo.DelToken(userInfoKey); err != nil {
 		log.Errorf("failed to delete user info: %v", err)
-		// 用户信息删除失败不影响登出
+		// user info deletion failure does not affect logout
 	}
 
 	return nil
@@ -166,11 +178,17 @@ func (ul *UserService) AddUser(addUserReq model.AddUserReq) error {
 }
 
 func (ul *UserService) UpdateUser(userId string, user *model.User) error {
-
 	var err error
 	if err = ul.userRepo.UpdateUser(userId, user); err != nil {
 		return err
 	}
+
+	// clear user info cache after update
+	userInfoKey := consts.UserInfoKey + userId
+	if err := ul.userRepo.DelToken(userInfoKey); err != nil {
+		log.Warnf("failed to clear user info cache: %v", err)
+	}
+
 	return err
 }
 
@@ -183,15 +201,22 @@ func (ul *UserService) FetchUserInfo(userId string) (*model.UserInfo, error) {
 	return user, err
 }
 
-//func (ul *UserService) GetUserList(pageNum, pageSize int) ([]model.User, int64, error) {
-//
-//	offset := (pageNum - 1) * pageSize
-//	users, count, err := ul.userRepo.GetUserList(offset, pageSize)
-//	if err != nil {
-//		return nil, 0, err
-//	}
-//	return users, count, err
-//}
+func (ul *UserService) GetUserList(pageNum, pageSize int) ([]repo.UserWithExtension, int64, error) {
+	// set default values
+	if pageNum <= 0 {
+		pageNum = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 10
+	}
+
+	offset := (pageNum - 1) * pageSize
+	users, count, err := ul.userRepo.GetUserList(offset, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+	return users, count, err
+}
 
 func getPassword(password string) ([]byte, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -209,4 +234,61 @@ func comparePassword(oldPassword, newPassword string) bool {
 	} else {
 		return true
 	}
+}
+
+// ResetPassword resets user password (for forgot password scenario, no old password required)
+func (ul *UserService) ResetPassword(userId string, req *model.ResetPasswordReq) error {
+	// decode new password from base64
+	newPwd, err := tool.DecodeBase64(req.NewPassword)
+	if err != nil {
+		log.Errorf("failed to decode new password: %v", err)
+		return errors.New("invalid new password format")
+	}
+
+	// validate new password length
+	if len(newPwd) < 6 {
+		return errors.New("new password must be at least 6 characters")
+	}
+
+	// hash new password
+	newPasswordHash, err := getPassword(string(newPwd))
+	if err != nil {
+		log.Errorf("failed to hash new password: %v", err)
+		return errors.New("failed to process new password")
+	}
+
+	// update password
+	if err := ul.userRepo.ResetPassword(userId, string(newPasswordHash)); err != nil {
+		log.Errorf("failed to reset password: %v", err)
+		return errors.New("failed to reset password")
+	}
+
+	// invalidate all tokens for security
+	tokenKey := consts.UserTokenKey + userId
+	if err := ul.userRepo.DelToken(tokenKey); err != nil {
+		log.Warnf("failed to delete token after password reset: %v", err)
+		// this is not critical, continue
+	}
+
+	log.Infof("user password reset successfully: %s", userId)
+	return nil
+}
+
+// UpdateAvatar updates user avatar URL and clears cache
+func (ul *UserService) UpdateAvatar(userId, avatarUrl string) error {
+	// update avatar in database
+	if err := ul.userRepo.UpdateAvatar(userId, avatarUrl); err != nil {
+		log.Errorf("failed to update user avatar: %v", err)
+		return errors.New("failed to update user avatar")
+	}
+
+	// clear user info cache in Redis
+	key := consts.UserInfoKey + userId
+	if err := ul.userRepo.RedisSession().Del(ul.ctx.Ctx, key).Err(); err != nil {
+		log.Warnf("failed to clear user info cache: %v", err)
+		// not critical, continue
+	}
+
+	log.Infof("user avatar updated successfully: %s, url: %s", userId, avatarUrl)
+	return nil
 }

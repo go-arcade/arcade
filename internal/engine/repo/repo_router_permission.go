@@ -189,12 +189,12 @@ func (r *RouterPermissionRepo) DeleteRoute(routeId string) error {
 	return r.Ctx.DB.Where("route_id = ?", routeId).Delete(&model.RouterPermission{}).Error
 }
 
-// DisableRoute 禁用路由
+// DisableRoute disables a route (set is_enabled to 0)
 func (r *RouterPermissionRepo) DisableRoute(routeId string) error {
 	return r.Ctx.DB.Model(&model.RouterPermission{}).Where("route_id = ?", routeId).Update("is_enabled", 0).Error
 }
 
-// EnableRoute 启用路由
+// EnableRoute enables a route (set is_enabled to 1)
 func (r *RouterPermissionRepo) EnableRoute(routeId string) error {
 	return r.Ctx.DB.Model(&model.RouterPermission{}).Where("route_id = ?", routeId).Update("is_enabled", 1).Error
 }

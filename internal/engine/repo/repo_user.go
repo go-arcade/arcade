@@ -30,8 +30,12 @@ func (ur *UserRepo) AddUser(addUserReq *model.AddUserReq) error {
 	return ur.Context.DBSession().Create(addUserReq).Error
 }
 
+// UpdateUser updates user information (user_id, username, password, created_at cannot be updated)
 func (ur *UserRepo) UpdateUser(userId string, user *model.User) error {
-	return ur.Context.DBSession().Where("user_id = ?", userId).Model(user).Updates(user).Error
+	return ur.Context.DBSession().Table(ur.userModel.TableName()).
+		Where("user_id = ?", userId).
+		Omit("user_id", "username", "password", "created_at").
+		Updates(user).Error
 }
 
 func (ur *UserRepo) FetchUserInfo(userId string) (*model.UserInfo, error) {
@@ -49,15 +53,15 @@ func (ur *UserRepo) FetchUserInfo(userId string) (*model.UserInfo, error) {
 		}
 	}
 
-	// 从数据库获取
+	// fetch from database
 	err = ur.Context.DBSession().Table(ur.userModel.TableName()).
-		Select("user_id, username, nick_name AS nickname, avatar, email, phone").
+		Select("user_id, username, first_name, last_name, avatar, email, phone").
 		Where("user_id = ?", userId).First(user).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user info: %w", err)
 	}
 
-	// 缓存到 Redis
+	// cache to Redis
 	userInfoJson, err := sonic.MarshalString(user)
 	if err != nil {
 		log.Errorf("failed to marshal user info: %v", err)
@@ -80,7 +84,7 @@ func (ur *UserRepo) GetUserByUsername(username string) (string, error) {
 func (ur *UserRepo) Login(login *model.Login) (*model.User, error) {
 	var user = &model.User{}
 	scope := func(db *gorm.DB) *gorm.DB {
-		return db.Table(ur.userModel.TableName()).Select("user_id, username, nick_name, avatar, email, phone, password")
+		return db.Table(ur.userModel.TableName()).Select("user_id, username, first_name, last_name, avatar, email, phone, password")
 	}
 
 	err := ur.Context.DBSession().Scopes(scope).Where(
@@ -110,13 +114,32 @@ func (ur *UserRepo) Logout(userKey string) error {
 	return ur.Context.RedisSession().Del(ur.Ctx, userKey).Err()
 }
 
-func (ur *UserRepo) GetUserList(offset int, pageSize int) ([]model.User, int64, error) {
-	var users []model.User
+// UserWithExtension combines user and extension information
+type UserWithExtension struct {
+	model.User
+	LastLoginAt      *time.Time `gorm:"column:last_login_at" json:"lastLoginAt"`
+	InvitationStatus string     `gorm:"column:invitation_status" json:"invitationStatus"`
+}
+
+func (ur *UserRepo) GetUserList(offset int, pageSize int) ([]UserWithExtension, int64, error) {
+	var users []UserWithExtension
 	var count int64
-	err := ur.Context.DBSession().Offset(offset).Limit(pageSize).Find(&users).Error
+
+	// join with user extension table to get last login time and invitation status
+	err := ur.Context.DBSession().Table(ur.userModel.TableName() + " AS u").
+		Select(`u.user_id, u.username, u.first_name, u.last_name, u.avatar, u.email, u.phone, 
+			u.is_enabled, u.is_superadmin, 
+			ue.last_login_at, 
+			COALESCE(ue.invitation_status, 'accepted') AS invitation_status`).
+		Joins("LEFT JOIN t_user_ext AS ue ON u.user_id = ue.user_id").
+		Offset(offset).
+		Limit(pageSize).
+		Order("u.created_at DESC").
+		Find(&users).Error
 	if err != nil {
 		return nil, 0, err
 	}
+
 	err = ur.Context.DBSession().Model(&model.User{}).Count(&count).Error
 	return users, count, err
 }
@@ -197,4 +220,44 @@ func (ur *UserRepo) DelToken(key string) error {
 		return fmt.Errorf("failed to delete token from Redis: %w", err)
 	}
 	return nil
+}
+
+// GetUserPassword gets user password hash by user ID
+func (ur *UserRepo) GetUserPassword(userId string) (string, error) {
+	var user model.User
+	err := ur.Context.DBSession().Table(ur.userModel.TableName()).
+		Select("password").
+		Where("user_id = ?", userId).
+		First(&user).Error
+	if err != nil {
+		return "", err
+	}
+	return user.Password, nil
+}
+
+// ResetPassword resets user password
+func (ur *UserRepo) ResetPassword(userId, newPasswordHash string) error {
+	return ur.Context.DBSession().Table(ur.userModel.TableName()).
+		Where("user_id = ?", userId).
+		Update("password", newPasswordHash).Error
+}
+
+// UpdateAvatar updates user avatar URL
+func (ur *UserRepo) UpdateAvatar(userId, avatarUrl string) error {
+	return ur.Context.DBSession().Table(ur.userModel.TableName()).
+		Where("user_id = ?", userId).
+		Update("avatar", avatarUrl).Error
+}
+
+// GetUserAvatar gets user avatar URL by user ID
+func (ur *UserRepo) GetUserAvatar(userId string) (string, error) {
+	var user model.User
+	err := ur.Context.DBSession().Table(ur.userModel.TableName()).
+		Select("avatar").
+		Where("user_id = ?", userId).
+		First(&user).Error
+	if err != nil {
+		return "", err
+	}
+	return user.Avatar, nil
 }

@@ -1,6 +1,8 @@
 package router
 
 import (
+	"time"
+
 	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/internal/engine/repo"
 	"github.com/go-arcade/arcade/internal/engine/service"
@@ -13,20 +15,23 @@ import (
 func (rt *Router) userRouter(r fiber.Router, auth fiber.Handler) {
 	userGroup := r.Group("/users")
 	{
-		// 认证相关路由（无需认证）
-		userGroup.Post("/login", rt.login)       // POST /users/login - 登录
-		userGroup.Post("/register", rt.register) // POST /users/register - 注册
+		// Authentication routes (no authentication required)
+		userGroup.Post("/login", rt.login)       // POST /users/login - user login
+		userGroup.Post("/register", rt.register) // POST /users/register - user registration
 
-		// 会话相关路由（需要认证）
-		userGroup.Post("/logout", auth, rt.logout)   // POST /users/logout - 登出
-		userGroup.Post("/refresh", auth, rt.refresh) // POST /users/refresh - 刷新token
+		// Session routes (authentication required)
+		userGroup.Post("/logout", auth, rt.logout)   // POST /users/logout - user logout
+		userGroup.Post("/refresh", auth, rt.refresh) // POST /users/refresh - refresh token
 
-		// 用户资源路由（需要认证）
-		userGroup.Get("/me", auth, rt.fetchUserInfo) // GET /users/me - 获取当前用户信息
-		userGroup.Post("/invite", auth, rt.addUser)  // POST /users/invite - 邀请用户
-		userGroup.Put("/:id", auth, rt.updateUser)   // PUT /users/:id - 更新用户信息
-		// userGroup.Get("/", auth, rt.getUserList)            // GET /users - 获取用户列表（待实现）
-		// userGroup.Delete("/:id", auth, rt.deleteUser)       // DELETE /users/:id - 删除用户（待实现）
+		// User resource routes (authentication required)
+		userGroup.Get("/", auth, rt.getUserList)                   // GET /users - list users with pagination
+		userGroup.Get("/me", auth, rt.fetchUserInfo)               // GET /users/me - get current user info
+		userGroup.Post("/invite", auth, rt.addUser)                // POST /users/invite - invite user
+		userGroup.Put("/:userId", auth, rt.updateUser)             // PUT /users/:id - update user info
+		userGroup.Put("/:userId/password", auth, rt.resetPassword) // PUT /users/:id/password - reset user password
+		userGroup.Post("/me/avatar", auth, rt.uploadAvatar)        // POST /users/me/avatar - upload user avatar
+		// userGroup.Get("/:id", auth, rt.getUser)          // GET /users/:id - get specific user (to be implemented)
+		// userGroup.Delete("/:id", auth, rt.deleteUser)    // DELETE /users/:id - delete user (to be implemented)
 	}
 }
 
@@ -124,12 +129,12 @@ func (rt *Router) updateUser(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
 
-	userId := c.Params("id")
+	userId := c.Params("userId")
 	if err := userLogic.UpdateUser(userId, user); err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
 
-	c.Locals(middleware.OPERATION, "")
+	c.Locals(middleware.OPERATION, "update user information")
 	return nil
 }
 
@@ -152,21 +157,128 @@ func (rt *Router) fetchUserInfo(c *fiber.Ctx) error {
 	return nil
 }
 
-//func (rt *Router) getUserList(r *gin.Context) {
-//
-//	userRepo := repo.NewUserRepo(rt.Ctx)
-//	userLogic := service.NewUserService(userRepo)
-//
-//	pageNum := queryInt(r, "pageNum")   // default 1
-//	pageSize := queryInt(r, "pageSize") // default 10
-//	users, count, err := userLogic.GetUserList(pageNum, pageSize)
-//	if err != nil {
-//		http.WithRepErrMsg(r, http.Failed.Code, http.Failed.Msg, r.Request.URL.Path)
-//		return
-//	}
-//
-//	result := make(map[string]interface{})
-//	result["users"] = users
-//	result["count"] = count
-//	r.Set(constant.DETAIL, result)
-//}
+// getUserList gets user list with pagination
+func (rt *Router) getUserList(c *fiber.Ctx) error {
+	userRepo := repo.NewUserRepo(rt.Ctx)
+	userLogic := service.NewUserService(rt.Ctx, userRepo)
+
+	pageNum := queryInt(c, "pageNum")
+	if pageNum == 0 {
+		pageNum = 1
+	}
+
+	pageSize := queryInt(c, "pageSize")
+	if pageSize == 0 {
+		pageSize = 10
+	}
+
+	users, count, err := userLogic.GetUserList(pageNum, pageSize)
+	if err != nil {
+		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
+	}
+
+	// build response without created_at and updated_at
+	type UserResponse struct {
+		UserId           string     `json:"userId"`
+		Username         string     `json:"username"`
+		FirstName        string     `json:"firstName"`
+		LastName         string     `json:"lastName"`
+		Avatar           string     `json:"avatar"`
+		Email            string     `json:"email"`
+		Phone            string     `json:"phone"`
+		IsEnabled        int        `json:"isEnabled"`
+		IsSuperAdmin     int        `json:"isSuperAdmin"`
+		LastLoginAt      *time.Time `json:"lastLoginAt"`
+		InvitationStatus string     `json:"invitationStatus"`
+	}
+
+	var response []UserResponse
+	for _, user := range users {
+		response = append(response, UserResponse{
+			UserId:           user.UserId,
+			Username:         user.Username,
+			FirstName:        user.FirstName,
+			LastName:         user.LastName,
+			Avatar:           user.Avatar,
+			Email:            user.Email,
+			Phone:            user.Phone,
+			IsEnabled:        user.IsEnabled,
+			IsSuperAdmin:     user.IsSuperAdmin,
+			LastLoginAt:      user.LastLoginAt,
+			InvitationStatus: user.InvitationStatus,
+		})
+	}
+
+	result := make(map[string]interface{})
+	result["users"] = response
+	result["count"] = count
+	result["pageNum"] = pageNum
+	result["pageSize"] = pageSize
+
+	c.Locals(middleware.DETAIL, result)
+	return nil
+}
+
+// resetPassword resets user password
+func (rt *Router) resetPassword(c *fiber.Ctx) error {
+	userRepo := repo.NewUserRepo(rt.Ctx)
+	userLogic := service.NewUserService(rt.Ctx, userRepo)
+
+	// get user ID from path parameter
+	userId := c.Params("userId")
+	if userId == "" {
+		return http.WithRepErrMsg(c, http.BadRequest.Code, "user id is required", c.Path())
+	}
+
+	var req model.ResetPasswordReq
+	if err := c.BodyParser(&req); err != nil {
+		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid request parameters", c.Path())
+	}
+
+	// validate required fields
+	if req.NewPassword == "" {
+		return http.WithRepErrMsg(c, http.BadRequest.Code, "newPassword is required", c.Path())
+	}
+
+	if err := userLogic.ResetPassword(userId, &req); err != nil {
+		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
+	}
+
+	c.Locals(middleware.OPERATION, "reset user password")
+	return nil
+}
+
+// uploadAvatar uploads avatar for current user
+func (rt *Router) uploadAvatar(c *fiber.Ctx) error {
+	userRepo := repo.NewUserRepo(rt.Ctx)
+	userService := service.NewUserService(rt.Ctx, userRepo)
+	storageRepo := repo.NewStorageRepo(rt.Ctx)
+	uploadService := service.NewUploadService(rt.Ctx, storageRepo)
+
+	// get current user ID from token
+	claims, err := tool.ParseAuthorizationToken(c, rt.Http.Auth.SecretKey)
+	if err != nil {
+		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
+	}
+
+	// get file from form
+	file, err := c.FormFile("file")
+	if err != nil {
+		return http.WithRepErrMsg(c, http.BadRequest.Code, "file is required", c.Path())
+	}
+
+	// upload avatar
+	response, err := uploadService.UploadAvatar(file, claims.UserId)
+	if err != nil {
+		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
+	}
+
+	// update user avatar in database
+	if err := userService.UpdateAvatar(claims.UserId, response.ObjectName); err != nil {
+		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
+	}
+
+	c.Locals(middleware.DETAIL, response)
+	c.Locals(middleware.OPERATION, "upload user avatar")
+	return nil
+}

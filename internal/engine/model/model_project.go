@@ -31,7 +31,7 @@ type Project struct {
 	Visibility    int            `gorm:"column:visibility" json:"visibility"`              // 可见性: 0-私有, 1-内部, 2-公开
 	AccessLevel   string         `gorm:"column:access_level" json:"accessLevel"`           // 默认访问级别(owner/team/org)
 	CreatedBy     string         `gorm:"column:created_by" json:"createdBy"`               // 创建者用户ID
-	IsEnabled     int            `gorm:"column:is_enabled" json:"isEnabled"`               // 是否启用: 0-禁用, 1-启用
+	IsEnabled     int            `gorm:"column:is_enabled" json:"isEnabled"`               // 0: disabled, 1: enabled
 	Icon          string         `gorm:"column:icon" json:"icon"`                          // 项目图标URL
 	Homepage      string         `gorm:"column:homepage" json:"homepage"`                  // 项目主页
 

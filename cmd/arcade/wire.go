@@ -73,7 +73,7 @@ var repoProviderSet = wire.NewSet(
 	provideAgentRepo,
 	provideUserRepo,
 	providePluginRepo,
-	provideSSORepo,
+	provideIdentityIntegrationRepo,
 	provideStorageRepo,
 )
 
@@ -89,8 +89,8 @@ func providePluginRepo(appCtx *ctx.Context) *repo.PluginRepo {
 	return repo.NewPluginRepo(appCtx)
 }
 
-func provideSSORepo(appCtx *ctx.Context) *repo.SSORepo {
-	return repo.NewSSORepo(appCtx)
+func provideIdentityIntegrationRepo(appCtx *ctx.Context) *repo.IdentityIntegrationRepo {
+	return repo.NewIdentityIntegrationRepo(appCtx)
 }
 
 func provideStorageRepo(appCtx *ctx.Context) *repo.StorageRepo {
