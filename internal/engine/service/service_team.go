@@ -309,7 +309,7 @@ func (s *TeamService) UpdateTeamStatistics(teamId string) error {
 	return s.teamRepo.UpdateTeamStatistics(teamId)
 }
 
-// EnableTeam 启用团队
+// EnableTeam enables a team (set is_enabled to 1)
 func (s *TeamService) EnableTeam(teamId string) error {
 	updates := map[string]interface{}{
 		"is_enabled": 1,
@@ -318,7 +318,7 @@ func (s *TeamService) EnableTeam(teamId string) error {
 	return s.teamRepo.UpdateTeam(teamId, updates)
 }
 
-// DisableTeam 禁用团队
+// DisableTeam disables a team (set is_enabled to 0)
 func (s *TeamService) DisableTeam(teamId string) error {
 	updates := map[string]interface{}{
 		"is_enabled": 0,

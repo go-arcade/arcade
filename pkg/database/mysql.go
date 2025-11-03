@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-arcade/arcade/pkg/log"
 	"go.uber.org/zap"
 
 	"gorm.io/driver/mysql"
@@ -20,12 +21,12 @@ type Database struct {
 	User         string
 	Password     string
 	DB           string
-	OutPut       bool
-	MaxOpenConns int
-	MaxIdleConns int
-	MaxLifetime  int
-	MaxIdleTime  int
-	MongoDB      MongoDB `toml:"mongodb"`
+	OutPut       bool    `mapstructure:"output"`
+	MaxOpenConns int     `mapstructure:"maxOpenConns"`
+	MaxIdleConns int     `mapstructure:"maxIdleConns"`
+	MaxLifetime  int     `mapstructure:"maxLifeTime"`
+	MaxIdleTime  int     `mapstructure:"maxIdleTime"`
+	MongoDB      MongoDB `mapstructure:"mongodb"`
 }
 
 const (
@@ -92,6 +93,8 @@ func NewDatabase(cfg Database, zapLogger zap.Logger) (*gorm.DB, error) {
 	if err := sqlDB.Ping(); err != nil {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
+
+	log.Infof("database connected successfully")
 
 	dbConnection = db
 	return db, nil

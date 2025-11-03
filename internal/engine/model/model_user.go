@@ -15,13 +15,14 @@ type User struct {
 	BaseModel
 	UserId       string `gorm:"column:user_id" json:"userId"`
 	Username     string `gorm:"column:username" json:"username"`
-	Nickname     string `gorm:"column:nick_name" json:"nickname"`
+	FirstName    string `gorm:"column:first_name" json:"firstName"`
+	LastName     string `gorm:"column:last_name" json:"lastName"`
 	Password     string `gorm:"column:password" json:"password"`
 	Avatar       string `gorm:"column:avatar" json:"avatar"`
 	Email        string `gorm:"column:email" json:"email"`
 	Phone        string `gorm:"column:phone" json:"phone"`
-	IsEnabled    int    `gorm:"column:is_enabled" json:"isEnabled"`                 // 0: enable, 1: disable，default value is 0
-	IsSuperAdmin int    `gorm:"column:is_superadmin;default:0" json:"isSuperAdmin"` // 0: 普通用户, 1: 超级管理员
+	IsEnabled    int    `gorm:"column:is_enabled" json:"isEnabled"`                 // 0: disabled, 1: enabled
+	IsSuperAdmin int    `gorm:"column:is_superadmin;default:0" json:"isSuperAdmin"` // 0: normal user, 1: super admin
 }
 
 func (User) TableName() string {
@@ -31,7 +32,8 @@ func (User) TableName() string {
 type Register struct {
 	UserId     string    `json:"userId"`
 	Username   string    `json:"username"`
-	Nickname   string    `gorm:"column:nick_name" json:"nickname"`
+	FirstName  string    `gorm:"column:first_name" json:"firstName"`
+	LastName   string    `gorm:"column:last_name" json:"lastName"`
 	Email      string    `json:"email"`
 	Avatar     string    `gorm:"column:avatar" json:"avatar"`
 	Password   string    `json:"password"`
@@ -53,18 +55,20 @@ type LoginResp struct {
 }
 
 type UserInfo struct {
-	UserId   string `json:"userId"`
-	Username string `json:"username"`
-	Nickname string `json:"nickname"`
-	Avatar   string `json:"avatar"`
-	Email    string `json:"email"`
-	Phone    string `json:"phone"`
+	UserId    string `json:"userId"`
+	Username  string `json:"username"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Avatar    string `json:"avatar"`
+	Email     string `json:"email"`
+	Phone     string `json:"phone"`
 }
 
 type AddUserReq struct {
 	UserId     string    `json:"userId"`
 	Username   string    `json:"username"`
-	Nickname   string    `gorm:"column:nick_name" json:"nickname"`
+	FirstName  string    `gorm:"column:first_name" json:"firstName"`
+	LastName   string    `gorm:"column:last_name" json:"lastName"`
 	Password   string    `json:"password"`
 	Avatar     string    `json:"avatar"`
 	Email      string    `json:"email"`
@@ -73,10 +77,15 @@ type AddUserReq struct {
 	CreateTime time.Time `gorm:"column:create_time" json:"createTime"`
 }
 
-// TokenInfo Redis中存储的token信息
+// TokenInfo token information stored in Redis
 type TokenInfo struct {
 	AccessToken  string `json:"accessToken"`
 	RefreshToken string `json:"refreshToken"`
 	ExpireAt     int64  `json:"expireAt"`
 	CreateAt     int64  `json:"createAt"`
+}
+
+// ResetPasswordReq reset password request (for forgot password scenario)
+type ResetPasswordReq struct {
+	NewPassword string `json:"newPassword"` // new password (base64 encoded)
 }

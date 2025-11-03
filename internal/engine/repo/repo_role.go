@@ -46,7 +46,7 @@ func (r *RoleRepo) ListRoles(scope model.RoleScope, orgId string) ([]model.Role,
 		// 只返回全局角色
 		query = query.Where("org_id IS NULL OR org_id = ''")
 	}
-	err := query.Order("priority DESC, create_time ASC").Find(&roles).Error
+	err := query.Order("priority DESC").Find(&roles).Error
 	return roles, err
 }
 
@@ -94,6 +94,60 @@ func (r *RoleRepo) EnableRole(roleId string, enabled bool) error {
 	return r.ctx.DB.Model(&model.Role{}).
 		Where("role_id = ?", roleId).
 		Update("is_enabled", isEnabled).Error
+}
+
+// ListRolesWithPagination lists roles with pagination and filters
+func (r *RoleRepo) ListRolesWithPagination(req *model.ListRolesRequest) ([]model.Role, int64, error) {
+	var roles []model.Role
+	var total int64
+
+	query := r.ctx.DB.Model(&model.Role{})
+
+	// apply filters
+	if req.Scope != "" {
+		query = query.Where("scope = ?", req.Scope)
+	}
+	if req.OrgId != "" {
+		// include global roles and org-specific roles
+		query = query.Where("org_id IS NULL OR org_id = '' OR org_id = ?", req.OrgId)
+	}
+	if req.IsBuiltin != nil {
+		query = query.Where("is_builtin = ?", *req.IsBuiltin)
+	}
+	if req.IsEnabled != nil {
+		query = query.Where("is_enabled = ?", *req.IsEnabled)
+	}
+	if req.Name != "" {
+		query = query.Where("name LIKE ?", "%"+req.Name+"%")
+	}
+
+	// get total count
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// apply pagination and sorting
+	offset := (req.PageNum - 1) * req.PageSize
+	err := query.Order("priority DESC").
+		Offset(offset).
+		Limit(req.PageSize).
+		Find(&roles).Error
+
+	return roles, total, err
+}
+
+// ToggleRole toggles the enabled status of a role
+func (r *RoleRepo) ToggleRole(roleId string) error {
+	return r.ctx.DB.Model(&model.Role{}).
+		Where("role_id = ?", roleId).
+		Update("is_enabled", r.ctx.DB.Raw("1 - is_enabled")).Error
+}
+
+// RoleExists checks if a role exists
+func (r *RoleRepo) RoleExists(roleId string) (bool, error) {
+	var count int64
+	err := r.ctx.DB.Model(&model.Role{}).Where("role_id = ?", roleId).Count(&count).Error
+	return count > 0, err
 }
 
 // InitBuiltinRoles 初始化内置角色（首次启动时调用）

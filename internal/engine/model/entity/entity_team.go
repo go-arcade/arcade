@@ -16,7 +16,7 @@ type Team struct {
 	Level        int            `gorm:"column:level" json:"level"`                 // team level
 	Settings     datatypes.JSON `gorm:"column:settings;type:json" json:"settings"` // team settings
 	Visibility   int            `gorm:"column:visibility" json:"visibility"`       // visibility: 0-private, 1-internal, 2-public
-	IsEnabled    int            `gorm:"column:is_enabled" json:"isEnabled"`        // is enabled: 0-disable, 1-enable
+	IsEnabled    int            `gorm:"column:is_enabled" json:"isEnabled"`        // 0: disabled, 1: enabled
 
 	// statistics fields
 	TotalMembers  int `gorm:"column:total_members" json:"totalMembers"`   // total members

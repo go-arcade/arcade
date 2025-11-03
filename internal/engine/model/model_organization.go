@@ -25,7 +25,7 @@ type Organization struct {
 	Plan        string         `gorm:"column:plan" json:"plan"`                   // 订阅计划(free/pro/enterprise)
 	Status      int            `gorm:"column:status" json:"status"`               // 状态: 0-未激活, 1-正常, 2-冻结, 3-已删除
 	OwnerUserId string         `gorm:"column:owner_user_id" json:"ownerUserId"`   // 组织所有者用户ID
-	IsEnabled   int            `gorm:"column:is_enabled" json:"isEnabled"`        // 是否启用: 0-禁用, 1-启用
+	IsEnabled   int            `gorm:"column:is_enabled" json:"isEnabled"`        // 0: disabled, 1: enabled
 
 	// 统计字段
 	TotalMembers  int `gorm:"column:total_members" json:"totalMembers"`   // 成员总数

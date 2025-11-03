@@ -21,8 +21,8 @@ type RouterPermission struct {
 	RequiredPermissions datatypes.JSON `gorm:"column:required_permissions;type:json" json:"requiredPermissions"` // 所需权限列表
 	Icon                string         `gorm:"column:icon" json:"icon"`                                          // 图标
 	Order               int            `gorm:"column:order" json:"order"`                                        // 排序
-	IsMenu              int            `gorm:"column:is_menu" json:"isMenu"`                                     // 是否显示在菜单 0:否 1:是
-	IsEnabled           int            `gorm:"column:is_enabled" json:"isEnabled"`                               // 是否启用 0:否 1:是
+	IsMenu              int            `gorm:"column:is_menu" json:"isMenu"`                                     // 0: not in menu, 1: show in menu
+	IsEnabled           int            `gorm:"column:is_enabled" json:"isEnabled"`                               // 0: disabled, 1: enabled
 	Description         string         `gorm:"column:description" json:"description"`                            // 描述
 }
 

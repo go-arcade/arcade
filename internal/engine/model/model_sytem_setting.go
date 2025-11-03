@@ -22,7 +22,7 @@ type SystemSetting struct {
 	Data        datatypes.JSON `gorm:"column:data;type:json;not null" json:"data"`                        // 配置内容（结构化 JSON）
 	Schema      datatypes.JSON `gorm:"column:schema;type:json" json:"schema"`                             // 配置结构定义（JSON Schema）
 	Version     int            `gorm:"column:version;default:1" json:"version"`                           // 配置版本号
-	IsEnabled   bool           `gorm:"column:is_enabled;type:tinyint(1);default:1" json:"isEnabled"`      // 是否启用
+	IsEnabled   bool           `gorm:"column:is_enabled;type:tinyint(1);default:1" json:"isEnabled"`      // true: enabled, false: disabled (Note: bool type, different from other models)
 	Description string         `gorm:"column:description;type:varchar(255)" json:"description"`           // 配置说明
 	CreateTime  time.Time      `gorm:"column:create_time;autoCreateTime" json:"createTime"`               // 创建时间
 	UpdateTime  time.Time      `gorm:"column:update_time;autoUpdateTime" json:"updateTime"`               // 更新时间

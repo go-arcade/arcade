@@ -31,7 +31,7 @@ type Plugin struct {
 	Icon           string         `gorm:"column:icon" json:"icon"`
 	Repository     string         `gorm:"column:repository" json:"repository"`
 	Documentation  string         `gorm:"column:documentation;type:text" json:"documentation"`
-	IsEnabled      int            `gorm:"column:is_enabled" json:"isEnabled"`                   // 0:禁用 1:启用 2:错误
+	IsEnabled      int            `gorm:"column:is_enabled" json:"isEnabled"`                   // 0: disabled, 1: enabled, 2: error
 	RegisterStatus int            `gorm:"column:register_status" json:"registerStatus"`         // 注册状态: 0:未注册 1:注册中 2:已注册 3:注册失败
 	RegisterError  string         `gorm:"column:register_error;type:text" json:"registerError"` // 注册错误信息
 	Checksum       string         `gorm:"column:checksum" json:"checksum"`                      // SHA256校验和

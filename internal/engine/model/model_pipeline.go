@@ -25,7 +25,7 @@ type Pipeline struct {
 	SuccessRuns int    `gorm:"column:success_runs" json:"successRuns"`
 	FailedRuns  int    `gorm:"column:failed_runs" json:"failedRuns"`
 	CreatedBy   string `gorm:"column:created_by" json:"createdBy"`
-	IsEnabled   int    `gorm:"column:is_enabled" json:"isEnabled"` // 0:禁用 1:启用
+	IsEnabled   int    `gorm:"column:is_enabled" json:"isEnabled"` // 0: disabled, 1: enabled
 }
 
 func (Pipeline) TableName() string {

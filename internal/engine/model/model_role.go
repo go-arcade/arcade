@@ -25,8 +25,8 @@ type Role struct {
 	Description string    `gorm:"column:description" json:"description"`                 // 角色描述
 	Scope       RoleScope `gorm:"column:scope;not null;type:varchar(32)" json:"scope"`   // 作用域: project/team/org
 	OrgId       string    `gorm:"column:org_id;index" json:"orgId"`                      // 所属组织ID（全局角色为空）
-	IsBuiltin   int       `gorm:"column:is_builtin;not null;default:0" json:"isBuiltin"` // 是否内置角色: 0-自定义, 1-内置
-	IsEnabled   int       `gorm:"column:is_enabled;not null;default:1" json:"isEnabled"` // 是否启用
+	IsBuiltin   int       `gorm:"column:is_builtin;not null;default:0" json:"isBuiltin"` // 0: custom, 1: built-in
+	IsEnabled   int       `gorm:"column:is_enabled;not null;default:1" json:"isEnabled"` // 0: disabled, 1: enabled
 	Priority    int       `gorm:"column:priority;not null;default:0" json:"priority"`    // 优先级（数值越大权限越高）
 	Permissions string    `gorm:"column:permissions;type:text" json:"permissions"`       // 权限点列表（JSON数组，如：["project.read","project.write"]）
 	CreatedBy   string    `gorm:"column:created_by" json:"createdBy"`                    // 创建者
@@ -61,17 +61,71 @@ const (
 	BuiltinOrgMember = "org_member" // 组织成员
 )
 
-// RoleIsBuiltin 角色是否为内置
+// RoleIsBuiltin role built-in status
 const (
-	RoleCustom  = 0 // 自定义角色
-	RoleBuiltin = 1 // 内置角色
+	RoleCustom  = 0 // custom role
+	RoleBuiltin = 1 // built-in role
 )
 
-// RoleEnabled 角色是否启用
+// RoleEnabled role enabled status
 const (
-	RoleDisabled = 0 // 禁用
-	RoleEnabled  = 1 // 启用
+	RoleDisabled = 0 // disabled
+	RoleEnabled  = 1 // enabled
 )
+
+// CreateRoleRequest request for creating a role
+type CreateRoleRequest struct {
+	Name        string    `json:"name" binding:"required"`
+	DisplayName string    `json:"displayName"`
+	Description string    `json:"description"`
+	Scope       RoleScope `json:"scope" binding:"required"` // project/team/org
+	OrgId       string    `json:"orgId"`                    // organization ID (empty for global roles)
+	Priority    int       `json:"priority"`                 // priority
+	Permissions []string  `json:"permissions"`              // permission list
+	CreatedBy   string    `json:"createdBy"`                // creator
+}
+
+// UpdateRoleRequest request for updating a role
+type UpdateRoleRequest struct {
+	DisplayName string   `json:"displayName"`
+	Description string   `json:"description"`
+	Priority    int      `json:"priority"`
+	Permissions []string `json:"permissions"`
+}
+
+// ListRolesRequest request for listing roles
+type ListRolesRequest struct {
+	PageNum   int       `json:"pageNum"`
+	PageSize  int       `json:"pageSize"`
+	Scope     RoleScope `json:"scope"`     // filter by scope
+	OrgId     string    `json:"orgId"`     // filter by org
+	Name      string    `json:"name"`      // fuzzy search by name
+	IsBuiltin *int      `json:"isBuiltin"` // filter by builtin status (0: custom, 1: built-in)
+	IsEnabled *int      `json:"isEnabled"` // filter by enabled status (0: disabled, 1: enabled)
+}
+
+// ListRolesResponse response for listing roles
+type ListRolesResponse struct {
+	Roles    []Role `json:"roles"`
+	Total    int64  `json:"total"`
+	PageNum  int    `json:"pageNum"`
+	PageSize int    `json:"pageSize"`
+}
+
+// RoleResponse response for role without timestamps
+type RoleResponse struct {
+	RoleId      string    `json:"roleId"`
+	Name        string    `json:"name"`
+	DisplayName string    `json:"displayName"`
+	Description string    `json:"description"`
+	Scope       RoleScope `json:"scope"`
+	OrgId       string    `json:"orgId"`
+	IsBuiltin   int       `json:"isBuiltin"`
+	IsEnabled   int       `json:"isEnabled"`
+	Priority    int       `json:"priority"`
+	Permissions []string  `json:"permissions"` // parsed from JSON string
+	CreatedBy   string    `json:"createdBy"`
+}
 
 // BuiltinRolePermissions 内置角色的默认权限映射
 var BuiltinRolePermissions = map[string][]string{
