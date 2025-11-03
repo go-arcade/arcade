@@ -2,8 +2,10 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
+	"github.com/go-arcade/arcade/internal/engine/consts"
 	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/internal/engine/repo"
 	"github.com/go-arcade/arcade/internal/engine/tool"
@@ -38,7 +40,6 @@ func (ul *UserService) Login(login *model.Login, auth http.Auth) (*model.LoginRe
 		return nil, errors.New(http.UserIncorrectPassword.Msg)
 	}
 
-	// 用户名和密码登录
 	user, err := ul.userRepo.Login(login)
 	if err != nil {
 		log.Errorf("login failed for user: %v", err)
@@ -61,6 +62,10 @@ func (ul *UserService) Login(login *model.Login, auth http.Auth) (*model.LoginRe
 		return nil, err
 	}
 
+	now := time.Now()
+	createAt := now.Unix()
+	expireAt := now.Add(auth.AccessExpire * time.Minute).Unix()
+
 	resp := &model.LoginResp{
 		UserInfo: model.UserInfo{
 			UserId:   user.UserId,
@@ -73,8 +78,12 @@ func (ul *UserService) Login(login *model.Login, auth http.Auth) (*model.LoginRe
 		Token: map[string]string{
 			"accessToken":  aToken,
 			"refreshToken": rToken,
+			"expireAt":     fmt.Sprintf("%d", expireAt),
+			"createAt":     fmt.Sprintf("%d", createAt),
 		},
-		Role: map[string]string{},
+		Role:     map[string]string{},
+		ExpireAt: expireAt,
+		CreateAt: createAt,
 	}
 
 	go func() {
@@ -93,6 +102,10 @@ func (ul *UserService) Refresh(userId, rToken string, auth *http.Auth) (map[stri
 		log.Errorf("failed to refresh token: %v", err)
 		return nil, err
 	}
+
+	// 计算token过期时间
+	expireAt := time.Now().Add(auth.AccessExpire * time.Minute).Unix()
+	token["expireAt"] = fmt.Sprintf("%d", expireAt)
 
 	k, err := ul.userRepo.SetToken(userId, token["accessToken"], *auth)
 	log.Debugf("token key: %v", k)
@@ -122,24 +135,22 @@ func (ul *UserService) Register(register *model.Register) error {
 	return err
 }
 
-func (ul *UserService) Logout(keyPrefix, userId string) error {
-	var key = keyPrefix + userId
-
-	result, err := ul.userRepo.GetToken(key)
-	if err != nil {
-		log.Errorf("failed to get token from Redis: %v", err)
-		return errors.New(http.TokenBeEmpty.Msg)
-	}
-	if result == "" {
-		log.Error("token not found")
+func (ul *UserService) Logout(userId string) error {
+	// 删除 token
+	tokenKey := consts.UserTokenKey + userId
+	if err := ul.userRepo.DelToken(tokenKey); err != nil {
+		log.Errorf("failed to delete token: %v", err)
 		return errors.New(http.TokenBeEmpty.Msg)
 	}
 
-	if err = ul.userRepo.DelToken(key); err != nil {
-		log.Errorf("failed to logout: %v", err)
-		return errors.New(http.TokenBeEmpty.Msg)
+	// 删除用户信息缓存
+	userInfoKey := consts.UserInfoKey + userId
+	if err := ul.userRepo.DelToken(userInfoKey); err != nil {
+		log.Errorf("failed to delete user info: %v", err)
+		// 用户信息删除失败不影响登出
 	}
-	return err
+
+	return nil
 }
 
 func (ul *UserService) AddUser(addUserReq model.AddUserReq) error {
@@ -163,9 +174,9 @@ func (ul *UserService) UpdateUser(userId string, user *model.User) error {
 	return err
 }
 
-func (ul *UserService) GetUserInfo(userId string) (*model.UserInfo, error) {
+func (ul *UserService) FetchUserInfo(userId string) (*model.UserInfo, error) {
 
-	user, err := ul.userRepo.GetUserInfo(userId)
+	user, err := ul.userRepo.FetchUserInfo(userId)
 	if err != nil {
 		return nil, err
 	}

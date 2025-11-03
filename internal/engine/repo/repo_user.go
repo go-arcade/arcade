@@ -34,7 +34,7 @@ func (ur *UserRepo) UpdateUser(userId string, user *model.User) error {
 	return ur.Context.DBSession().Where("user_id = ?", userId).Model(user).Updates(user).Error
 }
 
-func (ur *UserRepo) GetUserInfo(userId string) (*model.UserInfo, error) {
+func (ur *UserRepo) FetchUserInfo(userId string) (*model.UserInfo, error) {
 
 	key := consts.UserInfoKey + userId
 	user := &model.UserInfo{UserId: userId}
@@ -123,8 +123,23 @@ func (ur *UserRepo) GetUserList(offset int, pageSize int) ([]model.User, int64, 
 
 func (ur *UserRepo) SetToken(userId, aToken string, auth http.Auth) (string, error) {
 
-	key := consts.UserInfoKey + userId
-	if err := ur.RedisSession().Set(ur.Ctx, key, aToken, auth.AccessExpire*time.Second).Err(); err != nil {
+	// 构建 TokenInfo 结构
+	now := time.Now()
+	tokenInfo := model.TokenInfo{
+		AccessToken:  aToken,
+		RefreshToken: "", // refresh token 在这个方法中不需要更新
+		ExpireAt:     now.Add(auth.AccessExpire * time.Second).Unix(),
+		CreateAt:     now.Unix(),
+	}
+
+	// 序列化 token 信息为 JSON
+	tokenInfoJson, err := sonic.MarshalString(&tokenInfo)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal token info: %w", err)
+	}
+
+	key := consts.UserTokenKey + userId
+	if err := ur.RedisSession().Set(ur.Ctx, key, tokenInfoJson, auth.AccessExpire*time.Second).Err(); err != nil {
 		return "", fmt.Errorf("failed to set token in Redis: %w", err)
 	}
 	return key, nil
@@ -134,22 +149,32 @@ func (ur *UserRepo) SetLoginRespInfo(accessExpire time.Duration, loginResp *mode
 
 	pipe := ur.RedisSession().Pipeline()
 
-	// 设置 token
-	key := consts.UserInfoKey + loginResp.UserInfo.UserId
+	tokenInfo := model.TokenInfo{
+		AccessToken:  loginResp.Token["accessToken"],
+		RefreshToken: loginResp.Token["refreshToken"],
+		ExpireAt:     loginResp.ExpireAt,
+		CreateAt:     loginResp.CreateAt,
+	}
+
+	tokenInfoJson, err := sonic.Marshal(&tokenInfo)
+	if err != nil {
+		return fmt.Errorf("failed to marshal token info: %w", err)
+	}
+
+	tokenKey := consts.UserTokenKey + loginResp.UserInfo.UserId
 	if err := pipe.
-		Set(ur.Ctx, key, loginResp.Token["accessToken"], accessExpire*time.Minute).
+		Set(ur.Ctx, tokenKey, tokenInfoJson, accessExpire*time.Minute).
 		Err(); err != nil {
 		return fmt.Errorf("failed to set token in Redis: %w", err)
 	}
 
-	// 序列化用户信息为 JSON
-	userInfoJson, err := sonic.MarshalString(&loginResp.UserInfo)
+	userInfoJson, err := sonic.Marshal(&loginResp.UserInfo)
 	if err != nil {
 		return fmt.Errorf("failed to marshal user info: %w", err)
 	}
 
-	// 设置用户信息
-	if err := pipe.Set(ur.Ctx, key, userInfoJson, accessExpire*time.Minute).Err(); err != nil {
+	userInfoKey := consts.UserInfoKey + loginResp.UserInfo.UserId
+	if err := pipe.Set(ur.Ctx, userInfoKey, userInfoJson, accessExpire*time.Minute).Err(); err != nil {
 		return fmt.Errorf("failed to set user info in Redis: %w", err)
 	}
 

@@ -48,6 +48,8 @@ type LoginResp struct {
 	UserInfo UserInfo          `json:"userInfo"`
 	Token    map[string]string `json:"token"`
 	Role     map[string]string `json:"role"`
+	ExpireAt int64             `json:"-"`
+	CreateAt int64             `json:"-"`
 }
 
 type UserInfo struct {
@@ -69,4 +71,12 @@ type AddUserReq struct {
 	Phone      string    `json:"phone"`
 	IsEnabled  int       `gorm:"column:is_enabled" json:"isEnabled"`
 	CreateTime time.Time `gorm:"column:create_time" json:"createTime"`
+}
+
+// TokenInfo Redis中存储的token信息
+type TokenInfo struct {
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+	ExpireAt     int64  `json:"expireAt"`
+	CreateAt     int64  `json:"createAt"`
 }
