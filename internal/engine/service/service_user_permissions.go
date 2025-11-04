@@ -214,9 +214,10 @@ func (s *UserPermissionsService) getUserOrganizations(ctx context.Context, userI
 
 		// 转换状态
 		status := "inactive"
-		if om.Status == model.OrgMemberStatusActive {
+		switch om.Status {
+		case model.OrgMemberStatusActive:
 			status = "active"
-		} else if om.Status == model.OrgMemberStatusPending {
+		case model.OrgMemberStatusPending:
 			status = "pending"
 		}
 
