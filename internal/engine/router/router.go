@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/go-arcade/arcade/internal/engine/conf"
-	"github.com/go-arcade/arcade/internal/engine/repo"
 	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/pkg/ctx"
 	httpx "github.com/go-arcade/arcade/pkg/http"
@@ -171,20 +170,12 @@ func (rt *Router) routerGroup(r fiber.Router) {
 
 	// plugin
 	rt.pluginRouter(r, auth)
-}
 
-func (rt *Router) storageRouter(r fiber.Router, auth fiber.Handler) {
-	storageGroup := r.Group("/storage", auth)
-	{
-		// File upload
-		storageGroup.Post("/upload", rt.uploadFile)                       // POST /storage/upload - upload file
-		storageGroup.Post("/upload/:storageId", rt.uploadFileWithStorage) // POST /storage/upload/:storageId - upload to specific storage
+	// general settings
+	rt.generalSettingsRouter(r, auth)
 
-		// Storage configuration management
-		storageRepo := repo.NewStorageRepo(rt.Ctx)
-		storageService := service.NewStorageService(rt.Ctx, storageRepo)
-		RegisterStorageRoutes(storageGroup, storageService)
-	}
+	// secrets
+	rt.secretRouter(r, auth)
 }
 
 func queryInt(c *fiber.Ctx, key string) int {

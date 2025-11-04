@@ -34,7 +34,7 @@ func NewPermissionService(ctx *ctx.Context) *PermissionService {
 func (s *PermissionService) GetUserPermissions(userId string) (*model.UserPermissions, error) {
 	// 尝试从缓存读取
 	cacheKey := fmt.Sprintf("user:permissions:%s", userId)
-	cached, err := s.Ctx.Redis.Get(s.Ctx.Ctx, cacheKey).Result()
+	cached, err := s.Ctx.RedisSession().Get(s.Ctx.ContextIns(), cacheKey).Result()
 	if err == nil && cached != "" {
 		var perms model.UserPermissions
 		if err := json.Unmarshal([]byte(cached), &perms); err == nil {
@@ -50,7 +50,7 @@ func (s *PermissionService) GetUserPermissions(userId string) (*model.UserPermis
 
 	// 写入缓存（5分钟）
 	data, _ := json.Marshal(perms)
-	s.Ctx.Redis.Set(s.Ctx.Ctx, cacheKey, data, 5*time.Minute)
+	s.Ctx.RedisSession().Set(s.Ctx.ContextIns(), cacheKey, data, 5*time.Minute)
 
 	return perms, nil
 }
@@ -103,7 +103,7 @@ func (s *PermissionService) CheckPermission(req *model.PermissionCheckRequest) (
 func (s *PermissionService) CreateRoleBinding(req *model.UserRoleBindingCreate) (*model.UserRoleBinding, error) {
 	// 验证用户存在
 	var user model.User
-	if err := s.Ctx.DB.Where("user_id = ?", req.UserId).First(&user).Error; err != nil {
+	if err := s.Ctx.DBSession().Where("user_id = ?", req.UserId).First(&user).Error; err != nil {
 		return nil, errors.New("用户不存在")
 	}
 
@@ -264,7 +264,7 @@ func (s *PermissionService) RemoveAllBindingsForResource(scope, resourceId strin
 // SetSuperAdmin 设置用户为超级管理员
 func (s *PermissionService) SetSuperAdmin(userId string, isSuperAdmin bool) error {
 	var user model.User
-	if err := s.Ctx.DB.Where("user_id = ?", userId).First(&user).Error; err != nil {
+	if err := s.Ctx.DBSession().Where("user_id = ?", userId).First(&user).Error; err != nil {
 		return errors.New("用户不存在")
 	}
 
@@ -287,7 +287,7 @@ func (s *PermissionService) SetSuperAdmin(userId string, isSuperAdmin bool) erro
 // GetSuperAdminList 获取所有超级管理员列表
 func (s *PermissionService) GetSuperAdminList() ([]model.User, error) {
 	var admins []model.User
-	err := s.Ctx.DB.Where("is_superadmin = ?", 1).Find(&admins).Error
+	err := s.Ctx.DBSession().Where("is_superadmin = ?", 1).Find(&admins).Error
 	return admins, err
 }
 
@@ -313,19 +313,19 @@ func (s *PermissionService) validateResource(scope string, resourceId *string) e
 	case model.ScopeOrganization:
 		// 检查组织是否存在
 		var count int64
-		if err := s.Ctx.DB.Table("t_organization").Where("org_id = ?", *resourceId).Count(&count).Error; err != nil || count == 0 {
+		if err := s.Ctx.DBSession().Table("t_organization").Where("org_id = ?", *resourceId).Count(&count).Error; err != nil || count == 0 {
 			return errors.New("组织不存在")
 		}
 	case model.ScopeTeam:
 		// 检查团队是否存在
 		var count int64
-		if err := s.Ctx.DB.Table("t_team").Where("team_id = ?", *resourceId).Count(&count).Error; err != nil || count == 0 {
+		if err := s.Ctx.DBSession().Table("t_team").Where("team_id = ?", *resourceId).Count(&count).Error; err != nil || count == 0 {
 			return errors.New("团队不存在")
 		}
 	case model.ScopeProject:
 		// 检查项目是否存在
 		var count int64
-		if err := s.Ctx.DB.Table("t_project").Where("project_id = ?", *resourceId).Count(&count).Error; err != nil || count == 0 {
+		if err := s.Ctx.DBSession().Table("t_project").Where("project_id = ?", *resourceId).Count(&count).Error; err != nil || count == 0 {
 			return errors.New("项目不存在")
 		}
 	default:
@@ -347,7 +347,7 @@ func (s *PermissionService) GetUserAccessibleOrganizations(userId string) ([]map
 	}
 
 	var orgs []map[string]interface{}
-	err = s.Ctx.DB.Table("t_organization").Where("org_id IN ?", resources.Organizations).Find(&orgs).Error
+	err = s.Ctx.DBSession().Table("t_organization").Where("org_id IN ?", resources.Organizations).Find(&orgs).Error
 	return orgs, err
 }
 
@@ -362,7 +362,7 @@ func (s *PermissionService) GetUserAccessibleTeams(userId string, orgId string) 
 		return []map[string]interface{}{}, nil
 	}
 
-	query := s.Ctx.DB.Table("t_team").Where("team_id IN ?", resources.Teams)
+	query := s.Ctx.DBSession().Table("t_team").Where("team_id IN ?", resources.Teams)
 	if orgId != "" {
 		query = query.Where("org_id = ?", orgId)
 	}
@@ -383,7 +383,7 @@ func (s *PermissionService) GetUserAccessibleProjects(userId string, orgId strin
 		return []map[string]interface{}{}, nil
 	}
 
-	query := s.Ctx.DB.Table("t_project").Where("project_id IN ?", resources.Projects)
+	query := s.Ctx.DBSession().Table("t_project").Where("project_id IN ?", resources.Projects)
 	if orgId != "" {
 		query = query.Where("org_id = ?", orgId)
 	}
@@ -397,7 +397,7 @@ func (s *PermissionService) GetUserAccessibleProjects(userId string, orgId strin
 func (s *PermissionService) ClearAllUserPermissionsCache() error {
 	// 获取所有用户
 	var users []*model.User
-	if err := s.Ctx.DB.Select("user_id").Find(&users).Error; err != nil {
+	if err := s.Ctx.DBSession().Select("user_id").Find(&users).Error; err != nil {
 		return err
 	}
 

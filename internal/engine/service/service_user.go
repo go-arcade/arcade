@@ -198,6 +198,7 @@ func (ul *UserService) FetchUserInfo(userId string) (*model.UserInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return user, err
 }
 
@@ -215,6 +216,7 @@ func (ul *UserService) GetUserList(pageNum, pageSize int) ([]repo.UserWithExtens
 	if err != nil {
 		return nil, 0, err
 	}
+
 	return users, count, err
 }
 
@@ -284,7 +286,7 @@ func (ul *UserService) UpdateAvatar(userId, avatarUrl string) error {
 
 	// clear user info cache in Redis
 	key := consts.UserInfoKey + userId
-	if err := ul.userRepo.RedisSession().Del(ul.ctx.Ctx, key).Err(); err != nil {
+	if err := ul.userRepo.RedisSession().Del(ul.ctx.ContextIns(), key).Err(); err != nil {
 		log.Warnf("failed to clear user info cache: %v", err)
 		// not critical, continue
 	}

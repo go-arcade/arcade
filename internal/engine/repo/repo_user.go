@@ -44,7 +44,7 @@ func (ur *UserRepo) FetchUserInfo(userId string) (*model.UserInfo, error) {
 	user := &model.UserInfo{UserId: userId}
 
 	// 从 Redis 获取用户信息
-	userInfoStr, err := ur.RedisSession().Get(ur.Ctx, key).Result()
+	userInfoStr, err := ur.RedisSession().Get(ur.Context.ContextIns(), key).Result()
 	if err == nil && userInfoStr != "" {
 		if err := sonic.UnmarshalString(userInfoStr, user); err != nil {
 			log.Errorf("failed to unmarshal user info from Redis: %v", err)
@@ -66,7 +66,7 @@ func (ur *UserRepo) FetchUserInfo(userId string) (*model.UserInfo, error) {
 	if err != nil {
 		log.Errorf("failed to marshal user info: %v", err)
 	} else {
-		if err := ur.RedisSession().Set(ur.Ctx, key, userInfoJson, time.Hour).Err(); err != nil {
+		if err := ur.RedisSession().Set(ur.Context.ContextIns(), key, userInfoJson, time.Hour).Err(); err != nil {
 			log.Errorf("failed to cache user info: %v", err)
 		}
 	}
@@ -111,7 +111,7 @@ func (ur *UserRepo) Register(register *model.Register) error {
 
 func (ur *UserRepo) Logout(userKey string) error {
 
-	return ur.Context.RedisSession().Del(ur.Ctx, userKey).Err()
+	return ur.Context.RedisSession().Del(ur.Context.ContextIns(), userKey).Err()
 }
 
 // UserWithExtension combines user and extension information
@@ -162,7 +162,7 @@ func (ur *UserRepo) SetToken(userId, aToken string, auth http.Auth) (string, err
 	}
 
 	key := consts.UserTokenKey + userId
-	if err := ur.RedisSession().Set(ur.Ctx, key, tokenInfoJson, auth.AccessExpire*time.Second).Err(); err != nil {
+	if err := ur.RedisSession().Set(ur.Context.ContextIns(), key, tokenInfoJson, auth.AccessExpire*time.Second).Err(); err != nil {
 		return "", fmt.Errorf("failed to set token in Redis: %w", err)
 	}
 	return key, nil
@@ -186,7 +186,7 @@ func (ur *UserRepo) SetLoginRespInfo(accessExpire time.Duration, loginResp *mode
 
 	tokenKey := consts.UserTokenKey + loginResp.UserInfo.UserId
 	if err := pipe.
-		Set(ur.Ctx, tokenKey, tokenInfoJson, accessExpire*time.Minute).
+		Set(ur.Context.ContextIns(), tokenKey, tokenInfoJson, accessExpire*time.Minute).
 		Err(); err != nil {
 		return fmt.Errorf("failed to set token in Redis: %w", err)
 	}
@@ -197,18 +197,18 @@ func (ur *UserRepo) SetLoginRespInfo(accessExpire time.Duration, loginResp *mode
 	}
 
 	userInfoKey := consts.UserInfoKey + loginResp.UserInfo.UserId
-	if err := pipe.Set(ur.Ctx, userInfoKey, userInfoJson, accessExpire*time.Minute).Err(); err != nil {
+	if err := pipe.Set(ur.Context.ContextIns(), userInfoKey, userInfoJson, accessExpire*time.Minute).Err(); err != nil {
 		return fmt.Errorf("failed to set user info in Redis: %w", err)
 	}
 
-	if _, err := pipe.Exec(ur.Ctx); err != nil {
+	if _, err := pipe.Exec(ur.Context.ContextIns()); err != nil {
 		return fmt.Errorf("failed to execute Redis pipeline: %w", err)
 	}
 	return nil
 }
 
 func (ur *UserRepo) GetToken(key string) (string, error) {
-	token, err := ur.RedisSession().Get(ur.Ctx, key).Result()
+	token, err := ur.RedisSession().Get(ur.Context.ContextIns(), key).Result()
 	if err != nil {
 		return "", fmt.Errorf("failed to get token from Redis: %w", err)
 	}
@@ -216,7 +216,7 @@ func (ur *UserRepo) GetToken(key string) (string, error) {
 }
 
 func (ur *UserRepo) DelToken(key string) error {
-	if err := ur.RedisSession().Del(ur.Ctx, key).Err(); err != nil {
+	if err := ur.RedisSession().Del(ur.Context.ContextIns(), key).Err(); err != nil {
 		return fmt.Errorf("failed to delete token from Redis: %w", err)
 	}
 	return nil
@@ -244,9 +244,20 @@ func (ur *UserRepo) ResetPassword(userId, newPasswordHash string) error {
 
 // UpdateAvatar updates user avatar URL
 func (ur *UserRepo) UpdateAvatar(userId, avatarUrl string) error {
-	return ur.Context.DBSession().Table(ur.userModel.TableName()).
+	result := ur.Context.DBSession().Table(ur.userModel.TableName()).
 		Where("user_id = ?", userId).
-		Update("avatar", avatarUrl).Error
+		Update("avatar", avatarUrl)
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	// log if no rows were affected (user not found)
+	if result.RowsAffected == 0 {
+		log.Warnf("no rows updated for user avatar, userId: %s", userId)
+	}
+
+	return nil
 }
 
 // GetUserAvatar gets user avatar URL by user ID

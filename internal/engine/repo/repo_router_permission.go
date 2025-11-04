@@ -28,7 +28,7 @@ func NewRouterPermissionRepo(ctx *ctx.Context) *RouterPermissionRepo {
 // GetAllRoutePermissions 获取所有路由权限配置
 func (r *RouterPermissionRepo) GetAllRoutePermissions() ([]model.RoutePermissionDTO, error) {
 	var routes []model.RouterPermission
-	err := r.Ctx.DB.Where("is_enabled = ?", 1).Order("`order` ASC").Find(&routes).Error
+	err := r.Ctx.DBSession().Where("is_enabled = ?", 1).Order("`order` ASC").Find(&routes).Error
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (r *RouterPermissionRepo) GetAllRoutePermissions() ([]model.RoutePermission
 // GetRoutePermissionByPath 根据路径和方法获取路由权限
 func (r *RouterPermissionRepo) GetRoutePermissionByPath(path, method string) (*model.RoutePermissionDTO, error) {
 	var route model.RouterPermission
-	err := r.Ctx.DB.Where("path = ? AND method = ? AND is_enabled = ?", path, method, 1).First(&route).Error
+	err := r.Ctx.DBSession().Where("path = ? AND method = ? AND is_enabled = ?", path, method, 1).First(&route).Error
 	if err != nil {
 		return nil, err
 	}
@@ -120,14 +120,14 @@ func (r *RouterPermissionRepo) CreateOrUpdateRoute(dto model.RoutePermissionDTO)
 
 	// 使用 Upsert 逻辑
 	var existing model.RouterPermission
-	err = r.Ctx.DB.Where("route_id = ?", dto.RouteId).First(&existing).Error
+	err = r.Ctx.DBSession().Where("route_id = ?", dto.RouteId).First(&existing).Error
 	if err != nil {
 		// 不存在，创建
-		return r.Ctx.DB.Create(&route).Error
+		return r.Ctx.DBSession().Create(&route).Error
 	}
 
 	// 已存在，更新
-	return r.Ctx.DB.Model(&existing).Updates(route).Error
+	return r.Ctx.DBSession().Model(&existing).Updates(route).Error
 }
 
 // InitBuiltinRoutes 初始化内置路由配置
@@ -149,7 +149,7 @@ func (r *RouterPermissionRepo) InitBuiltinRoutes() error {
 // GetMenuRoutes 获取菜单路由（按分组分类）
 func (r *RouterPermissionRepo) GetMenuRoutes() (map[string][]model.RoutePermissionDTO, error) {
 	var routes []model.RouterPermission
-	err := r.Ctx.DB.Where("is_enabled = ? AND is_menu = ?", 1, 1).Order("category ASC, `order` ASC").Find(&routes).Error
+	err := r.Ctx.DBSession().Where("is_enabled = ? AND is_menu = ?", 1, 1).Order("category ASC, `order` ASC").Find(&routes).Error
 	if err != nil {
 		return nil, err
 	}
@@ -186,15 +186,15 @@ func (r *RouterPermissionRepo) GetMenuRoutes() (map[string][]model.RoutePermissi
 
 // DeleteRoute 删除路由配置
 func (r *RouterPermissionRepo) DeleteRoute(routeId string) error {
-	return r.Ctx.DB.Where("route_id = ?", routeId).Delete(&model.RouterPermission{}).Error
+	return r.Ctx.DBSession().Where("route_id = ?", routeId).Delete(&model.RouterPermission{}).Error
 }
 
 // DisableRoute disables a route (set is_enabled to 0)
 func (r *RouterPermissionRepo) DisableRoute(routeId string) error {
-	return r.Ctx.DB.Model(&model.RouterPermission{}).Where("route_id = ?", routeId).Update("is_enabled", 0).Error
+	return r.Ctx.DBSession().Model(&model.RouterPermission{}).Where("route_id = ?", routeId).Update("is_enabled", 0).Error
 }
 
 // EnableRoute enables a route (set is_enabled to 1)
 func (r *RouterPermissionRepo) EnableRoute(routeId string) error {
-	return r.Ctx.DB.Model(&model.RouterPermission{}).Where("route_id = ?", routeId).Update("is_enabled", 1).Error
+	return r.Ctx.DBSession().Model(&model.RouterPermission{}).Where("route_id = ?", routeId).Update("is_enabled", 1).Error
 }

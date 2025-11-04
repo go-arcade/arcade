@@ -267,18 +267,29 @@ func (rt *Router) uploadAvatar(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "file is required", c.Path())
 	}
 
-	// upload avatar
+	// upload avatar to object storage
 	response, err := uploadService.UploadAvatar(file, claims.UserId)
 	if err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
 	}
 
-	// update user avatar in database
-	if err := userService.UpdateAvatar(claims.UserId, response.ObjectName); err != nil {
+	// update user avatar in database with complete URL
+	if err := userService.UpdateAvatar(claims.UserId, response.FileURL); err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
 	}
 
-	c.Locals(middleware.DETAIL, response)
+	// prepare response with avatar URL
+	result := map[string]interface{}{
+		"fileUrl":      response.FileURL,
+		"originalName": response.OriginalName,
+		"size":         response.Size,
+		"contentType":  response.ContentType,
+		"storageId":    response.StorageId,
+		"storageType":  response.StorageType,
+		"uploadTime":   response.UploadTime,
+	}
+
+	c.Locals(middleware.DETAIL, result)
 	c.Locals(middleware.OPERATION, "upload user avatar")
 	return nil
 }

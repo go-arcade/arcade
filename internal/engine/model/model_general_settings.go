@@ -1,35 +1,29 @@
 package model
 
 import (
-	"time"
-
 	"gorm.io/datatypes"
 )
 
 /**
  * @author: gagral.x@gmail.com
- * @time: 2025/01/13
- * @file: model_config.go
- * @description: config model
+ * @time: 2025/01/15
+ * @file: model_general_settings.go
+ * @description: general settings and secret model
  */
 
-// SystemSetting 系统配置表
-type SystemSetting struct {
-	ID          uint64         `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
+// GeneralSettings 通用配置表
+type GeneralSettings struct {
+	BaseModel
 	Category    string         `gorm:"column:category;type:varchar(64);not null" json:"category"`         // 配置类别，如 system、security、pipeline
 	Name        string         `gorm:"column:name;type:varchar(128);not null" json:"name"`                // 配置名称（业务语义字段）
 	DisplayName string         `gorm:"column:display_name;type:varchar(128);not null" json:"displayName"` // 展示名，如 JWT 密钥
 	Data        datatypes.JSON `gorm:"column:data;type:json;not null" json:"data"`                        // 配置内容（结构化 JSON）
 	Schema      datatypes.JSON `gorm:"column:schema;type:json" json:"schema"`                             // 配置结构定义（JSON Schema）
-	Version     int            `gorm:"column:version;default:1" json:"version"`                           // 配置版本号
-	IsEnabled   bool           `gorm:"column:is_enabled;type:tinyint(1);default:1" json:"isEnabled"`      // true: enabled, false: disabled (Note: bool type, different from other models)
 	Description string         `gorm:"column:description;type:varchar(255)" json:"description"`           // 配置说明
-	CreateTime  time.Time      `gorm:"column:create_time;autoCreateTime" json:"createTime"`               // 创建时间
-	UpdateTime  time.Time      `gorm:"column:update_time;autoUpdateTime" json:"updateTime"`               // 更新时间
 }
 
-func (SystemSetting) TableName() string {
-	return "t_system_setting"
+func (GeneralSettings) TableName() string {
+	return "t_general_settings"
 }
 
 // Secret 密钥管理表

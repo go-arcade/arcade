@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"mime/multipart"
 	"path/filepath"
@@ -27,6 +28,44 @@ func NewUploadService(ctx *ctx.Context, storageRepo *repo.StorageRepo) *UploadSe
 	}
 }
 
+// buildCompleteURL builds complete URL from object path and storage config
+// Format: {protocol}://{bucket}.{endpoint}{basePath}/{ObjectName}
+func (us *UploadService) buildCompleteURL(objectPath string, storageConfig *model.StorageConfig) string {
+	if objectPath == "" {
+		return ""
+	}
+
+	// parse storage config
+	var configDetail model.StorageConfigDetail
+	if err := json.Unmarshal(storageConfig.Config, &configDetail); err != nil {
+		log.Warnf("failed to unmarshal storage config: %v", err)
+		return objectPath
+	}
+
+	// determine protocol based on useTLS
+	protocol := "http"
+	if configDetail.UseTLS {
+		protocol = "https"
+	}
+
+	// build complete URL: {protocol}://{bucket}.{endpoint}{basePath}/{ObjectName}
+	endpoint := strings.TrimSuffix(configDetail.Endpoint, "/")
+	bucket := configDetail.Bucket
+	basePath := strings.Trim(configDetail.BasePath, "/")
+	path := strings.TrimPrefix(objectPath, "/")
+
+	// construct URL path
+	var urlPath string
+	if basePath != "" && basePath != "/" {
+		urlPath = fmt.Sprintf("%s/%s", basePath, path)
+	} else {
+		urlPath = path
+	}
+
+	// use virtual hosted-style URL: bucket.endpoint/path
+	return fmt.Sprintf("%s://%s.%s/%s", protocol, bucket, endpoint, urlPath)
+}
+
 const (
 	userAvatarPath = "avatars"       // avatar storage path
 	maxAvatarSize  = 5 * 1024 * 1024 // 5MB for avatar
@@ -34,61 +73,93 @@ const (
 
 var maxFileSize = int64(100 * 1024 * 1024) // 100MB for general files
 
-// UploadFile uploads a file to object storage
-// storageId: optional, if empty, use default storage
-// path: optional custom path, if empty, use default path structure
-func (us *UploadService) UploadFile(file *multipart.FileHeader, storageId string, customPath string) (*UploadResponse, error) {
-	// validate file
-	if file == nil {
-		return nil, fmt.Errorf("file is required")
-	}
-
-	if file.Size == 0 {
-		return nil, fmt.Errorf("file size cannot be zero")
-	}
-
-	// get max file size (default 100MB)
-	if file.Size > maxFileSize {
-		return nil, fmt.Errorf("file size exceeds maximum limit of %d bytes", maxFileSize)
-	}
-
+// getStorageProvider gets storage configuration and provider
+func (us *UploadService) getStorageProvider(storageId string) (*model.StorageConfig, storage.StorageProvider, error) {
 	// get storage config
 	var storageConfig *model.StorageConfig
 	var err error
 	if storageId != "" {
 		storageConfig, err = us.storageRepo.GetStorageConfigByID(storageId)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get storage config by ID: %w", err)
-		}
 	} else {
 		storageConfig, err = us.storageRepo.GetDefaultStorageConfig()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get default storage config: %w", err)
-		}
+	}
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get storage config: %w", err)
 	}
 
 	// check if storage is enabled
 	if storageConfig.IsEnabled != 1 {
-		return nil, fmt.Errorf("storage config is disabled")
+		return nil, nil, fmt.Errorf("storage config is disabled")
 	}
 
 	// create storage provider
 	storageProvider, err := storage.NewStorageDBProvider(us.ctx, us.storageRepo)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create storage provider: %w", err)
+		return nil, nil, fmt.Errorf("failed to create storage provider: %w", err)
 	}
 
-	// if specific storage ID provided, switch to it
+	// switch to specific storage if provided
 	if storageId != "" {
 		if err := storageProvider.SwitchStorageConfig(storageId); err != nil {
-			return nil, fmt.Errorf("failed to switch storage config: %w", err)
+			return nil, nil, fmt.Errorf("failed to switch storage config: %w", err)
 		}
 	}
 
-	// get storage provider instance
+	// get provider instance
 	provider, err := storageProvider.GetStorageProvider()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get storage provider: %w", err)
+		return nil, nil, fmt.Errorf("failed to get storage provider: %w", err)
+	}
+
+	return storageConfig, provider, nil
+}
+
+// uploadToStorage uploads file to storage and returns response
+func (us *UploadService) uploadToStorage(file *multipart.FileHeader, storageId, objectPath, contentType string) (*UploadResponse, error) {
+	if file == nil {
+		return nil, fmt.Errorf("file is required")
+	}
+	if file.Size == 0 {
+		return nil, fmt.Errorf("file size cannot be zero")
+	}
+
+	// get storage config and provider
+	storageConfig, provider, err := us.getStorageProvider(storageId)
+	if err != nil {
+		return nil, err
+	}
+
+	// upload file
+	uploadedPath, err := provider.PutObject(us.ctx, objectPath, file, contentType)
+	if err != nil {
+		log.Errorf("failed to upload file: %v", err)
+		return nil, fmt.Errorf("failed to upload file: %w", err)
+	}
+
+	log.Infof("file uploaded successfully: %s, size: %d", uploadedPath, file.Size)
+
+	// build complete URL
+	fileURL := us.buildCompleteURL(uploadedPath, storageConfig)
+
+	return &UploadResponse{
+		ObjectName:   uploadedPath,
+		FileURL:      fileURL,
+		OriginalName: file.Filename,
+		Size:         file.Size,
+		ContentType:  contentType,
+		StorageId:    storageConfig.StorageId,
+		StorageType:  storageConfig.StorageType,
+		UploadTime:   time.Now(),
+	}, nil
+}
+
+// UploadFile uploads a file to object storage
+// storageId: optional, if empty, use default storage
+// customPath: optional custom path, if empty, use default path structure
+func (us *UploadService) UploadFile(file *multipart.FileHeader, storageId string, customPath string) (*UploadResponse, error) {
+	// validate file size (max 100MB for general files)
+	if file.Size > maxFileSize {
+		return nil, fmt.Errorf("file size exceeds maximum limit of %d bytes", maxFileSize)
 	}
 
 	// generate object name
@@ -100,33 +171,8 @@ func (us *UploadService) UploadFile(file *multipart.FileHeader, storageId string
 		contentType = getContentType(file.Filename)
 	}
 
-	// upload file
-	fullPath, err := provider.PutObject(us.ctx, objectName, file, contentType)
-	if err != nil {
-		log.Errorf("failed to upload file: %v", err)
-		return nil, fmt.Errorf("failed to upload file: %w", err)
-	}
-
-	log.Infof("file uploaded successfully: %s, size: %d", fullPath, file.Size)
-
-	// generate presigned URL for download (optional, 7 days expiry)
-	var downloadURL string
-	if presignedProvider, ok := provider.(interface {
-		GetPresignedURL(ctx *ctx.Context, objectName string, expiry time.Duration) (string, error)
-	}); ok {
-		downloadURL, _ = presignedProvider.GetPresignedURL(us.ctx, fullPath, 7*24*time.Hour)
-	}
-
-	return &UploadResponse{
-		ObjectName:   fullPath,
-		OriginalName: file.Filename,
-		Size:         file.Size,
-		ContentType:  contentType,
-		StorageId:    storageConfig.StorageId,
-		StorageType:  storageConfig.StorageType,
-		DownloadURL:  downloadURL,
-		UploadTime:   time.Now(),
-	}, nil
+	// upload to storage
+	return us.uploadToStorage(file, storageId, objectName, contentType)
 }
 
 // generateObjectName generates a unique object name
@@ -207,50 +253,46 @@ func getContentType(filename string) string {
 
 // UploadAvatar uploads user avatar image
 func (us *UploadService) UploadAvatar(file *multipart.FileHeader, userId string) (*UploadResponse, error) {
-	// validate file
-	if file == nil {
-		return nil, fmt.Errorf("file is required")
-	}
-
 	// validate file size (max 5MB for avatar)
 	if file.Size > maxAvatarSize {
 		return nil, fmt.Errorf("avatar size exceeds maximum limit of 5MB")
 	}
 
-	// validate file type (only images)
+	// get and validate content type
 	contentType := file.Header.Get("Content-Type")
 	if contentType == "" {
 		contentType = getContentType(file.Filename)
 	}
 
+	// validate image type
 	allowedTypes := []string{"image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"}
-	isValidType := false
+	isValid := false
 	for _, t := range allowedTypes {
 		if contentType == t {
-			isValidType = true
+			isValid = true
 			break
 		}
 	}
-
-	if !isValidType {
+	if !isValid {
 		return nil, fmt.Errorf("invalid image type, only jpeg, png, gif, and webp are allowed")
 	}
 
-	// generate custom path for avatar: avatars/userId
-	customPath := fmt.Sprintf("%s/%s", userAvatarPath, userId)
+	// generate avatar path: avatars/userId/uuid.ext
+	ext := filepath.Ext(file.Filename)
+	objectPath := fmt.Sprintf("%s/%s/%s%s", userAvatarPath, userId, id.GetUUID(), ext)
 
-	// upload file using default storage
-	return us.UploadFile(file, "", customPath)
+	// upload to storage
+	return us.uploadToStorage(file, "", objectPath, contentType)
 }
 
 // UploadResponse response for file upload
 type UploadResponse struct {
-	ObjectName   string    `json:"objectName"`
+	ObjectName   string    `json:"objectName,omitempty"` // relative path in storage (optional, for internal use)
+	FileURL      string    `json:"fileUrl"`              // complete static URL for database storage and frontend access
 	OriginalName string    `json:"originalName"`
 	Size         int64     `json:"size"`
 	ContentType  string    `json:"contentType"`
 	StorageId    string    `json:"storageId"`
 	StorageType  string    `json:"storageType"`
-	DownloadURL  string    `json:"downloadUrl,omitempty"`
 	UploadTime   time.Time `json:"uploadTime"`
 }
