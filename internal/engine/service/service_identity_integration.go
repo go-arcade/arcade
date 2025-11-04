@@ -314,13 +314,15 @@ func (iis *IdentityIntegrationService) CreateProvider(provider *model.IdentityIn
 // UpdateProvider updates an identity integration provider
 func (iis *IdentityIntegrationService) UpdateProvider(name string, provider *model.IdentityIntegration) error {
 	// check if provider exists
-	exists, err := iis.identityRepo.ProviderExists(name)
+	existing, err := iis.identityRepo.GetProvider(name)
 	if err != nil {
-		log.Errorf("failed to check provider exists: %v", err)
-		return err
-	}
-	if !exists {
+		log.Errorf("failed to get provider: %v", err)
 		return fmt.Errorf("provider not found: %s", name)
+	}
+
+	// preserve immutable configuration fields
+	if err := iis.preserveConfigKeys(existing, provider); err != nil {
+		return err
 	}
 
 	if err := iis.identityRepo.UpdateProvider(name, provider); err != nil {
@@ -329,6 +331,54 @@ func (iis *IdentityIntegrationService) UpdateProvider(name string, provider *mod
 	}
 
 	return nil
+}
+
+// preserveConfigKeys ensures key fields in config cannot be updated
+func (iis *IdentityIntegrationService) preserveConfigKeys(existing, updated *model.IdentityIntegration) error {
+	// unmarshal existing config
+	var existingConfig map[string]interface{}
+	if err := sonic.Unmarshal(existing.Config, &existingConfig); err != nil {
+		return fmt.Errorf("failed to unmarshal existing config: %w", err)
+	}
+
+	// unmarshal updated config
+	var updatedConfig map[string]interface{}
+	if err := sonic.Unmarshal(updated.Config, &updatedConfig); err != nil {
+		return fmt.Errorf("failed to unmarshal updated config: %w", err)
+	}
+
+	// define immutable keys based on provider type
+	immutableKeys := getImmutableConfigKeys(existing.ProviderType)
+
+	// preserve immutable keys from existing config
+	for _, key := range immutableKeys {
+		if existingValue, exists := existingConfig[key]; exists {
+			updatedConfig[key] = existingValue
+		}
+	}
+
+	// marshal back to JSON
+	newConfig, err := sonic.Marshal(updatedConfig)
+	if err != nil {
+		return fmt.Errorf("failed to marshal updated config: %w", err)
+	}
+
+	updated.Config = newConfig
+	return nil
+}
+
+// getImmutableConfigKeys returns list of immutable config keys for each provider type
+func getImmutableConfigKeys(providerType string) []string {
+	switch providerType {
+	case "oauth":
+		return []string{"clientId"}
+	case "oidc":
+		return []string{"clientId", "issuer"}
+	case "ldap":
+		return []string{"host", "port", "baseDN"}
+	default:
+		return []string{}
+	}
 }
 
 // DeleteProvider deletes an identity integration provider
