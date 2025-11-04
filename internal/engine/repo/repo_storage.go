@@ -125,8 +125,9 @@ func (sr *StorageRepo) GetStorageConfigByID(storageID string) (*model.StorageCon
 func (sr *StorageRepo) GetEnabledStorageConfigs() ([]model.StorageConfig, error) {
 	var storageConfigs []model.StorageConfig
 	err := sr.Ctx.DBSession().Table(sr.StorageModel.TableName()).
+		Select("storage_id", "name", "storage_type", "config", "description", "is_default", "is_enabled").
 		Where("is_enabled = ?", 1).
-		Order("is_default DESC, id ASC").
+		Order("is_default DESC, storage_id ASC").
 		Find(&storageConfigs).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to get enabled storage configs: %w", err)
@@ -138,8 +139,9 @@ func (sr *StorageRepo) GetEnabledStorageConfigs() ([]model.StorageConfig, error)
 func (sr *StorageRepo) GetStorageConfigByType(storageType string) ([]model.StorageConfig, error) {
 	var storageConfigs []model.StorageConfig
 	err := sr.Ctx.DBSession().Table(sr.StorageModel.TableName()).
+		Select("storage_id", "name", "storage_type", "config", "description", "is_default", "is_enabled").
 		Where("storage_type = ? AND is_enabled = ?", storageType, 1).
-		Order("is_default DESC, id ASC").
+		Order("is_default DESC, storage_id ASC").
 		Find(&storageConfigs).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to get storage configs by type %s: %w", storageType, err)

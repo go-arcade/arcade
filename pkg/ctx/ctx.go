@@ -29,47 +29,39 @@ func ProvideContext(
 }
 
 type Context struct {
-	DB    *gorm.DB
-	Mongo *database.MongoClient
-	Redis *redis.Client
-	Ctx   context.Context
-	Log   *zap.SugaredLogger
+	db    *gorm.DB
+	mongo *database.MongoClient
+	redis *redis.Client
+	ctx   context.Context
+	log   *zap.SugaredLogger
 }
 
 func NewContext(ctx context.Context, mongodb *database.MongoClient, redis *redis.Client, mysql *gorm.DB, log *zap.SugaredLogger) *Context {
 	return &Context{
-		DB:    mysql,
-		Mongo: mongodb,
-		Redis: redis,
-		Ctx:   ctx,
-		Log:   log,
+		db:    mysql,
+		mongo: mongodb,
+		redis: redis,
+		ctx:   ctx,
+		log:   log,
 	}
 }
 
 func (c *Context) ContextIns() context.Context {
-	return c.Ctx
-}
-
-func (c *Context) SetDBSession(db *gorm.DB) {
-	c.DB = db
+	return c.ctx
 }
 
 func (c *Context) DBSession() *gorm.DB {
-	return c.DB
-}
-
-func (c *Context) SetMongoSession(client *database.MongoClient) {
-	c.Mongo = client
+	return c.db
 }
 
 func (c *Context) MongoSession() *database.MongoClient {
-	return c.Mongo
-}
-
-func (c *Context) SetRedisSession(redis *redis.Client) {
-	c.Redis = redis
+	return c.mongo
 }
 
 func (c *Context) RedisSession() *redis.Client {
-	return c.Redis
+	return c.redis
+}
+
+func (c *Context) Log() *zap.SugaredLogger {
+	return c.log
 }
