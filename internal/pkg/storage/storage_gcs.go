@@ -130,7 +130,7 @@ func (g *GCSStorage) Upload(ctx *ctx.Context, objectName string, file *multipart
 	// 使用分段写入器，支持断点续传
 	writer := g.Bucket.Object(fullPath).NewWriter(ctx.ContextIns())
 	writer.ContentType = contentType
-	writer.ChunkSize = int(defaultPartSize) // 设置分片大小
+	writer.ChunkSize = defaultPartSize // 设置分片大小
 
 	buf := make([]byte, defaultPartSize)
 	partNumber := int32(1)

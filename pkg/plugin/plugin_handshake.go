@@ -47,7 +47,7 @@ type RPCPluginServerWrapper struct {
 	dbAccessor DatabaseAccessor // 新接口
 }
 
-// 实现 RPCPluginServer 的方法，将调用转发到 impl
+// Ping is the ping method
 func (w *RPCPluginServerWrapper) Ping(args string, reply *string) error {
 	server := &RPCPluginServer{
 		info:       PluginInfo{},

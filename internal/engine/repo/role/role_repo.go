@@ -197,7 +197,7 @@ func (r *RoleRepo) InitBuiltinRoles() error {
 
 	for _, pr := range projectRoles {
 		permJson, _ := json.Marshal(role.BuiltinRolePermissions[pr.RoleId])
-		role := &role.Role{
+		role2 := &role.Role{
 			RoleId:      pr.RoleId,
 			Name:        pr.Name,
 			DisplayName: pr.DisplayName,
@@ -208,7 +208,7 @@ func (r *RoleRepo) InitBuiltinRoles() error {
 			Priority:    pr.Priority,
 			Permissions: string(permJson),
 		}
-		if err := r.db.DB().Create(role).Error; err != nil {
+		if err := r.db.DB().Create(role2).Error; err != nil {
 			return err
 		}
 	}
@@ -229,7 +229,7 @@ func (r *RoleRepo) InitBuiltinRoles() error {
 
 	for _, tr := range teamRoles {
 		permJson, _ := json.Marshal(role.BuiltinRolePermissions[tr.RoleId])
-		role := &role.Role{
+		role2 := &role.Role{
 			RoleId:      tr.RoleId,
 			Name:        tr.Name,
 			DisplayName: tr.DisplayName,
@@ -240,7 +240,7 @@ func (r *RoleRepo) InitBuiltinRoles() error {
 			Priority:    tr.Priority,
 			Permissions: string(permJson),
 		}
-		if err := r.db.DB().Create(role).Error; err != nil {
+		if err := r.db.DB().Create(role2).Error; err != nil {
 			return err
 		}
 	}
@@ -259,7 +259,7 @@ func (r *RoleRepo) InitBuiltinRoles() error {
 
 	for _, or := range orgRoles {
 		permJson, _ := json.Marshal(role.BuiltinRolePermissions[or.RoleId])
-		role := &role.Role{
+		role2 := &role.Role{
 			RoleId:      or.RoleId,
 			Name:        or.Name,
 			DisplayName: or.DisplayName,
@@ -270,7 +270,7 @@ func (r *RoleRepo) InitBuiltinRoles() error {
 			Priority:    or.Priority,
 			Permissions: string(permJson),
 		}
-		if err := r.db.DB().Create(role).Error; err != nil {
+		if err := r.db.DB().Create(role2).Error; err != nil {
 			return err
 		}
 	}

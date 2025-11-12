@@ -115,13 +115,13 @@ func (s *UserPermissionsService) GetUserPermissions(ctx context.Context, userId 
 	// 使用 WaitGroup 并发查询
 	var wg sync.WaitGroup
 	var mu sync.Mutex
-	errors := []error{}
+	var errors []error
 
 	// 1. 查询组织权限
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		orgs, err := s.getUserOrganizations(ctx, userId)
+		organizations, err := s.getUserOrganizations(ctx, userId)
 		if err != nil {
 			mu.Lock()
 			errors = append(errors, fmt.Errorf("get organizations: %w", err))
@@ -129,7 +129,7 @@ func (s *UserPermissionsService) GetUserPermissions(ctx context.Context, userId 
 			return
 		}
 		mu.Lock()
-		summary.Organizations = orgs
+		summary.Organizations = organizations
 		mu.Unlock()
 	}()
 
@@ -466,8 +466,8 @@ func (s *UserPermissionsService) aggregatePermissions(summary *UserPermissionSum
 	}
 
 	// 从团队收集权限
-	for _, team := range summary.Teams {
-		for _, perm := range team.Permissions {
+	for _, teamPermission := range summary.Teams {
+		for _, perm := range teamPermission.Permissions {
 			permSet[perm] = true
 		}
 	}
@@ -501,7 +501,7 @@ func (s *UserPermissionsService) calculateAccessibleRoutes(ctx context.Context, 
 		permSet[perm] = true
 	}
 
-	accessibleRoutes := []AccessibleRoute{}
+	var accessibleRoutes []AccessibleRoute
 
 	for _, rp := range routePerms {
 		// 检查是否有足够权限访问此路由
@@ -549,8 +549,8 @@ func (s *UserPermissionsService) aggregateAccessibleResources(summary *UserPermi
 
 	// 团队资源
 	teamIds := make([]string, 0, len(summary.Teams))
-	for _, team := range summary.Teams {
-		teamIds = append(teamIds, team.TeamId)
+	for _, teamPermission := range summary.Teams {
+		teamIds = append(teamIds, teamPermission.TeamId)
 	}
 	summary.AccessibleResources["teams"] = teamIds
 

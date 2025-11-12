@@ -161,12 +161,12 @@ func (r *PermissionRepo) GetUserPermissions(userId string) (*permission.UserPerm
 	}
 
 	// 1. 检查是否超级管理员
-	var user user.User
-	if err := r.db.DB().Where("user_id = ?", userId).First(&user).Error; err != nil {
+	var u user.User
+	if err := r.db.DB().Where("user_id = ?", userId).First(&u).Error; err != nil {
 		return nil, err
 	}
 
-	if user.IsSuperAdmin == 1 {
+	if u.IsSuperAdmin == 1 {
 		userPerms.IsSuperAdmin = true
 		// 超管拥有所有权限，可以直接返回
 		return userPerms, nil
@@ -267,9 +267,9 @@ func (r *PermissionRepo) HasPermission(userId, permissionCode, resourceId, scope
 			return true, nil
 		}
 		// 检查团队所属组织的权限（继承）
-		team, err := r.getTeamById(resourceId)
-		if err == nil && team.OrgId != "" {
-			if contains(userPerms.OrgPermissions[team.OrgId], permissionCode) {
+		teamById, err := r.getTeamById(resourceId)
+		if err == nil && teamById.OrgId != "" {
+			if contains(userPerms.OrgPermissions[teamById.OrgId], permissionCode) {
 				return true, nil
 			}
 		}
@@ -279,7 +279,7 @@ func (r *PermissionRepo) HasPermission(userId, permissionCode, resourceId, scope
 			return true, nil
 		}
 		// 检查项目所属团队的权限（继承）
-		project, err := r.getProjectById(resourceId)
+		projectById, err := r.getProjectById(resourceId)
 		if err == nil {
 			// 检查项目关联的团队
 			teams, _ := r.getProjectTeams(resourceId)
@@ -289,8 +289,8 @@ func (r *PermissionRepo) HasPermission(userId, permissionCode, resourceId, scope
 				}
 			}
 			// 检查项目所属组织的权限（继承）
-			if project.OrgId != "" {
-				if contains(userPerms.OrgPermissions[project.OrgId], permissionCode) {
+			if projectById.OrgId != "" {
+				if contains(userPerms.OrgPermissions[projectById.OrgId], permissionCode) {
 					return true, nil
 				}
 			}
@@ -312,15 +312,15 @@ func contains(slice []string, item string) bool {
 }
 
 func (r *PermissionRepo) getTeamById(teamId string) (*team.Team, error) {
-	var team team.Team
-	err := r.db.DB().Where("team_id = ?", teamId).First(&team).Error
-	return &team, err
+	var t team.Team
+	err := r.db.DB().Where("team_id = ?", teamId).First(&t).Error
+	return &t, err
 }
 
 func (r *PermissionRepo) getProjectById(projectId string) (*project.Project, error) {
-	var project project.Project
-	err := r.db.DB().Where("project_id = ?", projectId).First(&project).Error
-	return &project, err
+	var p project.Project
+	err := r.db.DB().Where("project_id = ?", projectId).First(&p).Error
+	return &p, err
 }
 
 func (r *PermissionRepo) getProjectTeams(projectId string) ([]string, error) {
@@ -340,12 +340,12 @@ func (r *PermissionRepo) GetAccessibleResources(userId string) (*permission.Acce
 	}
 
 	// 检查是否超管
-	var user user.User
-	if err := r.db.DB().Where("user_id = ?", userId).First(&user).Error; err != nil {
+	var u user.User
+	if err := r.db.DB().Where("user_id = ?", userId).First(&u).Error; err != nil {
 		return nil, err
 	}
 
-	if user.IsSuperAdmin == 1 {
+	if u.IsSuperAdmin == 1 {
 		// 超管可访问所有资源
 		r.db.DB().Table("t_organization").Pluck("org_id", &resources.Organizations)
 		r.db.DB().Table("t_team").Pluck("team_id", &resources.Teams)
@@ -376,14 +376,14 @@ func (r *PermissionRepo) GetAccessibleResources(userId string) (*permission.Acce
 		case permission.ScopeTeam:
 			resourceSet["teams"][*binding.ResourceId] = true
 			// 团队的组织也可访问
-			if team, err := r.getTeamById(*binding.ResourceId); err == nil {
-				resourceSet["organizations"][team.OrgId] = true
+			if teamById, err := r.getTeamById(*binding.ResourceId); err == nil {
+				resourceSet["organizations"][teamById.OrgId] = true
 			}
 		case permission.ScopeProject:
 			resourceSet["projects"][*binding.ResourceId] = true
 			// 项目的组织和团队也可访问
-			if project, err := r.getProjectById(*binding.ResourceId); err == nil {
-				resourceSet["organizations"][project.OrgId] = true
+			if projectById, err := r.getProjectById(*binding.ResourceId); err == nil {
+				resourceSet["organizations"][projectById.OrgId] = true
 				teams, _ := r.getProjectTeams(*binding.ResourceId)
 				for _, teamId := range teams {
 					resourceSet["teams"][teamId] = true

@@ -45,9 +45,8 @@ func NewPermissionService(ctx *ctx.Context, db database.DB, cache cache.Cache, p
 func (s *PermissionService) GetUserPermissions(userId string) (*permission.UserPermissions, error) {
 	// 尝试从缓存读取
 	if s.cache != nil {
-		ctx := context.Background()
 		cacheKey := fmt.Sprintf("user:permissions:%s", userId)
-		cached, err := s.cache.Get(ctx, cacheKey).Result()
+		cached, err := s.cache.Get(context.Background(), cacheKey).Result()
 		if err == nil && cached != "" {
 			var perms permission.UserPermissions
 			if err := json.Unmarshal([]byte(cached), &perms); err == nil {
@@ -64,10 +63,9 @@ func (s *PermissionService) GetUserPermissions(userId string) (*permission.UserP
 
 	// 写入缓存（5分钟）
 	if s.cache != nil {
-		ctx := context.Background()
 		cacheKey := fmt.Sprintf("user:permissions:%s", userId)
 		data, _ := json.Marshal(perms)
-		s.cache.Set(ctx, cacheKey, data, 5*time.Minute)
+		s.cache.Set(context.Background(), cacheKey, data, 5*time.Minute)
 	}
 
 	return perms, nil

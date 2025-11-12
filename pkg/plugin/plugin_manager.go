@@ -348,12 +348,12 @@ func (m *Manager) GetPluginMetrics(name string) (PluginMetrics, error) {
 }
 
 // GetAllPluginMetrics retrieves metrics for all plugins
-func (rm *Manager) GetAllPluginMetrics() map[string]PluginMetrics {
-	rm.mu.RLock()
-	defer rm.mu.RUnlock()
+func (m *Manager) GetAllPluginMetrics() map[string]PluginMetrics {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 
 	metrics := make(map[string]PluginMetrics)
-	for name, pluginClient := range rm.plugins {
+	for name, pluginClient := range m.plugins {
 		if pluginClient.connected {
 			var pluginMetrics PluginMetrics
 			err := pluginClient.client.Call("Plugin.GetMetrics", "", &pluginMetrics)

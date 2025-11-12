@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"sync"
 	"time"
 
 	"github.com/go-arcade/arcade/internal/engine/model/plugin"
@@ -49,32 +50,28 @@ type TaskManager struct {
 }
 
 var (
-	taskManager     *TaskManager
-	taskManagerOnce bool
+	taskManager *TaskManager
+	once        sync.Once
 )
 
 // GetTaskManager 获取任务管理器单例
 func GetTaskManager() *TaskManager {
-	// 注意：需要先初始化，否则返回nil
+	if taskManager == nil {
+		log.Warn("[TaskManager] not initialized, call InitTaskManager first")
+	}
 	return taskManager
 }
 
 // InitTaskManager 初始化任务管理器（需要在应用启动时调用）
 func InitTaskManager(mongoDB database.MongoDB) *TaskManager {
-	if !taskManagerOnce {
-		taskRepo := pluginrepo.NewPluginTaskRepo(mongoDB)
-
-		// 创建索引
-		if err := taskRepo.CreateIndexes(); err != nil {
+	once.Do(func() {
+		repo := pluginrepo.NewPluginTaskRepo(mongoDB)
+		if err := repo.CreateIndexes(); err != nil {
 			log.Warnf("[TaskManager] failed to create indexes: %v", err)
 		}
-
-		taskManager = &TaskManager{
-			taskRepo: taskRepo,
-		}
-		taskManagerOnce = true
+		taskManager = &TaskManager{taskRepo: repo}
 		log.Info("[TaskManager] initialized with MongoDB persistence")
-	}
+	})
 	return taskManager
 }
 

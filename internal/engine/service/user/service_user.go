@@ -45,23 +45,23 @@ func (ul *UserService) Login(login *user.Login, auth http.Auth) (*user.LoginResp
 		return nil, errors.New(http.UserIncorrectPassword.Msg)
 	}
 
-	user, err := ul.userRepo.Login(login)
+	userInfo, err := ul.userRepo.Login(login)
 	if err != nil {
-		log.Errorf("login failed for user: %v", err)
+		log.Errorf("login failed for userInfo: %v", err)
 		return nil, err
 	}
-	if user == nil || user.Username == "" || user.Username != login.Username {
-		log.Error("user not found")
+	if userInfo == nil || userInfo.Username == "" || userInfo.Username != login.Username {
+		log.Error("userInfo not found")
 		return nil, errors.New(http.UserNotExist.Msg)
 	}
 
 	// compare stored password hash with provided password
-	if !comparePassword(user.Password, string(pwd)) {
+	if !comparePassword(userInfo.Password, string(pwd)) {
 		log.Error("incorrect password provided")
 		return nil, errors.New(http.UserIncorrectPassword.Msg)
 	}
 
-	aToken, rToken, err := jwt.GenToken(user.UserId, []byte(auth.SecretKey), auth.AccessExpire, auth.RefreshExpire)
+	aToken, rToken, err := jwt.GenToken(userInfo.UserId, []byte(auth.SecretKey), auth.AccessExpire, auth.RefreshExpire)
 	if err != nil {
 		log.Errorf("failed to generate tokens: %v", err)
 		return nil, err
@@ -73,13 +73,13 @@ func (ul *UserService) Login(login *user.Login, auth http.Auth) (*user.LoginResp
 
 	resp := &usermodel.LoginResp{
 		UserInfo: usermodel.UserInfo{
-			UserId:    user.UserId,
-			Username:  user.Username,
-			FirstName: user.FirstName,
-			LastName:  user.LastName,
-			Avatar:    user.Avatar,
-			Email:     user.Email,
-			Phone:     user.Phone,
+			UserId:    userInfo.UserId,
+			Username:  userInfo.Username,
+			FirstName: userInfo.FirstName,
+			LastName:  userInfo.LastName,
+			Avatar:    userInfo.Avatar,
+			Email:     userInfo.Email,
+			Phone:     userInfo.Phone,
 		},
 		Token: map[string]string{
 			"accessToken":  aToken,
@@ -98,7 +98,7 @@ func (ul *UserService) Login(login *user.Login, auth http.Auth) (*user.LoginResp
 			return
 		}
 
-		// update last login time in user extension
+		// update last login time in userInfo extension
 		// Note: This should be injected, but for now we'll skip it to avoid circular dependency
 		// TODO: Inject UserExtensionService to avoid direct repo creation
 	}()
@@ -195,12 +195,12 @@ func (ul *UserService) UpdateUser(userId string, userEntity *user.User) error {
 
 func (ul *UserService) FetchUserInfo(userId string) (*user.UserInfo, error) {
 
-	user, err := ul.userRepo.FetchUserInfo(userId)
+	userInfo, err := ul.userRepo.FetchUserInfo(userId)
 	if err != nil {
 		return nil, err
 	}
 
-	return user, err
+	return userInfo, err
 }
 
 func (ul *UserService) GetUserList(pageNum, pageSize int) ([]userrepo.UserWithExtension, int64, error) {
@@ -287,9 +287,8 @@ func (ul *UserService) UpdateAvatar(userId, avatarUrl string) error {
 
 	// clear user info cache in Redis
 	if ul.cache != nil {
-		ctx := context.Background()
 		key := consts.UserInfoKey + userId
-		if err := ul.cache.Del(ctx, key).Err(); err != nil {
+		if err := ul.cache.Del(context.Background(), key).Err(); err != nil {
 			log.Warnf("failed to clear user info cache: %v", err)
 			// not critical, continue
 		}

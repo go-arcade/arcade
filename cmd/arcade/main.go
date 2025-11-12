@@ -55,12 +55,12 @@ func main() {
 	// 创建接口实现
 	db := database.NewGormDB(dbClient)
 	mongo := database.NewMongoDBWrapper(mongoClient)
-	cache := cache.NewRedisCache(redisClient)
+	redisCache := cache.NewRedisCache(redisClient)
 
 	appCtx := ctx.NewContext(context.Background(), logger.Sugar())
 
 	// Wire 构建 App
-	app, cleanup, err := initApp(configFile, appCtx, logger, db, mongo, cache)
+	app, cleanup, err := initApp(configFile, appCtx, logger, db, mongo, redisCache)
 	if err != nil {
 		panic(err)
 	}
