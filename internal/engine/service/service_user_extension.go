@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/go-arcade/arcade/internal/engine/model"
@@ -121,14 +122,7 @@ func (ues *UserExtensionService) UpdateInvitationStatus(userId, status string) e
 		model.UserInvitationStatusRevoked,
 	}
 
-	isValid := false
-	for _, validStatus := range validStatuses {
-		if status == validStatus {
-			isValid = true
-			break
-		}
-	}
-
+	isValid := slices.Contains(validStatuses, status)
 	if !isValid {
 		return fmt.Errorf("invalid invitation status: %s", status)
 	}
