@@ -1,7 +1,7 @@
 package router
 
 import (
-	"github.com/go-arcade/arcade/internal/engine/service"
+	storageservice "github.com/go-arcade/arcade/internal/engine/service/storage"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/gofiber/fiber/v2"
@@ -91,7 +91,7 @@ func (rt *Router) uploadFileWithStorage(c *fiber.Ctx) error {
 func (rt *Router) createStorageConfig(c *fiber.Ctx) error {
 	storageService := rt.Services.Storage
 
-	var req service.CreateStorageConfigRequest
+	var req storageservice.CreateStorageConfigRequest
 	if err := c.BodyParser(&req); err != nil {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid request body", c.Path())
 	}
@@ -148,7 +148,7 @@ func (rt *Router) updateStorageConfig(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "storage id is required", c.Path())
 	}
 
-	var req service.UpdateStorageConfigRequest
+	var req storageservice.UpdateStorageConfigRequest
 	if err := c.BodyParser(&req); err != nil {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid request body", c.Path())
 	}

@@ -3,7 +3,7 @@ package router
 import (
 	"encoding/json"
 
-	"github.com/go-arcade/arcade/internal/engine/model"
+	rolemodel "github.com/go-arcade/arcade/internal/engine/model/role"
 	"github.com/go-arcade/arcade/internal/engine/tool"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
@@ -30,10 +30,10 @@ func (rt *Router) listRoles(c *fiber.Ctx) error {
 	roleService := rt.Services.Role
 
 	// parse query parameters
-	req := &model.ListRolesRequest{
+	req := &rolemodel.ListRolesRequest{
 		PageNum:  queryInt(c, "pageNum"),
 		PageSize: queryInt(c, "pageSize"),
-		Scope:    model.RoleScope(c.Query("scope")),
+		Scope:    rolemodel.RoleScope(c.Query("scope")),
 		OrgId:    c.Query("orgId"),
 		Name:     c.Query("name"),
 	}
@@ -54,14 +54,14 @@ func (rt *Router) listRoles(c *fiber.Ctx) error {
 	}
 
 	// build response without timestamps
-	var roleResponses []model.RoleResponse
+	var roleResponses []rolemodel.RoleResponse
 	for _, role := range resp.Roles {
 		var permissions []string
 		if role.Permissions != "" {
 			json.Unmarshal([]byte(role.Permissions), &permissions)
 		}
 
-		roleResponses = append(roleResponses, model.RoleResponse{
+		roleResponses = append(roleResponses, rolemodel.RoleResponse{
 			RoleId:      role.RoleId,
 			Name:        role.Name,
 			DisplayName: role.DisplayName,
@@ -91,7 +91,7 @@ func (rt *Router) listRoles(c *fiber.Ctx) error {
 func (rt *Router) createRole(c *fiber.Ctx) error {
 	roleService := rt.Services.Role
 
-	var req model.CreateRoleRequest
+	var req rolemodel.CreateRoleRequest
 	if err := c.BodyParser(&req); err != nil {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid request parameters", c.Path())
 	}
@@ -138,7 +138,7 @@ func (rt *Router) getRole(c *fiber.Ctx) error {
 		json.Unmarshal([]byte(role.Permissions), &permissions)
 	}
 
-	roleResp := model.RoleResponse{
+	roleResp := rolemodel.RoleResponse{
 		RoleId:      role.RoleId,
 		Name:        role.Name,
 		DisplayName: role.DisplayName,
@@ -165,7 +165,7 @@ func (rt *Router) updateRole(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "roleId is required", c.Path())
 	}
 
-	var req model.UpdateRoleRequest
+	var req rolemodel.UpdateRoleRequest
 	if err := c.BodyParser(&req); err != nil {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid request parameters", c.Path())
 	}

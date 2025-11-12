@@ -1,7 +1,7 @@
 package router
 
 import (
-	"github.com/go-arcade/arcade/internal/engine/model"
+	agentmodel "github.com/go-arcade/arcade/internal/engine/model/agent"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/gofiber/fiber/v2"
@@ -16,7 +16,7 @@ func (rt *Router) agentRouter(r fiber.Router, auth fiber.Handler) {
 }
 
 func (rt *Router) addAgent(c *fiber.Ctx) error {
-	var addAgentReq *model.AddAgentReq
+	var addAgentReq *agentmodel.AddAgentReq
 	agentLogic := rt.Services.Agent
 
 	if err := c.BodyParser(&addAgentReq); err != nil {

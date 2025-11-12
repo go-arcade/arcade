@@ -1,7 +1,7 @@
 package router
 
 import (
-	"github.com/go-arcade/arcade/internal/engine/model"
+	userextnmodel "github.com/go-arcade/arcade/internal/engine/model/user"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/gofiber/fiber/v2"
@@ -42,7 +42,7 @@ func (rt *Router) updateUserExtension(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "user id is required", c.Path())
 	}
 
-	var extension model.UserExtension
+	var extension userextnmodel.UserExtension
 	if err := c.BodyParser(&extension); err != nil {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid request parameters", c.Path())
 	}

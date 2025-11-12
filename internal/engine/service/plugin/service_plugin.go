@@ -14,13 +14,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/internal/engine/repo"
+	"github.com/go-arcade/arcade/internal/engine/model/plugin"
+	pluginrepo "github.com/go-arcade/arcade/internal/engine/repo/plugin"
+	"github.com/go-arcade/arcade/internal/pkg/storage"
 	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/id"
 	"github.com/go-arcade/arcade/pkg/log"
 	pluginpkg "github.com/go-arcade/arcade/pkg/plugin"
-	"github.com/go-arcade/arcade/pkg/storage"
 	"gorm.io/datatypes"
 )
 
@@ -83,7 +83,7 @@ type PluginResources struct {
 // PluginService 插件管理服务
 type PluginService struct {
 	ctx             *ctx.Context
-	pluginRepo      repo.IPluginRepository
+	pluginRepo      pluginrepo.IPluginRepository
 	pluginManager   *pluginpkg.Manager
 	storageProvider storage.StorageProvider
 }
@@ -91,7 +91,7 @@ type PluginService struct {
 // NewPluginService 创建插件管理服务
 func NewPluginService(
 	ctx *ctx.Context,
-	pluginRepo repo.IPluginRepository,
+	pluginRepo pluginrepo.IPluginRepository,
 	pluginManager *pluginpkg.Manager,
 	storageProvider storage.StorageProvider,
 ) *PluginService {
@@ -228,7 +228,7 @@ func (s *PluginService) InstallPlugin(req *InstallPluginRequest) (*InstallPlugin
 	}
 
 	// 保存到数据库
-	pluginModel := &model.Plugin{
+	pluginModel := &plugin.Plugin{
 		PluginId:      pluginID,
 		Name:          manifest.Name,
 		Version:       manifest.Version,
@@ -261,7 +261,7 @@ func (s *PluginService) InstallPlugin(req *InstallPluginRequest) (*InstallPlugin
 
 	// 自动创建插件配置（存储Schema信息到配置表）
 	if len(manifest.Params) > 0 || len(manifest.Config) > 0 {
-		pluginConfig := &model.PluginConfig{
+		pluginConfig := &plugin.PluginConfig{
 			PluginId: pluginID,
 			Params:   datatypes.JSON(manifest.Params),
 			Config:   datatypes.JSON(manifest.Config),
@@ -475,12 +475,12 @@ func (s *PluginService) DisablePlugin(pluginID string) error {
 }
 
 // ListPlugins 列出所有插件
-func (s *PluginService) ListPlugins(pluginType string, isEnabled int) ([]model.Plugin, error) {
+func (s *PluginService) ListPlugins(pluginType string, isEnabled int) ([]plugin.Plugin, error) {
 	return s.pluginRepo.ListPlugins(pluginType, isEnabled)
 }
 
 // GetPluginDetailByID 根据plugin_id获取插件详情
-func (s *PluginService) GetPluginDetailByID(pluginID string) (*model.Plugin, error) {
+func (s *PluginService) GetPluginDetailByID(pluginID string) (*plugin.Plugin, error) {
 	return s.pluginRepo.GetPluginByID(pluginID)
 }
 
@@ -759,21 +759,21 @@ func (s *PluginService) hotReloadPlugin(pluginName, localPath string, defaultCon
 	pluginRecord, err := s.pluginRepo.GetPluginByName(pluginName)
 	if err == nil && pluginRecord != nil {
 		// 更新为注册中
-		_ = s.pluginRepo.UpdatePluginRegistrationStatus(pluginRecord.PluginId, model.PluginRegisterStatusRegistering, "")
+		_ = s.pluginRepo.UpdatePluginRegistrationStatus(pluginRecord.PluginId, plugin.PluginRegisterStatusRegistering, "")
 	}
 
 	// register new plugin (directly use original path, RPC plugin has no path limitation)
 	if err := s.pluginManager.RegisterPlugin(pluginName, localPath, pluginConfig); err != nil {
 		// 注册失败，更新数据库状态
 		if pluginRecord != nil {
-			_ = s.pluginRepo.UpdatePluginRegistrationStatus(pluginRecord.PluginId, model.PluginRegisterStatusFailed, err.Error())
+			_ = s.pluginRepo.UpdatePluginRegistrationStatus(pluginRecord.PluginId, plugin.PluginRegisterStatusFailed, err.Error())
 		}
 		return fmt.Errorf("failed to register plugin: %v", err)
 	}
 
 	// 注册成功，更新数据库状态
 	if pluginRecord != nil {
-		_ = s.pluginRepo.UpdatePluginRegistrationStatus(pluginRecord.PluginId, model.PluginRegisterStatusRegistered, "")
+		_ = s.pluginRepo.UpdatePluginRegistrationStatus(pluginRecord.PluginId, plugin.PluginRegisterStatusRegistered, "")
 	}
 
 	log.Infof("[PluginService] hot reloaded plugin: %s from %s", pluginName, localPath)
@@ -884,7 +884,7 @@ func (s *PluginService) CreatePluginConfig(req *UpdatePluginConfigRequest) (*Plu
 	}
 
 	// 创建配置
-	config := &model.PluginConfig{
+	config := &plugin.PluginConfig{
 		PluginId: req.PluginID,
 		Params:   datatypes.JSON(req.Params),
 		Config:   datatypes.JSON(req.Config),

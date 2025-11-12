@@ -3,7 +3,7 @@ package router
 import (
 	"strconv"
 
-	"github.com/go-arcade/arcade/internal/engine/model"
+	secretmodel "github.com/go-arcade/arcade/internal/engine/model/secret"
 	"github.com/go-arcade/arcade/internal/engine/tool"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
@@ -42,7 +42,7 @@ func (rt *Router) createSecret(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
 	}
 
-	var secret model.Secret
+	var secret secretmodel.Secret
 	if err := c.BodyParser(&secret); err != nil {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid request body", c.Path())
 	}
@@ -68,7 +68,7 @@ func (rt *Router) updateSecret(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "secretId is required", c.Path())
 	}
 
-	var secret model.Secret
+	var secret secretmodel.Secret
 	if err := c.BodyParser(&secret); err != nil {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid request body", c.Path())
 	}
