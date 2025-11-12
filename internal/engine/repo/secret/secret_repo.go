@@ -49,11 +49,11 @@ func (sr *SecretRepo) UpdateSecret(secret *secret.Secret) error {
 
 // GetSecretByID gets a secret by secret_id
 func (sr *SecretRepo) GetSecretByID(secretId string) (*secret.Secret, error) {
-	var secret secret.Secret
+	var s secret.Secret
 	err := sr.db.DB().Table(sr.secretModel.TableName()).
 		Where("secret_id = ?", secretId).
-		First(&secret).Error
-	return &secret, err
+		First(&s).Error
+	return &s, err
 }
 
 // GetSecretList gets secret list with pagination and filters
@@ -112,10 +112,10 @@ func (sr *SecretRepo) GetSecretsByScope(scope, scopeId string) ([]*secret.Secret
 
 // GetSecretValue gets the secret value (use with caution, only when needed)
 func (sr *SecretRepo) GetSecretValue(secretId string) (string, error) {
-	var secret secret.Secret
+	var s secret.Secret
 	err := sr.db.DB().Table(sr.secretModel.TableName()).
 		Select("secret_value").
 		Where("secret_id = ?", secretId).
-		First(&secret).Error
-	return secret.SecretValue, err
+		First(&s).Error
+	return s.SecretValue, err
 }

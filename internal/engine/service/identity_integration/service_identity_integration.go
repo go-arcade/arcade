@@ -205,7 +205,6 @@ func (iis *IdentityIntegrationService) OIDCLogin(providerName string) (string, e
 
 // LDAP 相关方法
 
-// LDAPLogin LDAP 登录请求
 type LDAPLoginRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`

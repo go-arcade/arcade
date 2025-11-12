@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/rpc"
 	"os"
@@ -274,7 +275,8 @@ func (p *BashPlugin) runCommand(command string, args []string, env map[string]st
 
 	if err != nil {
 		result["error"] = err.Error()
-		if exitErr, ok := err.(*exec.ExitError); ok {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
 			result["exit_code"] = exitErr.ExitCode()
 		}
 	} else {
@@ -396,7 +398,7 @@ func (p *BashPluginHandler) Server(*plugin.MuxBroker) (any, error) {
 }
 
 // Client returns the RPC client (not used in plugin side)
-func (BashPluginHandler) Client(b *plugin.MuxBroker, c *rpc.Client) (any, error) {
+func (p *BashPluginHandler) Client(b *plugin.MuxBroker, c *rpc.Client) (any, error) {
 	return nil, nil
 }
 

@@ -17,28 +17,28 @@ func New() *Node {
 
 // Clear clears out the receiver, recursively emptying (but not deleting)
 // child nodes.
-func (ptn *Node) Clear() {
-	if ptn.Count > 0 {
-		for _, child := range ptn.Children {
+func (n *Node) Clear() {
+	if n.Count > 0 {
+		for _, child := range n.Children {
 			child.Clear()
 		}
 	}
-	ptn.Count = 0
-	ptn.IsWord = false
+	n.Count = 0
+	n.IsWord = false
 }
 
 // MergeFrom updates the receiver recursively from the argument.
-func (ptn *Node) MergeFrom(other *Node) {
-	ptn.Count += other.Count
-	ptn.IsWord = ptn.IsWord || other.IsWord
+func (n *Node) MergeFrom(other *Node) {
+	n.Count += other.Count
+	n.IsWord = n.IsWord || other.IsWord
 	for char, otherChild := range other.Children {
 		if otherChild.Count == 0 {
 			continue
 		}
-		child, ok := ptn.Children[char]
+		child, ok := n.Children[char]
 		if !ok {
 			child = New()
-			ptn.Children[char] = child
+			n.Children[char] = child
 		}
 		child.MergeFrom(otherChild)
 	}

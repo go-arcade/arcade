@@ -173,16 +173,16 @@ func (ss *StorageService) validateMinIOConfig(config *storage.MinIOConfig) error
 // validateS3Config 验证 S3 配置
 func (ss *StorageService) validateS3Config(config *storage.S3Config) error {
 	if config.Endpoint == "" {
-		return fmt.Errorf("S3 endpoint is required")
+		return fmt.Errorf("s3 endpoint is required")
 	}
 	if config.AccessKey == "" {
-		return fmt.Errorf("S3 access key is required")
+		return fmt.Errorf("s3 access key is required")
 	}
 	if config.SecretKey == "" {
-		return fmt.Errorf("S3 secret key is required")
+		return fmt.Errorf("s3 secret key is required")
 	}
 	if config.Bucket == "" {
-		return fmt.Errorf("S3 bucket is required")
+		return fmt.Errorf("s3 bucket is required")
 	}
 	return nil
 }
@@ -232,7 +232,6 @@ func (ss *StorageService) validateCOSConfig(config *storage.COSConfig) error {
 	return nil
 }
 
-// 请求结构体
 type CreateStorageConfigRequest struct {
 	StorageId   string `json:"storageId" binding:"required"`
 	Name        string `json:"name" binding:"required"`

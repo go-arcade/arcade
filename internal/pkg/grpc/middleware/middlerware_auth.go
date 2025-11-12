@@ -110,8 +110,3 @@ func parseToken(token string) (TokenInfo, error) {
 	}
 	return tokenInfo, errors.New("Token无效: bearer " + token)
 }
-
-// 从token中获取用户唯一标识
-func userClaimFromToken(tokenInfo TokenInfo) string {
-	return tokenInfo.ID
-}

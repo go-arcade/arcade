@@ -307,13 +307,13 @@ func (ur *UserRepo) UpdateAvatar(userId, avatarUrl string) error {
 
 // GetUserAvatar gets user avatar URL by user ID
 func (ur *UserRepo) GetUserAvatar(userId string) (string, error) {
-	var user user.User
+	var u user.User
 	err := ur.db.DB().Table(ur.userModel.TableName()).
 		Select("avatar").
 		Where("user_id = ?", userId).
-		First(&user).Error
+		First(&u).Error
 	if err != nil {
 		return "", err
 	}
-	return user.Avatar, nil
+	return u.Avatar, nil
 }

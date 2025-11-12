@@ -1,9 +1,10 @@
 package jwt
 
 import (
-	"github.com/go-arcade/arcade/pkg/http"
 	"testing"
 	"time"
+
+	"github.com/go-arcade/arcade/pkg/http"
 )
 
 /**

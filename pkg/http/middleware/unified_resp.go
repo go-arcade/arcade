@@ -16,9 +16,8 @@ const (
 	OPERATION = "operation"
 )
 
-// UnifiedResponseInterceptor 统一响应拦截器
+// UnifiedResponseMiddleware 统一响应拦截器
 // c.Locals("detail", value) 用于设置响应数据
-// 如有其他需要，可自行添加
 func UnifiedResponseMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		err := c.Next()

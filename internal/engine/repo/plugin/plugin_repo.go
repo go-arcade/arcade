@@ -49,14 +49,14 @@ func (r *PluginRepo) GetEnabledPlugins() ([]plugin.Plugin, error) {
 
 // GetPluginByID 根据plugin_id获取插件
 func (r *PluginRepo) GetPluginByID(pluginID string) (*plugin.Plugin, error) {
-	var plugin plugin.Plugin
+	var p plugin.Plugin
 	err := r.db.DB().Table(r.PluginModel.TableName()).
 		Where("plugin_id = ? AND is_enabled = ?", pluginID, 1).
-		First(&plugin).Error
+		First(&p).Error
 	if err != nil {
 		return nil, err
 	}
-	return &plugin, nil
+	return &p, nil
 }
 
 // GetPluginsByType 根据类型获取插件列表
@@ -156,14 +156,14 @@ func (r *PluginRepo) ListPlugins(pluginType string, isEnabled int) ([]plugin.Plu
 
 // GetPluginByName 根据名称获取插件
 func (r *PluginRepo) GetPluginByName(name string) (*plugin.Plugin, error) {
-	var plugin plugin.Plugin
+	var p plugin.Plugin
 	err := r.db.DB().Table(r.PluginModel.TableName()).
 		Where("name = ?", name).
-		First(&plugin).Error
+		First(&p).Error
 	if err != nil {
 		return nil, err
 	}
-	return &plugin, nil
+	return &p, nil
 }
 
 // DeletePluginConfigs 删除插件的所有配置

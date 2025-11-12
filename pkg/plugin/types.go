@@ -7,27 +7,27 @@ import "encoding/json"
 type PluginType string
 
 const (
-	// Source plugin type
+	// TypeSource Source plugin type
 	TypeSource PluginType = "source"
-	// Build plugin type
+	// TypeBuild Build plugin type
 	TypeBuild PluginType = "build"
-	// Test plugin type
+	// TypeTest Test plugin type
 	TypeTest PluginType = "test"
-	// Deploy plugin type
+	// TypeDeploy Deploy plugin type
 	TypeDeploy PluginType = "deploy"
-	// Security plugin type
+	// TypeSecurity Security plugin type
 	TypeSecurity PluginType = "security"
-	// Notify plugin type
+	// TypeNotify Notify plugin type
 	TypeNotify PluginType = "notify"
-	// Approval plugin type
+	// TypeApproval Approval plugin type
 	TypeApproval PluginType = "approval"
-	// Storage plugin type
+	// TypeStorage Storage plugin type
 	TypeStorage PluginType = "storage"
-	// Analytics plugin type
+	// TypeAnalytics Analytics plugin type
 	TypeAnalytics PluginType = "analytics"
-	// Integration plugin type
+	// TypeIntegration Integration plugin type
 	TypeIntegration PluginType = "integration"
-	// Custom plugin type
+	// TypeCustom Custom plugin type
 	TypeCustom PluginType = "custom"
 )
 

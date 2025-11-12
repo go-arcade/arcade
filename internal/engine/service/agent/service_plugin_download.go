@@ -143,7 +143,7 @@ func (s *PluginDownloadService) ListAvailablePlugins(pluginType string) ([]*v1.P
 	return result, nil
 }
 
-// GetPluginsForJob 获取任务所需的插件列表
+// GetPluginsForTask 获取任务所需的插件列表
 func (s *PluginDownloadService) GetPluginsForTask(taskID string) ([]*v1.PluginInfo, error) {
 	log.Infof("[PluginDownload] getting plugins for task: %s", taskID)
 
@@ -274,7 +274,7 @@ func (s *PluginDownloadService) UpdatePluginChecksum(pluginID string) error {
 	return nil
 }
 
-// GetDownloadStatistics 获取插件下载统计（可选实现，用于监控）
+// DownloadStatistics 获取插件下载统计（可选实现，用于监控）
 type DownloadStatistics struct {
 	PluginID      string
 	TotalDownload int64

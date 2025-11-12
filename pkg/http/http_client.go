@@ -1,8 +1,9 @@
 package http
 
 import (
-	"github.com/go-resty/resty/v2"
 	"io"
+
+	"github.com/go-resty/resty/v2"
 )
 
 /**

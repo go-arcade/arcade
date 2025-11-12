@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/go-arcade/arcade/internal/engine/model/general_settings"
-	general_settingsrepo "github.com/go-arcade/arcade/internal/engine/repo/general_settings"
+	generalrepo "github.com/go-arcade/arcade/internal/engine/repo/general_settings"
 
 	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/log"
@@ -20,10 +20,10 @@ import (
 
 type GeneralSettingsService struct {
 	ctx                 *ctx.Context
-	generalSettingsRepo general_settingsrepo.IGeneralSettingsRepository
+	generalSettingsRepo generalrepo.IGeneralSettingsRepository
 }
 
-func NewGeneralSettingsService(ctx *ctx.Context, generalSettingsRepo general_settingsrepo.IGeneralSettingsRepository) *GeneralSettingsService {
+func NewGeneralSettingsService(ctx *ctx.Context, generalSettingsRepo generalrepo.IGeneralSettingsRepository) *GeneralSettingsService {
 	return &GeneralSettingsService{
 		ctx:                 ctx,
 		generalSettingsRepo: generalSettingsRepo,

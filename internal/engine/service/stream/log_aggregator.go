@@ -144,8 +144,8 @@ func (la *LogAggregator) writeToMongo(logs []*LogEntry) error {
 
 	// 批量插入
 	docs := make([]interface{}, len(logs))
-	for i, log := range logs {
-		docs[i] = log
+	for i, logEntry := range logs {
+		docs[i] = logEntry
 	}
 
 	_, err := collection.InsertMany(ctx, docs)

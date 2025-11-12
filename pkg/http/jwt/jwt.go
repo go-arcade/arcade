@@ -30,10 +30,6 @@ var (
 	issUser = "arcade"
 )
 
-func keyFunc(auth http.Auth) (any, error) {
-	return auth.SecretKey, nil
-}
-
 // GenToken 生成 access_token 和 refresh_token
 func GenToken(userId string, secretKey []byte, accessExpired, refreshExpired time.Duration) (aToken, rToken string, err error) {
 

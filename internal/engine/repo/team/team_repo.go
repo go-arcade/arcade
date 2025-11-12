@@ -58,22 +58,22 @@ func (r *TeamRepo) DeleteTeam(teamId string) error {
 
 // GetTeamById 根据团队ID获取团队信息
 func (r *TeamRepo) GetTeamById(teamId string) (*team.Team, error) {
-	var team team.Team
-	err := r.db.DB().Where("team_id = ?", teamId).First(&team).Error
+	var t team.Team
+	err := r.db.DB().Where("team_id = ?", teamId).First(&t).Error
 	if err != nil {
 		return nil, err
 	}
-	return &team, nil
+	return &t, nil
 }
 
 // GetTeamByName 根据团队名称和组织ID获取团队
 func (r *TeamRepo) GetTeamByName(orgId, name string) (*team.Team, error) {
-	var team team.Team
-	err := r.db.DB().Where("org_id = ? AND name = ?", orgId, name).First(&team).Error
+	var t team.Team
+	err := r.db.DB().Where("org_id = ? AND name = ?", orgId, name).First(&t).Error
 	if err != nil {
 		return nil, err
 	}
-	return &team, nil
+	return &t, nil
 }
 
 // ListTeams 查询团队列表
@@ -240,7 +240,7 @@ func ConvertSettingsToJSON(settings map[string]interface{}) (datatypes.JSON, err
 	if err != nil {
 		return nil, err
 	}
-	return datatypes.JSON(data), nil
+	return data, nil
 }
 
 // BatchGetTeams 批量获取团队信息

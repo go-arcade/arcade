@@ -109,7 +109,6 @@ type TeamListResp struct {
 	TotalPages int         `json:"totalPages"`
 }
 
-// EntityToTeamResp convert entity.Team to TeamResp
 func ToTeamResp(team *Team) *TeamResp {
 	if team == nil {
 		return nil

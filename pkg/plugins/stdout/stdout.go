@@ -292,7 +292,7 @@ func (p *StdoutNotifyPlugin) Server(*plugin.MuxBroker) (any, error) {
 }
 
 // Client returns the RPC client (not used in plugin side)
-func (StdoutNotifyPlugin) Client(b *plugin.MuxBroker, c *rpc.Client) (any, error) {
+func (p *StdoutNotifyPlugin) Client(b *plugin.MuxBroker, c *rpc.Client) (any, error) {
 	return nil, nil
 }
 

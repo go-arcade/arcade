@@ -3,8 +3,9 @@ package version
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/cobra"
 	"runtime"
+
+	"github.com/spf13/cobra"
 )
 
 /**

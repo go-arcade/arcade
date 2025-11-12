@@ -181,18 +181,18 @@ func (ss *SecretService) UpdateSecret(secretId string, secretEntity *secret.Secr
 
 // GetSecretByID gets a secret by ID (without decrypting value)
 func (ss *SecretService) GetSecretByID(secretId string) (*secret.Secret, error) {
-	secret, err := ss.secretRepo.GetSecretByID(secretId)
+	secretByID, err := ss.secretRepo.GetSecretByID(secretId)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("secret not found")
+			return nil, errors.New("secretByID not found")
 		}
-		log.Errorf("failed to get secret: %v", err)
-		return nil, errors.New("failed to get secret")
+		log.Errorf("failed to get secretByID: %v", err)
+		return nil, errors.New("failed to get secretByID")
 	}
 
-	// mask secret value for security
-	secret.SecretValue = "***MASKED***"
-	return secret, nil
+	// mask secretByID value for security
+	secretByID.SecretValue = "***MASKED***"
+	return secretByID, nil
 }
 
 // GetSecretValue gets the decrypted secret value (use with caution)

@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -70,7 +71,7 @@ func (r *PluginTaskRepo) GetTaskByID(taskID string) (*plugin.PluginInstallRecord
 	var task plugin.PluginInstallRecords
 	err := r.collection.FindOne(ctx, bson.M{"task_id": taskID}).Decode(&task)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, fmt.Errorf("task not found: %s", taskID)
 		}
 		return nil, fmt.Errorf("failed to get task: %w", err)

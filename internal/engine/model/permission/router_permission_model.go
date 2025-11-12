@@ -48,7 +48,7 @@ type RoutePermissionDTO struct {
 	Description         string   `json:"description"`
 }
 
-// 预定义的路由配置
+// BuiltinRoutes RoutePermissionDTO 内置路由权限列表
 var BuiltinRoutes = []RoutePermissionDTO{
 	// ========== 项目管理路由 ==========
 	{
