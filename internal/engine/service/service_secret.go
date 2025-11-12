@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 
 	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/internal/engine/repo"
@@ -112,26 +113,14 @@ func (ss *SecretService) CreateSecret(secret *model.Secret, createdBy string) er
 
 	// validate secret type
 	validTypes := []string{"password", "token", "ssh_key", "env"}
-	isValidType := false
-	for _, t := range validTypes {
-		if secret.SecretType == t {
-			isValidType = true
-			break
-		}
-	}
+	isValidType := slices.Contains(validTypes, secret.SecretType)
 	if !isValidType {
 		return fmt.Errorf("invalid secretType, must be one of: %v", validTypes)
 	}
 
 	// validate scope
 	validScopes := []string{"global", "pipeline", "user", "project", "team"}
-	isValidScope := false
-	for _, s := range validScopes {
-		if secret.Scope == s {
-			isValidScope = true
-			break
-		}
-	}
+	isValidScope := slices.Contains(validScopes, secret.Scope)
 	if !isValidScope {
 		return fmt.Errorf("invalid scope, must be one of: %v", validScopes)
 	}

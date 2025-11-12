@@ -1,6 +1,7 @@
 package id_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/go-arcade/arcade/pkg/id"
@@ -33,6 +34,8 @@ func TestGetXid(t *testing.T) {
 			if got == got2 {
 				t.Errorf("GetXid() generated duplicate IDs: %s", got)
 			}
+
+			fmt.Println("Generated XID 1:", got)
 
 			t.Logf("Generated XID: %s", got)
 		})

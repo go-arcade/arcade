@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"mime/multipart"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -266,13 +267,7 @@ func (us *UploadService) UploadAvatar(file *multipart.FileHeader, userId string)
 
 	// validate image type
 	allowedTypes := []string{"image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"}
-	isValid := false
-	for _, t := range allowedTypes {
-		if contentType == t {
-			isValid = true
-			break
-		}
-	}
+	isValid := slices.Contains(allowedTypes, contentType)
 	if !isValid {
 		return nil, fmt.Errorf("invalid image type, only jpeg, png, gif, and webp are allowed")
 	}

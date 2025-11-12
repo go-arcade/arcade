@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/pkg/http"
@@ -218,10 +219,8 @@ func HasPermissionInContext(c *fiber.Ctx, permission string) bool {
 		return false
 	}
 
-	for _, p := range perms.AllPermissions {
-		if p == permission {
-			return true
-		}
+	if slices.Contains(perms.AllPermissions, permission) {
+		return true
 	}
 
 	return false

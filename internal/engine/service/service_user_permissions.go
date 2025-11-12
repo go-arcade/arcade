@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sync"
 
 	"github.com/go-arcade/arcade/internal/engine/model"
@@ -562,10 +563,8 @@ func (s *UserPermissionsService) HasPermission(ctx context.Context, userId strin
 		return false, err
 	}
 
-	for _, perm := range summary.AllPermissions {
-		if perm == permission {
-			return true, nil
-		}
+	if slices.Contains(summary.AllPermissions, permission) {
+		return true, nil
 	}
 
 	return false, nil
