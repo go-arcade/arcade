@@ -8,19 +8,19 @@ import (
 	"github.com/bytedance/sonic"
 	"github.com/go-arcade/arcade/internal/engine/consts"
 	"github.com/go-arcade/arcade/internal/engine/model"
+	"github.com/go-arcade/arcade/pkg/cache"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/jwt"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/gofiber/fiber/v2"
 	goJwt "github.com/golang-jwt/jwt/v5"
-	"github.com/redis/go-redis/v9"
 )
 
 // AuthorizationMiddleware 认证中间件
 // secretKey: 用于验证 JWT 的密钥
 // client: Redis 客户端
 // This function is used as the middleware of fiber.
-func AuthorizationMiddleware(secretKey string, client redis.Client) fiber.Handler {
+func AuthorizationMiddleware(secretKey string, cache cache.Cache) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		aToken := c.Get("Authorization")
 		if aToken == "" {
@@ -46,9 +46,9 @@ func AuthorizationMiddleware(secretKey string, client redis.Client) fiber.Handle
 
 		// 从 Redis 中获取 Token 信息
 		tokenKey := consts.UserTokenKey + claims.UserId
-		tokenInfoStr, err := client.Get(context.Background(), tokenKey).Result()
+		tokenInfoStr, err := cache.Get(context.Background(), tokenKey).Result()
 		if err != nil {
-			log.Errorf("redis get token failed: %v", err)
+			log.Errorf("cache get token failed: %v", err)
 			return http.WithRepErrMsg(c, http.TokenExpired.Code, http.TokenExpired.Msg, c.Path())
 		}
 

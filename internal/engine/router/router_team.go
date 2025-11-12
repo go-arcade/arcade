@@ -4,8 +4,6 @@ import (
 	"strconv"
 
 	"github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/internal/engine/tool"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
@@ -71,8 +69,7 @@ func (rt *Router) createTeam(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.AuthenticationFailed.Code, http.AuthenticationFailed.Msg, c.Path())
 	}
 
-	teamRepo := repo.NewTeamRepo(rt.Ctx)
-	teamService := service.NewTeamService(rt.Ctx, teamRepo)
+	teamService := rt.Services.Team
 
 	result, err := teamService.CreateTeam(&req, claims.UserId)
 	if err != nil {
@@ -97,8 +94,7 @@ func (rt *Router) updateTeam(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.RequestParameterParsingFailed.Code, http.RequestParameterParsingFailed.Msg, c.Path())
 	}
 
-	teamRepo := repo.NewTeamRepo(rt.Ctx)
-	teamService := service.NewTeamService(rt.Ctx, teamRepo)
+	teamService := rt.Services.Team
 
 	result, err := teamService.UpdateTeam(teamId, &req)
 	if err != nil {
@@ -117,8 +113,7 @@ func (rt *Router) deleteTeam(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.TeamIdIsEmpty.Code, http.TeamIdIsEmpty.Msg, c.Path())
 	}
 
-	teamRepo := repo.NewTeamRepo(rt.Ctx)
-	teamService := service.NewTeamService(rt.Ctx, teamRepo)
+	teamService := rt.Services.Team
 
 	if err := teamService.DeleteTeam(teamId); err != nil {
 		log.Errorf("delete team failed: %v", err)
@@ -136,8 +131,7 @@ func (rt *Router) getTeamById(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.TeamIdIsEmpty.Code, http.TeamIdIsEmpty.Msg, c.Path())
 	}
 
-	teamRepo := repo.NewTeamRepo(rt.Ctx)
-	teamService := service.NewTeamService(rt.Ctx, teamRepo)
+	teamService := rt.Services.Team
 
 	result, err := teamService.GetTeamById(teamId)
 	if err != nil {
@@ -182,8 +176,7 @@ func (rt *Router) listTeams(c *fiber.Ctx) error {
 		}
 	}
 
-	teamRepo := repo.NewTeamRepo(rt.Ctx)
-	teamService := service.NewTeamService(rt.Ctx, teamRepo)
+	teamService := rt.Services.Team
 
 	result, err := teamService.ListTeams(&query)
 	if err != nil {
@@ -201,8 +194,7 @@ func (rt *Router) getTeamsByOrgId(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.OrgIdIsEmpty.Code, http.OrgIdIsEmpty.Msg, c.Path())
 	}
 
-	teamRepo := repo.NewTeamRepo(rt.Ctx)
-	teamService := service.NewTeamService(rt.Ctx, teamRepo)
+	teamService := rt.Services.Team
 
 	result, err := teamService.GetTeamsByOrgId(orgId)
 	if err != nil {
@@ -221,8 +213,7 @@ func (rt *Router) getSubTeams(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.TeamIdIsEmpty.Code, http.TeamIdIsEmpty.Msg, c.Path())
 	}
 
-	teamRepo := repo.NewTeamRepo(rt.Ctx)
-	teamService := service.NewTeamService(rt.Ctx, teamRepo)
+	teamService := rt.Services.Team
 
 	result, err := teamService.GetSubTeams(teamId)
 	if err != nil {
@@ -243,8 +234,7 @@ func (rt *Router) getUserTeams(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.AuthenticationFailed.Code, http.AuthenticationFailed.Msg, c.Path())
 	}
 
-	teamRepo := repo.NewTeamRepo(rt.Ctx)
-	teamService := service.NewTeamService(rt.Ctx, teamRepo)
+	teamService := rt.Services.Team
 
 	result, err := teamService.GetTeamsByUserId(claims.UserId)
 	if err != nil {
@@ -263,8 +253,7 @@ func (rt *Router) enableTeam(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.TeamIdIsEmpty.Code, http.TeamIdIsEmpty.Msg, c.Path())
 	}
 
-	teamRepo := repo.NewTeamRepo(rt.Ctx)
-	teamService := service.NewTeamService(rt.Ctx, teamRepo)
+	teamService := rt.Services.Team
 
 	if err := teamService.EnableTeam(teamId); err != nil {
 		log.Errorf("enable team failed: %v", err)
@@ -282,8 +271,7 @@ func (rt *Router) disableTeam(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.TeamIdIsEmpty.Code, http.TeamIdIsEmpty.Msg, c.Path())
 	}
 
-	teamRepo := repo.NewTeamRepo(rt.Ctx)
-	teamService := service.NewTeamService(rt.Ctx, teamRepo)
+	teamService := rt.Services.Team
 
 	if err := teamService.DisableTeam(teamId); err != nil {
 		log.Errorf("disable team failed: %v", err)
@@ -301,8 +289,7 @@ func (rt *Router) updateTeamStatistics(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.TeamIdIsEmpty.Code, http.TeamIdIsEmpty.Msg, c.Path())
 	}
 
-	teamRepo := repo.NewTeamRepo(rt.Ctx)
-	teamService := service.NewTeamService(rt.Ctx, teamRepo)
+	teamService := rt.Services.Team
 
 	if err := teamService.UpdateTeamStatistics(teamId); err != nil {
 		log.Errorf("update team statistics failed: %v", err)

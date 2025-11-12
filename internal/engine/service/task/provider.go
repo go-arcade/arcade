@@ -33,7 +33,14 @@ func ProvideTaskWorkerPool(config TaskPoolConfig) *TaskWorkerPool {
 	maxWorkers := config.MaxWorkers
 	if maxWorkers <= 0 {
 		numCPU := runtime.NumCPU()
-		maxWorkers = max(5, min(50, numCPU*2)) // 范围: [5, 50]
+		calculated := numCPU * 2
+		if calculated < 5 {
+			maxWorkers = 5
+		} else if calculated > 50 {
+			maxWorkers = 50
+		} else {
+			maxWorkers = calculated
+		}
 		log.Infof("maxWorkers not configured, calculated based on CPU: %d (CPU cores: %d)", maxWorkers, numCPU)
 	}
 

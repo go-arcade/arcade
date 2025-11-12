@@ -2,8 +2,6 @@ package router
 
 import (
 	"github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/internal/engine/service/agent"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/gofiber/fiber/v2"
@@ -19,8 +17,7 @@ func (rt *Router) agentRouter(r fiber.Router, auth fiber.Handler) {
 
 func (rt *Router) addAgent(c *fiber.Ctx) error {
 	var addAgentReq *model.AddAgentReq
-	agentRepo := repo.NewAgentRepo(rt.Ctx)
-	agentLogic := agent.NewAgentService(agentRepo, addAgentReq)
+	agentLogic := rt.Services.Agent
 
 	if err := c.BodyParser(&addAgentReq); err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
@@ -35,9 +32,7 @@ func (rt *Router) addAgent(c *fiber.Ctx) error {
 }
 
 func (rt *Router) listAgent(c *fiber.Ctx) error {
-	var agentReq *model.AddAgentReq
-	agentRepo := repo.NewAgentRepo(rt.Ctx)
-	agentLogic := agent.NewAgentService(agentRepo, agentReq)
+	agentLogic := rt.Services.Agent
 
 	pageNum := queryInt(c, "pageNum")   // default 1
 	pageSize := queryInt(c, "pageSize") // default 10

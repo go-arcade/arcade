@@ -139,3 +139,14 @@ func (pt PluginType) Validate() error {
 	}
 	return nil
 }
+
+// QueryConfigArgs 查询插件配置参数
+type QueryConfigArgs struct {
+	PluginID string `json:"plugin_id"`
+}
+
+// QueryConfigByKeyArgs 根据键查询配置参数
+type QueryConfigByKeyArgs struct {
+	PluginID string `json:"plugin_id"`
+	Key      string `json:"key"`
+}

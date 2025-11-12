@@ -6,12 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/go-arcade/arcade/internal/engine/repo"
 	serviceplugin "github.com/go-arcade/arcade/internal/engine/service/plugin"
 	httpx "github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/go-arcade/arcade/pkg/log"
-	"github.com/go-arcade/arcade/pkg/storage"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -53,29 +51,11 @@ func (rt *Router) pluginRouter(r fiber.Router, auth fiber.Handler) {
 
 // getPluginService 获取插件服务实例
 func (rt *Router) getPluginService() *serviceplugin.PluginService {
-	pluginRepo := repo.NewPluginRepo(rt.Ctx)
-
-	// Use shared plugin manager from router
-	if rt.PluginManager == nil {
-		log.Errorf("[PluginRouter] plugin manager is nil")
+	if rt.Services.Plugin == nil {
+		log.Errorf("[PluginRouter] plugin service is nil")
 		return nil
 	}
-
-	// 获取存储提供者
-	storageRepo := repo.NewStorageRepo(rt.Ctx)
-	storageDBProvider, err := storage.NewStorageDBProvider(rt.Ctx, storageRepo)
-	if err != nil {
-		log.Errorf("[PluginRouter] failed to create storage DB provider: %v", err)
-		return nil
-	}
-
-	storageProvider, err := storageDBProvider.GetStorageProvider()
-	if err != nil {
-		log.Errorf("[PluginRouter] failed to get storage provider: %v", err)
-		return nil
-	}
-
-	return serviceplugin.NewPluginService(rt.Ctx, pluginRepo, rt.PluginManager, storageProvider)
+	return rt.Services.Plugin
 }
 
 // listPlugins 列出所有插件

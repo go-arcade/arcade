@@ -29,6 +29,8 @@ type Manager struct {
 	config *ManagerConfig
 	// Plugin handler mapping
 	handlers map[string]plugin.Plugin
+	// Database accessor
+	dbAccessor DatabaseAccessor
 }
 
 // ManagerConfig is the plugin manager configuration
@@ -48,11 +50,19 @@ type ManagerConfig struct {
 // NewManager creates a new plugin manager
 func NewManager(config *ManagerConfig) *Manager {
 	return &Manager{
-		plugins:  make(map[string]*RPCPluginClient),
-		clients:  make(map[string]*plugin.Client),
-		config:   config,
-		handlers: make(map[string]plugin.Plugin),
+		plugins:    make(map[string]*RPCPluginClient),
+		clients:    make(map[string]*plugin.Client),
+		config:     config,
+		handlers:   make(map[string]plugin.Plugin),
+		dbAccessor: nil, // 稍后通过 SetDatabaseAccessor 设置
 	}
+}
+
+// SetDatabaseAccessor 设置数据库访问器（新接口）
+func (m *Manager) SetDatabaseAccessor(accessor DatabaseAccessor) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.dbAccessor = accessor
 }
 
 // RegisterPlugin registers a plugin
@@ -462,8 +472,10 @@ func (m *Manager) cleanupPlugin(pluginClient *RPCPluginClient) error {
 // getPluginMap retrieves the plugin mapping
 func (m *Manager) getPluginMap() map[string]plugin.Plugin {
 	if len(m.handlers) == 0 {
-		// Register default plugin handler
-		m.handlers["plugin"] = &RPCPluginHandler{}
+		// Register default plugin handler with database access
+		m.handlers["plugin"] = &RPCPluginHandler{
+			DbAccessor: m.dbAccessor,
+		}
 	}
 	return m.handlers
 }

@@ -3,11 +3,11 @@ package cache
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
 )
@@ -71,17 +71,19 @@ func NewRedis(cfg Redis) (*redis.Client, error) {
 		}
 		redisClient = redis.NewFailoverClient(redisOptions)
 	default:
-		fmt.Println("failed to init redis , redis type is illegal", cfg.Mode)
+		log.Errorf("failed to init redis, redis type is illegal: %s", cfg.Mode)
 		os.Exit(1)
 	}
 
 	err := redisClient.Ping(context.Background()).Err()
 	if err != nil {
-		fmt.Println("failed to connect redis", err)
+		log.Errorf("failed to connect redis: %v", err)
 		return nil, err
 	}
 
-	fmt.Printf("[Init] redis connected, mode: %s\n", cfg.Mode)
+	log.Infow("redis connected",
+		"mode", cfg.Mode,
+	)
 
 	return redisClient, nil
 }

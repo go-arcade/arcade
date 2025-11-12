@@ -7,12 +7,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-arcade/arcade/internal/engine/conf"
 	"github.com/go-arcade/arcade/internal/engine/service"
+	"github.com/go-arcade/arcade/pkg/cache"
 	"github.com/go-arcade/arcade/pkg/ctx"
 	httpx "github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
-	pluginpkg "github.com/go-arcade/arcade/pkg/plugin"
 	"github.com/go-arcade/arcade/pkg/version"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -22,11 +21,10 @@ import (
 )
 
 type Router struct {
-	Http          *httpx.Http
-	Ctx           *ctx.Context
-	Plugin        *conf.PluginConfig
-	PermService   *service.PermissionService
-	PluginManager *pluginpkg.Manager
+	Http     *httpx.Http
+	Ctx      *ctx.Context
+	Cache    cache.Cache
+	Services *service.Services
 }
 
 const (
@@ -37,12 +35,17 @@ const (
 //go:embed all:static
 var web embed.FS
 
-func NewRouter(httpConf *httpx.Http, ctx *ctx.Context, pluginConfig *conf.PluginConfig, pluginManager *pluginpkg.Manager) *Router {
+func NewRouter(
+	httpConf *httpx.Http,
+	ctx *ctx.Context,
+	cache cache.Cache,
+	services *service.Services,
+) *Router {
 	return &Router{
-		Http:          httpConf,
-		Ctx:           ctx,
-		Plugin:        pluginConfig,
-		PluginManager: pluginManager,
+		Http:     httpConf,
+		Ctx:      ctx,
+		Cache:    cache,
+		Services: services,
 	}
 }
 
@@ -144,10 +147,7 @@ func (rt *Router) Router(log *zap.Logger) *fiber.App {
 }
 
 func (rt *Router) routerGroup(r fiber.Router) {
-	auth := middleware.AuthorizationMiddleware(
-		rt.Http.Auth.SecretKey,
-		*rt.Ctx.RedisSession(),
-	)
+	auth := middleware.AuthorizationMiddleware(rt.Http.Auth.SecretKey, rt.Cache)
 
 	// user
 	rt.userRouter(r, auth)

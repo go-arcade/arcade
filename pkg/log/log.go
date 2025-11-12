@@ -3,6 +3,7 @@ package log
 import (
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -110,13 +111,16 @@ func NewLog(conf *Conf) (*zap.Logger, error) {
 
 	newLogger := zap.New(core, zap.AddCallerSkip(1), zap.AddCaller())
 
-	// 线程安全地更新全局变量
 	mu.Lock()
 	logger = newLogger
 	sugar = newLogger.Sugar()
 	mu.Unlock()
 
-	fmt.Printf("[Init] log initialized - output: %s, level: %s\n", conf.Output, conf.Level)
+	// 使用 Debug 级别输出初始化信息，确保即使配置为 DEBUG 级别也能看到
+	sugar.Debugw("log initialized",
+		"output", conf.Output,
+		"level", conf.Level,
+	)
 
 	return newLogger, nil
 }
@@ -160,13 +164,16 @@ func customTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 }
 
 // parseLogLevel converts a string level to a zapcore.Level.
+// Supports case-insensitive matching.
 func parseLogLevel(level string) zapcore.Level {
-	switch level {
+	levelUpper := strings.ToUpper(strings.TrimSpace(level))
+
+	switch levelUpper {
 	case "DEBUG":
 		return zapcore.DebugLevel
 	case "INFO":
 		return zapcore.InfoLevel
-	case "WARN":
+	case "WARN", "WARNING":
 		return zapcore.WarnLevel
 	case "ERROR":
 		return zapcore.ErrorLevel

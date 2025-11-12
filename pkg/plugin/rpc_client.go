@@ -95,6 +95,43 @@ func (c *RPCPluginClient) Call(method string, args interface{}, reply interface{
 	return c.client.Call(method, args, reply)
 }
 
+// QueryConfig 查询插件配置
+func (c *RPCPluginClient) QueryConfig(pluginID string) (string, error) {
+	if c.client == nil {
+		return "", fmt.Errorf("RPC client is not initialized")
+	}
+	args := &QueryConfigArgs{
+		PluginID: pluginID,
+	}
+	var result string
+	err := c.client.Call("Plugin.QueryConfig", args, &result)
+	return result, err
+}
+
+// QueryConfigByKey 根据配置键查询配置值
+func (c *RPCPluginClient) QueryConfigByKey(pluginID string, key string) (string, error) {
+	if c.client == nil {
+		return "", fmt.Errorf("RPC client is not initialized")
+	}
+	args := &QueryConfigByKeyArgs{
+		PluginID: pluginID,
+		Key:      key,
+	}
+	var result string
+	err := c.client.Call("Plugin.QueryConfigByKey", args, &result)
+	return result, err
+}
+
+// ListConfigs 列出所有插件配置
+func (c *RPCPluginClient) ListConfigs() (string, error) {
+	if c.client == nil {
+		return "", fmt.Errorf("RPC client is not initialized")
+	}
+	var result string
+	err := c.client.Call("Plugin.ListConfigs", "", &result)
+	return result, err
+}
+
 // Close closes the plugin client and releases resources
 func (c *RPCPluginClient) Close() error {
 	if c.pluginClient != nil {

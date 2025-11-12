@@ -4,8 +4,6 @@ import (
 	"strconv"
 
 	"github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/gofiber/fiber/v2"
@@ -27,8 +25,7 @@ func (rt *Router) generalSettingsRouter(r fiber.Router, auth fiber.Handler) {
 
 // updateGeneralSettings updates a general settings
 func (rt *Router) updateGeneralSettings(c *fiber.Ctx) error {
-	generalSettingsRepo := repo.NewGeneralSettingsRepo(rt.Ctx)
-	generalSettingsService := service.NewGeneralSettingsService(rt.Ctx, generalSettingsRepo)
+	generalSettingsService := rt.Services.GeneralSettings
 
 	// get settings ID from path parameter
 	idStr := c.Params("id")
@@ -53,8 +50,7 @@ func (rt *Router) updateGeneralSettings(c *fiber.Ctx) error {
 
 // getGeneralSettings gets a general settings by ID
 func (rt *Router) getGeneralSettings(c *fiber.Ctx) error {
-	generalSettingsRepo := repo.NewGeneralSettingsRepo(rt.Ctx)
-	generalSettingsService := service.NewGeneralSettingsService(rt.Ctx, generalSettingsRepo)
+	generalSettingsService := rt.Services.GeneralSettings
 
 	// get settings ID from path parameter
 	idStr := c.Params("id")
@@ -75,8 +71,7 @@ func (rt *Router) getGeneralSettings(c *fiber.Ctx) error {
 
 // getGeneralSettingsByName gets a general settings by category and name
 func (rt *Router) getGeneralSettingsByName(c *fiber.Ctx) error {
-	generalSettingsRepo := repo.NewGeneralSettingsRepo(rt.Ctx)
-	generalSettingsService := service.NewGeneralSettingsService(rt.Ctx, generalSettingsRepo)
+	generalSettingsService := rt.Services.GeneralSettings
 
 	category := c.Params("category")
 	name := c.Params("name")
@@ -97,8 +92,7 @@ func (rt *Router) getGeneralSettingsByName(c *fiber.Ctx) error {
 
 // getGeneralSettingsList gets general settings list with pagination and filters
 func (rt *Router) getGeneralSettingsList(c *fiber.Ctx) error {
-	generalSettingsRepo := repo.NewGeneralSettingsRepo(rt.Ctx)
-	generalSettingsService := service.NewGeneralSettingsService(rt.Ctx, generalSettingsRepo)
+	generalSettingsService := rt.Services.GeneralSettings
 
 	// get query parameters
 	pageNum, _ := strconv.Atoi(c.Query("pageNum", "1"))
@@ -125,8 +119,7 @@ func (rt *Router) getGeneralSettingsList(c *fiber.Ctx) error {
 
 // getCategories gets all distinct categories
 func (rt *Router) getCategories(c *fiber.Ctx) error {
-	generalSettingsRepo := repo.NewGeneralSettingsRepo(rt.Ctx)
-	generalSettingsService := service.NewGeneralSettingsService(rt.Ctx, generalSettingsRepo)
+	generalSettingsService := rt.Services.GeneralSettings
 
 	categories, err := generalSettingsService.GetCategories()
 	if err != nil {

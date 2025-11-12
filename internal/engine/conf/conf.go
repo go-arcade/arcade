@@ -72,7 +72,9 @@ func LoadConfigFile(confDir string) (AppConfig, error) {
 	if err := config.Unmarshal(&cfg); err != nil {
 		return cfg, fmt.Errorf("failed to unmarshal configuration file: %v", err)
 	}
-	fmt.Printf("[Init] config file path: %s\n", confDir)
+	log.Infow("config file loaded",
+		"path", confDir,
+	)
 
 	return cfg, nil
 }

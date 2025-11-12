@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/pkg/ctx"
+	"github.com/go-arcade/arcade/pkg/database"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -19,23 +19,36 @@ import (
  * @description: 插件安装任务数据访问层
  */
 
+type IPluginTaskRepository interface {
+	CreateTask(task *model.PluginInstallRecords) error
+	GetTaskByID(taskID string) (*model.PluginInstallRecords, error)
+	UpdateTask(task *model.PluginInstallRecords) error
+	ListTasks(filter bson.M, skip, limit int64) ([]*model.PluginInstallRecords, error)
+	ListAllTasks() ([]*model.PluginInstallRecords, error)
+	ListTasksByStatus(status string) ([]*model.PluginInstallRecords, error)
+	CountTasks(filter bson.M) (int64, error)
+	DeleteTask(taskID string) error
+	DeleteOldTasks(before time.Time) (int64, error)
+	CreateIndexes() error
+}
+
 type PluginTaskRepo struct {
-	ctx        *ctx.Context
+	mongo      database.MongoDB
 	collection *mongo.Collection
 }
 
-func NewPluginTaskRepo(ctx *ctx.Context) *PluginTaskRepo {
-	// 直接使用MongoClient的GetCollection方法，无需再指定数据库
-	collection := ctx.MongoSession().GetCollection(model.PluginInstallRecords{}.CollectionName())
+func NewPluginTaskRepo(mongo database.MongoDB) IPluginTaskRepository {
+	// 直接使用MongoDB接口的GetCollection方法，无需再指定数据库
+	collection := mongo.GetCollection(model.PluginInstallRecords{}.CollectionName())
 	return &PluginTaskRepo{
-		ctx:        ctx,
+		mongo:      mongo,
 		collection: collection,
 	}
 }
 
 // CreateTask 创建任务
 func (r *PluginTaskRepo) CreateTask(task *model.PluginInstallRecords) error {
-	ctx, cancel := context.WithTimeout(r.ctx.ContextIns(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	task.CreateTime = time.Now()
@@ -51,7 +64,7 @@ func (r *PluginTaskRepo) CreateTask(task *model.PluginInstallRecords) error {
 
 // GetTaskByID 根据任务ID获取任务
 func (r *PluginTaskRepo) GetTaskByID(taskID string) (*model.PluginInstallRecords, error) {
-	ctx, cancel := context.WithTimeout(r.ctx.ContextIns(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	var task model.PluginInstallRecords
@@ -68,7 +81,7 @@ func (r *PluginTaskRepo) GetTaskByID(taskID string) (*model.PluginInstallRecords
 
 // UpdateTask 更新任务
 func (r *PluginTaskRepo) UpdateTask(task *model.PluginInstallRecords) error {
-	ctx, cancel := context.WithTimeout(r.ctx.ContextIns(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	task.UpdateTime = time.Now()
@@ -108,7 +121,7 @@ func (r *PluginTaskRepo) UpdateTask(task *model.PluginInstallRecords) error {
 
 // ListTasks 列出任务（支持分页和过滤）
 func (r *PluginTaskRepo) ListTasks(filter bson.M, skip, limit int64) ([]*model.PluginInstallRecords, error) {
-	ctx, cancel := context.WithTimeout(r.ctx.ContextIns(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	opts := options.Find().
@@ -142,7 +155,7 @@ func (r *PluginTaskRepo) ListTasksByStatus(status string) ([]*model.PluginInstal
 
 // CountTasks 统计任务数量
 func (r *PluginTaskRepo) CountTasks(filter bson.M) (int64, error) {
-	ctx, cancel := context.WithTimeout(r.ctx.ContextIns(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	count, err := r.collection.CountDocuments(ctx, filter)
@@ -155,7 +168,7 @@ func (r *PluginTaskRepo) CountTasks(filter bson.M) (int64, error) {
 
 // DeleteTask 删除任务
 func (r *PluginTaskRepo) DeleteTask(taskID string) error {
-	ctx, cancel := context.WithTimeout(r.ctx.ContextIns(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	result, err := r.collection.DeleteOne(ctx, bson.M{"task_id": taskID})
@@ -172,7 +185,7 @@ func (r *PluginTaskRepo) DeleteTask(taskID string) error {
 
 // DeleteOldTasks 删除旧任务（完成时间早于指定时间）
 func (r *PluginTaskRepo) DeleteOldTasks(before time.Time) (int64, error) {
-	ctx, cancel := context.WithTimeout(r.ctx.ContextIns(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	filter := bson.M{
@@ -193,7 +206,7 @@ func (r *PluginTaskRepo) DeleteOldTasks(before time.Time) (int64, error) {
 
 // CreateIndexes 创建索引
 func (r *PluginTaskRepo) CreateIndexes() error {
-	ctx, cancel := context.WithTimeout(r.ctx.ContextIns(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	indexes := []mongo.IndexModel{

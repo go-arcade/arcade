@@ -38,7 +38,7 @@ type Storage struct {
 // StorageDBProvider 从数据库加载存储配置的提供者
 type StorageDBProvider struct {
 	ctx           *ctx.Context
-	storageRepo   *repo.StorageRepo
+	storageRepo   repo.IStorageRepository
 	storageConfig *model.StorageConfig
 }
 
@@ -111,7 +111,7 @@ func NewStorage(s *Storage) (StorageProvider, error) {
 }
 
 // NewStorageDBProvider 创建从数据库加载存储配置的提供者
-func NewStorageDBProvider(ctx *ctx.Context, storageRepo *repo.StorageRepo) (*StorageDBProvider, error) {
+func NewStorageDBProvider(ctx *ctx.Context, storageRepo repo.IStorageRepository) (*StorageDBProvider, error) {
 	// 获取默认存储配置
 	storageConfig, err := storageRepo.GetDefaultStorageConfig()
 	if err != nil {

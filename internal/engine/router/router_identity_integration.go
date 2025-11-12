@@ -4,7 +4,6 @@ import (
 	http2 "net/http"
 
 	"github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/internal/engine/repo"
 	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
@@ -32,9 +31,7 @@ func (rt *Router) identityIntegrationRouter(r fiber.Router, auth fiber.Handler) 
 
 // authorize initiates authorization (OAuth/OIDC)
 func (rt *Router) authorize(c *fiber.Ctx) error {
-	identityRepo := repo.NewIdentityIntegrationRepo(rt.Ctx)
-	userRepo := repo.NewUserRepo(rt.Ctx)
-	identityService := service.NewIdentityIntegrationService(identityRepo, userRepo)
+	identityService := rt.Services.IdentityIntegration
 
 	providerName := c.Params("provider")
 	if providerName == "" {
@@ -51,9 +48,7 @@ func (rt *Router) authorize(c *fiber.Ctx) error {
 
 // callback handles OAuth/OIDC authorization callback
 func (rt *Router) callback(c *fiber.Ctx) error {
-	identityRepo := repo.NewIdentityIntegrationRepo(rt.Ctx)
-	userRepo := repo.NewUserRepo(rt.Ctx)
-	identityService := service.NewIdentityIntegrationService(identityRepo, userRepo)
+	identityService := rt.Services.IdentityIntegration
 
 	providerName := c.Params("provider")
 	state := c.Query("state")
@@ -73,9 +68,7 @@ func (rt *Router) callback(c *fiber.Ctx) error {
 
 // listProviders lists all providers (supports ?type=xxx filter)
 func (rt *Router) listProviders(c *fiber.Ctx) error {
-	identityRepo := repo.NewIdentityIntegrationRepo(rt.Ctx)
-	userRepo := repo.NewUserRepo(rt.Ctx)
-	identityService := service.NewIdentityIntegrationService(identityRepo, userRepo)
+	identityService := rt.Services.IdentityIntegration
 
 	// support filtering by type through query parameter
 	providerType := c.Query("type")
@@ -124,9 +117,7 @@ func (rt *Router) listProviders(c *fiber.Ctx) error {
 
 // getProvider gets a specific provider
 func (rt *Router) getProvider(c *fiber.Ctx) error {
-	identityRepo := repo.NewIdentityIntegrationRepo(rt.Ctx)
-	userRepo := repo.NewUserRepo(rt.Ctx)
-	identityService := service.NewIdentityIntegrationService(identityRepo, userRepo)
+	identityService := rt.Services.IdentityIntegration
 
 	name := c.Params("name")
 	if name == "" {
@@ -144,9 +135,7 @@ func (rt *Router) getProvider(c *fiber.Ctx) error {
 
 // listProviderTypes lists all provider types
 func (rt *Router) listProviderTypes(c *fiber.Ctx) error {
-	identityRepo := repo.NewIdentityIntegrationRepo(rt.Ctx)
-	userRepo := repo.NewUserRepo(rt.Ctx)
-	identityService := service.NewIdentityIntegrationService(identityRepo, userRepo)
+	identityService := rt.Services.IdentityIntegration
 
 	providerTypes, err := identityService.GetProviderTypeList()
 	if err != nil {
@@ -159,9 +148,7 @@ func (rt *Router) listProviderTypes(c *fiber.Ctx) error {
 
 // ldapLogin handles LDAP login (authentication methods requiring username and password)
 func (rt *Router) ldapLogin(c *fiber.Ctx) error {
-	identityRepo := repo.NewIdentityIntegrationRepo(rt.Ctx)
-	userRepo := repo.NewUserRepo(rt.Ctx)
-	identityService := service.NewIdentityIntegrationService(identityRepo, userRepo)
+	identityService := rt.Services.IdentityIntegration
 
 	providerName := c.Params("provider")
 	if providerName == "" {
@@ -188,9 +175,7 @@ func (rt *Router) ldapLogin(c *fiber.Ctx) error {
 
 // createProvider creates an identity integration provider
 func (rt *Router) createProvider(c *fiber.Ctx) error {
-	identityRepo := repo.NewIdentityIntegrationRepo(rt.Ctx)
-	userRepo := repo.NewUserRepo(rt.Ctx)
-	identityService := service.NewIdentityIntegrationService(identityRepo, userRepo)
+	identityService := rt.Services.IdentityIntegration
 
 	var provider model.IdentityIntegration
 	if err := c.BodyParser(&provider); err != nil {
@@ -213,9 +198,7 @@ func (rt *Router) createProvider(c *fiber.Ctx) error {
 
 // updateProvider updates an identity integration provider
 func (rt *Router) updateProvider(c *fiber.Ctx) error {
-	identityRepo := repo.NewIdentityIntegrationRepo(rt.Ctx)
-	userRepo := repo.NewUserRepo(rt.Ctx)
-	identityService := service.NewIdentityIntegrationService(identityRepo, userRepo)
+	identityService := rt.Services.IdentityIntegration
 
 	name := c.Params("name")
 	if name == "" {
@@ -237,9 +220,7 @@ func (rt *Router) updateProvider(c *fiber.Ctx) error {
 
 // toggleProvider toggles the enabled status of an identity integration provider
 func (rt *Router) toggleProvider(c *fiber.Ctx) error {
-	identityRepo := repo.NewIdentityIntegrationRepo(rt.Ctx)
-	userRepo := repo.NewUserRepo(rt.Ctx)
-	identityService := service.NewIdentityIntegrationService(identityRepo, userRepo)
+	identityService := rt.Services.IdentityIntegration
 
 	name := c.Params("name")
 	if name == "" {
@@ -256,9 +237,7 @@ func (rt *Router) toggleProvider(c *fiber.Ctx) error {
 
 // deleteProvider deletes an identity integration provider
 func (rt *Router) deleteProvider(c *fiber.Ctx) error {
-	identityRepo := repo.NewIdentityIntegrationRepo(rt.Ctx)
-	userRepo := repo.NewUserRepo(rt.Ctx)
-	identityService := service.NewIdentityIntegrationService(identityRepo, userRepo)
+	identityService := rt.Services.IdentityIntegration
 
 	name := c.Params("name")
 	if name == "" {

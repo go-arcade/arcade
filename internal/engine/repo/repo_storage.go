@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -8,12 +9,14 @@ import (
 	"time"
 
 	"github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/pkg/ctx"
+	"github.com/go-arcade/arcade/pkg/cache"
+	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/go-arcade/arcade/pkg/log"
 )
 
 type StorageRepo struct {
-	Ctx          *ctx.Context
+	db           database.DB
+	cache        cache.Cache
 	StorageModel model.StorageConfig
 }
 
@@ -26,9 +29,22 @@ const (
 	storageConfigCacheTTL = 24 * time.Hour
 )
 
-func NewStorageRepo(ctx *ctx.Context) *StorageRepo {
+type IStorageRepository interface {
+	GetDefaultStorageConfig() (*model.StorageConfig, error)
+	GetStorageConfigByID(storageID string) (*model.StorageConfig, error)
+	GetEnabledStorageConfigs() ([]model.StorageConfig, error)
+	GetStorageConfigByType(storageType string) ([]model.StorageConfig, error)
+	CreateStorageConfig(storageConfig *model.StorageConfig) error
+	UpdateStorageConfig(storageConfig *model.StorageConfig) error
+	DeleteStorageConfig(storageID string) error
+	SetDefaultStorageConfig(storageID string) error
+	ParseStorageConfig(storageConfig *model.StorageConfig) (interface{}, error)
+}
+
+func NewStorageRepo(db database.DB, cache cache.Cache) IStorageRepository {
 	return &StorageRepo{
-		Ctx:          ctx,
+		db:           db,
+		cache:        cache,
 		StorageModel: model.StorageConfig{},
 	}
 }
@@ -36,8 +52,9 @@ func NewStorageRepo(ctx *ctx.Context) *StorageRepo {
 // GetDefaultStorageConfig 获取默认存储配置（带Redis缓存）
 func (sr *StorageRepo) GetDefaultStorageConfig() (*model.StorageConfig, error) {
 	// 1. 先从 Redis 查询
-	if sr.Ctx.RedisSession() != nil {
-		cacheData, err := sr.Ctx.RedisSession().Get(sr.Ctx.ContextIns(), storageDefaultConfigCacheKey).Result()
+	ctx := context.Background()
+	if sr.cache != nil {
+		cacheData, err := sr.cache.Get(ctx, storageDefaultConfigCacheKey).Result()
 		if err == nil && cacheData != "" {
 			var storageConfig model.StorageConfig
 			if err := json.Unmarshal([]byte(cacheData), &storageConfig); err == nil {
@@ -50,7 +67,7 @@ func (sr *StorageRepo) GetDefaultStorageConfig() (*model.StorageConfig, error) {
 
 	// 2. Redis 没有，从数据库查询
 	var storageConfig model.StorageConfig
-	err := sr.Ctx.DBSession().Table(sr.StorageModel.TableName()).
+	err := sr.db.DB().Table(sr.StorageModel.TableName()).
 		Where("is_default = ? AND is_enabled = ?", 1, 1).
 		First(&storageConfig).Error
 	if err != nil {
@@ -58,10 +75,10 @@ func (sr *StorageRepo) GetDefaultStorageConfig() (*model.StorageConfig, error) {
 	}
 
 	// 3. 缓存到 Redis
-	if sr.Ctx.RedisSession() != nil {
+	if sr.cache != nil {
 		cacheData, err := json.Marshal(storageConfig)
 		if err == nil {
-			err = sr.Ctx.RedisSession().Set(sr.Ctx.ContextIns(),
+			err = sr.cache.Set(ctx,
 				storageDefaultConfigCacheKey,
 				cacheData,
 				storageConfigCacheTTL).Err()
@@ -81,8 +98,9 @@ func (sr *StorageRepo) GetStorageConfigByID(storageID string) (*model.StorageCon
 	cacheKey := storageConfigCacheKeyPrefix + storageID
 
 	// 1. 先从 Redis 查询
-	if sr.Ctx.RedisSession() != nil {
-		cacheData, err := sr.Ctx.RedisSession().Get(sr.Ctx.ContextIns(), cacheKey).Result()
+	ctx := context.Background()
+	if sr.cache != nil {
+		cacheData, err := sr.cache.Get(ctx, cacheKey).Result()
 		if err == nil && cacheData != "" {
 			var storageConfig model.StorageConfig
 			if err := json.Unmarshal([]byte(cacheData), &storageConfig); err == nil {
@@ -95,7 +113,7 @@ func (sr *StorageRepo) GetStorageConfigByID(storageID string) (*model.StorageCon
 
 	// 2. Redis 没有，从数据库查询
 	var storageConfig model.StorageConfig
-	err := sr.Ctx.DBSession().Table(sr.StorageModel.TableName()).
+	err := sr.db.DB().Table(sr.StorageModel.TableName()).
 		Where("storage_id = ? AND is_enabled = ?", storageID, 1).
 		First(&storageConfig).Error
 	if err != nil {
@@ -103,10 +121,10 @@ func (sr *StorageRepo) GetStorageConfigByID(storageID string) (*model.StorageCon
 	}
 
 	// 3. 缓存到 Redis
-	if sr.Ctx.RedisSession() != nil {
+	if sr.cache != nil {
 		cacheData, err := json.Marshal(storageConfig)
 		if err == nil {
-			err = sr.Ctx.RedisSession().Set(sr.Ctx.ContextIns(),
+			err = sr.cache.Set(ctx,
 				cacheKey,
 				cacheData,
 				storageConfigCacheTTL).Err()
@@ -124,7 +142,7 @@ func (sr *StorageRepo) GetStorageConfigByID(storageID string) (*model.StorageCon
 // GetEnabledStorageConfigs 获取所有启用的存储配置
 func (sr *StorageRepo) GetEnabledStorageConfigs() ([]model.StorageConfig, error) {
 	var storageConfigs []model.StorageConfig
-	err := sr.Ctx.DBSession().Table(sr.StorageModel.TableName()).
+	err := sr.db.DB().Table(sr.StorageModel.TableName()).
 		Select("storage_id", "name", "storage_type", "config", "description", "is_default", "is_enabled").
 		Where("is_enabled = ?", 1).
 		Order("is_default DESC, storage_id ASC").
@@ -138,7 +156,7 @@ func (sr *StorageRepo) GetEnabledStorageConfigs() ([]model.StorageConfig, error)
 // GetStorageConfigByType 根据存储类型获取配置
 func (sr *StorageRepo) GetStorageConfigByType(storageType string) ([]model.StorageConfig, error) {
 	var storageConfigs []model.StorageConfig
-	err := sr.Ctx.DBSession().Table(sr.StorageModel.TableName()).
+	err := sr.db.DB().Table(sr.StorageModel.TableName()).
 		Select("storage_id", "name", "storage_type", "config", "description", "is_default", "is_enabled").
 		Where("storage_type = ? AND is_enabled = ?", storageType, 1).
 		Order("is_default DESC, storage_id ASC").
@@ -151,7 +169,7 @@ func (sr *StorageRepo) GetStorageConfigByType(storageType string) ([]model.Stora
 
 // CreateStorageConfig 创建存储配置
 func (sr *StorageRepo) CreateStorageConfig(storageConfig *model.StorageConfig) error {
-	err := sr.Ctx.DBSession().Table(sr.StorageModel.TableName()).Create(storageConfig).Error
+	err := sr.db.DB().Table(sr.StorageModel.TableName()).Create(storageConfig).Error
 	if err != nil {
 		return fmt.Errorf("failed to create storage config: %w", err)
 	}
@@ -160,7 +178,7 @@ func (sr *StorageRepo) CreateStorageConfig(storageConfig *model.StorageConfig) e
 
 // UpdateStorageConfig 更新存储配置
 func (sr *StorageRepo) UpdateStorageConfig(storageConfig *model.StorageConfig) error {
-	err := sr.Ctx.DBSession().Table(sr.StorageModel.TableName()).
+	err := sr.db.DB().Table(sr.StorageModel.TableName()).
 		Where("storage_id = ?", storageConfig.StorageId).
 		Updates(storageConfig).Error
 	if err != nil {
@@ -179,7 +197,7 @@ func (sr *StorageRepo) UpdateStorageConfig(storageConfig *model.StorageConfig) e
 
 // DeleteStorageConfig 删除存储配置
 func (sr *StorageRepo) DeleteStorageConfig(storageID string) error {
-	err := sr.Ctx.DBSession().Table(sr.StorageModel.TableName()).
+	err := sr.db.DB().Table(sr.StorageModel.TableName()).
 		Where("storage_id = ?", storageID).
 		Delete(&model.StorageConfig{}).Error
 	if err != nil {
@@ -196,7 +214,7 @@ func (sr *StorageRepo) DeleteStorageConfig(storageID string) error {
 // SetDefaultStorageConfig 设置默认存储配置
 func (sr *StorageRepo) SetDefaultStorageConfig(storageID string) error {
 	// 先取消所有默认配置
-	err := sr.Ctx.DBSession().Table(sr.StorageModel.TableName()).
+	err := sr.db.DB().Table(sr.StorageModel.TableName()).
 		Where("is_default = ?", 1).
 		Update("is_default", 0).Error
 	if err != nil {
@@ -204,7 +222,7 @@ func (sr *StorageRepo) SetDefaultStorageConfig(storageID string) error {
 	}
 
 	// 设置新的默认配置
-	err = sr.Ctx.DBSession().Table(sr.StorageModel.TableName()).
+	err = sr.db.DB().Table(sr.StorageModel.TableName()).
 		Where("storage_id = ?", storageID).
 		Update("is_default", 1).Error
 	if err != nil {
@@ -220,12 +238,12 @@ func (sr *StorageRepo) SetDefaultStorageConfig(storageID string) error {
 
 // clearStorageConfigCache 清除指定存储配置的缓存
 func (sr *StorageRepo) clearStorageConfigCache(storageID string) {
-	if sr.Ctx.RedisSession() == nil {
+	if sr.cache == nil {
 		return
 	}
-
+	ctx := context.Background()
 	cacheKey := storageConfigCacheKeyPrefix + storageID
-	err := sr.Ctx.RedisSession().Del(sr.Ctx.ContextIns(), cacheKey).Err()
+	err := sr.cache.Del(ctx, cacheKey).Err()
 	if err != nil {
 		log.Warnf("[StorageRepo] failed to clear cache for storage config %s: %v", storageID, err)
 	} else {
@@ -235,11 +253,11 @@ func (sr *StorageRepo) clearStorageConfigCache(storageID string) {
 
 // clearDefaultStorageConfigCache 清除默认存储配置的缓存
 func (sr *StorageRepo) clearDefaultStorageConfigCache() {
-	if sr.Ctx.RedisSession() == nil {
+	if sr.cache == nil {
 		return
 	}
-
-	err := sr.Ctx.RedisSession().Del(sr.Ctx.ContextIns(), storageDefaultConfigCacheKey).Err()
+	ctx := context.Background()
+	err := sr.cache.Del(ctx, storageDefaultConfigCacheKey).Err()
 	if err != nil {
 		log.Warnf("[StorageRepo] failed to clear default storage config cache: %v", err)
 	} else {

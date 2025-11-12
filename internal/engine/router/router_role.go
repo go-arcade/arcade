@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/internal/engine/tool"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
@@ -29,8 +27,7 @@ func (rt *Router) roleRouter(r fiber.Router, auth fiber.Handler) {
 
 // listRoles lists all roles with pagination and filters
 func (rt *Router) listRoles(c *fiber.Ctx) error {
-	roleRepo := repo.NewRoleRepo(rt.Ctx)
-	roleService := service.NewRoleService(roleRepo)
+	roleService := rt.Services.Role
 
 	// parse query parameters
 	req := &model.ListRolesRequest{
@@ -92,8 +89,7 @@ func (rt *Router) listRoles(c *fiber.Ctx) error {
 
 // createRole creates a custom role
 func (rt *Router) createRole(c *fiber.Ctx) error {
-	roleRepo := repo.NewRoleRepo(rt.Ctx)
-	roleService := service.NewRoleService(roleRepo)
+	roleService := rt.Services.Role
 
 	var req model.CreateRoleRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -124,8 +120,7 @@ func (rt *Router) createRole(c *fiber.Ctx) error {
 
 // getRole gets a role by ID
 func (rt *Router) getRole(c *fiber.Ctx) error {
-	roleRepo := repo.NewRoleRepo(rt.Ctx)
-	roleService := service.NewRoleService(roleRepo)
+	roleService := rt.Services.Role
 
 	roleId := c.Params("roleId")
 	if roleId == "" {
@@ -163,8 +158,7 @@ func (rt *Router) getRole(c *fiber.Ctx) error {
 
 // updateRole updates a role (only custom roles can be updated)
 func (rt *Router) updateRole(c *fiber.Ctx) error {
-	roleRepo := repo.NewRoleRepo(rt.Ctx)
-	roleService := service.NewRoleService(roleRepo)
+	roleService := rt.Services.Role
 
 	roleId := c.Params("roleId")
 	if roleId == "" {
@@ -186,8 +180,7 @@ func (rt *Router) updateRole(c *fiber.Ctx) error {
 
 // deleteRole deletes a role (only custom roles can be deleted)
 func (rt *Router) deleteRole(c *fiber.Ctx) error {
-	roleRepo := repo.NewRoleRepo(rt.Ctx)
-	roleService := service.NewRoleService(roleRepo)
+	roleService := rt.Services.Role
 
 	roleId := c.Params("roleId")
 	if roleId == "" {
@@ -204,8 +197,7 @@ func (rt *Router) deleteRole(c *fiber.Ctx) error {
 
 // toggleRole toggles the enabled status of a role
 func (rt *Router) toggleRole(c *fiber.Ctx) error {
-	roleRepo := repo.NewRoleRepo(rt.Ctx)
-	roleService := service.NewRoleService(roleRepo)
+	roleService := rt.Services.Role
 
 	roleId := c.Params("roleId")
 	if roleId == "" {
@@ -222,8 +214,7 @@ func (rt *Router) toggleRole(c *fiber.Ctx) error {
 
 // getRolePermissions gets a role's permissions
 func (rt *Router) getRolePermissions(c *fiber.Ctx) error {
-	roleRepo := repo.NewRoleRepo(rt.Ctx)
-	roleService := service.NewRoleService(roleRepo)
+	roleService := rt.Services.Role
 
 	roleId := c.Params("roleId")
 	if roleId == "" {
@@ -244,8 +235,7 @@ func (rt *Router) getRolePermissions(c *fiber.Ctx) error {
 
 // updateRolePermissions updates a role's permissions
 func (rt *Router) updateRolePermissions(c *fiber.Ctx) error {
-	roleRepo := repo.NewRoleRepo(rt.Ctx)
-	roleService := service.NewRoleService(roleRepo)
+	roleService := rt.Services.Role
 
 	roleId := c.Params("roleId")
 	if roleId == "" {

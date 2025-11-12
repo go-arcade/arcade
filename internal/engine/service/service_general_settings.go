@@ -19,10 +19,10 @@ import (
 
 type GeneralSettingsService struct {
 	ctx                 *ctx.Context
-	generalSettingsRepo *repo.GeneralSettingsRepo
+	generalSettingsRepo repo.IGeneralSettingsRepository
 }
 
-func NewGeneralSettingsService(ctx *ctx.Context, generalSettingsRepo *repo.GeneralSettingsRepo) *GeneralSettingsService {
+func NewGeneralSettingsService(ctx *ctx.Context, generalSettingsRepo repo.IGeneralSettingsRepository) *GeneralSettingsService {
 	return &GeneralSettingsService{
 		ctx:                 ctx,
 		generalSettingsRepo: generalSettingsRepo,

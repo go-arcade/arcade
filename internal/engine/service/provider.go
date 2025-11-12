@@ -2,25 +2,27 @@ package service
 
 import (
 	"github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/internal/engine/service/agent"
+	"github.com/go-arcade/arcade/pkg/cache"
 	"github.com/go-arcade/arcade/pkg/ctx"
+	"github.com/go-arcade/arcade/pkg/database"
+	pluginpkg "github.com/go-arcade/arcade/pkg/plugin"
+	"github.com/go-arcade/arcade/pkg/storage"
 	"github.com/google/wire"
 )
 
 // ProviderSet 提供服务层相关的依赖
 var ProviderSet = wire.NewSet(
-	ProvideAgentService,
-	ProvideUserService,
+	ProvideServices,
 )
 
-// ProvideAgentService 提供 Agent 服务实例
-func ProvideAgentService(agentRepo *repo.AgentRepo) *agent.AgentService {
-	return &agent.AgentService{
-		AgentRepo: agentRepo,
-	}
-}
-
-// ProvideUserService 提供 User 服务实例
-func ProvideUserService(ctx *ctx.Context, userRepo *repo.UserRepo) *UserService {
-	return NewUserService(ctx, userRepo)
+// ProvideServices 提供统一的 Services 实例
+func ProvideServices(
+	ctx *ctx.Context,
+	db database.DB,
+	cache cache.Cache,
+	repos *repo.Repositories,
+	pluginManager *pluginpkg.Manager,
+	storageProvider storage.StorageProvider,
+) *Services {
+	return NewServices(ctx, db, cache, repos, pluginManager, storageProvider)
 }

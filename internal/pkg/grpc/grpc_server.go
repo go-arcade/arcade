@@ -81,9 +81,14 @@ func (s *ServerWrapper) Start(cfg Conf) error {
 	}
 
 	go func() {
-		log.Infof("gRPC server started at %s", addr)
+		log.Infow("gRPC listener started",
+			"address", addr,
+		)
 		if err := s.svr.Serve(lis); err != nil {
-			log.Fatalf("gRPC server failed: %v", err)
+			log.Errorw("gRPC listener failed",
+				"address", addr,
+				"error", err,
+			)
 		}
 	}()
 

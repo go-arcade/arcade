@@ -2,8 +2,6 @@ package router
 
 import (
 	"github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/gofiber/fiber/v2"
@@ -26,8 +24,7 @@ func (rt *Router) getUserExtension(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "user id is required", c.Path())
 	}
 
-	userExtRepo := repo.NewUserExtensionRepo(rt.Ctx)
-	userExtService := service.NewUserExtensionService(userExtRepo)
+	userExtService := rt.Services.UserExtension
 
 	extension, err := userExtService.GetUserExtension(userId)
 	if err != nil {
@@ -50,8 +47,7 @@ func (rt *Router) updateUserExtension(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid request parameters", c.Path())
 	}
 
-	userExtRepo := repo.NewUserExtensionRepo(rt.Ctx)
-	userExtService := service.NewUserExtensionService(userExtRepo)
+	userExtService := rt.Services.UserExtension
 
 	if err := userExtService.UpdateUserExtension(userId, &extension); err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
@@ -81,8 +77,7 @@ func (rt *Router) updateTimezone(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "timezone is required", c.Path())
 	}
 
-	userExtRepo := repo.NewUserExtensionRepo(rt.Ctx)
-	userExtService := service.NewUserExtensionService(userExtRepo)
+	userExtService := rt.Services.UserExtension
 
 	if err := userExtService.UpdateTimezone(userId, req.Timezone); err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
@@ -112,8 +107,7 @@ func (rt *Router) updateInvitationStatus(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "status is required", c.Path())
 	}
 
-	userExtRepo := repo.NewUserExtensionRepo(rt.Ctx)
-	userExtService := service.NewUserExtensionService(userExtRepo)
+	userExtService := rt.Services.UserExtension
 
 	if err := userExtService.UpdateInvitationStatus(userId, req.Status); err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
