@@ -1,7 +1,6 @@
 package router
 
 import (
-	"github.com/go-arcade/arcade/internal/engine/repo"
 	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
@@ -36,8 +35,7 @@ func (rt *Router) storageRouter(r fiber.Router, auth fiber.Handler) {
 
 // uploadFile uploads a file to default storage
 func (rt *Router) uploadFile(c *fiber.Ctx) error {
-	storageRepo := repo.NewStorageRepo(rt.Ctx)
-	uploadService := service.NewUploadService(rt.Ctx, storageRepo)
+	uploadService := rt.Services.Upload
 
 	// get file from form
 	file, err := c.FormFile("file")
@@ -61,8 +59,7 @@ func (rt *Router) uploadFile(c *fiber.Ctx) error {
 
 // uploadFileWithStorage uploads a file to specific storage
 func (rt *Router) uploadFileWithStorage(c *fiber.Ctx) error {
-	storageRepo := repo.NewStorageRepo(rt.Ctx)
-	uploadService := service.NewUploadService(rt.Ctx, storageRepo)
+	uploadService := rt.Services.Upload
 
 	// get storage ID from path parameter
 	storageId := c.Params("storageId")
@@ -92,8 +89,7 @@ func (rt *Router) uploadFileWithStorage(c *fiber.Ctx) error {
 
 // createStorageConfig creates a new storage configuration
 func (rt *Router) createStorageConfig(c *fiber.Ctx) error {
-	storageRepo := repo.NewStorageRepo(rt.Ctx)
-	storageService := service.NewStorageService(rt.Ctx, storageRepo)
+	storageService := rt.Services.Storage
 
 	var req service.CreateStorageConfigRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -112,8 +108,7 @@ func (rt *Router) createStorageConfig(c *fiber.Ctx) error {
 
 // listStorageConfigs gets storage configuration list
 func (rt *Router) listStorageConfigs(c *fiber.Ctx) error {
-	storageRepo := repo.NewStorageRepo(rt.Ctx)
-	storageService := service.NewStorageService(rt.Ctx, storageRepo)
+	storageService := rt.Services.Storage
 
 	storageConfigs, err := storageService.ListStorageConfigs()
 	if err != nil {
@@ -127,8 +122,7 @@ func (rt *Router) listStorageConfigs(c *fiber.Ctx) error {
 
 // getStorageConfig gets a storage configuration by ID
 func (rt *Router) getStorageConfig(c *fiber.Ctx) error {
-	storageRepo := repo.NewStorageRepo(rt.Ctx)
-	storageService := service.NewStorageService(rt.Ctx, storageRepo)
+	storageService := rt.Services.Storage
 
 	storageID := c.Params("id")
 	if storageID == "" {
@@ -147,8 +141,7 @@ func (rt *Router) getStorageConfig(c *fiber.Ctx) error {
 
 // updateStorageConfig updates a storage configuration
 func (rt *Router) updateStorageConfig(c *fiber.Ctx) error {
-	storageRepo := repo.NewStorageRepo(rt.Ctx)
-	storageService := service.NewStorageService(rt.Ctx, storageRepo)
+	storageService := rt.Services.Storage
 
 	storageID := c.Params("id")
 	if storageID == "" {
@@ -173,8 +166,7 @@ func (rt *Router) updateStorageConfig(c *fiber.Ctx) error {
 
 // deleteStorageConfig deletes a storage configuration
 func (rt *Router) deleteStorageConfig(c *fiber.Ctx) error {
-	storageRepo := repo.NewStorageRepo(rt.Ctx)
-	storageService := service.NewStorageService(rt.Ctx, storageRepo)
+	storageService := rt.Services.Storage
 
 	storageID := c.Params("id")
 	if storageID == "" {
@@ -193,8 +185,7 @@ func (rt *Router) deleteStorageConfig(c *fiber.Ctx) error {
 
 // setDefaultStorageConfig sets a storage configuration as default
 func (rt *Router) setDefaultStorageConfig(c *fiber.Ctx) error {
-	storageRepo := repo.NewStorageRepo(rt.Ctx)
-	storageService := service.NewStorageService(rt.Ctx, storageRepo)
+	storageService := rt.Services.Storage
 
 	storageID := c.Params("id")
 	if storageID == "" {
@@ -213,8 +204,7 @@ func (rt *Router) setDefaultStorageConfig(c *fiber.Ctx) error {
 
 // getDefaultStorageConfig gets the default storage configuration
 func (rt *Router) getDefaultStorageConfig(c *fiber.Ctx) error {
-	storageRepo := repo.NewStorageRepo(rt.Ctx)
-	storageService := service.NewStorageService(rt.Ctx, storageRepo)
+	storageService := rt.Services.Storage
 
 	storageConfig, err := storageService.GetDefaultStorageConfig()
 	if err != nil {

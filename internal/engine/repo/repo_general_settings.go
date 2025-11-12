@@ -2,7 +2,7 @@ package repo
 
 import (
 	"github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/pkg/ctx"
+	"github.com/go-arcade/arcade/pkg/database"
 )
 
 /**
@@ -12,21 +12,29 @@ import (
  * @description: general settings repository
  */
 
+type IGeneralSettingsRepository interface {
+	UpdateGeneralSettings(settings *model.GeneralSettings) error
+	GetGeneralSettingsByID(id uint64) (*model.GeneralSettings, error)
+	GetGeneralSettingsByName(category, name string) (*model.GeneralSettings, error)
+	GetGeneralSettingsList(pageNum, pageSize int, category string) ([]*model.GeneralSettings, int64, error)
+	GetCategories() ([]string, error)
+}
+
 type GeneralSettingsRepo struct {
-	ctx                  *ctx.Context
+	db                   database.DB
 	generalSettingsModel *model.GeneralSettings
 }
 
-func NewGeneralSettingsRepo(ctx *ctx.Context) *GeneralSettingsRepo {
+func NewGeneralSettingsRepo(db database.DB) IGeneralSettingsRepository {
 	return &GeneralSettingsRepo{
-		ctx:                  ctx,
+		db:                   db,
 		generalSettingsModel: &model.GeneralSettings{},
 	}
 }
 
 // UpdateGeneralSettings updates a general settings by ID
 func (gsr *GeneralSettingsRepo) UpdateGeneralSettings(settings *model.GeneralSettings) error {
-	return gsr.ctx.DBSession().Table(gsr.generalSettingsModel.TableName()).
+	return gsr.db.DB().Table(gsr.generalSettingsModel.TableName()).
 		Omit("id", "category", "name").
 		Where("id = ?", settings.ID).
 		Updates(settings).Error
@@ -35,7 +43,7 @@ func (gsr *GeneralSettingsRepo) UpdateGeneralSettings(settings *model.GeneralSet
 // GetGeneralSettingsByID gets a general settings by ID
 func (gsr *GeneralSettingsRepo) GetGeneralSettingsByID(id uint64) (*model.GeneralSettings, error) {
 	var settings model.GeneralSettings
-	err := gsr.ctx.DBSession().Table(gsr.generalSettingsModel.TableName()).
+	err := gsr.db.DB().Table(gsr.generalSettingsModel.TableName()).
 		Where("id = ?", id).
 		First(&settings).Error
 	return &settings, err
@@ -44,7 +52,7 @@ func (gsr *GeneralSettingsRepo) GetGeneralSettingsByID(id uint64) (*model.Genera
 // GetGeneralSettingsByName gets a general settings by category and name
 func (gsr *GeneralSettingsRepo) GetGeneralSettingsByName(category, name string) (*model.GeneralSettings, error) {
 	var settings model.GeneralSettings
-	err := gsr.ctx.DBSession().Table(gsr.generalSettingsModel.TableName()).
+	err := gsr.db.DB().Table(gsr.generalSettingsModel.TableName()).
 		Where("category = ? AND name = ?", category, name).
 		First(&settings).Error
 	return &settings, err
@@ -55,7 +63,7 @@ func (gsr *GeneralSettingsRepo) GetGeneralSettingsList(pageNum, pageSize int, ca
 	var settingsList []*model.GeneralSettings
 	var total int64
 
-	query := gsr.ctx.DBSession().Table(gsr.generalSettingsModel.TableName())
+	query := gsr.db.DB().Table(gsr.generalSettingsModel.TableName())
 
 	// apply filters
 	if category != "" {
@@ -81,7 +89,7 @@ func (gsr *GeneralSettingsRepo) GetGeneralSettingsList(pageNum, pageSize int, ca
 // GetCategories gets all distinct categories
 func (gsr *GeneralSettingsRepo) GetCategories() ([]string, error) {
 	var categories []string
-	err := gsr.ctx.DBSession().Table(gsr.generalSettingsModel.TableName()).
+	err := gsr.db.DB().Table(gsr.generalSettingsModel.TableName()).
 		Distinct("category").
 		Pluck("category", &categories).Error
 	return categories, err

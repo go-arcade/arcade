@@ -18,11 +18,11 @@ import (
 )
 
 type IdentityIntegrationService struct {
-	identityRepo *repo.IdentityIntegrationRepo
-	userRepo     *repo.UserRepo
+	identityRepo repo.IIdentityIntegrationRepository
+	userRepo     repo.IUserRepository
 }
 
-func NewIdentityIntegrationService(identityRepo *repo.IdentityIntegrationRepo, userRepo *repo.UserRepo) *IdentityIntegrationService {
+func NewIdentityIntegrationService(identityRepo repo.IIdentityIntegrationRepository, userRepo repo.IUserRepository) *IdentityIntegrationService {
 	return &IdentityIntegrationService{
 		identityRepo: identityRepo,
 		userRepo:     userRepo,

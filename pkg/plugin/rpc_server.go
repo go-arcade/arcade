@@ -2,6 +2,7 @@
 package plugin
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 )
@@ -13,13 +14,16 @@ type RPCPluginServer struct {
 	info PluginInfo
 	// Plugin instance (object that implements specific functionality)
 	instance interface{}
+	// Database accessor (新的接口实现)
+	dbAccessor DatabaseAccessor
 }
 
 // NewRPCPluginServer creates a new RPC plugin server
-func NewRPCPluginServer(info PluginInfo, instance interface{}) *RPCPluginServer {
+func NewRPCPluginServer(info PluginInfo, instance interface{}, dbAccessor DatabaseAccessor) *RPCPluginServer {
 	return &RPCPluginServer{
-		info:     info,
-		instance: instance,
+		info:       info,
+		instance:   instance,
+		dbAccessor: dbAccessor,
 	}
 }
 
@@ -91,5 +95,44 @@ func (s *RPCPluginServer) SendTemplate(args *NotifyTemplateArgs, reply *string) 
 		return fmt.Errorf("plugin does not support notify interface")
 	}
 	*reply = "sent"
+	return nil
+}
+
+// QueryConfig 查询插件配置（RPC 方法）
+func (s *RPCPluginServer) QueryConfig(args *QueryConfigArgs, reply *string) error {
+	if s.dbAccessor == nil {
+		return fmt.Errorf("database accessor is not available")
+	}
+	result, err := s.dbAccessor.QueryConfig(context.Background(), args.PluginID)
+	if err != nil {
+		return fmt.Errorf("query config failed: %w", err)
+	}
+	*reply = result
+	return nil
+}
+
+// QueryConfigByKey 根据配置键查询配置值（RPC 方法）
+func (s *RPCPluginServer) QueryConfigByKey(args *QueryConfigByKeyArgs, reply *string) error {
+	if s.dbAccessor == nil {
+		return fmt.Errorf("database accessor is not available")
+	}
+	result, err := s.dbAccessor.QueryConfigByKey(context.Background(), args.PluginID, args.Key)
+	if err != nil {
+		return fmt.Errorf("query config by key failed: %w", err)
+	}
+	*reply = result
+	return nil
+}
+
+// ListConfigs 列出所有插件配置（RPC 方法）
+func (s *RPCPluginServer) ListConfigs(args string, reply *string) error {
+	if s.dbAccessor == nil {
+		return fmt.Errorf("database accessor is not available")
+	}
+	result, err := s.dbAccessor.ListConfigs(context.Background())
+	if err != nil {
+		return fmt.Errorf("list configs failed: %w", err)
+	}
+	*reply = result
 	return nil
 }

@@ -8,7 +8,28 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type MongoDB struct {
+// MongoDB 定义 MongoDB 接口（抽象）
+type MongoDB interface {
+	// GetCollection 获取集合
+	GetCollection(name string) *mongo.Collection
+}
+
+// MongoClientWrapper MongoDB 客户端包装器实现
+type MongoClientWrapper struct {
+	client *MongoClient
+}
+
+// NewMongoDBWrapper 创建 MongoDB 包装器实例
+func NewMongoDBWrapper(client *MongoClient) MongoDB {
+	return &MongoClientWrapper{client: client}
+}
+
+// GetCollection 获取集合
+func (m *MongoClientWrapper) GetCollection(name string) *mongo.Collection {
+	return m.client.GetCollection(name)
+}
+
+type MongoConfig struct {
 	Uri         string
 	DB          string
 	Compressors []string
@@ -21,7 +42,7 @@ type MongoClient struct {
 	DB     *mongo.Database
 }
 
-func NewMongoDB(cfg MongoDB, ctx context.Context) (*MongoClient, error) {
+func NewMongoDB(cfg MongoConfig, ctx context.Context) (*MongoClient, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
 

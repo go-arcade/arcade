@@ -39,22 +39,28 @@ func main() {
 	}
 
 	// 初始化 Redis、数据库、context
-	redis, err := cache.NewRedis(appConf.Redis)
+	redisClient, err := cache.NewRedis(appConf.Redis)
 	if err != nil {
 		panic(err)
 	}
-	db, err := database.NewDatabase(appConf.Database, *logger)
+	dbClient, err := database.NewDatabase(appConf.Database, *logger)
 	if err != nil {
 		panic(err)
 	}
-	mongo, err := database.NewMongoDB(appConf.Database.MongoDB, context.Background())
+	mongoClient, err := database.NewMongoDB(appConf.Database.MongoDB, context.Background())
 	if err != nil {
 		panic(err)
 	}
-	appCtx := ctx.NewContext(context.Background(), mongo, redis, db, logger.Sugar())
+
+	// 创建接口实现
+	db := database.NewGormDB(dbClient)
+	mongo := database.NewMongoDBWrapper(mongoClient)
+	cache := cache.NewRedisCache(redisClient)
+
+	appCtx := ctx.NewContext(context.Background(), logger.Sugar())
 
 	// Wire 构建 App
-	app, cleanup, err := initApp(configFile, appCtx, logger)
+	app, cleanup, err := initApp(configFile, appCtx, logger, db, mongo, cache)
 	if err != nil {
 		panic(err)
 	}
@@ -79,9 +85,14 @@ func main() {
 	// 启动 HTTP 服务（异步）
 	go func() {
 		addr := appConf.Http.Host + ":" + fmt.Sprintf("%d", appConf.Http.Port)
-		logger.Sugar().Infof("HTTP server starting at %s", addr)
+		logger.Sugar().Infow("HTTP listener started",
+			"address", addr,
+		)
 		if err := app.HttpApp.Listen(addr); err != nil {
-			logger.Sugar().Errorf("HTTP server failed: %v", err)
+			logger.Sugar().Errorw("HTTP listener failed",
+				"address", addr,
+				"error", err,
+			)
 		}
 	}()
 

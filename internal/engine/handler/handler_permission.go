@@ -12,12 +12,14 @@ import (
 
 // PermissionHandler 权限管理处理器
 type PermissionHandler struct {
-	Ctx *ctx.Context
+	Ctx         *ctx.Context
+	PermService *service.PermissionService
 }
 
-func NewPermissionHandler(ctx *ctx.Context) *PermissionHandler {
+func NewPermissionHandler(ctx *ctx.Context, permService *service.PermissionService) *PermissionHandler {
 	return &PermissionHandler{
-		Ctx: ctx,
+		Ctx:         ctx,
+		PermService: permService,
 	}
 }
 
@@ -27,7 +29,7 @@ func NewPermissionHandler(ctx *ctx.Context) *PermissionHandler {
 func (h *PermissionHandler) GetUserPermissions(c *fiber.Ctx) error {
 	userId := c.Locals("user_id").(string)
 
-	permService := service.NewPermissionService(h.Ctx)
+	permService := h.PermService
 	perms, err := permService.GetUserPermissionsWithRoutes(userId)
 	if err != nil {
 		return http.WithRepErrMsg(c, http.InternalError.Code, err.Error(), c.Path())
@@ -40,7 +42,7 @@ func (h *PermissionHandler) GetUserPermissions(c *fiber.Ctx) error {
 func (h *PermissionHandler) GetUserRoutes(c *fiber.Ctx) error {
 	userId := c.Locals("user_id").(string)
 
-	permService := service.NewPermissionService(h.Ctx)
+	permService := h.PermService
 	perms, err := permService.GetUserPermissionsWithRoutes(userId)
 	if err != nil {
 		return http.WithRepErrMsg(c, http.InternalError.Code, err.Error(), c.Path())
@@ -56,7 +58,7 @@ func (h *PermissionHandler) GetUserRoutes(c *fiber.Ctx) error {
 func (h *PermissionHandler) GetAccessibleResources(c *fiber.Ctx) error {
 	userId := c.Locals("user_id").(string)
 
-	permService := service.NewPermissionService(h.Ctx)
+	permService := h.PermService
 	resources, err := permService.PermRepo.GetAccessibleResources(userId)
 	if err != nil {
 		return http.WithRepErrMsg(c, http.InternalError.Code, err.Error(), c.Path())
@@ -77,7 +79,7 @@ func (h *PermissionHandler) CheckPermission(c *fiber.Ctx) error {
 	// 设置当前用户ID
 	req.UserId = c.Locals("user_id").(string)
 
-	permService := service.NewPermissionService(h.Ctx)
+	permService := h.PermService
 	resp, err := permService.CheckPermission(&req)
 	if err != nil {
 		return http.WithRepErrMsg(c, http.InternalError.Code, err.Error(), c.Path())
@@ -99,7 +101,7 @@ func (h *PermissionHandler) CreateRoleBinding(c *fiber.Ctx) error {
 	grantedBy := c.Locals("user_id").(string)
 	req.GrantedBy = &grantedBy
 
-	permService := service.NewPermissionService(h.Ctx)
+	permService := h.PermService
 	binding, err := permService.CreateRoleBinding(&req)
 	if err != nil {
 		return http.WithRepErrMsg(c, http.InternalError.Code, err.Error(), c.Path())
@@ -115,7 +117,7 @@ func (h *PermissionHandler) DeleteRoleBinding(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "缺少绑定ID", c.Path())
 	}
 
-	permService := service.NewPermissionService(h.Ctx)
+	permService := h.PermService
 	if err := permService.DeleteRoleBinding(bindingId); err != nil {
 		return http.WithRepErrMsg(c, http.InternalError.Code, err.Error(), c.Path())
 	}
@@ -130,7 +132,7 @@ func (h *PermissionHandler) GetUserRoleBindings(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "缺少用户ID", c.Path())
 	}
 
-	permService := service.NewPermissionService(h.Ctx)
+	permService := h.PermService
 	bindings, err := permService.GetUserRoleBindings(userId)
 	if err != nil {
 		return http.WithRepErrMsg(c, http.InternalError.Code, err.Error(), c.Path())
@@ -169,7 +171,7 @@ func (h *PermissionHandler) ListRoleBindings(c *fiber.Ctx) error {
 		}
 	}
 
-	permService := service.NewPermissionService(h.Ctx)
+	permService := h.PermService
 	bindings, total, err := permService.ListRoleBindings(query)
 	if err != nil {
 		return http.WithRepErrMsg(c, http.InternalError.Code, err.Error(), c.Path())
@@ -200,7 +202,7 @@ func (h *PermissionHandler) BatchAssignRole(c *fiber.Ctx) error {
 
 	grantedBy := c.Locals("user_id").(string)
 
-	permService := service.NewPermissionService(h.Ctx)
+	permService := h.PermService
 	if err := permService.BatchAssignRoleToUsers(req.UserIds, req.RoleId, req.Scope, req.ResourceId, &grantedBy); err != nil {
 		return http.WithRepErrMsg(c, http.InternalError.Code, err.Error(), c.Path())
 	}
@@ -220,7 +222,7 @@ func (h *PermissionHandler) BatchRemoveRole(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "请求参数错误", c.Path())
 	}
 
-	permService := service.NewPermissionService(h.Ctx)
+	permService := h.PermService
 	if err := permService.BatchRemoveUserFromResource(req.UserIds, req.Scope, req.ResourceId); err != nil {
 		return http.WithRepErrMsg(c, http.InternalError.Code, err.Error(), c.Path())
 	}
@@ -245,7 +247,7 @@ func (h *PermissionHandler) SetSuperAdmin(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "请求参数错误", c.Path())
 	}
 
-	permService := service.NewPermissionService(h.Ctx)
+	permService := h.PermService
 	if err := permService.SetSuperAdmin(userId, req.IsSuperAdmin); err != nil {
 		return http.WithRepErrMsg(c, http.InternalError.Code, err.Error(), c.Path())
 	}
@@ -255,7 +257,7 @@ func (h *PermissionHandler) SetSuperAdmin(c *fiber.Ctx) error {
 
 // GetSuperAdminList 获取超级管理员列表
 func (h *PermissionHandler) GetSuperAdminList(c *fiber.Ctx) error {
-	permService := service.NewPermissionService(h.Ctx)
+	permService := h.PermService
 	admins, err := permService.GetSuperAdminList()
 	if err != nil {
 		return http.WithRepErrMsg(c, http.InternalError.Code, err.Error(), c.Path())
@@ -270,7 +272,7 @@ func (h *PermissionHandler) GetSuperAdminList(c *fiber.Ctx) error {
 func (h *PermissionHandler) GetUserOrganizations(c *fiber.Ctx) error {
 	userId := c.Locals("user_id").(string)
 
-	permService := service.NewPermissionService(h.Ctx)
+	permService := h.PermService
 	orgs, err := permService.GetUserAccessibleOrganizations(userId)
 	if err != nil {
 		return http.WithRepErrMsg(c, http.InternalError.Code, err.Error(), c.Path())
@@ -284,7 +286,7 @@ func (h *PermissionHandler) GetUserTeams(c *fiber.Ctx) error {
 	userId := c.Locals("user_id").(string)
 	orgId := c.Query("orgId")
 
-	permService := service.NewPermissionService(h.Ctx)
+	permService := h.PermService
 	teams, err := permService.GetUserAccessibleTeams(userId, orgId)
 	if err != nil {
 		return http.WithRepErrMsg(c, http.InternalError.Code, err.Error(), c.Path())
@@ -298,7 +300,7 @@ func (h *PermissionHandler) GetUserProjects(c *fiber.Ctx) error {
 	userId := c.Locals("user_id").(string)
 	orgId := c.Query("orgId")
 
-	permService := service.NewPermissionService(h.Ctx)
+	permService := h.PermService
 	projects, err := permService.GetUserAccessibleProjects(userId, orgId)
 	if err != nil {
 		return http.WithRepErrMsg(c, http.InternalError.Code, err.Error(), c.Path())

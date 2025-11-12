@@ -83,7 +83,7 @@ type PluginResources struct {
 // PluginService 插件管理服务
 type PluginService struct {
 	ctx             *ctx.Context
-	pluginRepo      *repo.PluginRepo
+	pluginRepo      repo.IPluginRepository
 	pluginManager   *pluginpkg.Manager
 	storageProvider storage.StorageProvider
 }
@@ -91,7 +91,7 @@ type PluginService struct {
 // NewPluginService 创建插件管理服务
 func NewPluginService(
 	ctx *ctx.Context,
-	pluginRepo *repo.PluginRepo,
+	pluginRepo repo.IPluginRepository,
 	pluginManager *pluginpkg.Manager,
 	storageProvider storage.StorageProvider,
 ) *PluginService {

@@ -11,10 +11,10 @@ import (
 )
 
 type RoleService struct {
-	roleRepo *repo.RoleRepo
+	roleRepo repo.IRoleRepository
 }
 
-func NewRoleService(roleRepo *repo.RoleRepo) *RoleService {
+func NewRoleService(roleRepo repo.IRoleRepository) *RoleService {
 	return &RoleService{
 		roleRepo: roleRepo,
 	}

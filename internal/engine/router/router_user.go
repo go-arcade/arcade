@@ -4,8 +4,6 @@ import (
 	"time"
 
 	"github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/internal/engine/tool"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
@@ -37,8 +35,7 @@ func (rt *Router) userRouter(r fiber.Router, auth fiber.Handler) {
 
 func (rt *Router) login(c *fiber.Ctx) error {
 	var login *model.Login
-	userRepo := repo.NewUserRepo(rt.Ctx)
-	userService := service.NewUserService(rt.Ctx, userRepo)
+	userService := rt.Services.User
 
 	if err := c.BodyParser(&login); err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
@@ -59,8 +56,7 @@ func (rt *Router) login(c *fiber.Ctx) error {
 
 func (rt *Router) register(c *fiber.Ctx) error {
 	var register *model.Register
-	userRepo := repo.NewUserRepo(rt.Ctx)
-	userLogic := service.NewUserService(rt.Ctx, userRepo)
+	userLogic := rt.Services.User
 	if err := c.BodyParser(&register); err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
 	}
@@ -74,8 +70,7 @@ func (rt *Router) register(c *fiber.Ctx) error {
 }
 
 func (rt *Router) refresh(c *fiber.Ctx) error {
-	userRepo := repo.NewUserRepo(rt.Ctx)
-	userLogic := service.NewUserService(rt.Ctx, userRepo)
+	userLogic := rt.Services.User
 	userId := c.Query("userId")
 	refreshToken := c.Query("refreshToken")
 
@@ -89,8 +84,7 @@ func (rt *Router) refresh(c *fiber.Ctx) error {
 }
 
 func (rt *Router) logout(c *fiber.Ctx) error {
-	userRepo := repo.NewUserRepo(rt.Ctx)
-	userLogic := service.NewUserService(rt.Ctx, userRepo)
+	userLogic := rt.Services.User
 
 	claims, err := tool.ParseAuthorizationToken(c, rt.Http.Auth.SecretKey)
 	if err != nil {
@@ -107,8 +101,7 @@ func (rt *Router) logout(c *fiber.Ctx) error {
 
 func (rt *Router) addUser(c *fiber.Ctx) error {
 	var addUserReq *model.AddUserReq
-	userRepo := repo.NewUserRepo(rt.Ctx)
-	userLogic := service.NewUserService(rt.Ctx, userRepo)
+	userLogic := rt.Services.User
 	if err := c.BodyParser(&addUserReq); err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
@@ -123,8 +116,7 @@ func (rt *Router) addUser(c *fiber.Ctx) error {
 
 func (rt *Router) updateUser(c *fiber.Ctx) error {
 	var user *model.User
-	userRepo := repo.NewUserRepo(rt.Ctx)
-	userLogic := service.NewUserService(rt.Ctx, userRepo)
+	userLogic := rt.Services.User
 	if err := c.BodyParser(&user); err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
@@ -140,8 +132,7 @@ func (rt *Router) updateUser(c *fiber.Ctx) error {
 
 func (rt *Router) fetchUserInfo(c *fiber.Ctx) error {
 	var user *model.UserInfo
-	userRepo := repo.NewUserRepo(rt.Ctx)
-	userLogic := service.NewUserService(rt.Ctx, userRepo)
+	userLogic := rt.Services.User
 
 	claims, err := tool.ParseAuthorizationToken(c, rt.Http.Auth.SecretKey)
 	if err != nil {
@@ -159,8 +150,7 @@ func (rt *Router) fetchUserInfo(c *fiber.Ctx) error {
 
 // getUserList gets user list with pagination
 func (rt *Router) getUserList(c *fiber.Ctx) error {
-	userRepo := repo.NewUserRepo(rt.Ctx)
-	userLogic := service.NewUserService(rt.Ctx, userRepo)
+	userLogic := rt.Services.User
 
 	pageNum := queryInt(c, "pageNum")
 	if pageNum == 0 {
@@ -221,8 +211,7 @@ func (rt *Router) getUserList(c *fiber.Ctx) error {
 
 // resetPassword resets user password
 func (rt *Router) resetPassword(c *fiber.Ctx) error {
-	userRepo := repo.NewUserRepo(rt.Ctx)
-	userLogic := service.NewUserService(rt.Ctx, userRepo)
+	userLogic := rt.Services.User
 
 	// get user ID from path parameter
 	userId := c.Params("userId")
@@ -250,10 +239,8 @@ func (rt *Router) resetPassword(c *fiber.Ctx) error {
 
 // uploadAvatar uploads avatar for current user
 func (rt *Router) uploadAvatar(c *fiber.Ctx) error {
-	userRepo := repo.NewUserRepo(rt.Ctx)
-	userService := service.NewUserService(rt.Ctx, userRepo)
-	storageRepo := repo.NewStorageRepo(rt.Ctx)
-	uploadService := service.NewUploadService(rt.Ctx, storageRepo)
+	userService := rt.Services.User
+	uploadService := rt.Services.Upload
 
 	// get current user ID from token
 	claims, err := tool.ParseAuthorizationToken(c, rt.Http.Auth.SecretKey)

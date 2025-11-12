@@ -4,17 +4,28 @@ import (
 	"time"
 
 	"github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/pkg/ctx"
+	"github.com/go-arcade/arcade/pkg/database"
 )
 
+type IUserExtensionRepository interface {
+	GetByUserId(userId string) (*model.UserExtension, error)
+	Create(extension *model.UserExtension) error
+	Update(userId string, extension *model.UserExtension) error
+	UpdateLastLogin(userId string) error
+	UpdateTimezone(userId, timezone string) error
+	UpdateInvitationStatus(userId, status string) error
+	Delete(userId string) error
+	Exists(userId string) (bool, error)
+}
+
 type UserExtensionRepo struct {
-	Ctx                *ctx.Context
+	db                 database.DB
 	userExtensionModel model.UserExtension
 }
 
-func NewUserExtensionRepo(ctx *ctx.Context) *UserExtensionRepo {
+func NewUserExtensionRepo(db database.DB) IUserExtensionRepository {
 	return &UserExtensionRepo{
-		Ctx:                ctx,
+		db:                 db,
 		userExtensionModel: model.UserExtension{},
 	}
 }
@@ -22,7 +33,7 @@ func NewUserExtensionRepo(ctx *ctx.Context) *UserExtensionRepo {
 // GetByUserId gets user extension by user ID
 func (uer *UserExtensionRepo) GetByUserId(userId string) (*model.UserExtension, error) {
 	var extension model.UserExtension
-	err := uer.Ctx.DBSession().Table(uer.userExtensionModel.TableName()).
+	err := uer.db.DB().Table(uer.userExtensionModel.TableName()).
 		Where("user_id = ?", userId).
 		First(&extension).Error
 	return &extension, err
@@ -30,12 +41,12 @@ func (uer *UserExtensionRepo) GetByUserId(userId string) (*model.UserExtension, 
 
 // Create creates a user extension record
 func (uer *UserExtensionRepo) Create(extension *model.UserExtension) error {
-	return uer.Ctx.DBSession().Table(uer.userExtensionModel.TableName()).Create(extension).Error
+	return uer.db.DB().Table(uer.userExtensionModel.TableName()).Create(extension).Error
 }
 
 // Update updates user extension information
 func (uer *UserExtensionRepo) Update(userId string, extension *model.UserExtension) error {
-	return uer.Ctx.DBSession().Table(uer.userExtensionModel.TableName()).
+	return uer.db.DB().Table(uer.userExtensionModel.TableName()).
 		Where("user_id = ?", userId).
 		Updates(extension).Error
 }
@@ -43,14 +54,14 @@ func (uer *UserExtensionRepo) Update(userId string, extension *model.UserExtensi
 // UpdateLastLogin updates the last login timestamp
 func (uer *UserExtensionRepo) UpdateLastLogin(userId string) error {
 	now := time.Now()
-	return uer.Ctx.DBSession().Table(uer.userExtensionModel.TableName()).
+	return uer.db.DB().Table(uer.userExtensionModel.TableName()).
 		Where("user_id = ?", userId).
 		Update("last_login_at", now).Error
 }
 
 // UpdateTimezone updates user timezone
 func (uer *UserExtensionRepo) UpdateTimezone(userId, timezone string) error {
-	return uer.Ctx.DBSession().Table(uer.userExtensionModel.TableName()).
+	return uer.db.DB().Table(uer.userExtensionModel.TableName()).
 		Where("user_id = ?", userId).
 		Update("timezone", timezone).Error
 }
@@ -66,14 +77,14 @@ func (uer *UserExtensionRepo) UpdateInvitationStatus(userId, status string) erro
 		updates["accepted_at"] = time.Now()
 	}
 
-	return uer.Ctx.DBSession().Table(uer.userExtensionModel.TableName()).
+	return uer.db.DB().Table(uer.userExtensionModel.TableName()).
 		Where("user_id = ?", userId).
 		Updates(updates).Error
 }
 
 // Delete deletes user extension record
 func (uer *UserExtensionRepo) Delete(userId string) error {
-	return uer.Ctx.DBSession().Table(uer.userExtensionModel.TableName()).
+	return uer.db.DB().Table(uer.userExtensionModel.TableName()).
 		Where("user_id = ?", userId).
 		Delete(&model.UserExtension{}).Error
 }
@@ -81,7 +92,7 @@ func (uer *UserExtensionRepo) Delete(userId string) error {
 // Exists checks if user extension exists
 func (uer *UserExtensionRepo) Exists(userId string) (bool, error) {
 	var count int64
-	err := uer.Ctx.DBSession().Table(uer.userExtensionModel.TableName()).
+	err := uer.db.DB().Table(uer.userExtensionModel.TableName()).
 		Where("user_id = ?", userId).
 		Count(&count).Error
 	return count > 0, err

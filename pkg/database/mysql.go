@@ -21,12 +21,12 @@ type Database struct {
 	User         string
 	Password     string
 	DB           string
-	OutPut       bool    `mapstructure:"output"`
-	MaxOpenConns int     `mapstructure:"maxOpenConns"`
-	MaxIdleConns int     `mapstructure:"maxIdleConns"`
-	MaxLifetime  int     `mapstructure:"maxLifeTime"`
-	MaxIdleTime  int     `mapstructure:"maxIdleTime"`
-	MongoDB      MongoDB `mapstructure:"mongodb"`
+	OutPut       bool        `mapstructure:"output"`
+	MaxOpenConns int         `mapstructure:"maxOpenConns"`
+	MaxIdleConns int         `mapstructure:"maxIdleConns"`
+	MaxLifetime  int         `mapstructure:"maxLifeTime"`
+	MaxIdleTime  int         `mapstructure:"maxIdleTime"`
+	MongoDB      MongoConfig `mapstructure:"mongodb"`
 }
 
 const (

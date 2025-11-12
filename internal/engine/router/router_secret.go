@@ -4,8 +4,6 @@ import (
 	"strconv"
 
 	"github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/internal/engine/tool"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
@@ -36,8 +34,7 @@ func (rt *Router) secretRouter(r fiber.Router, auth fiber.Handler) {
 
 // createSecret creates a new secret
 func (rt *Router) createSecret(c *fiber.Ctx) error {
-	secretRepo := repo.NewSecretRepo(rt.Ctx)
-	secretService := service.NewSecretService(rt.Ctx, secretRepo)
+	secretService := rt.Services.Secret
 
 	// get user ID from token
 	claims, err := tool.ParseAuthorizationToken(c, rt.Http.Auth.SecretKey)
@@ -64,8 +61,7 @@ func (rt *Router) createSecret(c *fiber.Ctx) error {
 
 // updateSecret updates a secret
 func (rt *Router) updateSecret(c *fiber.Ctx) error {
-	secretRepo := repo.NewSecretRepo(rt.Ctx)
-	secretService := service.NewSecretService(rt.Ctx, secretRepo)
+	secretService := rt.Services.Secret
 
 	secretId := c.Params("secretId")
 	if secretId == "" {
@@ -94,8 +90,7 @@ func (rt *Router) updateSecret(c *fiber.Ctx) error {
 
 // getSecret gets a secret by ID (masked value)
 func (rt *Router) getSecret(c *fiber.Ctx) error {
-	secretRepo := repo.NewSecretRepo(rt.Ctx)
-	secretService := service.NewSecretService(rt.Ctx, secretRepo)
+	secretService := rt.Services.Secret
 
 	secretId := c.Params("secretId")
 	if secretId == "" {
@@ -114,8 +109,7 @@ func (rt *Router) getSecret(c *fiber.Ctx) error {
 
 // getSecretValue gets the decrypted secret value (use with caution)
 func (rt *Router) getSecretValue(c *fiber.Ctx) error {
-	secretRepo := repo.NewSecretRepo(rt.Ctx)
-	secretService := service.NewSecretService(rt.Ctx, secretRepo)
+	secretService := rt.Services.Secret
 
 	secretId := c.Params("secretId")
 	if secretId == "" {
@@ -140,8 +134,7 @@ func (rt *Router) getSecretValue(c *fiber.Ctx) error {
 
 // getSecretList gets secret list with pagination and filters
 func (rt *Router) getSecretList(c *fiber.Ctx) error {
-	secretRepo := repo.NewSecretRepo(rt.Ctx)
-	secretService := service.NewSecretService(rt.Ctx, secretRepo)
+	secretService := rt.Services.Secret
 
 	// get query parameters
 	pageNum, _ := strconv.Atoi(c.Query("pageNum", "1"))
@@ -171,8 +164,7 @@ func (rt *Router) getSecretList(c *fiber.Ctx) error {
 
 // deleteSecret deletes a secret
 func (rt *Router) deleteSecret(c *fiber.Ctx) error {
-	secretRepo := repo.NewSecretRepo(rt.Ctx)
-	secretService := service.NewSecretService(rt.Ctx, secretRepo)
+	secretService := rt.Services.Secret
 
 	secretId := c.Params("secretId")
 	if secretId == "" {
@@ -190,8 +182,7 @@ func (rt *Router) deleteSecret(c *fiber.Ctx) error {
 
 // getSecretsByScope gets secrets by scope and scope_id
 func (rt *Router) getSecretsByScope(c *fiber.Ctx) error {
-	secretRepo := repo.NewSecretRepo(rt.Ctx)
-	secretService := service.NewSecretService(rt.Ctx, secretRepo)
+	secretService := rt.Services.Secret
 
 	scope := c.Params("scope")
 	scopeId := c.Params("scopeId")

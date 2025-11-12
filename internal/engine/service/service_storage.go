@@ -18,10 +18,10 @@ import (
 
 type StorageService struct {
 	ctx         *ctx.Context
-	storageRepo *repo.StorageRepo
+	storageRepo repo.IStorageRepository
 }
 
-func NewStorageService(ctx *ctx.Context, storageRepo *repo.StorageRepo) *StorageService {
+func NewStorageService(ctx *ctx.Context, storageRepo repo.IStorageRepository) *StorageService {
 	return &StorageService{
 		ctx:         ctx,
 		storageRepo: storageRepo,

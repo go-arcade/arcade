@@ -10,12 +10,12 @@ import (
 )
 
 type AgentService struct {
-	AgentRepo       *repo.AgentRepo
+	AgentRepo       repo.IAgentRepository
 	addAgentReq     *model.AddAgentReq
 	addAgentReqRepo *model.AddAgentReqRepo
 }
 
-func NewAgentService(agentRepo *repo.AgentRepo, agentReq *model.AddAgentReq) *AgentService {
+func NewAgentService(agentRepo repo.IAgentRepository, agentReq *model.AddAgentReq) *AgentService {
 	return &AgentService{
 		AgentRepo:   agentRepo,
 		addAgentReq: agentReq,
@@ -38,10 +38,9 @@ func (al *AgentService) AddAgent(addAgentReq *model.AddAgentReq) error {
 	return err
 }
 
-func (al *AgentService) UpdateAgent() error {
-
+func (al *AgentService) UpdateAgent(agent *model.Agent) error {
 	var err error
-	if err = al.AgentRepo.UpdateAgent(&al.AgentRepo.AgentModel); err != nil {
+	if err = al.AgentRepo.UpdateAgent(agent); err != nil {
 		return err
 	}
 	return err

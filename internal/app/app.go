@@ -5,6 +5,7 @@ import (
 	serviceplugin "github.com/go-arcade/arcade/internal/engine/service/plugin"
 	"github.com/go-arcade/arcade/internal/pkg/grpc"
 	"github.com/go-arcade/arcade/pkg/ctx"
+	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/plugin"
 	"github.com/go-arcade/arcade/pkg/storage"
@@ -27,11 +28,12 @@ func NewApp(
 	grpcServer *grpc.ServerWrapper,
 	storage storage.StorageProvider,
 	appCtx *ctx.Context,
+	mongoDB database.MongoDB,
 ) (*App, func(), error) {
 	httpApp := rt.Router(logger)
 
 	// 初始化插件任务管理器（MongoDB持久化）
-	serviceplugin.InitTaskManager(appCtx)
+	serviceplugin.InitTaskManager(mongoDB)
 	logger.Info("Plugin task manager initialized with MongoDB persistence")
 
 	cleanup := func() {

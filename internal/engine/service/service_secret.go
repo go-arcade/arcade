@@ -27,11 +27,11 @@ import (
 
 type SecretService struct {
 	ctx        *ctx.Context
-	secretRepo *repo.SecretRepo
+	secretRepo repo.ISecretRepository
 	encryptKey []byte // 32 bytes for AES-256
 }
 
-func NewSecretService(ctx *ctx.Context, secretRepo *repo.SecretRepo) *SecretService {
+func NewSecretService(ctx *ctx.Context, secretRepo repo.ISecretRepository) *SecretService {
 	// TODO: load encryption key from config or environment variable
 	// For now, using a default key (should be replaced in production)
 	encryptKey := []byte("arcade-secret-encryption-key-32b") // 32 bytes for AES-256

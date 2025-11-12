@@ -19,10 +19,10 @@ import (
 
 type UploadService struct {
 	ctx         *ctx.Context
-	storageRepo *repo.StorageRepo
+	storageRepo repo.IStorageRepository
 }
 
-func NewUploadService(ctx *ctx.Context, storageRepo *repo.StorageRepo) *UploadService {
+func NewUploadService(ctx *ctx.Context, storageRepo repo.IStorageRepository) *UploadService {
 	return &UploadService{
 		ctx:         ctx,
 		storageRepo: storageRepo,

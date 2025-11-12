@@ -16,10 +16,10 @@ import (
 
 type TeamService struct {
 	ctx      *ctx.Context
-	teamRepo *repo.TeamRepo
+	teamRepo repo.ITeamRepository
 }
 
-func NewTeamService(ctx *ctx.Context, teamRepo *repo.TeamRepo) *TeamService {
+func NewTeamService(ctx *ctx.Context, teamRepo repo.ITeamRepository) *TeamService {
 	return &TeamService{
 		ctx:      ctx,
 		teamRepo: teamRepo,

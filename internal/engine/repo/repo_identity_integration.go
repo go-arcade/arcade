@@ -2,24 +2,36 @@ package repo
 
 import (
 	"github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/pkg/ctx"
+	"github.com/go-arcade/arcade/pkg/database"
 )
 
+type IIdentityIntegrationRepository interface {
+	GetProvider(name string) (*model.IdentityIntegration, error)
+	GetProviderByType(providerType string) ([]model.IdentityIntegration, error)
+	GetProviderList() ([]model.IdentityIntegration, error)
+	GetProviderTypeList() ([]string, error)
+	CreateProvider(provider *model.IdentityIntegration) error
+	UpdateProvider(name string, provider *model.IdentityIntegration) error
+	DeleteProvider(name string) error
+	ProviderExists(name string) (bool, error)
+	ToggleProvider(name string) error
+}
+
 type IdentityIntegrationRepo struct {
-	Ctx                      *ctx.Context
+	db                       database.DB
 	IdentityIntegrationModel model.IdentityIntegration
 }
 
-func NewIdentityIntegrationRepo(ctx *ctx.Context) *IdentityIntegrationRepo {
+func NewIdentityIntegrationRepo(db database.DB) IIdentityIntegrationRepository {
 	return &IdentityIntegrationRepo{
-		Ctx:                      ctx,
+		db:                       db,
 		IdentityIntegrationModel: model.IdentityIntegration{},
 	}
 }
 
 func (ii *IdentityIntegrationRepo) GetProvider(name string) (*model.IdentityIntegration, error) {
 	var integration model.IdentityIntegration
-	if err := ii.Ctx.DBSession().Table(ii.IdentityIntegrationModel.TableName()).
+	if err := ii.db.DB().Table(ii.IdentityIntegrationModel.TableName()).
 		Where("name = ?", name).
 		Select("provider_id, provider_type, name, description, config, priority, is_enabled").
 		First(&integration).Error; err != nil {
@@ -30,7 +42,7 @@ func (ii *IdentityIntegrationRepo) GetProvider(name string) (*model.IdentityInte
 
 func (ii *IdentityIntegrationRepo) GetProviderByType(providerType string) ([]model.IdentityIntegration, error) {
 	var integrations []model.IdentityIntegration
-	if err := ii.Ctx.DBSession().Table(ii.IdentityIntegrationModel.TableName()).
+	if err := ii.db.DB().Table(ii.IdentityIntegrationModel.TableName()).
 		Where("provider_type = ?", providerType).
 		Order("priority ASC").
 		Select("provider_id, provider_type, name, description, priority, is_enabled").
@@ -42,7 +54,7 @@ func (ii *IdentityIntegrationRepo) GetProviderByType(providerType string) ([]mod
 
 func (ii *IdentityIntegrationRepo) GetProviderList() ([]model.IdentityIntegration, error) {
 	var integrations []model.IdentityIntegration
-	if err := ii.Ctx.DBSession().Table(ii.IdentityIntegrationModel.TableName()).
+	if err := ii.db.DB().Table(ii.IdentityIntegrationModel.TableName()).
 		Order("priority ASC").
 		Select("provider_id, provider_type, name, description, priority, is_enabled").
 		Find(&integrations).Error; err != nil {
@@ -53,7 +65,7 @@ func (ii *IdentityIntegrationRepo) GetProviderList() ([]model.IdentityIntegratio
 
 func (ii *IdentityIntegrationRepo) GetProviderTypeList() ([]string, error) {
 	var providerTypes []string
-	if err := ii.Ctx.DBSession().Table(ii.IdentityIntegrationModel.TableName()).
+	if err := ii.db.DB().Table(ii.IdentityIntegrationModel.TableName()).
 		Distinct("provider_type").
 		Select("provider_type").
 		Pluck("provider_type", &providerTypes).Error; err != nil {
@@ -64,12 +76,12 @@ func (ii *IdentityIntegrationRepo) GetProviderTypeList() ([]string, error) {
 
 // CreateProvider creates an identity integration provider
 func (ii *IdentityIntegrationRepo) CreateProvider(provider *model.IdentityIntegration) error {
-	return ii.Ctx.DBSession().Table(ii.IdentityIntegrationModel.TableName()).Create(provider).Error
+	return ii.db.DB().Table(ii.IdentityIntegrationModel.TableName()).Create(provider).Error
 }
 
 // UpdateProvider updates an identity integration provider (name and provider_type fields cannot be updated)
 func (ii *IdentityIntegrationRepo) UpdateProvider(name string, provider *model.IdentityIntegration) error {
-	return ii.Ctx.DBSession().Table(ii.IdentityIntegrationModel.TableName()).
+	return ii.db.DB().Table(ii.IdentityIntegrationModel.TableName()).
 		Where("name = ?", name).
 		Omit("name", "provider_id", "provider_type", "created_at").
 		Updates(provider).Error
@@ -77,7 +89,7 @@ func (ii *IdentityIntegrationRepo) UpdateProvider(name string, provider *model.I
 
 // DeleteProvider deletes an identity integration provider
 func (ii *IdentityIntegrationRepo) DeleteProvider(name string) error {
-	return ii.Ctx.DBSession().Table(ii.IdentityIntegrationModel.TableName()).
+	return ii.db.DB().Table(ii.IdentityIntegrationModel.TableName()).
 		Where("name = ?", name).
 		Delete(&model.IdentityIntegration{}).Error
 }
@@ -85,7 +97,7 @@ func (ii *IdentityIntegrationRepo) DeleteProvider(name string) error {
 // ProviderExists checks if a provider exists
 func (ii *IdentityIntegrationRepo) ProviderExists(name string) (bool, error) {
 	var count int64
-	err := ii.Ctx.DBSession().Table(ii.IdentityIntegrationModel.TableName()).
+	err := ii.db.DB().Table(ii.IdentityIntegrationModel.TableName()).
 		Where("name = ?", name).
 		Count(&count).Error
 	return count > 0, err
@@ -95,7 +107,7 @@ func (ii *IdentityIntegrationRepo) ProviderExists(name string) (bool, error) {
 func (ii *IdentityIntegrationRepo) ToggleProvider(name string) error {
 	// query current status
 	var integration model.IdentityIntegration
-	if err := ii.Ctx.DBSession().Table(ii.IdentityIntegrationModel.TableName()).
+	if err := ii.db.DB().Table(ii.IdentityIntegrationModel.TableName()).
 		Where("name = ?", name).
 		Select("is_enabled").
 		First(&integration).Error; err != nil {
@@ -106,7 +118,7 @@ func (ii *IdentityIntegrationRepo) ToggleProvider(name string) error {
 	newStatus := 1 - integration.IsEnabled
 
 	// update status
-	return ii.Ctx.DBSession().Table(ii.IdentityIntegrationModel.TableName()).
+	return ii.db.DB().Table(ii.IdentityIntegrationModel.TableName()).
 		Where("name = ?", name).
 		Update("is_enabled", newStatus).Error
 }

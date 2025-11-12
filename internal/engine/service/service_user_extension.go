@@ -11,10 +11,10 @@ import (
 )
 
 type UserExtensionService struct {
-	userExtRepo *repo.UserExtensionRepo
+	userExtRepo repo.IUserExtensionRepository
 }
 
-func NewUserExtensionService(userExtRepo *repo.UserExtensionRepo) *UserExtensionService {
+func NewUserExtensionService(userExtRepo repo.IUserExtensionRepository) *UserExtensionService {
 	return &UserExtensionService{
 		userExtRepo: userExtRepo,
 	}

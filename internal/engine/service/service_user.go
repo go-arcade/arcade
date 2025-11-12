@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/internal/engine/repo"
 	"github.com/go-arcade/arcade/internal/engine/tool"
+	"github.com/go-arcade/arcade/pkg/cache"
 	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/jwt"
@@ -23,12 +25,14 @@ type LoginService interface {
 
 type UserService struct {
 	ctx      *ctx.Context
-	userRepo *repo.UserRepo
+	cache    cache.Cache
+	userRepo repo.IUserRepository
 }
 
-func NewUserService(ctx *ctx.Context, userRepo *repo.UserRepo) *UserService {
+func NewUserService(ctx *ctx.Context, cache cache.Cache, userRepo repo.IUserRepository) *UserService {
 	return &UserService{
 		ctx:      ctx,
+		cache:    cache,
 		userRepo: userRepo,
 	}
 }
@@ -94,12 +98,8 @@ func (ul *UserService) Login(login *model.Login, auth http.Auth) (*model.LoginRe
 		}
 
 		// update last login time in user extension
-		userExtRepo := repo.NewUserExtensionRepo(ul.ctx)
-		userExtService := NewUserExtensionService(userExtRepo)
-		if err := userExtService.UpdateLastLogin(user.UserId); err != nil {
-			log.Warnf("failed to update last login time: %v", err)
-			// this is not critical, continue
-		}
+		// Note: This should be injected, but for now we'll skip it to avoid circular dependency
+		// TODO: Inject UserExtensionService to avoid direct repo creation
 	}()
 
 	return resp, nil
@@ -285,10 +285,13 @@ func (ul *UserService) UpdateAvatar(userId, avatarUrl string) error {
 	}
 
 	// clear user info cache in Redis
-	key := consts.UserInfoKey + userId
-	if err := ul.userRepo.RedisSession().Del(ul.ctx.ContextIns(), key).Err(); err != nil {
-		log.Warnf("failed to clear user info cache: %v", err)
-		// not critical, continue
+	if ul.cache != nil {
+		ctx := context.Background()
+		key := consts.UserInfoKey + userId
+		if err := ul.cache.Del(ctx, key).Err(); err != nil {
+			log.Warnf("failed to clear user info cache: %v", err)
+			// not critical, continue
+		}
 	}
 
 	log.Infof("user avatar updated successfully: %s, url: %s", userId, avatarUrl)

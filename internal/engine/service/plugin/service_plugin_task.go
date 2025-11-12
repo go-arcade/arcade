@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/pkg/ctx"
+	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/go-arcade/arcade/pkg/id"
 	"github.com/go-arcade/arcade/pkg/log"
 )
@@ -45,7 +45,7 @@ type PluginInstallTask struct {
 
 // TaskManager 任务管理器（带MongoDB持久化）
 type TaskManager struct {
-	taskRepo *repo.PluginTaskRepo
+	taskRepo repo.IPluginTaskRepository
 }
 
 var (
@@ -60,9 +60,9 @@ func GetTaskManager() *TaskManager {
 }
 
 // InitTaskManager 初始化任务管理器（需要在应用启动时调用）
-func InitTaskManager(ctx *ctx.Context) *TaskManager {
+func InitTaskManager(mongoDB database.MongoDB) *TaskManager {
 	if !taskManagerOnce {
-		taskRepo := repo.NewPluginTaskRepo(ctx)
+		taskRepo := repo.NewPluginTaskRepo(mongoDB)
 
 		// 创建索引
 		if err := taskRepo.CreateIndexes(); err != nil {
