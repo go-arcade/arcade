@@ -65,7 +65,6 @@ func (rt *Router) Router(log *zap.Logger) *fiber.App {
 		BodyLimit:    bodyLimit, // 请求体大小限制，用于插件上传等
 	})
 
-	// 访问日志 - 必须在最前面
 	if rt.Http.AccessLog {
 		app.Use(httpx.AccessLogFormat(log))
 	}
