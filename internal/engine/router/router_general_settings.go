@@ -3,7 +3,7 @@ package router
 import (
 	"strconv"
 
-	"github.com/go-arcade/arcade/internal/engine/model"
+	generalmodel "github.com/go-arcade/arcade/internal/engine/model/general_settings"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/gofiber/fiber/v2"
@@ -34,7 +34,7 @@ func (rt *Router) updateGeneralSettings(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid settings id", c.Path())
 	}
 
-	var settings model.GeneralSettings
+	var settings generalmodel.GeneralSettings
 	if err := c.BodyParser(&settings); err != nil {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid request body", c.Path())
 	}

@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 
 	v1 "github.com/go-arcade/arcade/api/agent/v1"
-	"github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/internal/engine/repo"
+	pluginmodel "github.com/go-arcade/arcade/internal/engine/model/plugin"
+	pluginrepo "github.com/go-arcade/arcade/internal/engine/repo/plugin"
 	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/log"
 )
@@ -23,11 +23,11 @@ import (
  */
 
 type PluginDownloadService struct {
-	pluginRepo *repo.PluginRepo
+	pluginRepo pluginrepo.IPluginRepository
 	ctx        *ctx.Context
 }
 
-func NewPluginDownloadService(ctx *ctx.Context, pluginRepo *repo.PluginRepo) *PluginDownloadService {
+func NewPluginDownloadService(ctx *ctx.Context, pluginRepo pluginrepo.IPluginRepository) *PluginDownloadService {
 	return &PluginDownloadService{
 		pluginRepo: pluginRepo,
 		ctx:        ctx,
@@ -107,7 +107,7 @@ func (s *PluginDownloadService) GetPluginForDownload(pluginID, version string) (
 
 // ListAvailablePlugins 列出可用插件
 func (s *PluginDownloadService) ListAvailablePlugins(pluginType string) ([]*v1.PluginInfo, error) {
-	var plugins []model.Plugin
+	var plugins []pluginmodel.Plugin
 	var err error
 
 	if pluginType != "" {

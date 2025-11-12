@@ -3,53 +3,54 @@ package agent
 import (
 	"time"
 
-	"github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/internal/engine/repo"
+	"github.com/go-arcade/arcade/internal/engine/model/agent"
+	agentmodel "github.com/go-arcade/arcade/internal/engine/model/agent"
+	agentrepo "github.com/go-arcade/arcade/internal/engine/repo/agent"
 	"github.com/go-arcade/arcade/pkg/id"
 	"github.com/go-arcade/arcade/pkg/log"
 )
 
 type AgentService struct {
-	AgentRepo       repo.IAgentRepository
-	addAgentReq     *model.AddAgentReq
-	addAgentReqRepo *model.AddAgentReqRepo
+	agentRepo        agentrepo.IAgentRepository
+	addAgentReq      *agentmodel.AddAgentReq
+	addAgentReqagent *agentmodel.AddAgentReq
 }
 
-func NewAgentService(agentRepo repo.IAgentRepository, agentReq *model.AddAgentReq) *AgentService {
+func NewAgentService(agentagent agentrepo.IAgentRepository, agentReq *agentmodel.AddAgentReq) *AgentService {
 	return &AgentService{
-		AgentRepo:   agentRepo,
+		agentRepo:   agentagent,
 		addAgentReq: agentReq,
 	}
 }
 
-func (al *AgentService) AddAgent(addAgentReq *model.AddAgentReq) error {
+func (al *AgentService) AddAgent(addAgentReq *agentmodel.AddAgentReq) error {
 
 	var err error
-	addAgentReqRepo := &model.AddAgentReqRepo{
+	addAgentReqagent := &agentmodel.AddAgentReqRepo{
 		AddAgentReq: addAgentReq,
 		AgentId:     id.GetUild(),
 		IsEnabled:   1,
 		CreateTime:  time.Now(),
 	}
-	if err = al.AgentRepo.AddAgent(addAgentReqRepo); err != nil {
+	if err = al.agentRepo.AddAgent(addAgentReqagent); err != nil {
 		log.Errorf("add agent err: %v", err)
 		return err
 	}
 	return err
 }
 
-func (al *AgentService) UpdateAgent(agent *model.Agent) error {
+func (al *AgentService) UpdateAgent(agent *agent.Agent) error {
 	var err error
-	if err = al.AgentRepo.UpdateAgent(agent); err != nil {
+	if err = al.agentRepo.UpdateAgent(agent); err != nil {
 		return err
 	}
 	return err
 }
 
-func (al *AgentService) ListAgent(pageNum, pageSize int) ([]model.Agent, int64, error) {
+func (al *AgentService) ListAgent(pageNum, pageSize int) ([]agent.Agent, int64, error) {
 
 	offset := (pageNum - 1) * pageSize
-	agents, count, err := al.AgentRepo.ListAgent(offset, pageSize)
+	agents, count, err := al.agentRepo.ListAgent(offset, pageSize)
 
 	if err != nil {
 		log.Errorf("list agent err: %v", err)

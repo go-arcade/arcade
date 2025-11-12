@@ -6,8 +6,6 @@ import (
 	"strings"
 
 	"github.com/bytedance/sonic"
-	"github.com/go-arcade/arcade/internal/engine/consts"
-	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/pkg/cache"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/jwt"
@@ -15,6 +13,16 @@ import (
 	"github.com/gofiber/fiber/v2"
 	goJwt "github.com/golang-jwt/jwt/v5"
 )
+
+// TokenInfo token information stored in Redis
+type TokenInfo struct {
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+	ExpireAt     int64  `json:"expireAt"`
+	CreateAt     int64  `json:"createAt"`
+}
+
+const TokenInfoKey = "tokenInfo:"
 
 // AuthorizationMiddleware 认证中间件
 // secretKey: 用于验证 JWT 的密钥
@@ -45,7 +53,7 @@ func AuthorizationMiddleware(secretKey string, cache cache.Cache) fiber.Handler 
 		}
 
 		// 从 Redis 中获取 Token 信息
-		tokenKey := consts.UserTokenKey + claims.UserId
+		tokenKey := TokenInfoKey + claims.UserId
 		tokenInfoStr, err := cache.Get(context.Background(), tokenKey).Result()
 		if err != nil {
 			log.Errorf("cache get token failed: %v", err)
@@ -53,7 +61,7 @@ func AuthorizationMiddleware(secretKey string, cache cache.Cache) fiber.Handler 
 		}
 
 		// 解析 Token 信息
-		var tokenInfo model.TokenInfo
+		var tokenInfo TokenInfo
 		if err := sonic.UnmarshalString(tokenInfoStr, &tokenInfo); err != nil {
 			log.Errorf("failed to unmarshal token info: %v", err)
 			return http.WithRepErrMsg(c, http.InvalidToken.Code, http.InvalidToken.Msg, c.Path())

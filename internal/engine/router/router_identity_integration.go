@@ -3,8 +3,8 @@ package router
 import (
 	http2 "net/http"
 
-	"github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/internal/engine/service"
+	identitymodel "github.com/go-arcade/arcade/internal/engine/model/identity_integration"
+	identityservice "github.com/go-arcade/arcade/internal/engine/service/identity_integration"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/gofiber/fiber/v2"
@@ -98,7 +98,7 @@ func (rt *Router) listProviders(c *fiber.Ctx) error {
 
 	var response []ProviderResponse
 	switch v := integrations.(type) {
-	case []model.IdentityIntegration:
+	case []identitymodel.IdentityIntegration:
 		for _, integration := range v {
 			response = append(response, ProviderResponse{
 				ProviderId:   integration.ProviderId,
@@ -155,7 +155,7 @@ func (rt *Router) ldapLogin(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.ProviderIsRequired.Code, http.ProviderIsRequired.Msg, c.Path())
 	}
 
-	var req service.LDAPLoginRequest
+	var req identityservice.LDAPLoginRequest
 	if err := c.BodyParser(&req); err != nil {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, http.BadRequest.Msg, c.Path())
 	}
@@ -177,7 +177,7 @@ func (rt *Router) ldapLogin(c *fiber.Ctx) error {
 func (rt *Router) createProvider(c *fiber.Ctx) error {
 	identityService := rt.Services.IdentityIntegration
 
-	var provider model.IdentityIntegration
+	var provider identitymodel.IdentityIntegration
 	if err := c.BodyParser(&provider); err != nil {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid request parameters", c.Path())
 	}
@@ -205,7 +205,7 @@ func (rt *Router) updateProvider(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.ProviderIsRequired.Code, http.ProviderIsRequired.Msg, c.Path())
 	}
 
-	var provider model.IdentityIntegration
+	var provider identitymodel.IdentityIntegration
 	if err := c.BodyParser(&provider); err != nil {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid request parameters", c.Path())
 	}

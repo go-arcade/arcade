@@ -3,18 +3,18 @@ package actor
 import (
 	"sync"
 
-	"github.com/go-arcade/arcade/internal/engine/repo"
+	logrepo "github.com/go-arcade/arcade/internal/engine/repo/log"
 	"github.com/go-arcade/arcade/internal/pkg/sse"
 )
 
 type ActorSystem struct {
 	mu     sync.RWMutex
 	actors map[string]*taskActor
-	repo   *repo.LogRepository
+	repo   logrepo.LogRepository
 	hub    *sse.SSEHub
 }
 
-func NewActorSystem(repo *repo.LogRepository, hub *sse.SSEHub) *ActorSystem {
+func NewActorSystem(repo logrepo.LogRepository, hub *sse.SSEHub) *ActorSystem {
 	return &ActorSystem{
 		actors: make(map[string]*taskActor),
 		repo:   repo,

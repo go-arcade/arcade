@@ -5,8 +5,8 @@ import (
 	"time"
 
 	streamv1 "github.com/go-arcade/arcade/api/stream/v1"
-	"github.com/go-arcade/arcade/internal/engine/model/entity"
-	"github.com/go-arcade/arcade/internal/engine/repo"
+	"github.com/go-arcade/arcade/internal/engine/model/log"
+	logrepo "github.com/go-arcade/arcade/internal/engine/repo/log"
 	"github.com/go-arcade/arcade/internal/pkg/sse"
 )
 
@@ -19,13 +19,13 @@ type logBatch struct {
 type taskActor struct {
 	taskID   string
 	mailbox  chan logBatch
-	repo     *repo.LogRepository
+	repo     logrepo.LogRepository
 	hub      *sse.SSEHub
 	shutdown chan struct{}
 	wg       sync.WaitGroup
 }
 
-func newTaskActor(taskID string, repo *repo.LogRepository, hub *sse.SSEHub, mailbox int) *taskActor {
+func newTaskActor(taskID string, repo logrepo.LogRepository, hub *sse.SSEHub, mailbox int) *taskActor {
 	a := &taskActor{
 		taskID:   taskID,
 		mailbox:  make(chan logBatch, mailbox),
@@ -40,7 +40,7 @@ func newTaskActor(taskID string, repo *repo.LogRepository, hub *sse.SSEHub, mail
 
 func (a *taskActor) loop() {
 	defer a.wg.Done()
-	batchBuf := make([]entity.TaskLog, 0, 256)
+	batchBuf := make([]log.TaskLog, 0, 256)
 	flush := func() {
 		if len(batchBuf) == 0 {
 			return
@@ -61,10 +61,10 @@ func (a *taskActor) loop() {
 
 			// 聚合写 Mongo，并实时广播给 SSE 与 gRPC 订阅者（SSE 使用 hub，gRPC 下方会利用 hub 同步获取）
 			for _, l := range b.Logs {
-				doc := entity.TaskLog{
-					TaskID:  b.TaskID,
-					AgentID: b.AgentID,
-					Logs:    []*streamv1.LogChunk{l},
+				doc := log.TaskLog{
+					TaskId:  b.TaskID,
+					AgentId: b.AgentID,
+					Content: l.Content,
 				}
 				batchBuf = append(batchBuf, doc)
 			}

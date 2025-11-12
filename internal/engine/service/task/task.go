@@ -7,8 +7,8 @@ import (
 	"time"
 
 	agentv1 "github.com/go-arcade/arcade/api/agent/v1"
-	"github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/internal/engine/repo"
+	taskmodel "github.com/go-arcade/arcade/internal/engine/model/task"
+	agentrepo "github.com/go-arcade/arcade/internal/engine/repo/agent"
 	"github.com/go-arcade/arcade/pkg/log"
 )
 
@@ -21,8 +21,8 @@ import (
 
 // ConcreteTask 具体的 Task 任务实现
 type ConcreteTask struct {
-	task        *model.Task
-	taskRepo    *repo.AgentRepo
+	task        *taskmodel.Task
+	taskRepo    *agentrepo.IAgentRepository
 	agentClient agentv1.AgentServiceClient
 }
 
@@ -34,7 +34,7 @@ var taskPool = sync.Pool{
 }
 
 // NewConcreteTask 创建 Task 任务（从对象池获取）
-func NewConcreteTask(task *model.Task, taskRepo *repo.AgentRepo, agentClient agentv1.AgentServiceClient) *ConcreteTask {
+func NewConcreteTask(task *taskmodel.Task, taskRepo *agentrepo.IAgentRepository, agentClient agentv1.AgentServiceClient) *ConcreteTask {
 	t := taskPool.Get().(*ConcreteTask)
 	t.task = task
 	t.taskRepo = taskRepo
