@@ -4,7 +4,7 @@
 package main
 
 import (
-	"github.com/go-arcade/arcade/internal/app"
+	"github.com/go-arcade/arcade/internal/bootstrap"
 	"github.com/go-arcade/arcade/internal/engine/conf"
 	"github.com/go-arcade/arcade/internal/engine/repo"
 	"github.com/go-arcade/arcade/internal/engine/router"
@@ -19,7 +19,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func initApp(configPath string, appCtx *ctx.Context, logger *zap.Logger, db database.DB, mongo database.MongoDB, cache cache.Cache) (*app.App, func(), error) {
+func initApp(configPath string, appCtx *ctx.Context, logger *zap.Logger, db database.DB, mongo database.MongoDB, cache cache.Cache) (*bootstrap.App, func(), error) {
 	panic(wire.Build(
 		// 配置层
 		conf.ProviderSet,
@@ -36,6 +36,6 @@ func initApp(configPath string, appCtx *ctx.Context, logger *zap.Logger, db data
 		// gRPC 服务层
 		grpc.ProviderSet,
 		// 应用层
-		app.NewApp,
+		bootstrap.NewApp,
 	))
 }
