@@ -5,12 +5,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/database"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/10/13
- * @file: repo_project_team_access.go
- * @description: 项目团队访问权限仓储
- */
 
 type IProjectTeamAccessRepository interface {
 	GetProjectTeamAccess(projectId, teamId string) (*project.ProjectTeamAccess, error)

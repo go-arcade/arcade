@@ -4,12 +4,6 @@ import (
 	"github.com/go-arcade/arcade/internal/engine/model"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/10/13
- * @file: model_project_member.go
- * @description: 项目成员模型
- */
 
 // ProjectMemberRole 项目成员角色（兼容旧版，保留用于快速角色名称引用）
 type ProjectMemberRole string

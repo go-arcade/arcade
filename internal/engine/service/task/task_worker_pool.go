@@ -9,12 +9,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/log"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/13
- * @file: task_worker_pool.go
- * @description: Task worker pool with goroutine pool and sync.Pool optimization
- */
 
 // Task 任务接口
 type Task interface {

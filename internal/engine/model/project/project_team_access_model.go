@@ -4,12 +4,6 @@ import (
 	"github.com/go-arcade/arcade/internal/engine/model"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/10/13
- * @file: model_project_team_access.go
- * @description: 项目团队访问权限表模型
- */
 
 // ProjectTeamAccess 项目团队访问权限表
 type ProjectTeamAccess struct {

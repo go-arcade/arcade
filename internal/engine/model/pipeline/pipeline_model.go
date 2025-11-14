@@ -6,12 +6,6 @@ import (
 	"github.com/go-arcade/arcade/internal/engine/model"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/13
- * @file: model_pipeline.go
- * @description: pipeline model
- */
 
 // Pipeline 流水线定义表
 type Pipeline struct {

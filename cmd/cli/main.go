@@ -5,12 +5,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/4 19:51
- * @file: main.go
- * @description: cli program
- */
 
 var rootCmd = &cobra.Command{
 	Use:   "arcade-cli",

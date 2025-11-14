@@ -5,12 +5,6 @@ import (
 	"gorm.io/datatypes"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/10/11
- * @file: model_organization.go
- * @description: 组织表模型
- */
 
 // Organization 组织表
 type Organization struct {

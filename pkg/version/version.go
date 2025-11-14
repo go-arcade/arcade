@@ -8,12 +8,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/5 21:30
- * @file: version.go
- * @description: version
- */
 
 var (
 	Version   = ""

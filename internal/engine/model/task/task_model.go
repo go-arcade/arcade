@@ -6,12 +6,6 @@ import (
 	"github.com/go-arcade/arcade/internal/engine/model"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/13
- * @file: model_task.go
- * @description: task model
- */
 
 // Task 任务表
 type Task struct {

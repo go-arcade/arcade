@@ -4,12 +4,6 @@ import (
 	"os"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/16 18:05
- * @file: runner.go
- * @description:
- */
 
 var (
 	Hostname string

@@ -10,12 +10,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/15
- * @file: router_secret.go
- * @description: secret router
- */
 
 // secretRouter registers secret related routes
 func (rt *Router) secretRouter(r fiber.Router, auth fiber.Handler) {

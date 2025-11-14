@@ -17,12 +17,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/log"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/14
- * @file: service_user_permissions.go
- * @description: 用户权限聚合服务 - 查询用户在所有层级的权限并返回可访问路由
- */
 
 // UserPermissionsService 用户权限聚合服务
 type UserPermissionsService struct {

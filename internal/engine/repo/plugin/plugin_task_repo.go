@@ -13,12 +13,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/10/16
- * @file: repo_plugin_task.go
- * @description: 插件安装任务数据访问层
- */
 
 type IPluginTaskRepository interface {
 	CreateTask(task *plugin.PluginInstallRecords) error

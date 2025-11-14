@@ -5,12 +5,6 @@ import (
 	"gorm.io/datatypes"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/14
- * @file: model_router_permission.go
- * @description: 路由权限映射模型
- */
 
 // RouterPermission 路由权限映射表
 type RouterPermission struct {

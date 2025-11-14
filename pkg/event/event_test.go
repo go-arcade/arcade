@@ -5,12 +5,6 @@ import (
 	"testing"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/16 12:33
- * @file: event_test.go
- * @description:
- */
 
 type TestEvent struct {
 	Name   string

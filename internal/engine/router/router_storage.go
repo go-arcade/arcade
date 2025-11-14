@@ -7,12 +7,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/15
- * @file: router_storage.go
- * @description: storage configuration router
- */
 
 // storageRouter registers storage related routes
 func (rt *Router) storageRouter(r fiber.Router, auth fiber.Handler) {

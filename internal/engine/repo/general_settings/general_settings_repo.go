@@ -5,12 +5,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/database"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/15
- * @file: repo_general_settings.go
- * @description: general settings repository
- */
 
 type IGeneralSettingsRepository interface {
 	UpdateGeneralSettings(settings *general_settings.GeneralSettings) error

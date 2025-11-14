@@ -4,12 +4,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/16 21:24
- * @file: http_rep.go
- * @description:
- */
 
 type Response struct {
 	Code   int    `json:"code"`

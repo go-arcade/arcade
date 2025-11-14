@@ -10,12 +10,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-/**
- * @author: x.gallagher.anderson@gmail.com
- * @time: 2023/11/14 22:40
- * @file: jwt.go
- * @description:
- */
 
 type AuthClaims struct {
 	UserId string `json:"userId"`

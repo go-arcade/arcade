@@ -5,12 +5,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/database"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/15
- * @file: repo_secret.go
- * @description: secret repository
- */
 
 type ISecretRepository interface {
 	CreateSecret(secret *secret.Secret) error

@@ -15,12 +15,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/log"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/14
- * @file: service_plugin_download.go
- * @description: 插件下载服务 - 为Agent提供插件分发能力
- */
 
 type PluginDownloadService struct {
 	pluginRepo pluginrepo.IPluginRepository

@@ -5,12 +5,6 @@ import (
 	"gorm.io/datatypes"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/15
- * @file: model_general_settings.go
- * @description: general settings and secret model
- */
 
 // GeneralSettings 通用配置表
 type GeneralSettings struct {

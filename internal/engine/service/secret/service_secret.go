@@ -18,12 +18,6 @@ import (
 	"gorm.io/gorm"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/15
- * @file: service_secret.go
- * @description: secret service
- */
 
 type SecretService struct {
 	ctx        *ctx.Context

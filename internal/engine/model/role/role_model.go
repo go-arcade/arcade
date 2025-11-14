@@ -4,12 +4,6 @@ import (
 	"github.com/go-arcade/arcade/internal/engine/model"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/10/13
- * @file: model_role.go
- * @description: 角色表模型（支持自定义角色）
- */
 
 // RoleScope 角色作用域
 type RoleScope string
