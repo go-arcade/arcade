@@ -6,12 +6,6 @@ import (
 	"github.com/go-arcade/arcade/internal/engine/model"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/16 20:19
- * @file: model_user.go
- * @description: user model
- */
 
 type User struct {
 	model.BaseModel

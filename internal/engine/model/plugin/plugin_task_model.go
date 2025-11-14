@@ -2,12 +2,6 @@ package plugin
 
 import "time"
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/10/16
- * @file: model_plugin_task.go
- * @description: 插件安装任务模型 (MongoDB Collection: plugin_install_tasks)
- */
 
 // PluginInstallRecords 插件安装任务
 type PluginInstallRecords struct {

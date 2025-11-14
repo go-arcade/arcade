@@ -1,11 +1,5 @@
 package http
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/16 21:25
- * @file: http_code.go
- * @description:
- */
 
 var (
 	StatusMovedPermanently = failed(301, "Moved Permanently")

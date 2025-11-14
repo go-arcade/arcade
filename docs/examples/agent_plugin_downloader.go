@@ -14,15 +14,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/log"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/14
- * @file: agent_plugin_downloader.go
- * @description: Agent端插件下载器示例代码
- *
- * 注意：这是示例代码，展示Agent端如何实现插件下载功能
- * 在实际的Agent项目中需要根据具体架构进行调整
- */
 
 // PluginDownloader Agent端插件下载管理器
 type PluginDownloader struct {

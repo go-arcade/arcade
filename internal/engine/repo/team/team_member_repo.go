@@ -5,12 +5,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/database"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/10/13
- * @file: repo_team_member.go
- * @description: 团队成员仓储
- */
 
 type ITeamMemberRepository interface {
 	GetTeamMember(teamId, userId string) (*team.TeamMember, error)

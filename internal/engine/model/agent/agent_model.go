@@ -6,12 +6,6 @@ import (
 	"github.com/go-arcade/arcade/internal/engine/model"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/16 20:33
- * @file: model_agent.go
- * @description: agent model
- */
 
 type Agent struct {
 	model.BaseModel

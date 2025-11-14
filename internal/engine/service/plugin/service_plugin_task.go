@@ -11,12 +11,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/log"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/10/16
- * @file: service_plugin_task.go
- * @description: 插件安装任务管理（MongoDB持久化）
- */
 
 // PluginTaskStatus 任务状态
 type PluginTaskStatus string

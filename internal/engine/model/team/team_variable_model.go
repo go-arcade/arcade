@@ -4,12 +4,6 @@ import (
 	"github.com/go-arcade/arcade/internal/engine/model"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/10/14
- * @file: model_team_variable.go
- * @description: 团队变量表模型
- */
 
 // TeamVariable 团队变量表
 type TeamVariable struct {

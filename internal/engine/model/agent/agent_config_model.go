@@ -5,12 +5,6 @@ import (
 	"gorm.io/datatypes"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/13
- * @file: model_agent_config.go
- * @description: agent config model
- */
 
 // AgentConfig Agent配置表（每个Agent一条记录）
 type AgentConfig struct {

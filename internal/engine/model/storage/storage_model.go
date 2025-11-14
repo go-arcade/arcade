@@ -5,12 +5,6 @@ import (
 	"gorm.io/datatypes"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/13
- * @file: model_storage.go
- * @description: storage config model
- */
 
 // StorageConfig 对象存储配置表
 type StorageConfig struct {

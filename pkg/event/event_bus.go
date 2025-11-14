@@ -2,12 +2,6 @@ package event
 
 import "fmt"
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/16 12:32
- * @file: event_bus.go
- * @description:
- */
 
 type EventBus struct {
 	handlers map[string][]EventHandler

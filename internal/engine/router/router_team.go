@@ -11,12 +11,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/10/22
- * @file: router_team.go
- * @description: Team 路由
- */
 
 func (rt *Router) teamRouter(r fiber.Router, auth fiber.Handler) {
 	teamGroup := r.Group("/team")

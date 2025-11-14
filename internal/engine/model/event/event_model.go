@@ -2,12 +2,6 @@ package event
 
 import "github.com/go-arcade/arcade/internal/engine/model"
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/13
- * @file: model_event.go
- * @description: event model
- */
 
 // SystemEvent 系统事件表
 type SystemEvent struct {

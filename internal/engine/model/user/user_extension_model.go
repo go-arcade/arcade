@@ -6,12 +6,6 @@ import (
 	"github.com/go-arcade/arcade/internal/engine/model"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/11/03
- * @file: model_user_extension.go
- * @description: user extension model
- */
 
 // UserExtension user extension information table
 type UserExtension struct {

@@ -9,12 +9,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/ctx"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/15
- * @file: service_storage.go
- * @description: storage configuration service
- */
 
 type StorageService struct {
 	ctx         *ctx.Context

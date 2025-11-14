@@ -9,12 +9,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/10/20 19:51
- * @file: token.go
- * @description: token tool
- */
 
 // ParseAuthorizationToken 解析 Authorization 头中的 Bearer token
 func ParseAuthorizationToken(f *fiber.Ctx, secretKey string) (*jwt.AuthClaims, error) {

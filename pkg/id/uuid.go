@@ -7,12 +7,6 @@ import (
 	"github.com/google/uuid"
 )
 
-/**
- * @author: HuaiAn xu
- * @date: 2024-05-02 00:34:31
- * @file: uuid.go
- * @description: id util
- */
 
 var mu = &sync.Mutex{}
 

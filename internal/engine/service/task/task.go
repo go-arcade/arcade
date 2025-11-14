@@ -12,12 +12,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/log"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/13
- * @file: task.go
- * @description: Concrete implementation of Task
- */
 
 // ConcreteTask 具体的 Task 任务实现
 type ConcreteTask struct {

@@ -11,12 +11,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/10/19
- * @file: agent_id_manager_example.go
- * @description: Agent ID管理器使用示例
- */
 
 // ExampleAgentRegistration 示例：Agent注册流程（确保ID一致性）
 func ExampleAgentRegistration() {

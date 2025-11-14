@@ -4,12 +4,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/16 21:25
- * @file: http_rep_err.go
- * @description:
- */
 
 type ResponseErr struct {
 	ErrCode int    `json:"code"`

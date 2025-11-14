@@ -8,12 +8,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/log"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/14
- * @file: repo_router_permission.go
- * @description: 路由权限仓库
- */
 
 type IRouterPermissionRepository interface {
 	GetAllRoutePermissions() ([]permission.RoutePermissionDTO, error)

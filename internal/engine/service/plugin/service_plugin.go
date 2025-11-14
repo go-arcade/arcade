@@ -24,12 +24,6 @@ import (
 	"gorm.io/datatypes"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/16
- * @file: service_plugin.go
- * @description: 插件管理服务 - 支持安装、卸载、启用、禁用、热更新
- */
 
 // PluginSource 插件来源
 type PluginSource string

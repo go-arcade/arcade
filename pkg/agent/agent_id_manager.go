@@ -10,12 +10,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/id"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/10/19
- * @file: agent_id_manager.go
- * @description: Agent ID 管理器 - 确保Agent和Server的ID一致性
- */
 
 // AgentIDInfo Agent ID信息
 type AgentIDInfo struct {

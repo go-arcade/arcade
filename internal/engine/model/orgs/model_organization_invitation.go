@@ -2,12 +2,6 @@ package orgs
 
 import "github.com/go-arcade/arcade/internal/engine/model"
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/10/13
- * @file: model_organization_invitation.go
- * @description: 组织邀请表模型
- */
 
 // OrganizationInvitation 组织邀请表
 type OrganizationInvitation struct {

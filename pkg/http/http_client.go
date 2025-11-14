@@ -6,12 +6,6 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/11/6 20:39
- * @file: http_client.go
- * @description: http client
- */
 
 type Request struct {
 	Url     string

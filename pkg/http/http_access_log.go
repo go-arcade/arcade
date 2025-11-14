@@ -7,12 +7,6 @@ import (
 	"go.uber.org/zap"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/9/16 23:01
- * @file: http_access_log.go
- * @description:
- */
 
 func AccessLogFormat(log *zap.Logger) fiber.Handler {
 	// 使用 sugar logger

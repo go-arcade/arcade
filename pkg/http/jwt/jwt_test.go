@@ -7,12 +7,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/http"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2024/10/17 22:47
- * @file: jwt_test.go
- * @description:
- */
 
 func TestJwt(t *testing.T) {
 

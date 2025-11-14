@@ -11,12 +11,6 @@ import (
 	"gorm.io/gorm"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/15
- * @file: service_general_settings.go
- * @description: general settings service
- */
 
 type GeneralSettingsService struct {
 	ctx                 *ctx.Context

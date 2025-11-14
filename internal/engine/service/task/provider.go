@@ -8,12 +8,6 @@ import (
 	"github.com/google/wire"
 )
 
-/**
- * @author: gagral.x@gmail.com
- * @time: 2025/01/13
- * @file: provider.go
- * @description: Task service provider for dependency injection
- */
 
 // TaskPoolConfig Task 池配置
 type TaskPoolConfig struct {
