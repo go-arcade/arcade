@@ -330,7 +330,7 @@ func newP[T any](recycling bool, fn RecyclingProducerFn[T], opts *stageOptions) 
 	return ret
 }
 
-// do invokes a single instance of the receiver's (Recycling)ProducerFn with
+// do invoke a single instance of the receiver's (Recycling)ProducerFn with
 // the receiver's getter and a putter that writes the provided item to the
 // receiver's output channel.
 func (p *producer[T]) do() (err error) {
@@ -542,7 +542,7 @@ func measure(eg *errgroup.Group, doer doer) []*StageMetrics {
 	return ret
 }
 
-// do executes the pipeline in parallel.
+// do execute the pipeline in parallel.
 func (p *pipeline[T]) do() error {
 	var eg errgroup.Group
 	do(&eg, p.producer)

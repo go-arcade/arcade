@@ -1,0 +1,76 @@
+package pipeline
+
+import (
+	"context"
+	"time"
+
+	"golang.org/x/sync/errgroup"
+)
+
+// PipelineRunner runs pipeline jobs
+type PipelineRunner struct {
+	execCtx *ExecutionContext
+}
+
+// NewPipelineRunner creates a new pipeline runner
+func NewPipelineRunner(ctx *ExecutionContext) *PipelineRunner {
+	return &PipelineRunner{execCtx: ctx}
+}
+
+// Run executes all jobs in the pipeline
+// Jobs can run in parallel unless concurrency is specified
+func (r *PipelineRunner) Run(ctx context.Context, p *Pipeline) error {
+	// Update execution context with pipeline
+	r.execCtx.Pipeline = p
+
+	// Group jobs by concurrency key
+	concurrencyGroups := make(map[string][]*Job)
+	var noConcurrencyJobs []*Job
+
+	for i := range p.Jobs {
+		job := &p.Jobs[i]
+		if job.Concurrency != "" {
+			concurrencyGroups[job.Concurrency] = append(concurrencyGroups[job.Concurrency], job)
+		} else {
+			noConcurrencyJobs = append(noConcurrencyJobs, job)
+		}
+	}
+
+	// Run jobs with concurrency control
+	eg, egCtx := errgroup.WithContext(ctx)
+	for _, jobs := range concurrencyGroups {
+		jobs := jobs
+		eg.Go(func() error {
+			// Jobs with same concurrency key run sequentially
+			for _, job := range jobs {
+				if err := egCtx.Err(); err != nil {
+					return err
+				}
+				jr := NewJobRunner(r.execCtx, job)
+				if err := jr.Run(egCtx); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+	}
+
+	// Run jobs without concurrency control in parallel
+	for _, job := range noConcurrencyJobs {
+		job := job
+		eg.Go(func() error {
+			jr := NewJobRunner(r.execCtx, job)
+			return jr.Run(ctx)
+		})
+	}
+
+	return eg.Wait()
+}
+
+// RunWithTimeout runs pipeline with timeout
+func (r *PipelineRunner) RunWithTimeout(ctx context.Context, p *Pipeline, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	return r.Run(ctx, p)
+}
