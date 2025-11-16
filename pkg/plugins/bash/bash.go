@@ -9,7 +9,6 @@ import (
 	"net/rpc"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -32,17 +31,44 @@ type BashConfig struct {
 	AllowDangerous bool `json:"allow_dangerous"`
 }
 
-// BashPlugin implements the custom plugin
-type BashPlugin struct {
+// ========== Plugin Action Arguments ==========
+// Each plugin maintains its own action and args structures
+
+// BashScriptArgs contains arguments for executing a bash script
+type BashScriptArgs struct {
+	Script string            `json:"script"`
+	Args   []string          `json:"args,omitempty"`
+	Env    map[string]string `json:"env,omitempty"`
+}
+
+// BashCommandArgs contains arguments for executing a bash command
+type BashCommandArgs struct {
+	Command string            `json:"command"`
+	Args    []string          `json:"args,omitempty"`
+	Env     map[string]string `json:"env,omitempty"`
+}
+
+// Bash implements the custom plugin
+type Bash struct {
+	*pluginpkg.PluginBase
 	name        string
 	description string
 	version     string
 	cfg         BashConfig
 }
 
-// NewBashPlugin creates a new bash plugin instance
-func NewBashPlugin() *BashPlugin {
-	return &BashPlugin{
+// Action definitions - maintains action names and descriptions
+var (
+	actions = map[string]string{
+		"script":  "Execute a bash script from string",
+		"command": "Execute a bash command",
+	}
+)
+
+// NewBash creates a new bash plugin instance
+func NewBash() *Bash {
+	p := &Bash{
+		PluginBase:  pluginpkg.NewPluginBase(),
 		name:        "bash",
 		description: "A custom plugin that executes bash scripts and commands",
 		version:     "1.0.0",
@@ -52,32 +78,54 @@ func NewBashPlugin() *BashPlugin {
 			Timeout: 300, // 5 minutes default
 		},
 	}
+
+	// Register actions using Action Registry
+	p.registerActions()
+	return p
+}
+
+// registerActions registers all actions for this plugin
+// Actions are maintained in the actions map above for easy management
+func (p *Bash) registerActions() {
+	// Register "script" action
+	if err := p.Registry().RegisterFunc("script", actions["script"], func(params json.RawMessage, opts json.RawMessage) (json.RawMessage, error) {
+		return p.executeScript(params, opts)
+	}); err != nil {
+		return
+	}
+
+	// Register "command" action
+	if err := p.Registry().RegisterFunc("command", actions["command"], func(params json.RawMessage, opts json.RawMessage) (json.RawMessage, error) {
+		return p.executeCommand(params, opts)
+	}); err != nil {
+		return
+	}
 }
 
 // ===== Implement RPC Interface =====
 
 // Name returns the plugin name
-func (p *BashPlugin) Name() (string, error) {
+func (p *Bash) Name() (string, error) {
 	return p.name, nil
 }
 
 // Description returns the plugin description
-func (p *BashPlugin) Description() (string, error) {
+func (p *Bash) Description() (string, error) {
 	return p.description, nil
 }
 
 // Version returns the plugin version
-func (p *BashPlugin) Version() (string, error) {
+func (p *Bash) Version() (string, error) {
 	return p.version, nil
 }
 
 // Type returns the plugin type
-func (p *BashPlugin) Type() (string, error) {
+func (p *Bash) Type() (string, error) {
 	return string(pluginpkg.TypeCustom), nil
 }
 
 // Init initializes the plugin
-func (p *BashPlugin) Init(config json.RawMessage) error {
+func (p *Bash) Init(config json.RawMessage) error {
 	if len(config) > 0 {
 		if err := sonic.Unmarshal(config, &p.cfg); err != nil {
 			return fmt.Errorf("failed to parse config: %w", err)
@@ -104,34 +152,22 @@ func (p *BashPlugin) Init(config json.RawMessage) error {
 }
 
 // Cleanup cleans up the plugin
-func (p *BashPlugin) Cleanup() error {
+func (p *Bash) Cleanup() error {
 	fmt.Println("[bash-plugin] cleanup completed")
 	return nil
 }
 
-// Execute executes a bash script or command
-func (p *BashPlugin) Execute(action string, params json.RawMessage, opts json.RawMessage) (json.RawMessage, error) {
-	switch action {
-	case "script":
-		return p.executeScript(params, opts)
-	case "command":
-		return p.executeCommand(params, opts)
-	case "file":
-		return p.executeFile(params, opts)
-	default:
-		return nil, fmt.Errorf("unknown action: %s, supported actions: script, command, file", action)
-	}
+// Execute executes a bash script or command using Action Registry
+// All actions are registered in registerActions() and routed through the registry
+func (p *Bash) Execute(action string, params json.RawMessage, opts json.RawMessage) (json.RawMessage, error) {
+	return p.PluginBase.Execute(action, params, opts)
 }
 
 // executeScript executes a bash script from string
-func (p *BashPlugin) executeScript(params json.RawMessage, opts json.RawMessage) (json.RawMessage, error) {
-	var scriptParams struct {
-		Script string            `json:"script"`
-		Args   []string          `json:"args"`
-		Env    map[string]string `json:"env"`
-	}
+func (p *Bash) executeScript(params json.RawMessage, opts json.RawMessage) (json.RawMessage, error) {
+	var scriptParams BashScriptArgs
 
-	if err := sonic.Unmarshal(params, &scriptParams); err != nil {
+	if err := pluginpkg.UnmarshalParams(params, &scriptParams); err != nil {
 		return nil, fmt.Errorf("failed to parse script params: %w", err)
 	}
 
@@ -154,13 +190,21 @@ func (p *BashPlugin) executeScript(params json.RawMessage, opts json.RawMessage)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp file: %w", err)
 	}
-	defer os.Remove(tmpFile.Name())
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+			return
+		}
+	}(tmpFile.Name())
 
 	// Write script content
 	if _, err := tmpFile.WriteString(scriptParams.Script); err != nil {
 		return nil, fmt.Errorf("failed to write script: %w", err)
 	}
-	tmpFile.Close()
+	err = tmpFile.Close()
+	if err != nil {
+		return nil, err
+	}
 
 	// Make it executable
 	if err := os.Chmod(tmpFile.Name(), 0755); err != nil {
@@ -172,13 +216,10 @@ func (p *BashPlugin) executeScript(params json.RawMessage, opts json.RawMessage)
 }
 
 // executeCommand executes a simple bash command
-func (p *BashPlugin) executeCommand(params json.RawMessage, opts json.RawMessage) (json.RawMessage, error) {
-	var cmdParams struct {
-		Command string            `json:"command"`
-		Env     map[string]string `json:"env"`
-	}
+func (p *Bash) executeCommand(params json.RawMessage, opts json.RawMessage) (json.RawMessage, error) {
+	var cmdParams BashCommandArgs
 
-	if err := sonic.Unmarshal(params, &cmdParams); err != nil {
+	if err := pluginpkg.UnmarshalParams(params, &cmdParams); err != nil {
 		return nil, fmt.Errorf("failed to parse command params: %w", err)
 	}
 
@@ -199,37 +240,8 @@ func (p *BashPlugin) executeCommand(params json.RawMessage, opts json.RawMessage
 	return p.runCommand(p.cfg.Shell, []string{"-c", cmdParams.Command}, cmdParams.Env)
 }
 
-// executeFile executes a bash script from a file
-func (p *BashPlugin) executeFile(params json.RawMessage, opts json.RawMessage) (json.RawMessage, error) {
-	var fileParams struct {
-		FilePath string            `json:"file_path"`
-		Args     []string          `json:"args"`
-		Env      map[string]string `json:"env"`
-	}
-
-	if err := sonic.Unmarshal(params, &fileParams); err != nil {
-		return nil, fmt.Errorf("failed to parse file params: %w", err)
-	}
-
-	if fileParams.FilePath == "" {
-		return nil, fmt.Errorf("file_path is required")
-	}
-
-	// Check if file exists
-	absPath := fileParams.FilePath
-	if !filepath.IsAbs(absPath) {
-		absPath = filepath.Join(p.cfg.WorkDir, fileParams.FilePath)
-	}
-
-	if _, err := os.Stat(absPath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("script file not found: %s", absPath)
-	}
-
-	return p.runCommand(p.cfg.Shell, append([]string{absPath}, fileParams.Args...), fileParams.Env)
-}
-
 // runCommand executes a command with the given arguments and environment
-func (p *BashPlugin) runCommand(command string, args []string, env map[string]string) (json.RawMessage, error) {
+func (p *Bash) runCommand(command string, args []string, env map[string]string) (json.RawMessage, error) {
 	ctx := context.Background()
 	timeout := time.Duration(p.cfg.Timeout) * time.Second
 
@@ -288,71 +300,87 @@ func (p *BashPlugin) runCommand(command string, args []string, env map[string]st
 
 // ===== RPC Server Implementation =====
 
-// BashPluginRPCServer is the RPC server wrapper
-type BashPluginRPCServer struct {
-	impl *BashPlugin
+// BashPlugin is the RPC server wrapper
+type BashPlugin struct {
+	impl *Bash
 }
 
 // Name RPC method
-func (s *BashPluginRPCServer) Name(args string, reply *string) error {
+func (s *BashPlugin) Name(args string, reply *string) error {
 	name, err := s.impl.Name()
 	*reply = name
 	return err
 }
 
 // Description RPC method
-func (s *BashPluginRPCServer) Description(args string, reply *string) error {
+func (s *BashPlugin) Description(args string, reply *string) error {
 	desc, err := s.impl.Description()
 	*reply = desc
 	return err
 }
 
 // Version RPC method
-func (s *BashPluginRPCServer) Version(args string, reply *string) error {
+func (s *BashPlugin) Version(args string, reply *string) error {
 	ver, err := s.impl.Version()
 	*reply = ver
 	return err
 }
 
 // Type RPC method
-func (s *BashPluginRPCServer) Type(args string, reply *string) error {
+func (s *BashPlugin) Type(args string, reply *string) error {
 	typ, err := s.impl.Type()
 	*reply = typ
 	return err
 }
 
 // Init RPC method
-func (s *BashPluginRPCServer) Init(config json.RawMessage, reply *string) error {
+func (s *BashPlugin) Init(config json.RawMessage, reply *string) error {
 	err := s.impl.Init(config)
 	*reply = "initialized"
 	return err
 }
 
 // Cleanup RPC method
-func (s *BashPluginRPCServer) Cleanup(args string, reply *string) error {
+func (s *BashPlugin) Cleanup(args string, reply *string) error {
 	err := s.impl.Cleanup()
 	*reply = "cleaned up"
 	return err
 }
 
-// Execute RPC method
-func (s *BashPluginRPCServer) Execute(args *pluginpkg.CustomExecuteArgs, reply *json.RawMessage) error {
-	result, err := s.impl.Execute(args.Action, args.Params, args.Opts)
+// Script RPC method - uses method name + json.RawMessage
+// params: json.RawMessage containing BashScriptArgs
+// opts: json.RawMessage containing optional overrides
+func (s *BashPlugin) Script(args *pluginpkg.MethodArgs, reply *pluginpkg.MethodResult) error {
+	result, err := s.impl.Execute("script", args.Params, args.Opts)
 	if err != nil {
-		return err
+		reply.Error = err.Error()
+		return nil
 	}
-	*reply = result
+	reply.Result = result
+	return nil
+}
+
+// Command RPC method - uses method name + json.RawMessage
+// params: json.RawMessage containing BashCommandArgs
+// opts: json.RawMessage containing optional overrides
+func (s *BashPlugin) Command(args *pluginpkg.MethodArgs, reply *pluginpkg.MethodResult) error {
+	result, err := s.impl.Execute("command", args.Params, args.Opts)
+	if err != nil {
+		reply.Error = err.Error()
+		return nil
+	}
+	reply.Result = result
 	return nil
 }
 
 // Ping RPC method
-func (s *BashPluginRPCServer) Ping(args string, reply *string) error {
+func (s *BashPlugin) Ping(args string, reply *string) error {
 	*reply = "pong"
 	return nil
 }
 
 // GetInfo RPC method
-func (s *BashPluginRPCServer) GetInfo(args string, reply *pluginpkg.PluginInfo) error {
+func (s *BashPlugin) GetInfo(args string, reply *pluginpkg.PluginInfo) error {
 	name, _ := s.impl.Name()
 	desc, _ := s.impl.Description()
 	ver, _ := s.impl.Version()
@@ -370,7 +398,7 @@ func (s *BashPluginRPCServer) GetInfo(args string, reply *pluginpkg.PluginInfo) 
 }
 
 // GetMetrics RPC method
-func (s *BashPluginRPCServer) GetMetrics(args string, reply *pluginpkg.PluginMetrics) error {
+func (s *BashPlugin) GetMetrics(args string, reply *pluginpkg.PluginMetrics) error {
 	name, _ := s.impl.Name()
 	ver, _ := s.impl.Version()
 	typ, _ := s.impl.Type()
@@ -389,12 +417,12 @@ func (s *BashPluginRPCServer) GetMetrics(args string, reply *pluginpkg.PluginMet
 // BashPluginHandler is the plugin handler
 type BashPluginHandler struct {
 	plugin.Plugin
-	Impl *BashPlugin
+	Impl *Bash
 }
 
 // Server returns the RPC server
 func (p *BashPluginHandler) Server(*plugin.MuxBroker) (any, error) {
-	return &BashPluginRPCServer{impl: p.Impl}, nil
+	return &BashPlugin{impl: p.Impl}, nil
 }
 
 // Client returns the RPC client (not used in plugin side)
@@ -409,7 +437,7 @@ func main() {
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: pluginpkg.RPCHandshake,
 		Plugins: map[string]plugin.Plugin{
-			"plugin": &BashPluginHandler{Impl: NewBashPlugin()},
+			"plugin": &BashPluginHandler{Impl: NewBash()},
 		},
 	})
 }

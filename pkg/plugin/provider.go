@@ -9,20 +9,20 @@ import (
 	"github.com/google/wire"
 )
 
-// ProviderSet 提供插件层相关的依赖
+// ProviderSet provides plugin layer related dependencies
 var ProviderSet = wire.NewSet(
 	ProvideDatabaseAccessor,
 	ProvidePluginManager,
 )
 
-// ProvideDatabaseAccessor 提供数据库访问器
-// 从 database.DB 创建适配器，实现 DatabaseAccessor 接口
+// ProvideDatabaseAccessor provides database accessor
+// Creates an adapter from database.DB, implementing DatabaseAccessor interface
 func ProvideDatabaseAccessor(db database.DB) DatabaseAccessor {
 	return NewPluginDBAccessorAdapter(db)
 }
 
-// ProvidePluginManager 提供插件管理器实例
-// dbAccessor 由 ProvideDatabaseAccessor 提供
+// ProvidePluginManager provides plugin manager instance
+// dbAccessor is provided by ProvideDatabaseAccessor
 func ProvidePluginManager(appConf conf.AppConfig, dbAccessor DatabaseAccessor) *Manager {
 	// Get plugin directory from configuration (use default if not set)
 	pluginDir := "/var/lib/arcade/plugins"
@@ -42,7 +42,7 @@ func ProvidePluginManager(appConf conf.AppConfig, dbAccessor DatabaseAccessor) *
 	// Create plugin manager
 	m := NewManager(config)
 
-	// 设置数据库访问器（由 internal/repo 实现）
+	// Set database accessor (implemented by internal/repo)
 	m.SetDatabaseAccessor(dbAccessor)
 
 	// Auto-load plugins from directory on startup

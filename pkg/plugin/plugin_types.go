@@ -38,8 +38,8 @@ type PluginConfig struct {
 	Type        string            `json:"type"`
 	Config      json.RawMessage   `json:"config"`
 	Environment map[string]string `json:"environment"`
-	TaskID      string            `json:"task_id"` // 任务ID，用于日志关联
-	LogHandlers []LogHandler      `json:"-"`       // 日志处理器（不序列化）
+	TaskID      string            `json:"task_id"` // Task ID for log correlation
+	LogHandlers []LogHandler      `json:"-"`       // Log handlers (not serialized)
 }
 
 // PluginInfo contains plugin information
@@ -108,17 +108,17 @@ func IsValidPluginType(t string) bool {
 // GetPluginTypeDescription returns a description for a plugin type
 func GetPluginTypeDescription(t PluginType) string {
 	descriptions := map[PluginType]string{
-		TypeSource:      "源码管理插件，用于代码仓库操作（克隆、拉取、分支切换等）",
-		TypeBuild:       "构建插件，用于编译和构建项目（编译、打包、生成产物等）",
-		TypeTest:        "测试插件，用于运行测试和生成报告（单元测试、集成测试、覆盖率等）",
-		TypeDeploy:      "部署插件，用于应用部署和管理（部署、回滚、扩缩容等）",
-		TypeSecurity:    "安全插件，用于安全扫描和审计（漏洞扫描、合规检查等）",
-		TypeNotify:      "通知插件，用于发送各类通知（邮件、Webhook、即时消息等）",
-		TypeApproval:    "审批插件，用于审批流程管理（创建审批、批准、拒绝等）",
-		TypeStorage:     "存储插件，用于数据存储和管理（保存、加载、删除、列表等）",
-		TypeAnalytics:   "分析插件，用于数据分析和报告（事件追踪、查询、指标、报告等）",
-		TypeIntegration: "集成插件，用于第三方服务集成（连接、调用、订阅等）",
-		TypeCustom:      "自定义插件，用于特殊用途的定制化功能",
+		TypeSource:      "Source code management plugin for repository operations (clone, pull, checkout, etc.)",
+		TypeBuild:       "Build plugin for compiling and building projects (compile, package, generate artifacts, etc.)",
+		TypeTest:        "Test plugin for running tests and generating reports (unit tests, integration tests, coverage, etc.)",
+		TypeDeploy:      "Deployment plugin for application deployment and management (deploy, rollback, scaling, etc.)",
+		TypeSecurity:    "Security plugin for security scanning and auditing (vulnerability scanning, compliance checks, etc.)",
+		TypeNotify:      "Notification plugin for sending various notifications (email, webhook, instant messaging, etc.)",
+		TypeApproval:    "Approval plugin for approval workflow management (create approval, approve, reject, etc.)",
+		TypeStorage:     "Storage plugin for data storage and management (save, load, delete, list, etc.)",
+		TypeAnalytics:   "Analytics plugin for data analysis and reporting (event tracking, queries, metrics, reports, etc.)",
+		TypeIntegration: "Integration plugin for third-party service integration (connect, call, subscribe, etc.)",
+		TypeCustom:      "Custom plugin for special-purpose customized functionality",
 	}
 	return descriptions[t]
 }
@@ -138,15 +138,4 @@ func (pt PluginType) Validate() error {
 		}
 	}
 	return nil
-}
-
-// QueryConfigArgs 查询插件配置参数
-type QueryConfigArgs struct {
-	PluginID string `json:"plugin_id"`
-}
-
-// QueryConfigByKeyArgs 根据键查询配置参数
-type QueryConfigByKeyArgs struct {
-	PluginID string `json:"plugin_id"`
-	Key      string `json:"key"`
 }

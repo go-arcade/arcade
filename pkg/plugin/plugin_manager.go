@@ -24,7 +24,7 @@ type Manager struct {
 	// Read-write lock to protect concurrent access
 	mu sync.RWMutex
 	// Plugin client mapping
-	plugins map[string]*RPCPluginClient
+	plugins map[string]*Client
 	// go-plugin client mapping
 	clients map[string]*plugin.Client
 	// Manager configuration
@@ -89,15 +89,15 @@ func (w *logWriter) Write(p []byte) (n int, err error) {
 // NewManager creates a new plugin manager
 func NewManager(config *ManagerConfig) *Manager {
 	return &Manager{
-		plugins:    make(map[string]*RPCPluginClient),
+		plugins:    make(map[string]*Client),
 		clients:    make(map[string]*plugin.Client),
 		config:     config,
 		handlers:   make(map[string]plugin.Plugin),
-		dbAccessor: nil, // 稍后通过 SetDatabaseAccessor 设置
+		dbAccessor: nil, // Will be set via SetDatabaseAccessor later
 	}
 }
 
-// SetDatabaseAccessor 设置数据库访问器（新接口）
+// SetDatabaseAccessor sets the database accessor
 func (m *Manager) SetDatabaseAccessor(accessor DatabaseAccessor) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -119,7 +119,7 @@ func (m *Manager) registerPluginLocked(name string, pluginPath string, config Pl
 		return fmt.Errorf("plugin %s already registered", name)
 	}
 
-	// 创建日志捕获器
+	// Create log capture
 	taskID := config.TaskID
 	if taskID == "" {
 		taskID = "unknown"
@@ -194,7 +194,7 @@ func (m *Manager) registerPluginLocked(name string, pluginPath string, config Pl
 	}
 
 	// Create RPC plugin client
-	rpcPluginClient := &RPCPluginClient{
+	rpcPluginClient := &Client{
 		info:          pluginInfo, // Use info from plugin
 		config:        config,
 		pluginPath:    pluginPath,
@@ -337,7 +337,7 @@ func (m *Manager) ReloadAllPlugins() error {
 }
 
 // GetPlugin retrieves a plugin
-func (m *Manager) GetPlugin(name string) (*RPCPluginClient, error) {
+func (m *Manager) GetPlugin(name string) (*Client, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -471,7 +471,7 @@ func (m *Manager) performHealthCheck() {
 }
 
 // initializePlugin initializes a plugin
-func (m *Manager) initializePlugin(pluginClient *RPCPluginClient) error {
+func (m *Manager) initializePlugin(pluginClient *Client) error {
 	if pluginClient.client == nil {
 		log.Warnf("plugin %s has no RPC client, skipping initialization", pluginClient.info.Name)
 		return nil
@@ -489,7 +489,7 @@ func (m *Manager) initializePlugin(pluginClient *RPCPluginClient) error {
 }
 
 // cleanupPlugin cleans up a plugin
-func (m *Manager) cleanupPlugin(pluginClient *RPCPluginClient) error {
+func (m *Manager) cleanupPlugin(pluginClient *Client) error {
 	if pluginClient.client == nil {
 		log.Warnf("plugin %s has no RPC client, skipping cleanup", pluginClient.info.Name)
 		return nil
@@ -619,7 +619,7 @@ func (m *Manager) Close() error {
 	}
 
 	// Clear mappings
-	m.plugins = make(map[string]*RPCPluginClient)
+	m.plugins = make(map[string]*Client)
 	m.clients = make(map[string]*plugin.Client)
 
 	log.Info("plugin manager closed")

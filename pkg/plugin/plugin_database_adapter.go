@@ -9,40 +9,40 @@ import (
 	"github.com/go-arcade/arcade/pkg/database"
 )
 
-// DatabaseAccessor 定义插件可访问的数据库能力
-// 插件通过此接口访问数据库，而不直接依赖 internal 包
+// DatabaseAccessor defines database capabilities accessible by plugins
+// Plugins access database through this interface without directly depending on internal packages
 type DatabaseAccessor interface {
-	// QueryConfig 查询插件配置
-	// pluginID: 插件ID
-	// 返回插件配置的 JSON 字符串
+	// QueryConfig queries plugin configuration
+	// pluginID: plugin ID
+	// Returns JSON string of plugin configuration
 	QueryConfig(ctx context.Context, pluginID string) (string, error)
 
-	// QueryConfigByKey 根据配置键查询配置值
-	// pluginID: 插件ID
-	// key: 配置键名
-	// 返回配置值的 JSON 字符串
+	// QueryConfigByKey queries configuration value by key
+	// pluginID: plugin ID
+	// key: configuration key name
+	// Returns JSON string of configuration value
 	QueryConfigByKey(ctx context.Context, pluginID string, key string) (string, error)
 
-	// ListConfigs 列出所有插件配置
-	// 返回所有插件配置的 JSON 数组字符串
+	// ListConfigs lists all plugin configurations
+	// Returns JSON array string of all plugin configurations
 	ListConfigs(ctx context.Context) (string, error)
 }
 
-// PluginDBAccessorAdapter 适配器：将 internal/repo 的实现适配到 pkg/plugin.DatabaseAccessor 接口
-// 这样避免了 internal/repo 直接 import pkg/plugin，防止循环依赖
+// PluginDBAccessorAdapter is an adapter that adapts internal/repo implementation to pkg/plugin.DatabaseAccessor interface
+// This avoids direct import of pkg/plugin by internal/repo, preventing circular dependencies
 type PluginDBAccessorAdapter struct {
 	db database.DB
 }
 
-// NewPluginDBAccessorAdapter 创建插件数据库访问器适配器
-// 直接接收 database.DB，避免循环依赖
+// NewPluginDBAccessorAdapter creates a plugin database accessor adapter
+// Directly receives database.DB to avoid circular dependencies
 func NewPluginDBAccessorAdapter(db database.DB) DatabaseAccessor {
 	return &PluginDBAccessorAdapter{
 		db: db,
 	}
 }
 
-// QueryConfig 查询插件配置
+// QueryConfig queries plugin configuration
 func (a *PluginDBAccessorAdapter) QueryConfig(ctx context.Context, pluginID string) (string, error) {
 	if a.db == nil {
 		return "", fmt.Errorf("database is not initialized")
@@ -62,7 +62,7 @@ func (a *PluginDBAccessorAdapter) QueryConfig(ctx context.Context, pluginID stri
 		return "", err
 	}
 
-	// 序列化为 JSON
+	// Serialize to JSON
 	configJSON, err := json.Marshal(config)
 	if err != nil {
 		return "", err
@@ -71,7 +71,7 @@ func (a *PluginDBAccessorAdapter) QueryConfig(ctx context.Context, pluginID stri
 	return string(configJSON), nil
 }
 
-// QueryConfigByKey 根据配置键查询配置值
+// QueryConfigByKey queries configuration value by key
 func (a *PluginDBAccessorAdapter) QueryConfigByKey(ctx context.Context, pluginID string, key string) (string, error) {
 	if a.db == nil {
 		return "", fmt.Errorf("database is not initialized")
@@ -89,19 +89,19 @@ func (a *PluginDBAccessorAdapter) QueryConfigByKey(ctx context.Context, pluginID
 		return "", err
 	}
 
-	// 解析 Config JSON
+	// Parse Config JSON
 	var configMap map[string]interface{}
 	if err := json.Unmarshal(config.Config, &configMap); err != nil {
 		return "", err
 	}
 
-	// 获取指定键的值
+	// Get value for specified key
 	value, exists := configMap[key]
 	if !exists {
-		return "", nil // 键不存在，返回空字符串
+		return "", nil // Key does not exist, return empty string
 	}
 
-	// 序列化值
+	// Serialize value
 	valueJSON, err := json.Marshal(value)
 	if err != nil {
 		return "", err
@@ -110,7 +110,7 @@ func (a *PluginDBAccessorAdapter) QueryConfigByKey(ctx context.Context, pluginID
 	return string(valueJSON), nil
 }
 
-// ListConfigs 列出所有插件配置
+// ListConfigs lists all plugin configurations
 func (a *PluginDBAccessorAdapter) ListConfigs(ctx context.Context) (string, error) {
 	if a.db == nil {
 		return "", fmt.Errorf("database is not initialized")
@@ -129,7 +129,7 @@ func (a *PluginDBAccessorAdapter) ListConfigs(ctx context.Context) (string, erro
 		return "", err
 	}
 
-	// 序列化为 JSON 数组
+	// Serialize to JSON array
 	configsJSON, err := json.Marshal(configs)
 	if err != nil {
 		return "", err

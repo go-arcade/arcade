@@ -25,11 +25,11 @@ type RPCPluginHandler struct {
 
 // Server returns the server-side plugin
 func (h *RPCPluginHandler) Server(*plugin.MuxBroker) (interface{}, error) {
-	// 如果 impl 是 RPCPluginServer，直接使用
-	if server, ok := h.Impl.(*RPCPluginServer); ok {
+	// If impl is Server, use it directly
+	if server, ok := h.Impl.(*Server); ok {
 		return server, nil
 	}
-	// 否则创建包装器
+	// Otherwise create a wrapper
 	return &RPCPluginServerWrapper{
 		impl:       h.Impl,
 		dbAccessor: h.DbAccessor,
@@ -44,12 +44,12 @@ func (h *RPCPluginHandler) Client(b *plugin.MuxBroker, c *rpc.Client) (interface
 // RPCPluginServerWrapper is the RPC plugin server wrapper
 type RPCPluginServerWrapper struct {
 	impl       interface{}
-	dbAccessor DatabaseAccessor // 新接口
+	dbAccessor DatabaseAccessor // Database accessor interface
 }
 
 // Ping is the ping method
 func (w *RPCPluginServerWrapper) Ping(args string, reply *string) error {
-	server := &RPCPluginServer{
+	server := &Server{
 		info:       PluginInfo{},
 		instance:   w.impl,
 		dbAccessor: w.dbAccessor,
@@ -58,7 +58,7 @@ func (w *RPCPluginServerWrapper) Ping(args string, reply *string) error {
 }
 
 func (w *RPCPluginServerWrapper) GetInfo(args string, reply *PluginInfo) error {
-	server := &RPCPluginServer{
+	server := &Server{
 		info:       PluginInfo{},
 		instance:   w.impl,
 		dbAccessor: w.dbAccessor,
@@ -67,7 +67,7 @@ func (w *RPCPluginServerWrapper) GetInfo(args string, reply *PluginInfo) error {
 }
 
 func (w *RPCPluginServerWrapper) GetMetrics(args string, reply *PluginMetrics) error {
-	server := &RPCPluginServer{
+	server := &Server{
 		info:       PluginInfo{},
 		instance:   w.impl,
 		dbAccessor: w.dbAccessor,
@@ -76,7 +76,7 @@ func (w *RPCPluginServerWrapper) GetMetrics(args string, reply *PluginMetrics) e
 }
 
 func (w *RPCPluginServerWrapper) Init(config json.RawMessage, reply *string) error {
-	server := &RPCPluginServer{
+	server := &Server{
 		info:       PluginInfo{},
 		instance:   w.impl,
 		dbAccessor: w.dbAccessor,
@@ -85,7 +85,7 @@ func (w *RPCPluginServerWrapper) Init(config json.RawMessage, reply *string) err
 }
 
 func (w *RPCPluginServerWrapper) Cleanup(args string, reply *string) error {
-	server := &RPCPluginServer{
+	server := &Server{
 		info:       PluginInfo{},
 		instance:   w.impl,
 		dbAccessor: w.dbAccessor,
@@ -93,32 +93,9 @@ func (w *RPCPluginServerWrapper) Cleanup(args string, reply *string) error {
 	return server.Cleanup(args, reply)
 }
 
-func (w *RPCPluginServerWrapper) QueryConfig(args *QueryConfigArgs, reply *string) error {
-	server := &RPCPluginServer{
-		info:       PluginInfo{},
-		instance:   w.impl,
-		dbAccessor: w.dbAccessor,
-	}
-	return server.QueryConfig(args, reply)
-}
-
-func (w *RPCPluginServerWrapper) QueryConfigByKey(args *QueryConfigByKeyArgs, reply *string) error {
-	server := &RPCPluginServer{
-		info:       PluginInfo{},
-		instance:   w.impl,
-		dbAccessor: w.dbAccessor,
-	}
-	return server.QueryConfigByKey(args, reply)
-}
-
-func (w *RPCPluginServerWrapper) ListConfigs(args string, reply *string) error {
-	server := &RPCPluginServer{
-		info:       PluginInfo{},
-		instance:   w.impl,
-		dbAccessor: w.dbAccessor,
-	}
-	return server.ListConfigs(args, reply)
-}
+// Note: Plugin-specific methods (Send, Build, Deploy, etc.) are defined in each plugin's RPC server
+// They use the unified signature: MethodName(args *MethodArgs, reply *MethodResult) error
+// The wrapper forwards these methods directly to the plugin's RPC server implementation
 
 // RPCPluginClientWrapper is the RPC plugin client wrapper
 type RPCPluginClientWrapper struct {

@@ -14,7 +14,7 @@ import (
 )
 
 func TestNewBashPlugin(t *testing.T) {
-	plugin := NewBashPlugin()
+	plugin := NewBash()
 
 	assert.NotNil(t, plugin)
 	assert.Equal(t, "bash", plugin.name)
@@ -27,7 +27,7 @@ func TestNewBashPlugin(t *testing.T) {
 }
 
 func TestBashPlugin_Name(t *testing.T) {
-	plugin := NewBashPlugin()
+	plugin := NewBash()
 	name, err := plugin.Name()
 
 	assert.NoError(t, err)
@@ -35,7 +35,7 @@ func TestBashPlugin_Name(t *testing.T) {
 }
 
 func TestBashPlugin_Description(t *testing.T) {
-	plugin := NewBashPlugin()
+	plugin := NewBash()
 	desc, err := plugin.Description()
 
 	assert.NoError(t, err)
@@ -43,7 +43,7 @@ func TestBashPlugin_Description(t *testing.T) {
 }
 
 func TestBashPlugin_Version(t *testing.T) {
-	plugin := NewBashPlugin()
+	plugin := NewBash()
 	version, err := plugin.Version()
 
 	assert.NoError(t, err)
@@ -51,7 +51,7 @@ func TestBashPlugin_Version(t *testing.T) {
 }
 
 func TestBashPlugin_Type(t *testing.T) {
-	plugin := NewBashPlugin()
+	plugin := NewBash()
 	typ, err := plugin.Type()
 
 	assert.NoError(t, err)
@@ -96,7 +96,7 @@ func TestBashPlugin_Init(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			plugin := NewBashPlugin()
+			plugin := NewBash()
 
 			configJSON, err := sonic.Marshal(tt.config)
 			require.NoError(t, err)
@@ -121,7 +121,7 @@ func TestBashPlugin_Init(t *testing.T) {
 }
 
 func TestBashPlugin_InitWithEmptyConfig(t *testing.T) {
-	plugin := NewBashPlugin()
+	plugin := NewBash()
 	err := plugin.Init(json.RawMessage{})
 
 	assert.NoError(t, err)
@@ -129,7 +129,7 @@ func TestBashPlugin_InitWithEmptyConfig(t *testing.T) {
 }
 
 func TestBashPlugin_Cleanup(t *testing.T) {
-	plugin := NewBashPlugin()
+	plugin := NewBash()
 	err := plugin.Cleanup()
 
 	assert.NoError(t, err)
@@ -184,7 +184,7 @@ func TestBashPlugin_ExecuteScript(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			plugin := NewBashPlugin()
+			plugin := NewBash()
 			plugin.Init(json.RawMessage{})
 
 			params := map[string]any{
@@ -222,7 +222,7 @@ func TestBashPlugin_ExecuteScript(t *testing.T) {
 }
 
 func TestBashPlugin_ExecuteScriptWithDangerousAllowed(t *testing.T) {
-	plugin := NewBashPlugin()
+	plugin := NewBash()
 	config := BashConfig{
 		Shell:          "/bin/bash",
 		AllowDangerous: true,
@@ -289,7 +289,7 @@ func TestBashPlugin_ExecuteCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			plugin := NewBashPlugin()
+			plugin := NewBash()
 			plugin.Init(json.RawMessage{})
 
 			params := map[string]any{
@@ -371,7 +371,7 @@ func TestBashPlugin_ExecuteFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			plugin := NewBashPlugin()
+			plugin := NewBash()
 			plugin.Init(json.RawMessage{})
 
 			params := map[string]any{
@@ -406,7 +406,7 @@ func TestBashPlugin_ExecuteFile(t *testing.T) {
 }
 
 func TestBashPlugin_ExecuteUnknownAction(t *testing.T) {
-	plugin := NewBashPlugin()
+	plugin := NewBash()
 	plugin.Init(json.RawMessage{})
 
 	_, err := plugin.Execute("unknown_action", nil, nil)
@@ -415,7 +415,7 @@ func TestBashPlugin_ExecuteUnknownAction(t *testing.T) {
 }
 
 func TestBashPlugin_ExecuteWithTimeout(t *testing.T) {
-	plugin := NewBashPlugin()
+	plugin := NewBash()
 	config := BashConfig{
 		Shell:   "/bin/bash",
 		Timeout: 1, // 1秒超时
@@ -451,7 +451,7 @@ func TestBashPlugin_ExecuteWithTimeout(t *testing.T) {
 }
 
 func TestBashPlugin_ExecuteWithInvalidJSON(t *testing.T) {
-	plugin := NewBashPlugin()
+	plugin := NewBash()
 	plugin.Init(json.RawMessage{})
 
 	invalidJSON := json.RawMessage(`{"invalid": json`)
@@ -462,7 +462,7 @@ func TestBashPlugin_ExecuteWithInvalidJSON(t *testing.T) {
 }
 
 func TestBashPlugin_SecurityCheck(t *testing.T) {
-	plugin := NewBashPlugin()
+	plugin := NewBash()
 	plugin.Init(json.RawMessage{})
 
 	dangerousPatterns := []string{
@@ -488,7 +488,7 @@ func TestBashPlugin_SecurityCheck(t *testing.T) {
 }
 
 func TestBashPlugin_ResultStructure(t *testing.T) {
-	plugin := NewBashPlugin()
+	plugin := NewBash()
 	plugin.Init(json.RawMessage{})
 
 	params := map[string]any{
@@ -520,7 +520,7 @@ func TestBashPlugin_ResultStructure(t *testing.T) {
 }
 
 func TestBashPlugin_EnvironmentVariables(t *testing.T) {
-	plugin := NewBashPlugin()
+	plugin := NewBash()
 
 	// 配置插件级别的环境变量
 	config := BashConfig{

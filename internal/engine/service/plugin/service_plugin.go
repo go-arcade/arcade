@@ -24,7 +24,6 @@ import (
 	"gorm.io/datatypes"
 )
 
-
 // PluginSource 插件来源
 type PluginSource string
 

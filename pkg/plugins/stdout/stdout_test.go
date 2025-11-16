@@ -14,7 +14,7 @@ import (
 )
 
 func TestNewStdoutNotify(t *testing.T) {
-	plugin := NewStdoutNotify()
+	plugin := NewStdout()
 
 	assert.NotNil(t, plugin)
 	assert.Equal(t, "stdout", plugin.name)
@@ -23,7 +23,7 @@ func TestNewStdoutNotify(t *testing.T) {
 }
 
 func TestStdoutNotify_Name(t *testing.T) {
-	plugin := NewStdoutNotify()
+	plugin := NewStdout()
 	name, err := plugin.Name()
 
 	assert.NoError(t, err)
@@ -31,7 +31,7 @@ func TestStdoutNotify_Name(t *testing.T) {
 }
 
 func TestStdoutNotify_Description(t *testing.T) {
-	plugin := NewStdoutNotify()
+	plugin := NewStdout()
 	desc, err := plugin.Description()
 
 	assert.NoError(t, err)
@@ -39,7 +39,7 @@ func TestStdoutNotify_Description(t *testing.T) {
 }
 
 func TestStdoutNotify_Version(t *testing.T) {
-	plugin := NewStdoutNotify()
+	plugin := NewStdout()
 	version, err := plugin.Version()
 
 	assert.NoError(t, err)
@@ -47,7 +47,7 @@ func TestStdoutNotify_Version(t *testing.T) {
 }
 
 func TestStdoutNotify_Type(t *testing.T) {
-	plugin := NewStdoutNotify()
+	plugin := NewStdout()
 	typ, err := plugin.Type()
 
 	assert.NoError(t, err)
@@ -57,18 +57,18 @@ func TestStdoutNotify_Type(t *testing.T) {
 func TestStdoutNotify_Init(t *testing.T) {
 	tests := []struct {
 		name   string
-		config StdoutNotifyConfig
+		config StdoutConfig
 	}{
 		{
 			name: "正常配置",
-			config: StdoutNotifyConfig{
+			config: StdoutConfig{
 				Prefix: "TEST",
 				JSON:   true,
 			},
 		},
 		{
 			name: "空配置",
-			config: StdoutNotifyConfig{
+			config: StdoutConfig{
 				Prefix: "",
 				JSON:   false,
 			},
@@ -77,7 +77,7 @@ func TestStdoutNotify_Init(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			plugin := NewStdoutNotify()
+			plugin := NewStdout()
 
 			configJSON, err := sonic.Marshal(tt.config)
 			require.NoError(t, err)
@@ -91,14 +91,14 @@ func TestStdoutNotify_Init(t *testing.T) {
 }
 
 func TestStdoutNotify_InitWithEmptyConfig(t *testing.T) {
-	plugin := NewStdoutNotify()
+	plugin := NewStdout()
 	err := plugin.Init(json.RawMessage{})
 
 	assert.NoError(t, err)
 }
 
 func TestStdoutNotify_InitWithInvalidJSON(t *testing.T) {
-	plugin := NewStdoutNotify()
+	plugin := NewStdout()
 
 	invalidJSON := json.RawMessage(`{"invalid": json`)
 	err := plugin.Init(invalidJSON)
@@ -108,7 +108,7 @@ func TestStdoutNotify_InitWithInvalidJSON(t *testing.T) {
 }
 
 func TestStdoutNotify_Cleanup(t *testing.T) {
-	plugin := NewStdoutNotify()
+	plugin := NewStdout()
 	err := plugin.Cleanup()
 
 	assert.NoError(t, err)
@@ -117,13 +117,13 @@ func TestStdoutNotify_Cleanup(t *testing.T) {
 func TestStdoutNotify_Send(t *testing.T) {
 	tests := []struct {
 		name           string
-		config         StdoutNotifyConfig
+		config         StdoutConfig
 		message        any
 		expectInOutput []string
 	}{
 		{
 			name: "发送简单字符串消息",
-			config: StdoutNotifyConfig{
+			config: StdoutConfig{
 				Prefix: "INFO",
 				JSON:   false,
 			},
@@ -132,7 +132,7 @@ func TestStdoutNotify_Send(t *testing.T) {
 		},
 		{
 			name: "发送JSON对象消息",
-			config: StdoutNotifyConfig{
+			config: StdoutConfig{
 				Prefix: "BUILD",
 				JSON:   true,
 			},
@@ -144,7 +144,7 @@ func TestStdoutNotify_Send(t *testing.T) {
 		},
 		{
 			name: "无前缀发送消息",
-			config: StdoutNotifyConfig{
+			config: StdoutConfig{
 				Prefix: "",
 				JSON:   false,
 			},
@@ -160,7 +160,7 @@ func TestStdoutNotify_Send(t *testing.T) {
 			r, w, _ := os.Pipe()
 			os.Stdout = w
 
-			plugin := NewStdoutNotify()
+			plugin := NewStdout()
 			configJSON, _ := sonic.Marshal(tt.config)
 			plugin.Init(configJSON)
 
@@ -189,7 +189,7 @@ func TestStdoutNotify_Send(t *testing.T) {
 func TestStdoutNotify_SendTemplate(t *testing.T) {
 	tests := []struct {
 		name           string
-		config         StdoutNotifyConfig
+		config         StdoutConfig
 		template       string
 		data           map[string]any
 		expectInOutput []string
@@ -197,7 +197,7 @@ func TestStdoutNotify_SendTemplate(t *testing.T) {
 	}{
 		{
 			name: "简单模板渲染",
-			config: StdoutNotifyConfig{
+			config: StdoutConfig{
 				Prefix: "DEPLOY",
 			},
 			template: "Deploy {{.ProjectName}} to {{.Environment}}",
@@ -210,7 +210,7 @@ func TestStdoutNotify_SendTemplate(t *testing.T) {
 		},
 		{
 			name: "带条件的模板",
-			config: StdoutNotifyConfig{
+			config: StdoutConfig{
 				Prefix: "STATUS",
 			},
 			template: "Build {{.ProjectName}}: {{if .Success}}SUCCESS{{else}}FAILED{{end}}",
@@ -223,7 +223,7 @@ func TestStdoutNotify_SendTemplate(t *testing.T) {
 		},
 		{
 			name: "无效的模板语法",
-			config: StdoutNotifyConfig{
+			config: StdoutConfig{
 				Prefix: "ERROR",
 			},
 			template:    "Invalid {{.Missing",
@@ -239,7 +239,7 @@ func TestStdoutNotify_SendTemplate(t *testing.T) {
 			r, w, _ := os.Pipe()
 			os.Stdout = w
 
-			plugin := NewStdoutNotify()
+			plugin := NewStdout()
 			configJSON, _ := sonic.Marshal(tt.config)
 			plugin.Init(configJSON)
 
@@ -275,7 +275,7 @@ func TestStdoutNotify_SendTemplateWithEmptyData(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	plugin := NewStdoutNotify()
+	plugin := NewStdout()
 	plugin.Init(json.RawMessage{})
 
 	err := plugin.SendTemplate("Static message", json.RawMessage{}, nil)
@@ -351,7 +351,7 @@ func TestStdoutNotify_Execute(t *testing.T) {
 			r, w, _ := os.Pipe()
 			os.Stdout = w
 
-			plugin := NewStdoutNotify()
+			plugin := NewStdout()
 			plugin.Init(json.RawMessage{})
 
 			paramsJSON, err := sonic.Marshal(tt.params)
@@ -383,7 +383,7 @@ func TestStdoutNotify_Execute(t *testing.T) {
 }
 
 func TestStdoutNotify_ExecuteWithInvalidParams(t *testing.T) {
-	plugin := NewStdoutNotify()
+	plugin := NewStdout()
 	plugin.Init(json.RawMessage{})
 
 	invalidJSON := json.RawMessage(`{"invalid": json`)
@@ -399,8 +399,8 @@ func TestStdoutNotify_SendJSONFormatting(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	plugin := NewStdoutNotify()
-	config := StdoutNotifyConfig{
+	plugin := NewStdout()
+	config := StdoutConfig{
 		Prefix: "JSON",
 		JSON:   true,
 	}
@@ -439,7 +439,7 @@ func TestStdoutNotify_SendStringMessage(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	plugin := NewStdoutNotify()
+	plugin := NewStdout()
 	plugin.Init(json.RawMessage{})
 
 	// 发送纯字符串消息（JSON编码）
@@ -466,8 +466,8 @@ func TestStdoutNotify_OutputFormat(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	plugin := NewStdoutNotify()
-	config := StdoutNotifyConfig{
+	plugin := NewStdout()
+	config := StdoutConfig{
 		Prefix: "TEST",
 	}
 	configJSON, _ := sonic.Marshal(config)
@@ -502,7 +502,7 @@ func TestStdoutNotify_TemplateWithComplexData(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	plugin := NewStdoutNotify()
+	plugin := NewStdout()
 	plugin.Init(json.RawMessage{})
 
 	template := "Project: {{.Project}}, Users: {{range .Users}}{{.}}, {{end}}Status: {{.Status}}"
@@ -538,7 +538,7 @@ func TestStdoutNotify_MultipleMessages(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	plugin := NewStdoutNotify()
+	plugin := NewStdout()
 	plugin.Init(json.RawMessage{})
 
 	messages := []string{"message1", "message2", "message3"}
