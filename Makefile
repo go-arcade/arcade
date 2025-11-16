@@ -67,7 +67,7 @@ plugins: ## build all RPC plugins (executable files)
 	  for(i=2;i<=NF;i++){ if($$i=="main.go"){ outbase="main"; break } } \
 	  if(outbase==""){ for(i=2;i<=NF;i++){ f=$$i; sub(/\.go$$/,"",f); if(f ~ /^main.*/){ outbase=f; break } } } \
 	  if(outbase==""){ outbase=basename(dir) } \
-	  printf "%s %s/%s_1.0.0\n", dir, "$(PLUGINS_OUT_DIR)", outbase; \
+	  printf "%s %s/%s\n", dir, "$(PLUGINS_OUT_DIR)", outbase; \
 	}' \
 	| xargs -P $(JOBS) -n 2 sh -c '\
 		dir="$$1"; out="$$2"; \
@@ -81,10 +81,10 @@ plugins: ## build all RPC plugins (executable files)
 
 plugins-package: plugins ## package plugins to zip files
 	@echo ">> packaging plugins..."
-	@for plugin_path in $(PLUGINS_OUT_DIR)/*_*; do \
-		if [ -f "$$plugin_path" ] && [ -x "$$plugin_path" ]; then \
+	@for plugin_path in $(PLUGINS_OUT_DIR)/*; do \
+		if [ -f "$$plugin_path" ] && [ -x "$$plugin_path" ] && [ "$${plugin_path%.zip}" = "$$plugin_path" ]; then \
 			plugin_name=$$(basename $$plugin_path); \
-			plugin_base=$$(echo $$plugin_name | sed 's/_[0-9.]*$$//'); \
+			plugin_base=$$plugin_name; \
 			src_dir=$$(find $(PLUGINS_SRC_DIR) -type d -name $$plugin_base | head -1); \
 			if [ -n "$$src_dir" ] && [ -f "$$src_dir/manifest.json" ]; then \
 				zip_file=$(PLUGINS_OUT_DIR)/$${plugin_base}.zip; \

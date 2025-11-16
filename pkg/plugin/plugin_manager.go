@@ -2,8 +2,10 @@
 package plugin
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/rpc"
 	"os"
 	"os/exec"
@@ -47,6 +49,43 @@ type ManagerConfig struct {
 	MaxRetries int
 }
 
+// logWriter is an io.Writer that captures logs and forwards them to LogCapture
+type logWriter struct {
+	logCapture *LogCapture
+	stream     string
+	buf        bytes.Buffer
+	mu         sync.Mutex
+}
+
+// Write implements io.Writer interface
+func (w *logWriter) Write(p []byte) (n int, err error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	n, err = w.buf.Write(p)
+	if err != nil {
+		return n, err
+	}
+
+	// Process complete lines
+	for {
+		line, err := w.buf.ReadString('\n')
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return n, err
+		}
+		// Remove trailing newline
+		line = strings.TrimSuffix(line, "\n")
+		if line != "" {
+			w.logCapture.ProcessLine(line, w.stream)
+		}
+	}
+
+	return n, nil
+}
+
 // NewManager creates a new plugin manager
 func NewManager(config *ManagerConfig) *Manager {
 	return &Manager{
@@ -87,17 +126,23 @@ func (m *Manager) registerPluginLocked(name string, pluginPath string, config Pl
 	}
 	logCapture := NewLogCapture(name, taskID)
 
-	// Create go-plugin client with stdout/stderr capture
-	cmd := exec.Command(pluginPath)
-	stdoutPipe, err := cmd.StdoutPipe()
-	if err != nil {
-		return fmt.Errorf("create stdout pipe for plugin %s: %w", name, err)
-	}
-	stderrPipe, err := cmd.StderrPipe()
-	if err != nil {
-		return fmt.Errorf("create stderr pipe for plugin %s: %w", name, err)
+	// add log handlers
+	for _, handler := range config.LogHandlers {
+		logCapture.AddHandler(handler)
 	}
 
+	// Create custom writers for stdout/stderr capture
+	stdoutWriter := &logWriter{
+		logCapture: logCapture,
+		stream:     "stdout",
+	}
+	stderrWriter := &logWriter{
+		logCapture: logCapture,
+		stream:     "stderr",
+	}
+
+	// Create go-plugin client with stdout/stderr capture
+	cmd := exec.Command(pluginPath)
 	client := plugin.NewClient(&plugin.ClientConfig{
 		Cmd:             cmd,
 		HandshakeConfig: m.config.HandshakeConfig,
@@ -105,17 +150,9 @@ func (m *Manager) registerPluginLocked(name string, pluginPath string, config Pl
 		AllowedProtocols: []plugin.Protocol{
 			plugin.ProtocolNetRPC,
 		},
-		// not set SyncStdout/SyncStderr, use our own pipes
+		SyncStdout: stdoutWriter,
+		SyncStderr: stderrWriter,
 	})
-
-	// add log handlers
-	for _, handler := range config.LogHandlers {
-		logCapture.AddHandler(handler)
-	}
-
-	// start log capture goroutine
-	go logCapture.CaptureReader(stdoutPipe, "stdout")
-	go logCapture.CaptureReader(stderrPipe, "stderr")
 
 	// Connect to plugin
 	rpcClient, err := client.Client()

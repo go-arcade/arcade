@@ -13,13 +13,13 @@ type RPCPluginServer struct {
 	// Plugin basic information
 	info PluginInfo
 	// Plugin instance (object that implements specific functionality)
-	instance interface{}
+	instance any
 	// Database accessor (新的接口实现)
 	dbAccessor DatabaseAccessor
 }
 
 // NewRPCPluginServer creates a new RPC plugin server
-func NewRPCPluginServer(info PluginInfo, instance interface{}, dbAccessor DatabaseAccessor) *RPCPluginServer {
+func NewRPCPluginServer(info PluginInfo, instance any, dbAccessor DatabaseAccessor) *RPCPluginServer {
 	return &RPCPluginServer{
 		info:       info,
 		instance:   instance,

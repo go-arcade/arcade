@@ -405,6 +405,7 @@ func (p *BashPluginHandler) Client(b *plugin.MuxBroker, c *rpc.Client) (any, err
 // ===== Main Entry Point =====
 
 func main() {
+
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: pluginpkg.RPCHandshake,
 		Plugins: map[string]plugin.Plugin{

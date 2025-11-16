@@ -299,6 +299,7 @@ func (p *StdoutNotifyPlugin) Client(b *plugin.MuxBroker, c *rpc.Client) (any, er
 // ===== Main Entry Point =====
 
 func main() {
+
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: pluginpkg.RPCHandshake,
 		Plugins: map[string]plugin.Plugin{

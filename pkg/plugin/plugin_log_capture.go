@@ -68,7 +68,7 @@ func (lc *LogCapture) CaptureReader(reader io.Reader, stream string) {
 			return
 		default:
 			line := scanner.Text()
-			lc.processLine(line, stream)
+			lc.ProcessLine(line, stream)
 		}
 	}
 
@@ -77,8 +77,8 @@ func (lc *LogCapture) CaptureReader(reader io.Reader, stream string) {
 	}
 }
 
-// processLine 处理单行日志
-func (lc *LogCapture) processLine(content, stream string) {
+// ProcessLine process line
+func (lc *LogCapture) ProcessLine(content, stream string) {
 	lc.mu.Lock()
 	lc.lineNumber++
 	lineNum := lc.lineNumber
