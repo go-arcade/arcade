@@ -2,9 +2,44 @@ package pipeline
 
 // Pipeline represents the top-level pipeline configuration
 type Pipeline struct {
-	Namespace string            `json:"namespace"`
+	// Pipeline namespace (prod, staging, org, etc.)
+	Namespace string `json:"namespace"`
+	// Pipeline version (semantic versioning, e.g., "1.0.0")
+	Version string `json:"version,omitempty"`
+	// Global environment variables
 	Variables map[string]string `json:"variables,omitempty"`
-	Jobs      []Job             `json:"jobs"`
+	// Runtime configuration
+	Runtime *Runtime `json:"runtime,omitempty"`
+	// Pipeline metadata (additional metadata)
+	Meta map[string]any `json:"meta,omitempty"`
+	// Pipeline jobs
+	Jobs []Job `json:"jobs"`
+}
+
+// Runtime represents runtime configuration for pipeline execution
+type Runtime struct {
+	// Runtime type (e.g., "docker", "kubernetes", "local")
+	Type string `json:"type,omitempty"`
+	// Runtime image (for containerized execution)
+	Image string `json:"image,omitempty"`
+	// Runtime environment variables
+	Env map[string]string `json:"env,omitempty"`
+	// Runtime resources (CPU, memory, etc.)
+	Resources *Resources `json:"resources,omitempty"`
+	// Runtime configuration options
+	Config map[string]any `json:"config,omitempty"`
+}
+
+// Resources represents resource limits and requests
+type Resources struct {
+	// CPU request (e.g., "100m", "1")
+	CPURequest string `json:"cpu_request,omitempty"`
+	// CPU limit (e.g., "200m", "2")
+	CPULimit string `json:"cpu_limit,omitempty"`
+	// Memory request (e.g., "128Mi", "1Gi")
+	MemoryRequest string `json:"memory_request,omitempty"`
+	// Memory limit (e.g., "256Mi", "2Gi")
+	MemoryLimit string `json:"memory_limit,omitempty"`
 }
 
 // Job represents a pipeline job (formerly task)
