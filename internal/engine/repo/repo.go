@@ -38,7 +38,7 @@ type Repositories struct {
 }
 
 // NewRepositories 初始化所有 repository
-func NewRepositories(db database.DB, mongo database.MongoDB, cache cache.Cache) *Repositories {
+func NewRepositories(db database.IDatabase, mongo database.MongoDB, cache cache.ICache) *Repositories {
 	return &Repositories{
 		User:                user.NewUserRepo(db, cache),
 		Agent:               agent.NewAgentRepo(db),
@@ -60,7 +60,7 @@ func NewRepositories(db database.DB, mongo database.MongoDB, cache cache.Cache) 
 }
 
 // GetDB 返回数据库实例（供插件适配器使用）
-func (r *Repositories) GetDB() database.DB {
+func (r *Repositories) GetDB() database.IDatabase {
 	return r.Storage.(*storage.StorageRepo).GetDB()
 }
 

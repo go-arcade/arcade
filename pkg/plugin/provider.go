@@ -16,8 +16,8 @@ var ProviderSet = wire.NewSet(
 )
 
 // ProvideDatabaseAccessor provides database accessor
-// Creates an adapter from database.DB, implementing DatabaseAccessor interface
-func ProvideDatabaseAccessor(db database.DB) DatabaseAccessor {
+// Creates an adapter from database.IDatabase, implementing DatabaseAccessor interface
+func ProvideDatabaseAccessor(db database.IDatabase) DatabaseAccessor {
 	return NewPluginDBAccessorAdapter(db)
 }
 

@@ -31,12 +31,12 @@ type DatabaseAccessor interface {
 // PluginDBAccessorAdapter is an adapter that adapts internal/repo implementation to pkg/plugin.DatabaseAccessor interface
 // This avoids direct import of pkg/plugin by internal/repo, preventing circular dependencies
 type PluginDBAccessorAdapter struct {
-	db database.DB
+	db database.IDatabase
 }
 
 // NewPluginDBAccessorAdapter creates a plugin database accessor adapter
-// Directly receives database.DB to avoid circular dependencies
-func NewPluginDBAccessorAdapter(db database.DB) DatabaseAccessor {
+// Directly receives database.IDatabase to avoid circular dependencies
+func NewPluginDBAccessorAdapter(db database.IDatabase) DatabaseAccessor {
 	return &PluginDBAccessorAdapter{
 		db: db,
 	}
@@ -54,7 +54,7 @@ func (a *PluginDBAccessorAdapter) QueryConfig(ctx context.Context, pluginID stri
 		Config   json.RawMessage `gorm:"column:config;type:json" json:"config"`
 	}
 
-	err := a.db.DB().WithContext(ctx).
+	err := a.db.Database().WithContext(ctx).
 		Table("t_plugin_config").
 		Where("plugin_id = ?", pluginID).
 		First(&config).Error
@@ -81,7 +81,7 @@ func (a *PluginDBAccessorAdapter) QueryConfigByKey(ctx context.Context, pluginID
 		Config json.RawMessage `gorm:"column:config;type:json" json:"config"`
 	}
 
-	err := a.db.DB().WithContext(ctx).
+	err := a.db.Database().WithContext(ctx).
 		Table("t_plugin_config").
 		Where("plugin_id = ?", pluginID).
 		First(&config).Error
@@ -122,7 +122,7 @@ func (a *PluginDBAccessorAdapter) ListConfigs(ctx context.Context) (string, erro
 		Config   json.RawMessage `gorm:"column:config;type:json" json:"config"`
 	}
 
-	err := a.db.DB().WithContext(ctx).
+	err := a.db.Database().WithContext(ctx).
 		Table("t_plugin_config").
 		Find(&configs).Error
 	if err != nil {

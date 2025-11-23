@@ -12,11 +12,11 @@ type IAgentRepository interface {
 }
 
 type AgentRepo struct {
-	db         database.DB
+	db         database.IDatabase
 	AgentModel agent.Agent
 }
 
-func NewAgentRepo(db database.DB) IAgentRepository {
+func NewAgentRepo(db database.IDatabase) IAgentRepository {
 	return &AgentRepo{
 		db:         db,
 		AgentModel: agent.Agent{},
@@ -25,7 +25,7 @@ func NewAgentRepo(db database.DB) IAgentRepository {
 
 func (ar *AgentRepo) AddAgent(addAgentReqRepo *agent.AddAgentReqRepo) error {
 	var err error
-	if err = ar.db.DB().Table(ar.AgentModel.TableName()).Create(addAgentReqRepo).Error; err != nil {
+	if err = ar.db.Database().Table(ar.AgentModel.TableName()).Create(addAgentReqRepo).Error; err != nil {
 		return err
 	}
 	return err
@@ -33,7 +33,7 @@ func (ar *AgentRepo) AddAgent(addAgentReqRepo *agent.AddAgentReqRepo) error {
 
 func (ar *AgentRepo) UpdateAgent(a *agent.Agent) error {
 	var err error
-	if err = ar.db.DB().Model(a).Updates(a).Error; err != nil {
+	if err = ar.db.Database().Model(a).Updates(a).Error; err != nil {
 		return err
 	}
 	return err
@@ -45,11 +45,11 @@ func (ar *AgentRepo) ListAgent(pageNum, pageSize int) ([]agent.Agent, int64, err
 	var err error
 	offset := (pageNum - 1) * pageSize
 
-	if err = ar.db.DB().Table(ar.AgentModel.TableName()).Count(&count).Error; err != nil {
+	if err = ar.db.Database().Table(ar.AgentModel.TableName()).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err = ar.db.DB().Select("id, agent_id, agent_name, address, port, username, auth_type, is_enabled").
+	if err = ar.db.Database().Select("id, agent_id, agent_name, address, port, username, auth_type, is_enabled").
 		Table(ar.AgentModel.TableName()).
 		Offset(offset).Limit(pageSize).Find(&agents).Error; err != nil {
 		return nil, 0, err

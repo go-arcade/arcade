@@ -28,7 +28,7 @@ const TokenInfoKey = "tokenInfo:"
 // secretKey: 用于验证 JWT 的密钥
 // client: Redis 客户端
 // This function is used as the middleware of fiber.
-func AuthorizationMiddleware(secretKey string, cache cache.Cache) fiber.Handler {
+func AuthorizationMiddleware(secretKey string, cache cache.ICache) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		aToken := c.Get("Authorization")
 		if aToken == "" {

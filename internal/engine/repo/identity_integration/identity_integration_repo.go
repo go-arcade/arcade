@@ -18,11 +18,11 @@ type IIdentityIntegrationRepository interface {
 }
 
 type IdentityIntegrationRepo struct {
-	db          database.DB
+	db          database.IDatabase
 	Integration identity_integration.IdentityIntegration
 }
 
-func NewIdentityIntegrationRepo(db database.DB) IIdentityIntegrationRepository {
+func NewIdentityIntegrationRepo(db database.IDatabase) IIdentityIntegrationRepository {
 	return &IdentityIntegrationRepo{
 		db:          db,
 		Integration: identity_integration.IdentityIntegration{},
@@ -31,7 +31,7 @@ func NewIdentityIntegrationRepo(db database.DB) IIdentityIntegrationRepository {
 
 func (ii *IdentityIntegrationRepo) GetProvider(name string) (*identity_integration.IdentityIntegration, error) {
 	var integration identity_integration.IdentityIntegration
-	if err := ii.db.DB().Table(ii.Integration.TableName()).
+	if err := ii.db.Database().Table(ii.Integration.TableName()).
 		Where("name = ?", name).
 		Select("provider_id, provider_type, name, description, config, priority, is_enabled").
 		First(&integration).Error; err != nil {
@@ -42,7 +42,7 @@ func (ii *IdentityIntegrationRepo) GetProvider(name string) (*identity_integrati
 
 func (ii *IdentityIntegrationRepo) GetProviderByType(providerType string) ([]identity_integration.IdentityIntegration, error) {
 	var integrations []identity_integration.IdentityIntegration
-	if err := ii.db.DB().Table(ii.Integration.TableName()).
+	if err := ii.db.Database().Table(ii.Integration.TableName()).
 		Where("provider_type = ?", providerType).
 		Order("priority ASC").
 		Select("provider_id, provider_type, name, description, priority, is_enabled").
@@ -54,7 +54,7 @@ func (ii *IdentityIntegrationRepo) GetProviderByType(providerType string) ([]ide
 
 func (ii *IdentityIntegrationRepo) GetProviderList() ([]identity_integration.IdentityIntegration, error) {
 	var integrations []identity_integration.IdentityIntegration
-	if err := ii.db.DB().Table(ii.Integration.TableName()).
+	if err := ii.db.Database().Table(ii.Integration.TableName()).
 		Order("priority ASC").
 		Select("provider_id, provider_type, name, description, priority, is_enabled").
 		Find(&integrations).Error; err != nil {
@@ -65,7 +65,7 @@ func (ii *IdentityIntegrationRepo) GetProviderList() ([]identity_integration.Ide
 
 func (ii *IdentityIntegrationRepo) GetProviderTypeList() ([]string, error) {
 	var providerTypes []string
-	if err := ii.db.DB().Table(ii.Integration.TableName()).
+	if err := ii.db.Database().Table(ii.Integration.TableName()).
 		Distinct("provider_type").
 		Select("provider_type").
 		Pluck("provider_type", &providerTypes).Error; err != nil {
@@ -76,12 +76,12 @@ func (ii *IdentityIntegrationRepo) GetProviderTypeList() ([]string, error) {
 
 // CreateProvider creates an identity integration provider
 func (ii *IdentityIntegrationRepo) CreateProvider(provider *identity_integration.IdentityIntegration) error {
-	return ii.db.DB().Table(ii.Integration.TableName()).Create(provider).Error
+	return ii.db.Database().Table(ii.Integration.TableName()).Create(provider).Error
 }
 
 // UpdateProvider updates an identity integration provider (name and provider_type fields cannot be updated)
 func (ii *IdentityIntegrationRepo) UpdateProvider(name string, provider *identity_integration.IdentityIntegration) error {
-	return ii.db.DB().Table(ii.Integration.TableName()).
+	return ii.db.Database().Table(ii.Integration.TableName()).
 		Where("name = ?", name).
 		Omit("name", "provider_id", "provider_type", "created_at").
 		Updates(provider).Error
@@ -89,7 +89,7 @@ func (ii *IdentityIntegrationRepo) UpdateProvider(name string, provider *identit
 
 // DeleteProvider deletes an identity integration provider
 func (ii *IdentityIntegrationRepo) DeleteProvider(name string) error {
-	return ii.db.DB().Table(ii.Integration.TableName()).
+	return ii.db.Database().Table(ii.Integration.TableName()).
 		Where("name = ?", name).
 		Delete(&identity_integration.IdentityIntegration{}).Error
 }
@@ -97,7 +97,7 @@ func (ii *IdentityIntegrationRepo) DeleteProvider(name string) error {
 // ProviderExists checks if a provider exists
 func (ii *IdentityIntegrationRepo) ProviderExists(name string) (bool, error) {
 	var count int64
-	err := ii.db.DB().Table(ii.Integration.TableName()).
+	err := ii.db.Database().Table(ii.Integration.TableName()).
 		Where("name = ?", name).
 		Count(&count).Error
 	return count > 0, err
@@ -107,7 +107,7 @@ func (ii *IdentityIntegrationRepo) ProviderExists(name string) (bool, error) {
 func (ii *IdentityIntegrationRepo) ToggleProvider(name string) error {
 	// query current status
 	var integration identity_integration.IdentityIntegration
-	if err := ii.db.DB().Table(ii.Integration.TableName()).
+	if err := ii.db.Database().Table(ii.Integration.TableName()).
 		Where("name = ?", name).
 		Select("is_enabled").
 		First(&integration).Error; err != nil {
@@ -118,7 +118,7 @@ func (ii *IdentityIntegrationRepo) ToggleProvider(name string) error {
 	newStatus := 1 - integration.IsEnabled
 
 	// update status
-	return ii.db.DB().Table(ii.Integration.TableName()).
+	return ii.db.Database().Table(ii.Integration.TableName()).
 		Where("name = ?", name).
 		Update("is_enabled", newStatus).Error
 }

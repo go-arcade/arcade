@@ -18,8 +18,8 @@ var ProviderSet = wire.NewSet(
 // ProvideServices 提供统一的 Services 实例
 func ProvideServices(
 	ctx *ctx.Context,
-	db database.DB,
-	cache cache.Cache,
+	db database.IDatabase,
+	cache cache.ICache,
 	repos *repo.Repositories,
 	pluginManager *pluginpkg.Manager,
 	storageProvider storage.StorageProvider,

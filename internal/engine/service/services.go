@@ -40,8 +40,8 @@ type Services struct {
 // NewServices 初始化所有 service
 func NewServices(
 	ctx *ctx.Context,
-	db database.DB,
-	cache cache.Cache,
+	db database.IDatabase,
+	cache cache.ICache,
 	repos *repo.Repositories,
 	pluginManager *pluginpkg.Manager,
 	storageProvider storagepkg.StorageProvider,

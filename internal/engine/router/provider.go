@@ -17,7 +17,7 @@ var ProviderSet = wire.NewSet(
 func ProvideRouter(
 	httpConf *httpx.Http,
 	appCtx *ctx.Context,
-	cache cache.Cache,
+	cache cache.ICache,
 	services *service.Services,
 ) *Router {
 	return NewRouter(

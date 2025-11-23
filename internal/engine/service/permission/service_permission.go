@@ -21,14 +21,14 @@ import (
 
 type PermissionService struct {
 	Ctx      *ctx.Context
-	db       database.DB
-	cache    cache.Cache
+	db       database.IDatabase
+	cache    cache.ICache
 	PermRepo permissionrepo.IPermissionRepository
 	RoleRepo rolerepo.IRoleRepository
 	UserRepo userrepo.IUserRepository
 }
 
-func NewPermissionService(ctx *ctx.Context, db database.DB, cache cache.Cache, permRepo permissionrepo.IPermissionRepository, roleRepo rolerepo.IRoleRepository, userRepo userrepo.IUserRepository) *PermissionService {
+func NewPermissionService(ctx *ctx.Context, db database.IDatabase, cache cache.ICache, permRepo permissionrepo.IPermissionRepository, roleRepo rolerepo.IRoleRepository, userRepo userrepo.IUserRepository) *PermissionService {
 	return &PermissionService{
 		Ctx:      ctx,
 		db:       db,
@@ -119,7 +119,7 @@ func (s *PermissionService) CheckPermission(req *permission.PermissionCheckReque
 func (s *PermissionService) CreateRoleBinding(req *permission.UserRoleBindingCreate) (*permission.UserRoleBinding, error) {
 	// 验证用户存在
 	var user usermodel.User
-	if err := s.db.DB().Where("user_id = ?", req.UserId).First(&user).Error; err != nil {
+	if err := s.db.Database().Where("user_id = ?", req.UserId).First(&user).Error; err != nil {
 		return nil, errors.New("用户不存在")
 	}
 
@@ -280,7 +280,7 @@ func (s *PermissionService) RemoveAllBindingsForResource(scope, resourceId strin
 // SetSuperAdmin 设置用户为超级管理员
 func (s *PermissionService) SetSuperAdmin(userId string, isSuperAdmin bool) error {
 	var user usermodel.User
-	if err := s.db.DB().Where("user_id = ?", userId).First(&user).Error; err != nil {
+	if err := s.db.Database().Where("user_id = ?", userId).First(&user).Error; err != nil {
 		return errors.New("用户不存在")
 	}
 
@@ -303,7 +303,7 @@ func (s *PermissionService) SetSuperAdmin(userId string, isSuperAdmin bool) erro
 // GetSuperAdminList 获取所有超级管理员列表
 func (s *PermissionService) GetSuperAdminList() ([]usermodel.User, error) {
 	var admins []usermodel.User
-	err := s.db.DB().Where("is_superadmin = ?", 1).Find(&admins).Error
+	err := s.db.Database().Where("is_superadmin = ?", 1).Find(&admins).Error
 	return admins, err
 }
 
@@ -329,19 +329,19 @@ func (s *PermissionService) validateResource(scope string, resourceId *string) e
 	case permission.ScopeOrganization:
 		// 检查组织是否存在
 		var count int64
-		if err := s.db.DB().Table("t_organization").Where("org_id = ?", *resourceId).Count(&count).Error; err != nil || count == 0 {
+		if err := s.db.Database().Table("t_organization").Where("org_id = ?", *resourceId).Count(&count).Error; err != nil || count == 0 {
 			return errors.New("组织不存在")
 		}
 	case permission.ScopeTeam:
 		// 检查团队是否存在
 		var count int64
-		if err := s.db.DB().Table("t_team").Where("team_id = ?", *resourceId).Count(&count).Error; err != nil || count == 0 {
+		if err := s.db.Database().Table("t_team").Where("team_id = ?", *resourceId).Count(&count).Error; err != nil || count == 0 {
 			return errors.New("团队不存在")
 		}
 	case permission.ScopeProject:
 		// 检查项目是否存在
 		var count int64
-		if err := s.db.DB().Table("t_project").Where("project_id = ?", *resourceId).Count(&count).Error; err != nil || count == 0 {
+		if err := s.db.Database().Table("t_project").Where("project_id = ?", *resourceId).Count(&count).Error; err != nil || count == 0 {
 			return errors.New("项目不存在")
 		}
 	default:
@@ -363,7 +363,7 @@ func (s *PermissionService) GetUserAccessibleOrganizations(userId string) ([]map
 	}
 
 	var orgs []map[string]interface{}
-	err = s.db.DB().Table("t_organization").Where("org_id IN ?", resources.Organizations).Find(&orgs).Error
+	err = s.db.Database().Table("t_organization").Where("org_id IN ?", resources.Organizations).Find(&orgs).Error
 	return orgs, err
 }
 
@@ -378,7 +378,7 @@ func (s *PermissionService) GetUserAccessibleTeams(userId string, orgId string) 
 		return []map[string]interface{}{}, nil
 	}
 
-	query := s.db.DB().Table("t_team").Where("team_id IN ?", resources.Teams)
+	query := s.db.Database().Table("t_team").Where("team_id IN ?", resources.Teams)
 	if orgId != "" {
 		query = query.Where("org_id = ?", orgId)
 	}
@@ -399,7 +399,7 @@ func (s *PermissionService) GetUserAccessibleProjects(userId string, orgId strin
 		return []map[string]interface{}{}, nil
 	}
 
-	query := s.db.DB().Table("t_project").Where("project_id IN ?", resources.Projects)
+	query := s.db.Database().Table("t_project").Where("project_id IN ?", resources.Projects)
 	if orgId != "" {
 		query = query.Where("org_id = ?", orgId)
 	}
@@ -413,7 +413,7 @@ func (s *PermissionService) GetUserAccessibleProjects(userId string, orgId strin
 func (s *PermissionService) ClearAllUserPermissionsCache() error {
 	// 获取所有用户
 	var users []*usermodel.User
-	if err := s.db.DB().Select("user_id").Find(&users).Error; err != nil {
+	if err := s.db.Database().Select("user_id").Find(&users).Error; err != nil {
 		return err
 	}
 

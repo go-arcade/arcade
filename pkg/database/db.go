@@ -4,10 +4,10 @@ import (
 	"gorm.io/gorm"
 )
 
-// DB 定义数据库接口（抽象）
-type DB interface {
+// IDatabase 定义数据库接口（抽象）
+type IDatabase interface {
 	// DB 返回底层的 *gorm.DB
-	DB() *gorm.DB
+	Database() *gorm.DB
 }
 
 // GormDB GORM 数据库实现
@@ -16,11 +16,11 @@ type GormDB struct {
 }
 
 // NewGormDB 创建 GORM 数据库实例
-func NewGormDB(db *gorm.DB) DB {
+func NewGormDB(db *gorm.DB) IDatabase {
 	return &GormDB{db: db}
 }
 
-// DB 返回底层的 *gorm.DB
-func (g *GormDB) DB() *gorm.DB {
+// Database 返回底层的 *gorm.DB
+func (g *GormDB) Database() *gorm.DB {
 	return g.db
 }

@@ -5,7 +5,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/database"
 )
 
-
 type IProjectMemberRepository interface {
 	GetProjectMember(projectId, userId string) (*project.ProjectMember, error)
 	ListProjectMembers(projectId string) ([]project.ProjectMember, error)
@@ -16,48 +15,48 @@ type IProjectMemberRepository interface {
 }
 
 type ProjectMemberRepo struct {
-	db database.DB
+	db database.IDatabase
 }
 
-func NewProjectMemberRepo(db database.DB) IProjectMemberRepository {
+func NewProjectMemberRepo(db database.IDatabase) IProjectMemberRepository {
 	return &ProjectMemberRepo{db: db}
 }
 
 // GetProjectMember 获取项目成员
 func (r *ProjectMemberRepo) GetProjectMember(projectId, userId string) (*project.ProjectMember, error) {
 	var member project.ProjectMember
-	err := r.db.DB().Where("project_id = ? AND user_id = ?", projectId, userId).First(&member).Error
+	err := r.db.Database().Where("project_id = ? AND user_id = ?", projectId, userId).First(&member).Error
 	return &member, err
 }
 
 // ListProjectMembers 列出项目成员
 func (r *ProjectMemberRepo) ListProjectMembers(projectId string) ([]project.ProjectMember, error) {
 	var members []project.ProjectMember
-	err := r.db.DB().Where("project_id = ?", projectId).Find(&members).Error
+	err := r.db.Database().Where("project_id = ?", projectId).Find(&members).Error
 	return members, err
 }
 
 // AddProjectMember 添加项目成员
 func (r *ProjectMemberRepo) AddProjectMember(member *project.ProjectMember) error {
-	return r.db.DB().Create(member).Error
+	return r.db.Database().Create(member).Error
 }
 
 // UpdateProjectMemberRole 更新项目成员角色
 func (r *ProjectMemberRepo) UpdateProjectMemberRole(projectId, userId, role string) error {
-	return r.db.DB().Model(&project.ProjectMember{}).
+	return r.db.Database().Model(&project.ProjectMember{}).
 		Where("project_id = ? AND user_id = ?", projectId, userId).
 		Update("role", role).Error
 }
 
 // RemoveProjectMember 移除项目成员
 func (r *ProjectMemberRepo) RemoveProjectMember(projectId, userId string) error {
-	return r.db.DB().Where("project_id = ? AND user_id = ?", projectId, userId).
+	return r.db.Database().Where("project_id = ? AND user_id = ?", projectId, userId).
 		Delete(&project.ProjectMember{}).Error
 }
 
 // GetUserProjects 获取用户的所有项目
 func (r *ProjectMemberRepo) GetUserProjects(userId string) ([]project.ProjectMember, error) {
 	var members []project.ProjectMember
-	err := r.db.DB().Where("user_id = ?", userId).Find(&members).Error
+	err := r.db.Database().Where("user_id = ?", userId).Find(&members).Error
 	return members, err
 }

@@ -19,7 +19,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func initApp(configPath string, appCtx *ctx.Context, logger *zap.Logger, db database.DB, mongo database.MongoDB, cache cache.Cache) (*bootstrap.App, func(), error) {
+func initApp(configPath string, appCtx *ctx.Context, logger *zap.Logger, db database.IDatabase, mongo database.MongoDB, cache cache.ICache) (*bootstrap.App, func(), error) {
 	panic(wire.Build(
 		// 配置层
 		conf.ProviderSet,

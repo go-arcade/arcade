@@ -37,12 +37,12 @@ type IUserRepository interface {
 }
 
 type UserRepo struct {
-	db        database.DB
-	cache     cache.Cache
+	db        database.IDatabase
+	cache     cache.ICache
 	userModel *user.User
 }
 
-func NewUserRepo(db database.DB, cache cache.Cache) IUserRepository {
+func NewUserRepo(db database.IDatabase, cache cache.ICache) IUserRepository {
 	return &UserRepo{
 		db:        db,
 		cache:     cache,
@@ -51,12 +51,12 @@ func NewUserRepo(db database.DB, cache cache.Cache) IUserRepository {
 }
 
 func (ur *UserRepo) AddUser(addUserReq *user.AddUserReq) error {
-	return ur.db.DB().Create(addUserReq).Error
+	return ur.db.Database().Create(addUserReq).Error
 }
 
 // UpdateUser updates user information (user_id, username, password, created_at cannot be updated)
 func (ur *UserRepo) UpdateUser(userId string, u *user.User) error {
-	return ur.db.DB().Table(ur.userModel.TableName()).
+	return ur.db.Database().Table(ur.userModel.TableName()).
 		Where("user_id = ?", userId).
 		Omit("user_id", "username", "password", "created_at").
 		Updates(u).Error
@@ -80,7 +80,7 @@ func (ur *UserRepo) FetchUserInfo(userId string) (*user.UserInfo, error) {
 	}
 
 	// fetch from database
-	err := ur.db.DB().Table(ur.userModel.TableName()).
+	err := ur.db.Database().Table(ur.userModel.TableName()).
 		Select("user_id, username, first_name, last_name, avatar, email, phone").
 		Where("user_id = ?", userId).First(u).Error
 	if err != nil {
@@ -104,7 +104,7 @@ func (ur *UserRepo) FetchUserInfo(userId string) (*user.UserInfo, error) {
 
 func (ur *UserRepo) GetUserByUsername(username string) (string, error) {
 	var u = &user.User{}
-	err := ur.db.DB().Table(ur.userModel.TableName()).Select("user_id").Where("username = ?", username).
+	err := ur.db.Database().Table(ur.userModel.TableName()).Select("user_id").Where("username = ?", username).
 		First(u).Error
 	return u.UserId, err
 }
@@ -115,7 +115,7 @@ func (ur *UserRepo) Login(login *user.Login) (*user.User, error) {
 		return db.Table(ur.userModel.TableName()).Select("user_id, username, first_name, last_name, avatar, email, phone, password")
 	}
 
-	err := ur.db.DB().Scopes(scope).Where(
+	err := ur.db.Database().Scopes(scope).Where(
 		"(username = ? OR email = ?)",
 		login.Username, login.Email,
 	).First(&u).Error
@@ -128,13 +128,13 @@ func (ur *UserRepo) Login(login *user.Login) (*user.User, error) {
 
 func (ur *UserRepo) Register(register *user.Register) error {
 	var u user.User
-	err := ur.db.DB().Table(ur.userModel.TableName()).Select("username").
+	err := ur.db.Database().Table(ur.userModel.TableName()).Select("username").
 		Where("username = ?", register.Username).
 		First(&u).Error
 	if err == nil {
 		return errors.New(http.UserAlreadyExist.Msg)
 	}
-	return ur.db.DB().Table(ur.userModel.TableName()).Create(register).Error
+	return ur.db.Database().Table(ur.userModel.TableName()).Create(register).Error
 }
 
 func (ur *UserRepo) Logout(userKey string) error {
@@ -157,10 +157,10 @@ func (ur *UserRepo) GetUserList(offset int, pageSize int) ([]UserWithExtension, 
 	var count int64
 
 	// join with user extension table to get last login time and invitation status
-	err := ur.db.DB().Table(ur.userModel.TableName() + " AS u").
-		Select(`u.user_id, u.username, u.first_name, u.last_name, u.avatar, u.email, u.phone, 
-			u.is_enabled, u.is_superadmin, 
-			ue.last_login_at, 
+	err := ur.db.Database().Table(ur.userModel.TableName() + " AS u").
+		Select(`u.user_id, u.username, u.first_name, u.last_name, u.avatar, u.email, u.phone,
+			u.is_enabled, u.is_superadmin,
+			ue.last_login_at,
 			COALESCE(ue.invitation_status, 'accepted') AS invitation_status`).
 		Joins("LEFT JOIN t_user_ext AS ue ON u.user_id = ue.user_id").
 		Offset(offset).
@@ -171,7 +171,7 @@ func (ur *UserRepo) GetUserList(offset int, pageSize int) ([]UserWithExtension, 
 		return nil, 0, err
 	}
 
-	err = ur.db.DB().Model(&user.User{}).Count(&count).Error
+	err = ur.db.Database().Model(&user.User{}).Count(&count).Error
 	return users, count, err
 }
 
@@ -270,7 +270,7 @@ func (ur *UserRepo) DelToken(key string) error {
 // GetUserPassword gets user password hash by user ID
 func (ur *UserRepo) GetUserPassword(userId string) (string, error) {
 	var u user.User
-	err := ur.db.DB().Table(ur.userModel.TableName()).
+	err := ur.db.Database().Table(ur.userModel.TableName()).
 		Select("password").
 		Where("user_id = ?", userId).
 		First(&u).Error
@@ -282,14 +282,14 @@ func (ur *UserRepo) GetUserPassword(userId string) (string, error) {
 
 // ResetPassword resets user password
 func (ur *UserRepo) ResetPassword(userId, newPasswordHash string) error {
-	return ur.db.DB().Table(ur.userModel.TableName()).
+	return ur.db.Database().Table(ur.userModel.TableName()).
 		Where("user_id = ?", userId).
 		Update("password", newPasswordHash).Error
 }
 
 // UpdateAvatar updates user avatar URL
 func (ur *UserRepo) UpdateAvatar(userId, avatarUrl string) error {
-	result := ur.db.DB().Table(ur.userModel.TableName()).
+	result := ur.db.Database().Table(ur.userModel.TableName()).
 		Where("user_id = ?", userId).
 		Update("avatar", avatarUrl)
 
@@ -308,7 +308,7 @@ func (ur *UserRepo) UpdateAvatar(userId, avatarUrl string) error {
 // GetUserAvatar gets user avatar URL by user ID
 func (ur *UserRepo) GetUserAvatar(userId string) (string, error) {
 	var u user.User
-	err := ur.db.DB().Table(ur.userModel.TableName()).
+	err := ur.db.Database().Table(ur.userModel.TableName()).
 		Select("avatar").
 		Where("user_id = ?", userId).
 		First(&u).Error

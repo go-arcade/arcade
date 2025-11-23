@@ -82,7 +82,7 @@ func NewDatabase(cfg Database, zapLogger zap.Logger) (*gorm.DB, error) {
 
 	sqlDB, err := db.DB()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get underlying sql.DB handle: %w", err)
+		return nil, fmt.Errorf("failed to get underlying sql.IDatabase handle: %w", err)
 	}
 
 	sqlDB.SetMaxOpenConns(cfg.MaxOpenConns)

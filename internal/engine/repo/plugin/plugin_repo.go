@@ -26,11 +26,11 @@ type IPluginRepository interface {
 }
 
 type PluginRepo struct {
-	db          database.DB
+	db          database.IDatabase
 	PluginModel plugin.Plugin
 }
 
-func NewPluginRepo(db database.DB) IPluginRepository {
+func NewPluginRepo(db database.IDatabase) IPluginRepository {
 	return &PluginRepo{
 		db:          db,
 		PluginModel: plugin.Plugin{},
@@ -40,7 +40,7 @@ func NewPluginRepo(db database.DB) IPluginRepository {
 // GetEnabledPlugins 获取所有启用的插件
 func (r *PluginRepo) GetEnabledPlugins() ([]plugin.Plugin, error) {
 	var plugins []plugin.Plugin
-	err := r.db.DB().Table(r.PluginModel.TableName()).
+	err := r.db.Database().Table(r.PluginModel.TableName()).
 		Where("is_enabled = ?", 1).
 		Order("plugin_type ASC, id ASC").
 		Find(&plugins).Error
@@ -50,7 +50,7 @@ func (r *PluginRepo) GetEnabledPlugins() ([]plugin.Plugin, error) {
 // GetPluginByID 根据plugin_id获取插件
 func (r *PluginRepo) GetPluginByID(pluginID string) (*plugin.Plugin, error) {
 	var p plugin.Plugin
-	err := r.db.DB().Table(r.PluginModel.TableName()).
+	err := r.db.Database().Table(r.PluginModel.TableName()).
 		Where("plugin_id = ? AND is_enabled = ?", pluginID, 1).
 		First(&p).Error
 	if err != nil {
@@ -62,7 +62,7 @@ func (r *PluginRepo) GetPluginByID(pluginID string) (*plugin.Plugin, error) {
 // GetPluginsByType 根据类型获取插件列表
 func (r *PluginRepo) GetPluginsByType(pluginType string) ([]plugin.Plugin, error) {
 	var plugins []plugin.Plugin
-	err := r.db.DB().Table(r.PluginModel.TableName()).
+	err := r.db.Database().Table(r.PluginModel.TableName()).
 		Where("plugin_type = ? AND is_enabled = ?", pluginType, 1).
 		Order("id ASC").
 		Find(&plugins).Error
@@ -72,7 +72,7 @@ func (r *PluginRepo) GetPluginsByType(pluginType string) ([]plugin.Plugin, error
 // GetPluginConfig 根据插件ID获取配置
 func (r *PluginRepo) GetPluginConfig(pluginID string) (*plugin.PluginConfig, error) {
 	var config plugin.PluginConfig
-	err := r.db.DB().Table("t_plugin_config").
+	err := r.db.Database().Table("t_plugin_config").
 		Where("plugin_id = ?", pluginID).
 		First(&config).Error
 	if err != nil {
@@ -84,7 +84,7 @@ func (r *PluginRepo) GetPluginConfig(pluginID string) (*plugin.PluginConfig, err
 // GetTaskPlugins 获取任务关联的插件列表
 func (r *PluginRepo) GetTaskPlugins(taskID string) ([]plugin.TaskPlugin, error) {
 	var taskPlugins []plugin.TaskPlugin
-	err := r.db.DB().Table("t_task_plugin").
+	err := r.db.Database().Table("t_task_plugin").
 		Where("task_id = ?", taskID).
 		Order("execution_order ASC").
 		Find(&taskPlugins).Error
@@ -93,7 +93,7 @@ func (r *PluginRepo) GetTaskPlugins(taskID string) ([]plugin.TaskPlugin, error) 
 
 // CreateTaskPlugin 创建任务插件关联
 func (r *PluginRepo) CreateTaskPlugin(taskPlugin *plugin.TaskPlugin) error {
-	return r.db.DB().Table("t_task_plugin").Create(taskPlugin).Error
+	return r.db.Database().Table("t_task_plugin").Create(taskPlugin).Error
 }
 
 // UpdateTaskPluginStatus 更新任务插件执行状态
@@ -107,33 +107,33 @@ func (r *PluginRepo) UpdateTaskPluginStatus(id int, status int, result, errorMsg
 	if errorMsg != "" {
 		updates["error_message"] = errorMsg
 	}
-	return r.db.DB().Table("t_task_plugin").
+	return r.db.Database().Table("t_task_plugin").
 		Where("id = ?", id).
 		Updates(updates).Error
 }
 
 // CreatePlugin 创建插件
 func (r *PluginRepo) CreatePlugin(p *plugin.Plugin) error {
-	return r.db.DB().Table(r.PluginModel.TableName()).Create(p).Error
+	return r.db.Database().Table(r.PluginModel.TableName()).Create(p).Error
 }
 
 // UpdatePlugin 更新插件
 func (r *PluginRepo) UpdatePlugin(pluginID string, updates map[string]interface{}) error {
-	return r.db.DB().Table(r.PluginModel.TableName()).
+	return r.db.Database().Table(r.PluginModel.TableName()).
 		Where("plugin_id = ?", pluginID).
 		Updates(updates).Error
 }
 
 // DeletePlugin 删除插件
 func (r *PluginRepo) DeletePlugin(pluginID string) error {
-	return r.db.DB().Table(r.PluginModel.TableName()).
+	return r.db.Database().Table(r.PluginModel.TableName()).
 		Where("plugin_id = ?", pluginID).
 		Delete(&plugin.Plugin{}).Error
 }
 
 // UpdatePluginStatus 更新插件状态
 func (r *PluginRepo) UpdatePluginStatus(pluginID string, status int) error {
-	return r.db.DB().Table(r.PluginModel.TableName()).
+	return r.db.Database().Table(r.PluginModel.TableName()).
 		Where("plugin_id = ?", pluginID).
 		Update("is_enabled", status).Error
 }
@@ -141,7 +141,7 @@ func (r *PluginRepo) UpdatePluginStatus(pluginID string, status int) error {
 // ListPlugins 列出插件（支持过滤）
 func (r *PluginRepo) ListPlugins(pluginType string, isEnabled int) ([]plugin.Plugin, error) {
 	var plugins []plugin.Plugin
-	query := r.db.DB().Table(r.PluginModel.TableName())
+	query := r.db.Database().Table(r.PluginModel.TableName())
 
 	if pluginType != "" {
 		query = query.Where("plugin_type = ?", pluginType)
@@ -157,7 +157,7 @@ func (r *PluginRepo) ListPlugins(pluginType string, isEnabled int) ([]plugin.Plu
 // GetPluginByName 根据名称获取插件
 func (r *PluginRepo) GetPluginByName(name string) (*plugin.Plugin, error) {
 	var p plugin.Plugin
-	err := r.db.DB().Table(r.PluginModel.TableName()).
+	err := r.db.Database().Table(r.PluginModel.TableName()).
 		Where("name = ?", name).
 		First(&p).Error
 	if err != nil {
@@ -168,19 +168,19 @@ func (r *PluginRepo) GetPluginByName(name string) (*plugin.Plugin, error) {
 
 // DeletePluginConfigs 删除插件的所有配置
 func (r *PluginRepo) DeletePluginConfigs(pluginID string) error {
-	return r.db.DB().Table("t_plugin_config").
+	return r.db.Database().Table("t_plugin_config").
 		Where("plugin_id = ?", pluginID).
 		Delete(&plugin.PluginConfig{}).Error
 }
 
 // CreatePluginConfig 创建插件配置
 func (r *PluginRepo) CreatePluginConfig(config *plugin.PluginConfig) error {
-	return r.db.DB().Table("t_plugin_config").Create(config).Error
+	return r.db.Database().Table("t_plugin_config").Create(config).Error
 }
 
 // UpdatePluginConfig 更新插件配置
 func (r *PluginRepo) UpdatePluginConfig(pluginID string, updates map[string]interface{}) error {
-	return r.db.DB().Table("t_plugin_config").
+	return r.db.Database().Table("t_plugin_config").
 		Where("plugin_id = ?", pluginID).
 		Updates(updates).Error
 }
@@ -195,7 +195,7 @@ func (r *PluginRepo) UpdatePluginRegistrationStatus(pluginID string, status int,
 	} else {
 		updates["register_error"] = ""
 	}
-	return r.db.DB().Table(r.PluginModel.TableName()).
+	return r.db.Database().Table(r.PluginModel.TableName()).
 		Where("plugin_id = ?", pluginID).
 		Updates(updates).Error
 }

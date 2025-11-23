@@ -23,7 +23,7 @@ import (
 type Router struct {
 	Http     *httpx.Http
 	Ctx      *ctx.Context
-	Cache    cache.Cache
+	Cache    cache.ICache
 	Services *service.Services
 }
 
@@ -38,7 +38,7 @@ var web embed.FS
 func NewRouter(
 	httpConf *httpx.Http,
 	ctx *ctx.Context,
-	cache cache.Cache,
+	cache cache.ICache,
 	services *service.Services,
 ) *Router {
 	return &Router{

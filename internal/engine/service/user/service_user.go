@@ -26,11 +26,11 @@ type LoginService interface {
 
 type UserService struct {
 	ctx      *ctx.Context
-	cache    cache.Cache
+	cache    cache.ICache
 	userRepo userrepo.IUserRepository
 }
 
-func NewUserService(ctx *ctx.Context, cache cache.Cache, userRepo userrepo.IUserRepository) *UserService {
+func NewUserService(ctx *ctx.Context, cache cache.ICache, userRepo userrepo.IUserRepository) *UserService {
 	return &UserService{
 		ctx:      ctx,
 		cache:    cache,

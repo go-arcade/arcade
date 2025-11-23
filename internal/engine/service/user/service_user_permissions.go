@@ -17,17 +17,16 @@ import (
 	"github.com/go-arcade/arcade/pkg/log"
 )
 
-
 // UserPermissionsService 用户权限聚合服务
 type UserPermissionsService struct {
 	ctx        *ctx.Context
-	db         database.DB
+	db         database.IDatabase
 	permSvc    *permissionservice.PermissionService
 	routerRepo permissionrepo.IRouterPermissionRepository
 }
 
 // NewUserPermissionsService 创建用户权限聚合服务
-func NewUserPermissionsService(ctx *ctx.Context, db database.DB, permSvc *permissionservice.PermissionService, routerRepo permissionrepo.IRouterPermissionRepository) *UserPermissionsService {
+func NewUserPermissionsService(ctx *ctx.Context, db database.IDatabase, permSvc *permissionservice.PermissionService, routerRepo permissionrepo.IRouterPermissionRepository) *UserPermissionsService {
 	return &UserPermissionsService{
 		ctx:        ctx,
 		db:         db,
@@ -189,7 +188,7 @@ func (s *UserPermissionsService) GetUserPermissions(ctx context.Context, userId 
 // getUserOrganizations 获取用户所属组织
 func (s *UserPermissionsService) getUserOrganizations(ctx context.Context, userId string) ([]OrganizationPermission, error) {
 	var orgMembers []orgs.OrganizationMember
-	err := s.db.DB().Where("user_id = ?", userId).Find(&orgMembers).Error
+	err := s.db.Database().Where("user_id = ?", userId).Find(&orgMembers).Error
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +197,7 @@ func (s *UserPermissionsService) getUserOrganizations(ctx context.Context, userI
 	for _, om := range orgMembers {
 		// 获取组织信息
 		var org orgs.Organization
-		if err := s.db.DB().Where("org_id = ?", om.OrgId).First(&org).Error; err != nil {
+		if err := s.db.Database().Where("org_id = ?", om.OrgId).First(&org).Error; err != nil {
 			log.Warnf("[UserPermissions] failed to get org %s: %v", om.OrgId, err)
 			continue
 		}
@@ -238,7 +237,7 @@ func (s *UserPermissionsService) getUserOrganizations(ctx context.Context, userI
 // getUserTeams 获取用户所属团队
 func (s *UserPermissionsService) getUserTeams(ctx context.Context, userId string) ([]TeamPermission, error) {
 	var teamMembers []team.TeamMember
-	err := s.db.DB().Where("user_id = ?", userId).Find(&teamMembers).Error
+	err := s.db.Database().Where("user_id = ?", userId).Find(&teamMembers).Error
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +246,7 @@ func (s *UserPermissionsService) getUserTeams(ctx context.Context, userId string
 	for _, tm := range teamMembers {
 		// 获取团队信息
 		var teamEntity team.Team
-		if err := s.db.DB().Where("team_id = ?", tm.TeamId).First(&teamEntity).Error; err != nil {
+		if err := s.db.Database().Where("team_id = ?", tm.TeamId).First(&teamEntity).Error; err != nil {
 			log.Warnf("[UserPermissions] failed to get team %s: %v", tm.TeamId, err)
 			continue
 		}
@@ -279,7 +278,7 @@ func (s *UserPermissionsService) getUserTeams(ctx context.Context, userId string
 func (s *UserPermissionsService) getUserProjects(ctx context.Context, userId string) ([]ProjectPermissionSummary, error) {
 	// 1. 获取用户直接参与的项目
 	var projectMembers []project.ProjectMember
-	err := s.db.DB().Where("user_id = ?", userId).Find(&projectMembers).Error
+	err := s.db.Database().Where("user_id = ?", userId).Find(&projectMembers).Error
 	if err != nil {
 		return nil, err
 	}
@@ -289,7 +288,7 @@ func (s *UserPermissionsService) getUserProjects(ctx context.Context, userId str
 	// 处理直接项目成员关系
 	for _, pm := range projectMembers {
 		var projectEntity project.Project
-		if err := s.db.DB().Where("project_id = ?", pm.ProjectId).First(&projectEntity).Error; err != nil {
+		if err := s.db.Database().Where("project_id = ?", pm.ProjectId).First(&projectEntity).Error; err != nil {
 			continue
 		}
 
@@ -317,11 +316,11 @@ func (s *UserPermissionsService) getUserProjects(ctx context.Context, userId str
 
 	// 2. 通过团队访问的项目
 	var teamMembers []team.TeamMember
-	s.db.DB().Where("user_id = ?", userId).Find(&teamMembers)
+	s.db.Database().Where("user_id = ?", userId).Find(&teamMembers)
 
 	for _, tm := range teamMembers {
 		var teamAccesses []project.ProjectTeamAccess
-		s.db.DB().Where("team_id = ?", tm.TeamId).Find(&teamAccesses)
+		s.db.Database().Where("team_id = ?", tm.TeamId).Find(&teamAccesses)
 
 		for _, ta := range teamAccesses {
 			// 如果已经有直接权限，比较优先级
@@ -342,7 +341,7 @@ func (s *UserPermissionsService) getUserProjects(ctx context.Context, userId str
 
 			// 新的项目访问
 			var projectEntity project.Project
-			if err := s.db.DB().Where("project_id = ?", ta.ProjectId).First(&projectEntity).Error; err != nil {
+			if err := s.db.Database().Where("project_id = ?", ta.ProjectId).First(&projectEntity).Error; err != nil {
 				continue
 			}
 
@@ -372,11 +371,11 @@ func (s *UserPermissionsService) getUserProjects(ctx context.Context, userId str
 
 	// 3. 通过组织访问的项目（access_level = org）
 	var orgMembers []orgs.OrganizationMember
-	s.db.DB().Where("user_id = ? AND status = ?", userId, orgs.OrgMemberStatusActive).Find(&orgMembers)
+	s.db.Database().Where("user_id = ? AND status = ?", userId, orgs.OrgMemberStatusActive).Find(&orgMembers)
 
 	for _, om := range orgMembers {
 		var orgProjects []project.Project
-		s.db.DB().Where("org_id = ? AND access_level = ?", om.OrgId, project.AccessLevelOrg).Find(&orgProjects)
+		s.db.Database().Where("org_id = ? AND access_level = ?", om.OrgId, project.AccessLevelOrg).Find(&orgProjects)
 
 		for _, projectEntity := range orgProjects {
 			if _, exists := projectMap[projectEntity.ProjectId]; exists {
@@ -434,7 +433,7 @@ func (s *UserPermissionsService) getPermissionsForRole(roleId string) []string {
 	// 从关联表查询角色权限
 	var permissionCodes []string
 
-	err := s.db.DB().Table("t_role_permission rp").
+	err := s.db.Database().Table("t_role_permission rp").
 		Select("p.code").
 		Joins("JOIN t_permission p ON rp.permission_id = p.permission_id").
 		Where("rp.role_id = ? AND p.is_enabled = ?", roleId, 1).

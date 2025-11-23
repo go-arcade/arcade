@@ -24,24 +24,24 @@ type IRoleRepository interface {
 }
 
 type RoleRepo struct {
-	db database.DB
+	db database.IDatabase
 }
 
-func NewRoleRepo(db database.DB) IRoleRepository {
+func NewRoleRepo(db database.IDatabase) IRoleRepository {
 	return &RoleRepo{db: db}
 }
 
 // GetRole 获取角色
 func (r *RoleRepo) GetRole(roleId string) (*role.Role, error) {
 	var ro role.Role
-	err := r.db.DB().Where("role_id = ?", roleId).First(&ro).Error
+	err := r.db.Database().Where("role_id = ?", roleId).First(&ro).Error
 	return &ro, err
 }
 
 // GetRoleByName 根据名称获取角色
 func (r *RoleRepo) GetRoleByName(name string, scope role.RoleScope, orgId string) (*role.Role, error) {
 	var ro role.Role
-	query := r.db.DB().Where("name = ? AND scope = ?", name, scope)
+	query := r.db.Database().Where("name = ? AND scope = ?", name, scope)
 	if orgId != "" {
 		query = query.Where("org_id = ?", orgId)
 	} else {
@@ -54,7 +54,7 @@ func (r *RoleRepo) GetRoleByName(name string, scope role.RoleScope, orgId string
 // ListRoles 列出角色
 func (r *RoleRepo) ListRoles(scope role.RoleScope, orgId string) ([]role.Role, error) {
 	var roles []role.Role
-	query := r.db.DB().Select("role_id", "name", "display_name", "description", "scope", "org_id", "is_builtin", "is_enabled", "priority", "permissions", "created_by").
+	query := r.db.Database().Select("role_id", "name", "display_name", "description", "scope", "org_id", "is_builtin", "is_enabled", "priority", "permissions", "created_by").
 		Where("scope = ? AND is_enabled = ?", scope, role.RoleEnabled)
 	if orgId != "" {
 		// 包含全局角色和组织自定义角色
@@ -70,7 +70,7 @@ func (r *RoleRepo) ListRoles(scope role.RoleScope, orgId string) ([]role.Role, e
 // ListBuiltinRoles 列出内置角色
 func (r *RoleRepo) ListBuiltinRoles(scope role.RoleScope) ([]role.Role, error) {
 	var roles []role.Role
-	err := r.db.DB().
+	err := r.db.Database().
 		Select("role_id", "name", "display_name", "description", "scope", "org_id", "is_builtin", "is_enabled", "priority", "permissions", "created_by").
 		Where("scope = ? AND is_builtin = ?", scope, role.RoleBuiltin).
 		Order("priority DESC").
@@ -80,12 +80,12 @@ func (r *RoleRepo) ListBuiltinRoles(scope role.RoleScope) ([]role.Role, error) {
 
 // CreateRole 创建角色
 func (r *RoleRepo) CreateRole(ro *role.Role) error {
-	return r.db.DB().Create(ro).Error
+	return r.db.Database().Create(ro).Error
 }
 
 // UpdateRole 更新角色
 func (r *RoleRepo) UpdateRole(ro *role.Role) error {
-	return r.db.DB().Save(ro).Error
+	return r.db.Database().Save(ro).Error
 }
 
 // UpdateRolePermissions 更新角色权限
@@ -94,14 +94,14 @@ func (r *RoleRepo) UpdateRolePermissions(roleId string, permissions []string) er
 	if err != nil {
 		return err
 	}
-	return r.db.DB().Model(&role.Role{}).
+	return r.db.Database().Model(&role.Role{}).
 		Where("role_id = ?", roleId).
 		Update("permissions", string(permJson)).Error
 }
 
 // DeleteRole 删除角色（只能删除自定义角色）
 func (r *RoleRepo) DeleteRole(roleId string) error {
-	return r.db.DB().Where("role_id = ? AND is_builtin = ?", roleId, role.RoleCustom).
+	return r.db.Database().Where("role_id = ? AND is_builtin = ?", roleId, role.RoleCustom).
 		Delete(&role.Role{}).Error
 }
 
@@ -111,7 +111,7 @@ func (r *RoleRepo) EnableRole(roleId string, enabled bool) error {
 	if enabled {
 		isEnabled = role.RoleEnabled
 	}
-	return r.db.DB().Model(&role.Role{}).
+	return r.db.Database().Model(&role.Role{}).
 		Where("role_id = ?", roleId).
 		Update("is_enabled", isEnabled).Error
 }
@@ -121,7 +121,7 @@ func (r *RoleRepo) ListRolesWithPagination(req *role.ListRolesRequest) ([]role.R
 	var roles []role.Role
 	var total int64
 
-	query := r.db.DB().Model(&role.Role{})
+	query := r.db.Database().Model(&role.Role{})
 
 	// apply filters
 	if req.Scope != "" {
@@ -159,15 +159,15 @@ func (r *RoleRepo) ListRolesWithPagination(req *role.ListRolesRequest) ([]role.R
 
 // ToggleRole toggles the enabled status of a role
 func (r *RoleRepo) ToggleRole(roleId string) error {
-	return r.db.DB().Model(&role.Role{}).
+	return r.db.Database().Model(&role.Role{}).
 		Where("role_id = ?", roleId).
-		Update("is_enabled", r.db.DB().Raw("1 - is_enabled")).Error
+		Update("is_enabled", r.db.Database().Raw("1 - is_enabled")).Error
 }
 
 // RoleExists checks if a role exists
 func (r *RoleRepo) RoleExists(roleId string) (bool, error) {
 	var count int64
-	err := r.db.DB().Model(&role.Role{}).Where("role_id = ?", roleId).Count(&count).Error
+	err := r.db.Database().Model(&role.Role{}).Where("role_id = ?", roleId).Count(&count).Error
 	return count > 0, err
 }
 
@@ -175,7 +175,7 @@ func (r *RoleRepo) RoleExists(roleId string) (bool, error) {
 func (r *RoleRepo) InitBuiltinRoles() error {
 	// 检查是否已初始化
 	var count int64
-	r.db.DB().Model(&role.Role{}).Where("is_builtin = ?", role.RoleBuiltin).Count(&count)
+	r.db.Database().Model(&role.Role{}).Where("is_builtin = ?", role.RoleBuiltin).Count(&count)
 	if count > 0 {
 		// 已初始化，跳过
 		return nil
@@ -208,7 +208,7 @@ func (r *RoleRepo) InitBuiltinRoles() error {
 			Priority:    pr.Priority,
 			Permissions: string(permJson),
 		}
-		if err := r.db.DB().Create(role2).Error; err != nil {
+		if err := r.db.Database().Create(role2).Error; err != nil {
 			return err
 		}
 	}
@@ -240,7 +240,7 @@ func (r *RoleRepo) InitBuiltinRoles() error {
 			Priority:    tr.Priority,
 			Permissions: string(permJson),
 		}
-		if err := r.db.DB().Create(role2).Error; err != nil {
+		if err := r.db.Database().Create(role2).Error; err != nil {
 			return err
 		}
 	}
@@ -270,7 +270,7 @@ func (r *RoleRepo) InitBuiltinRoles() error {
 			Priority:    or.Priority,
 			Permissions: string(permJson),
 		}
-		if err := r.db.DB().Create(role2).Error; err != nil {
+		if err := r.db.Database().Create(role2).Error; err != nil {
 			return err
 		}
 	}

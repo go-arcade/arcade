@@ -32,7 +32,7 @@ type App struct {
 }
 
 // InitAppFunc init app function type
-type InitAppFunc func(configPath string, appCtx *ctx.Context, logger *zap.Logger, db database.DB, mongo database.MongoDB, cache cache.Cache) (*App, func(), error)
+type InitAppFunc func(configPath string, appCtx *ctx.Context, logger *zap.Logger, db database.IDatabase, mongo database.MongoDB, cache cache.ICache) (*App, func(), error)
 
 func NewApp(
 	rt *router.Router,

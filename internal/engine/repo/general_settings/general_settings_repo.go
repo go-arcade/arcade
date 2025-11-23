@@ -5,7 +5,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/database"
 )
 
-
 type IGeneralSettingsRepository interface {
 	UpdateGeneralSettings(settings *general_settings.GeneralSettings) error
 	GetGeneralSettingsByID(id uint64) (*general_settings.GeneralSettings, error)
@@ -15,11 +14,11 @@ type IGeneralSettingsRepository interface {
 }
 
 type GeneralSettingsRepo struct {
-	db                   database.DB
+	db                   database.IDatabase
 	generalSettingsModel *general_settings.GeneralSettings
 }
 
-func NewGeneralSettingsRepo(db database.DB) IGeneralSettingsRepository {
+func NewGeneralSettingsRepo(db database.IDatabase) IGeneralSettingsRepository {
 	return &GeneralSettingsRepo{
 		db:                   db,
 		generalSettingsModel: &general_settings.GeneralSettings{},
@@ -28,7 +27,7 @@ func NewGeneralSettingsRepo(db database.DB) IGeneralSettingsRepository {
 
 // UpdateGeneralSettings updates a general settings by ID
 func (gsr *GeneralSettingsRepo) UpdateGeneralSettings(settings *general_settings.GeneralSettings) error {
-	return gsr.db.DB().Table(gsr.generalSettingsModel.TableName()).
+	return gsr.db.Database().Table(gsr.generalSettingsModel.TableName()).
 		Omit("id", "category", "name").
 		Where("id = ?", settings.ID).
 		Updates(settings).Error
@@ -37,7 +36,7 @@ func (gsr *GeneralSettingsRepo) UpdateGeneralSettings(settings *general_settings
 // GetGeneralSettingsByID gets a general settings by ID
 func (gsr *GeneralSettingsRepo) GetGeneralSettingsByID(id uint64) (*general_settings.GeneralSettings, error) {
 	var settings general_settings.GeneralSettings
-	err := gsr.db.DB().Table(gsr.generalSettingsModel.TableName()).
+	err := gsr.db.Database().Table(gsr.generalSettingsModel.TableName()).
 		Where("id = ?", id).
 		First(&settings).Error
 	return &settings, err
@@ -46,7 +45,7 @@ func (gsr *GeneralSettingsRepo) GetGeneralSettingsByID(id uint64) (*general_sett
 // GetGeneralSettingsByName gets a general settings by category and name
 func (gsr *GeneralSettingsRepo) GetGeneralSettingsByName(category, name string) (*general_settings.GeneralSettings, error) {
 	var settings general_settings.GeneralSettings
-	err := gsr.db.DB().Table(gsr.generalSettingsModel.TableName()).
+	err := gsr.db.Database().Table(gsr.generalSettingsModel.TableName()).
 		Where("category = ? AND name = ?", category, name).
 		First(&settings).Error
 	return &settings, err
@@ -57,7 +56,7 @@ func (gsr *GeneralSettingsRepo) GetGeneralSettingsList(pageNum, pageSize int, ca
 	var settingsList []*general_settings.GeneralSettings
 	var total int64
 
-	query := gsr.db.DB().Table(gsr.generalSettingsModel.TableName())
+	query := gsr.db.Database().Table(gsr.generalSettingsModel.TableName())
 
 	// apply filters
 	if category != "" {
@@ -83,7 +82,7 @@ func (gsr *GeneralSettingsRepo) GetGeneralSettingsList(pageNum, pageSize int, ca
 // GetCategories gets all distinct categories
 func (gsr *GeneralSettingsRepo) GetCategories() ([]string, error) {
 	var categories []string
-	err := gsr.db.DB().Table(gsr.generalSettingsModel.TableName()).
+	err := gsr.db.Database().Table(gsr.generalSettingsModel.TableName()).
 		Distinct("category").
 		Pluck("category", &categories).Error
 	return categories, err

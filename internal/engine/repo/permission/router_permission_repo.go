@@ -8,7 +8,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/log"
 )
 
-
 type IRouterPermissionRepository interface {
 	GetAllRoutePermissions() ([]permission.RoutePermissionDTO, error)
 	GetRoutePermissionByPath(path, method string) (*permission.RoutePermissionDTO, error)
@@ -21,10 +20,10 @@ type IRouterPermissionRepository interface {
 }
 
 type RouterPermissionRepo struct {
-	db database.DB
+	db database.IDatabase
 }
 
-func NewRouterPermissionRepo(db database.DB) IRouterPermissionRepository {
+func NewRouterPermissionRepo(db database.IDatabase) IRouterPermissionRepository {
 	return &RouterPermissionRepo{
 		db: db,
 	}
@@ -33,7 +32,7 @@ func NewRouterPermissionRepo(db database.DB) IRouterPermissionRepository {
 // GetAllRoutePermissions 获取所有路由权限配置
 func (r *RouterPermissionRepo) GetAllRoutePermissions() ([]permission.RoutePermissionDTO, error) {
 	var routes []permission.RouterPermission
-	err := r.db.DB().Where("is_enabled = ?", 1).Order("`order` ASC").Find(&routes).Error
+	err := r.db.Database().Where("is_enabled = ?", 1).Order("`order` ASC").Find(&routes).Error
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +68,7 @@ func (r *RouterPermissionRepo) GetAllRoutePermissions() ([]permission.RoutePermi
 // GetRoutePermissionByPath 根据路径和方法获取路由权限
 func (r *RouterPermissionRepo) GetRoutePermissionByPath(path, method string) (*permission.RoutePermissionDTO, error) {
 	var route permission.RouterPermission
-	err := r.db.DB().Where("path = ? AND method = ? AND is_enabled = ?", path, method, 1).First(&route).Error
+	err := r.db.Database().Where("path = ? AND method = ? AND is_enabled = ?", path, method, 1).First(&route).Error
 	if err != nil {
 		return nil, err
 	}
@@ -125,14 +124,14 @@ func (r *RouterPermissionRepo) CreateOrUpdateRoute(dto permission.RoutePermissio
 
 	// 使用 Upsert 逻辑
 	var existing permission.RouterPermission
-	err = r.db.DB().Where("route_id = ?", dto.RouteId).First(&existing).Error
+	err = r.db.Database().Where("route_id = ?", dto.RouteId).First(&existing).Error
 	if err != nil {
 		// 不存在，创建
-		return r.db.DB().Create(&route).Error
+		return r.db.Database().Create(&route).Error
 	}
 
 	// 已存在，更新
-	return r.db.DB().Model(&existing).Updates(route).Error
+	return r.db.Database().Model(&existing).Updates(route).Error
 }
 
 // InitBuiltinRoutes 初始化内置路由配置
@@ -154,7 +153,7 @@ func (r *RouterPermissionRepo) InitBuiltinRoutes() error {
 // GetMenuRoutes 获取菜单路由（按分组分类）
 func (r *RouterPermissionRepo) GetMenuRoutes() (map[string][]permission.RoutePermissionDTO, error) {
 	var routes []permission.RouterPermission
-	err := r.db.DB().Where("is_enabled = ? AND is_menu = ?", 1, 1).Order("category ASC, `order` ASC").Find(&routes).Error
+	err := r.db.Database().Where("is_enabled = ? AND is_menu = ?", 1, 1).Order("category ASC, `order` ASC").Find(&routes).Error
 	if err != nil {
 		return nil, err
 	}
@@ -191,15 +190,15 @@ func (r *RouterPermissionRepo) GetMenuRoutes() (map[string][]permission.RoutePer
 
 // DeleteRoute 删除路由配置
 func (r *RouterPermissionRepo) DeleteRoute(routeId string) error {
-	return r.db.DB().Where("route_id = ?", routeId).Delete(&permission.RouterPermission{}).Error
+	return r.db.Database().Where("route_id = ?", routeId).Delete(&permission.RouterPermission{}).Error
 }
 
 // DisableRoute disables a route (set is_enabled to 0)
 func (r *RouterPermissionRepo) DisableRoute(routeId string) error {
-	return r.db.DB().Model(&permission.RouterPermission{}).Where("route_id = ?", routeId).Update("is_enabled", 0).Error
+	return r.db.Database().Model(&permission.RouterPermission{}).Where("route_id = ?", routeId).Update("is_enabled", 0).Error
 }
 
 // EnableRoute enables a route (set is_enabled to 1)
 func (r *RouterPermissionRepo) EnableRoute(routeId string) error {
-	return r.db.DB().Model(&permission.RouterPermission{}).Where("route_id = ?", routeId).Update("is_enabled", 1).Error
+	return r.db.Database().Model(&permission.RouterPermission{}).Where("route_id = ?", routeId).Update("is_enabled", 1).Error
 }

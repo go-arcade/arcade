@@ -7,12 +7,12 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// Cache 定义缓存接口（抽象）
-type Cache interface {
+// ICache 定义缓存接口（抽象）
+type ICache interface {
 	// Get 获取缓存值
 	Get(ctx context.Context, key string) *redis.StringCmd
 	// Set 设置缓存值
-	Set(ctx context.Context, key string, value interface{}, expiration time.Duration) *redis.StatusCmd
+	Set(ctx context.Context, key string, value any, expiration time.Duration) *redis.StatusCmd
 	// Del 删除缓存
 	Del(ctx context.Context, keys ...string) *redis.IntCmd
 	// Pipeline 创建管道

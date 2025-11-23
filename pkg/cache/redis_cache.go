@@ -13,7 +13,7 @@ type RedisCache struct {
 }
 
 // NewRedisCache 创建 Redis 缓存实例
-func NewRedisCache(client *redis.Client) Cache {
+func NewRedisCache(client *redis.Client) ICache {
 	return &RedisCache{client: client}
 }
 
@@ -23,7 +23,7 @@ func (r *RedisCache) Get(ctx context.Context, key string) *redis.StringCmd {
 }
 
 // Set 设置缓存值
-func (r *RedisCache) Set(ctx context.Context, key string, value interface{}, expiration time.Duration) *redis.StatusCmd {
+func (r *RedisCache) Set(ctx context.Context, key string, value any, expiration time.Duration) *redis.StatusCmd {
 	return r.client.Set(ctx, key, value, expiration)
 }
 

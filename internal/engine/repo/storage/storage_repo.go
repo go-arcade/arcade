@@ -15,8 +15,8 @@ import (
 )
 
 type StorageRepo struct {
-	db           database.DB
-	cache        cache.Cache
+	db           database.IDatabase
+	cache        cache.ICache
 	StorageModel storage.StorageConfig
 }
 
@@ -41,7 +41,7 @@ type IStorageRepository interface {
 	ParseStorageConfig(storageConfig *storage.StorageConfig) (interface{}, error)
 }
 
-func NewStorageRepo(db database.DB, cache cache.Cache) IStorageRepository {
+func NewStorageRepo(db database.IDatabase, cache cache.ICache) IStorageRepository {
 	return &StorageRepo{
 		db:           db,
 		cache:        cache,
@@ -50,7 +50,7 @@ func NewStorageRepo(db database.DB, cache cache.Cache) IStorageRepository {
 }
 
 // GetDB 返回数据库实例（供插件适配器使用）
-func (sr *StorageRepo) GetDB() database.DB {
+func (sr *StorageRepo) GetDB() database.IDatabase {
 	return sr.db
 }
 
@@ -72,7 +72,7 @@ func (sr *StorageRepo) GetDefaultStorageConfig() (*storage.StorageConfig, error)
 
 	// 2. Redis 没有，从数据库查询
 	var storageConfig storage.StorageConfig
-	err := sr.db.DB().Table(sr.StorageModel.TableName()).
+	err := sr.db.Database().Table(sr.StorageModel.TableName()).
 		Where("is_default = ? AND is_enabled = ?", 1, 1).
 		First(&storageConfig).Error
 	if err != nil {
@@ -118,7 +118,7 @@ func (sr *StorageRepo) GetStorageConfigByID(storageID string) (*storage.StorageC
 
 	// 2. Redis 没有，从数据库查询
 	var storageConfig storage.StorageConfig
-	err := sr.db.DB().Table(sr.StorageModel.TableName()).
+	err := sr.db.Database().Table(sr.StorageModel.TableName()).
 		Where("storage_id = ? AND is_enabled = ?", storageID, 1).
 		First(&storageConfig).Error
 	if err != nil {
@@ -147,7 +147,7 @@ func (sr *StorageRepo) GetStorageConfigByID(storageID string) (*storage.StorageC
 // GetEnabledStorageConfigs 获取所有启用的存储配置
 func (sr *StorageRepo) GetEnabledStorageConfigs() ([]storage.StorageConfig, error) {
 	var storageConfigs []storage.StorageConfig
-	err := sr.db.DB().Table(sr.StorageModel.TableName()).
+	err := sr.db.Database().Table(sr.StorageModel.TableName()).
 		Select("storage_id", "name", "storage_type", "config", "description", "is_default", "is_enabled").
 		Where("is_enabled = ?", 1).
 		Order("is_default DESC, storage_id ASC").
@@ -161,7 +161,7 @@ func (sr *StorageRepo) GetEnabledStorageConfigs() ([]storage.StorageConfig, erro
 // GetStorageConfigByType 根据存储类型获取配置
 func (sr *StorageRepo) GetStorageConfigByType(storageType string) ([]storage.StorageConfig, error) {
 	var storageConfigs []storage.StorageConfig
-	err := sr.db.DB().Table(sr.StorageModel.TableName()).
+	err := sr.db.Database().Table(sr.StorageModel.TableName()).
 		Select("storage_id", "name", "storage_type", "config", "description", "is_default", "is_enabled").
 		Where("storage_type = ? AND is_enabled = ?", storageType, 1).
 		Order("is_default DESC, storage_id ASC").
@@ -174,7 +174,7 @@ func (sr *StorageRepo) GetStorageConfigByType(storageType string) ([]storage.Sto
 
 // CreateStorageConfig 创建存储配置
 func (sr *StorageRepo) CreateStorageConfig(storageConfig *storage.StorageConfig) error {
-	err := sr.db.DB().Table(sr.StorageModel.TableName()).Create(storageConfig).Error
+	err := sr.db.Database().Table(sr.StorageModel.TableName()).Create(storageConfig).Error
 	if err != nil {
 		return fmt.Errorf("failed to create storage config: %w", err)
 	}
@@ -183,7 +183,7 @@ func (sr *StorageRepo) CreateStorageConfig(storageConfig *storage.StorageConfig)
 
 // UpdateStorageConfig 更新存储配置
 func (sr *StorageRepo) UpdateStorageConfig(storageConfig *storage.StorageConfig) error {
-	err := sr.db.DB().Table(sr.StorageModel.TableName()).
+	err := sr.db.Database().Table(sr.StorageModel.TableName()).
 		Where("storage_id = ?", storageConfig.StorageId).
 		Updates(storageConfig).Error
 	if err != nil {
@@ -202,7 +202,7 @@ func (sr *StorageRepo) UpdateStorageConfig(storageConfig *storage.StorageConfig)
 
 // DeleteStorageConfig 删除存储配置
 func (sr *StorageRepo) DeleteStorageConfig(storageID string) error {
-	err := sr.db.DB().Table(sr.StorageModel.TableName()).
+	err := sr.db.Database().Table(sr.StorageModel.TableName()).
 		Where("storage_id = ?", storageID).
 		Delete(&storage.StorageConfig{}).Error
 	if err != nil {
@@ -219,7 +219,7 @@ func (sr *StorageRepo) DeleteStorageConfig(storageID string) error {
 // SetDefaultStorageConfig 设置默认存储配置
 func (sr *StorageRepo) SetDefaultStorageConfig(storageID string) error {
 	// 先取消所有默认配置
-	err := sr.db.DB().Table(sr.StorageModel.TableName()).
+	err := sr.db.Database().Table(sr.StorageModel.TableName()).
 		Where("is_default = ?", 1).
 		Update("is_default", 0).Error
 	if err != nil {
@@ -227,7 +227,7 @@ func (sr *StorageRepo) SetDefaultStorageConfig(storageID string) error {
 	}
 
 	// 设置新的默认配置
-	err = sr.db.DB().Table(sr.StorageModel.TableName()).
+	err = sr.db.Database().Table(sr.StorageModel.TableName()).
 		Where("storage_id = ?", storageID).
 		Update("is_default", 1).Error
 	if err != nil {
