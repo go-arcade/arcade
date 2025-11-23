@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// Configuration options for creating a parser. Most options specify which
+// ParseOption Configuration options for creating a parser. Most options specify which
 // fields should be included, while others enable features. If a field is not
 // included the parser will assume a default value. These options do not change
 // the order fields are parse in.
@@ -43,13 +43,13 @@ var defaults = []string{
 	"*",
 }
 
-// A custom Parser that can be configured.
+// Parser A custom Parser that can be configured.
 type Parser struct {
 	options   ParseOption
 	optionals int
 }
 
-// Creates a custom Parser with custom options.
+// NewParser Creates a custom Parser with custom options.
 //
 //	// Standard parser without descriptors
 //	specParser := NewParser(Minute | Hour | Dom | Month | Dow)
@@ -83,23 +83,23 @@ func (p Parser) Parse(spec string) (Schedule, error) {
 	}
 
 	// Figure out how many fields we need
-	max := 0
+	m := 0
 	for _, place := range places {
 		if p.options&place > 0 {
-			max++
+			m++
 		}
 	}
-	min := max - p.optionals
+	i := m - p.optionals
 
 	// Split fields on whitespace
 	fields := strings.Fields(spec)
 
 	// Validate number of fields
-	if count := len(fields); count < min || count > max {
-		if min == max {
-			return nil, fmt.Errorf("expected exactly %d fields, found %d: %s", min, count, spec)
+	if count := len(fields); count < i || count > m {
+		if i == m {
+			return nil, fmt.Errorf("expected exactly %d fields, found %d: %s", i, count, spec)
 		}
-		return nil, fmt.Errorf("expected %d to %d fields, found %d: %s", min, max, count, spec)
+		return nil, fmt.Errorf("expected %d to %d fields, found %d: %s", i, m, count, spec)
 	}
 
 	// Fill in missing fields
@@ -119,9 +119,9 @@ func (p Parser) Parse(spec string) (Schedule, error) {
 		second     = field(fields[0], seconds)
 		minute     = field(fields[1], minutes)
 		hour       = field(fields[2], hours)
-		dayofmonth = field(fields[3], dom)
+		trimonthly = field(fields[3], dom)
 		month      = field(fields[4], months)
-		dayofweek  = field(fields[5], dow)
+		weekday    = field(fields[5], dow)
 	)
 	if err != nil {
 		return nil, err
@@ -131,9 +131,9 @@ func (p Parser) Parse(spec string) (Schedule, error) {
 		Second: second,
 		Minute: minute,
 		Hour:   hour,
-		Dom:    dayofmonth,
+		Dom:    trimonthly,
 		Month:  month,
-		Dow:    dayofweek,
+		Dow:    weekday,
 	}, nil
 }
 
@@ -184,7 +184,7 @@ func Parse(spec string) (Schedule, error) {
 	return defaultParser.Parse(spec)
 }
 
-// getField returns an Int with the bits set representing all of the times that
+// getField returns an Int with the bits set representing all the times that
 // the field represents or error parsing field value.  A "field" is a comma-separated
 // list of "ranges".
 func getField(field string, r bounds) (uint64, error) {

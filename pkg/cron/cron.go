@@ -39,7 +39,7 @@ type Job interface {
 
 // The Schedule describes a job's duty cycle.
 type Schedule interface {
-	// Return the next activation time, later than the given time.
+	// Next Return the next activation time, later than the given time.
 	// Next is invoked initially, and then each time the job is run.
 	Next(time.Time) time.Time
 }
@@ -118,7 +118,7 @@ func NewWithLocation(location *time.Location, ops ...OpOption) *Cron {
 	return c
 }
 
-// A wrapper that turns a func() into a cron.Job
+// FuncJob A wrapper that turns a func() into a cron.Job
 type FuncJob func()
 
 func (f FuncJob) Run() { f() }
@@ -135,7 +135,7 @@ func (c *Cron) AddFunc(spec string, cmd func(), names ...string) error {
 	return c.AddJob(spec, FuncJob(cmd), name)
 }
 
-// AddFunc adds a func to the Cron to be run on the given schedule.
+// AddOnceFunc adds a func to the Cron to be run on the given schedule.
 func (c *Cron) AddOnceFunc(spec string, cmd func(), names ...string) error {
 	var name string
 	if len(names) <= 0 {
@@ -147,7 +147,9 @@ func (c *Cron) AddOnceFunc(spec string, cmd func(), names ...string) error {
 	// Support Once run function.
 	onceCmd := func() {
 		cmd()
-		c.Remove(name)
+		if err := c.Remove(name); err != nil {
+			return
+		}
 	}
 
 	return c.AddJob(spec, FuncJob(onceCmd), name)
@@ -281,7 +283,7 @@ func (c *Cron) runWithRecovery(j Job, name string, t time.Time) {
 	// get distributed lock successfully before running job
 	if c.redisClient != nil {
 		ctx := context.Background()
-		key := "pipeline:crond:dlock:" + name + ":" + t.String()
+		key := "pipeline:cron:lock:" + name + ":" + t.String()
 		// use SET NX EX to get distributed lock, set expiration time to 5 minutes
 		locked, err := c.redisClient.SetNX(ctx, key, "1", 5*time.Minute).Result()
 		if err != nil {
@@ -389,7 +391,7 @@ func (c *Cron) Stop() {
 	c.running = false
 }
 
-// Stop timer and all connection
+// Close Stop timer and all connection
 func (c *Cron) Close() {
 	c.Stop()
 }

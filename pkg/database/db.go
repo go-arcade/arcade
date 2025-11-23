@@ -6,7 +6,7 @@ import (
 
 // IDatabase 定义数据库接口（抽象）
 type IDatabase interface {
-	// DB 返回底层的 *gorm.DB
+	// Database 返回底层的 *gorm.DB
 	Database() *gorm.DB
 }
 
