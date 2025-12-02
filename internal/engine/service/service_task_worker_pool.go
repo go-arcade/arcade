@@ -25,7 +25,7 @@ var contextPool = sync.Pool{
 
 // statsUpdatePool 统计更新临时结构池
 var statsUpdatePool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		return &statsUpdate{}
 	},
 }
@@ -36,7 +36,7 @@ type statsUpdate struct {
 	failed    bool
 	cancelled bool
 	duration  time.Duration
-	activeInc int
+	// activeInc int
 	activeDec int
 }
 
@@ -457,21 +457,21 @@ type PriorityQueue struct {
 	index map[string]int // taskId -> index in tasks
 }
 
-// taskSlicePool 任务切片对象池
-var taskSlicePool = sync.Pool{
-	New: func() interface{} {
-		slice := make([]Task, 0, 100) // 预分配容量
-		return &slice
-	},
-}
+// // taskSlicePool 任务切片对象池
+// var taskSlicePool = sync.Pool{
+// 	New: func() any {
+// 		slice := make([]Task, 0, 100) // 预分配容量
+// 		return &slice
+// 	},
+// }
 
-// indexMapPool 索引映射对象池
-var indexMapPool = sync.Pool{
-	New: func() interface{} {
-		m := make(map[string]int, 100) // 预分配容量
-		return &m
-	},
-}
+// // indexMapPool 索引映射对象池
+// var indexMapPool = sync.Pool{
+// 	New: func() any {
+// 		m := make(map[string]int, 100) // 预分配容量
+// 		return &m
+// 	},
+// }
 
 // NewPriorityQueue 创建优先级队列（使用对象池）
 func NewPriorityQueue() *PriorityQueue {

@@ -280,7 +280,7 @@ func (s *UserPermissionsService) getUserTeams(ctx context.Context, userId string
 func (s *UserPermissionsService) getUserProjects(ctx context.Context, userId string) ([]ProjectPermissionSummary, error) {
 	// 1. 获取用户直接参与的项目
 	var projectMembers []model.ProjectMember
-	err := s.db.Database().Where("user_id = ?", userId).Find(&projectMembers).Error
+	err := s.db.Database().WithContext(ctx).Where("user_id = ?", userId).Find(&projectMembers).Error
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +290,7 @@ func (s *UserPermissionsService) getUserProjects(ctx context.Context, userId str
 	// 处理直接项目成员关系
 	for _, pm := range projectMembers {
 		var projectEntity model.Project
-		if err := s.db.Database().Where("project_id = ?", pm.ProjectId).First(&projectEntity).Error; err != nil {
+		if err := s.db.Database().WithContext(ctx).Where("project_id = ?", pm.ProjectId).First(&projectEntity).Error; err != nil {
 			continue
 		}
 
@@ -318,11 +318,11 @@ func (s *UserPermissionsService) getUserProjects(ctx context.Context, userId str
 
 	// 2. 通过团队访问的项目
 	var teamMembers []model.TeamMember
-	s.db.Database().Where("user_id = ?", userId).Find(&teamMembers)
+	s.db.Database().WithContext(ctx).Where("user_id = ?", userId).Find(&teamMembers)
 
 	for _, tm := range teamMembers {
 		var teamAccesses []model.ProjectTeamAccess
-		s.db.Database().Where("team_id = ?", tm.TeamId).Find(&teamAccesses)
+		s.db.Database().WithContext(ctx).Where("team_id = ?", tm.TeamId).Find(&teamAccesses)
 
 		for _, ta := range teamAccesses {
 			// 如果已经有直接权限，比较优先级
@@ -343,7 +343,7 @@ func (s *UserPermissionsService) getUserProjects(ctx context.Context, userId str
 
 			// 新的项目访问
 			var projectEntity model.Project
-			if err := s.db.Database().Where("project_id = ?", ta.ProjectId).First(&projectEntity).Error; err != nil {
+			if err := s.db.Database().WithContext(ctx).Where("project_id = ?", ta.ProjectId).First(&projectEntity).Error; err != nil {
 				continue
 			}
 
@@ -373,11 +373,11 @@ func (s *UserPermissionsService) getUserProjects(ctx context.Context, userId str
 
 	// 3. 通过组织访问的项目（access_level = org）
 	var orgMembers []model.OrganizationMember
-	s.db.Database().Where("user_id = ? AND status = ?", userId, model.OrgMemberStatusActive).Find(&orgMembers)
+	s.db.Database().WithContext(ctx).Where("user_id = ? AND status = ?", userId, model.OrgMemberStatusActive).Find(&orgMembers)
 
 	for _, om := range orgMembers {
 		var orgProjects []model.Project
-		s.db.Database().Where("org_id = ? AND access_level = ?", om.OrgId, model.AccessLevelOrg).Find(&orgProjects)
+		s.db.Database().WithContext(ctx).Where("org_id = ? AND access_level = ?", om.OrgId, model.AccessLevelOrg).Find(&orgProjects)
 
 		for _, projectEntity := range orgProjects {
 			if _, exists := projectMap[projectEntity.ProjectId]; exists {
