@@ -1,82 +1,52 @@
-// Package plugin type definitions
+// Package plugin type definitions and helper functions
+// Types are generated from proto files, this file only contains helper functions
 package plugin
 
-import "encoding/json"
+import (
+	"encoding/json"
 
-// PluginType is the plugin type enumeration
-type PluginType string
-
-const (
-	// TypeSource Source plugin type
-	TypeSource PluginType = "source"
-	// TypeBuild Build plugin type
-	TypeBuild PluginType = "build"
-	// TypeTest Test plugin type
-	TypeTest PluginType = "test"
-	// TypeDeploy Deploy plugin type
-	TypeDeploy PluginType = "deploy"
-	// TypeSecurity Security plugin type
-	TypeSecurity PluginType = "security"
-	// TypeNotify Notify plugin type
-	TypeNotify PluginType = "notify"
-	// TypeApproval Approval plugin type
-	TypeApproval PluginType = "approval"
-	// TypeStorage Storage plugin type
-	TypeStorage PluginType = "storage"
-	// TypeAnalytics Analytics plugin type
-	TypeAnalytics PluginType = "analytics"
-	// TypeIntegration Integration plugin type
-	TypeIntegration PluginType = "integration"
-	// TypeCustom Custom plugin type
-	TypeCustom PluginType = "custom"
+	pluginv1 "github.com/go-arcade/arcade/api/plugin/v1"
 )
 
-// PluginConfig represents the plugin configuration
-type PluginConfig struct {
-	Name        string            `json:"name"`
-	Version     string            `json:"version"`
-	Type        string            `json:"type"`
-	Config      json.RawMessage   `json:"config"`
-	Environment map[string]string `json:"environment"`
-	TaskID      string            `json:"task_id"` // Task ID for log correlation
-	LogHandlers []LogHandler      `json:"-"`       // Log handlers (not serialized)
-}
+// Type aliases for convenience (using proto-generated types)
+type (
+	// PluginInfo is an alias for proto-generated PluginInfo
+	PluginInfo = pluginv1.PluginInfo
+	// PluginMetrics is an alias for proto-generated PluginMetrics
+	PluginMetrics = pluginv1.PluginMetrics
+	// PluginConfig is an alias for proto-generated PluginConfig
+	PluginConfig = pluginv1.PluginConfig
+	// RPCError is an alias for proto-generated RPCError
+	RPCError = pluginv1.RPCError
+	// PluginType is an alias for proto-generated PluginType
+	PluginType = pluginv1.PluginType
+)
 
-// PluginInfo contains plugin information
-type PluginInfo struct {
-	Name        string `json:"name"`
-	Version     string `json:"version"`
-	Type        string `json:"type"`
-	Description string `json:"description"`
-	Author      string `json:"author"`
-	Homepage    string `json:"homepage,omitempty"`
-}
-
-// PluginMetrics contains plugin runtime metrics
-type PluginMetrics struct {
-	Name          string                 `json:"name"`
-	Type          string                 `json:"type"`
-	Version       string                 `json:"version"`
-	Status        string                 `json:"status"`
-	Uptime        int64                  `json:"uptime"`
-	CallCount     int64                  `json:"call_count"`
-	ErrorCount    int64                  `json:"error_count"`
-	LastError     string                 `json:"last_error,omitempty"`
-	LastCallTime  int64                  `json:"last_call_time"`
-	CustomMetrics map[string]interface{} `json:"custom_metrics,omitempty"`
-}
-
-// RPCError represents an RPC error structure
-type RPCError struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-	Data    string `json:"data,omitempty"`
-}
-
-// Error implements the error interface
-func (e *RPCError) Error() string {
-	return e.Message
-}
+// Plugin type constants (using proto-generated enum values)
+const (
+	// TypeSource Source plugin type
+	TypeSource PluginType = pluginv1.PluginType_PLUGIN_TYPE_SOURCE
+	// TypeBuild Build plugin type
+	TypeBuild PluginType = pluginv1.PluginType_PLUGIN_TYPE_BUILD
+	// TypeTest Test plugin type
+	TypeTest PluginType = pluginv1.PluginType_PLUGIN_TYPE_TEST
+	// TypeDeploy Deploy plugin type
+	TypeDeploy PluginType = pluginv1.PluginType_PLUGIN_TYPE_DEPLOY
+	// TypeSecurity Security plugin type
+	TypeSecurity PluginType = pluginv1.PluginType_PLUGIN_TYPE_SECURITY
+	// TypeNotify Notify plugin type
+	TypeNotify PluginType = pluginv1.PluginType_PLUGIN_TYPE_NOTIFY
+	// TypeApproval Approval plugin type
+	TypeApproval PluginType = pluginv1.PluginType_PLUGIN_TYPE_APPROVAL
+	// TypeStorage Storage plugin type
+	TypeStorage PluginType = pluginv1.PluginType_PLUGIN_TYPE_STORAGE
+	// TypeAnalytics Analytics plugin type
+	TypeAnalytics PluginType = pluginv1.PluginType_PLUGIN_TYPE_ANALYTICS
+	// TypeIntegration Integration plugin type
+	TypeIntegration PluginType = pluginv1.PluginType_PLUGIN_TYPE_INTEGRATION
+	// TypeCustom Custom plugin type
+	TypeCustom PluginType = pluginv1.PluginType_PLUGIN_TYPE_CUSTOM
+)
 
 // AllPluginTypes returns all supported plugin types
 func AllPluginTypes() []PluginType {
@@ -98,11 +68,71 @@ func AllPluginTypes() []PluginType {
 // IsValidPluginType checks if a plugin type is valid
 func IsValidPluginType(t string) bool {
 	for _, validType := range AllPluginTypes() {
-		if string(validType) == t {
+		if PluginTypeToString(validType) == t {
 			return true
 		}
 	}
 	return false
+}
+
+// PluginTypeToString converts PluginType enum to string
+func PluginTypeToString(pt PluginType) string {
+	switch pt {
+	case pluginv1.PluginType_PLUGIN_TYPE_SOURCE:
+		return "source"
+	case pluginv1.PluginType_PLUGIN_TYPE_BUILD:
+		return "build"
+	case pluginv1.PluginType_PLUGIN_TYPE_TEST:
+		return "test"
+	case pluginv1.PluginType_PLUGIN_TYPE_DEPLOY:
+		return "deploy"
+	case pluginv1.PluginType_PLUGIN_TYPE_SECURITY:
+		return "security"
+	case pluginv1.PluginType_PLUGIN_TYPE_NOTIFY:
+		return "notify"
+	case pluginv1.PluginType_PLUGIN_TYPE_APPROVAL:
+		return "approval"
+	case pluginv1.PluginType_PLUGIN_TYPE_STORAGE:
+		return "storage"
+	case pluginv1.PluginType_PLUGIN_TYPE_ANALYTICS:
+		return "analytics"
+	case pluginv1.PluginType_PLUGIN_TYPE_INTEGRATION:
+		return "integration"
+	case pluginv1.PluginType_PLUGIN_TYPE_CUSTOM:
+		return "custom"
+	default:
+		return "unknown"
+	}
+}
+
+// StringToPluginType converts string to PluginType enum
+func StringToPluginType(s string) PluginType {
+	switch s {
+	case "source":
+		return pluginv1.PluginType_PLUGIN_TYPE_SOURCE
+	case "build":
+		return pluginv1.PluginType_PLUGIN_TYPE_BUILD
+	case "test":
+		return pluginv1.PluginType_PLUGIN_TYPE_TEST
+	case "deploy":
+		return pluginv1.PluginType_PLUGIN_TYPE_DEPLOY
+	case "security":
+		return pluginv1.PluginType_PLUGIN_TYPE_SECURITY
+	case "notify":
+		return pluginv1.PluginType_PLUGIN_TYPE_NOTIFY
+	case "approval":
+		return pluginv1.PluginType_PLUGIN_TYPE_APPROVAL
+	case "storage":
+		return pluginv1.PluginType_PLUGIN_TYPE_STORAGE
+	case "analytics":
+		return pluginv1.PluginType_PLUGIN_TYPE_ANALYTICS
+	case "integration":
+		return pluginv1.PluginType_PLUGIN_TYPE_INTEGRATION
+	case "custom":
+		return pluginv1.PluginType_PLUGIN_TYPE_CUSTOM
+	default:
+		return pluginv1.PluginType_PLUGIN_TYPE_UNSPECIFIED
+	}
 }
 
 // GetPluginTypeDescription returns a description for a plugin type
@@ -123,19 +153,88 @@ func GetPluginTypeDescription(t PluginType) string {
 	return descriptions[t]
 }
 
-// String returns the string representation of PluginType
-func (pt PluginType) String() string {
-	return string(pt)
+// PluginTypeString returns the string representation of PluginType
+func PluginTypeString(pt PluginType) string {
+	return PluginTypeToString(pt)
 }
 
-// Validate validates the PluginType
-func (pt PluginType) Validate() error {
-	if !IsValidPluginType(string(pt)) {
-		return &RPCError{
+// ValidatePluginType validates the PluginType
+func ValidatePluginType(pt PluginType) error {
+	if pt == pluginv1.PluginType_PLUGIN_TYPE_UNSPECIFIED {
+		return RPCErrorToError(&RPCError{
 			Code:    400,
 			Message: "invalid plugin type",
-			Data:    string(pt),
-		}
+			Data:    PluginTypeToString(pt),
+		})
 	}
 	return nil
+}
+
+// RPCErrorToError converts RPCError to error
+func RPCErrorToError(rpcErr *RPCError) error {
+	if rpcErr == nil {
+		return nil
+	}
+	return &rpcErrorWrapper{rpcErr: rpcErr}
+}
+
+// rpcErrorWrapper wraps RPCError to implement error interface
+type rpcErrorWrapper struct {
+	rpcErr *RPCError
+}
+
+func (e *rpcErrorWrapper) Error() string {
+	if e.rpcErr == nil {
+		return ""
+	}
+	return e.rpcErr.GetMessage()
+}
+
+func (e *rpcErrorWrapper) Unwrap() error {
+	// Return nil if rpcErr is nil, otherwise return the RPCError itself
+	// Since RPCError doesn't implement error, we return nil
+	// Callers can access the RPCError directly via the wrapper
+	return nil
+}
+
+// GetRPCError returns the underlying RPCError
+func (e *rpcErrorWrapper) GetRPCError() *RPCError {
+	return e.rpcErr
+}
+
+// RuntimePluginConfig represents the plugin runtime configuration
+// This is used internally and includes non-serializable fields like LogHandlers
+type RuntimePluginConfig struct {
+	Name        string
+	Version     string
+	Type        string
+	Config      json.RawMessage
+	Environment map[string]string
+	TaskID      string
+	LogHandlers []LogHandler // Log handlers (not serialized)
+}
+
+// ToProto converts RuntimePluginConfig to proto PluginConfig
+func (c *RuntimePluginConfig) ToProto() *pluginv1.PluginConfig {
+	return &pluginv1.PluginConfig{
+		Name:        c.Name,
+		Version:     c.Version,
+		Type:        c.Type,
+		Config:      c.Config,
+		Environment: c.Environment,
+		TaskId:      c.TaskID,
+	}
+}
+
+// FromProto creates RuntimePluginConfig from proto PluginConfig
+func (c *RuntimePluginConfig) FromProto(pc *pluginv1.PluginConfig) {
+	if pc == nil {
+		return
+	}
+	c.Name = pc.Name
+	c.Version = pc.Version
+	c.Type = pc.Type
+	c.Config = pc.Config
+	c.Environment = pc.Environment
+	c.TaskID = pc.TaskId
 }

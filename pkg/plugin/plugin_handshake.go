@@ -1,113 +1,74 @@
-// Package plugin provides a plugin system implementation based on HashiCorp go-plugin
+// Package plugin provides a plugin system implementation based on HashiCorp go-plugin with gRPC
 // Supports multiple plugin types: CI/CD, security, notification, storage, etc.
 package plugin
 
 import (
-	"encoding/json"
+	"context"
+	"errors"
 	"net/rpc"
 
+	pluginv1 "github.com/go-arcade/arcade/api/plugin/v1"
 	"github.com/hashicorp/go-plugin"
+	"google.golang.org/grpc"
 )
 
-// RPCHandshake is the RPC handshake configuration (recommended new version)
+// PluginHandshake is the gRPC handshake configuration
 // Protocol version 2, provides better security and functionality
-var RPCHandshake = plugin.HandshakeConfig{
+var PluginHandshake = plugin.HandshakeConfig{
 	ProtocolVersion:  2,
-	MagicCookieKey:   "ARCADE_RPC_PLUGIN",
-	MagicCookieValue: "arcade-rpc-plugin-protocol",
+	MagicCookieKey:   "ARCADE_GRPC_PLUGIN",
+	MagicCookieValue: "arcade-grpc-plugin-protocol",
 }
 
-// RPCPluginHandler is the RPC plugin handler
-type RPCPluginHandler struct {
-	Impl       interface{}
-	DbAccessor DatabaseAccessor
+// GRPCPlugin is the gRPC plugin handler
+type GRPCPlugin struct {
+	Impl any
+	DB   DB
 }
 
-// Server returns the server-side plugin
-func (h *RPCPluginHandler) Server(*plugin.MuxBroker) (interface{}, error) {
-	// If impl is Server, use it directly
-	if server, ok := h.Impl.(*Server); ok {
-		return server, nil
+// Server returns the server-side plugin (required by plugin.Plugin interface, not used for gRPC)
+func (h *GRPCPlugin) Server(*plugin.MuxBroker) (interface{}, error) {
+	return nil, errors.New("RPC protocol not supported, use gRPC protocol instead")
+}
+
+// Client returns the client-side plugin (required by plugin.Plugin interface, not used for gRPC)
+func (h *GRPCPlugin) Client(*plugin.MuxBroker, *rpc.Client) (interface{}, error) {
+	return nil, errors.New("RPC protocol not supported, use gRPC protocol instead")
+}
+
+// GRPCServer returns the server-side plugin (for gRPC protocol)
+func (h *GRPCPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
+	var server *Server
+	if srv, ok := h.Impl.(*Server); ok {
+		server = srv
+	} else {
+		server = &Server{
+			info:       &PluginInfo{},
+			instance:   h.Impl,
+			dbAccessor: h.DB,
+		}
 	}
-	// Otherwise create a wrapper
-	return &RPCPluginServerWrapper{
-		impl:       h.Impl,
-		dbAccessor: h.DbAccessor,
-	}, nil
+	// Register gRPC service
+	pluginv1.RegisterPluginServiceServer(s, server)
+	return nil
 }
 
-// Client returns the client-side plugin
-func (h *RPCPluginHandler) Client(b *plugin.MuxBroker, c *rpc.Client) (interface{}, error) {
-	return &RPCPluginClientWrapper{client: c}, nil
+// GRPCClient returns the client-side plugin (for gRPC protocol)
+func (h *GRPCPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
+	return &GRPCPluginClientWrapper{conn: c}, nil
 }
 
-// RPCPluginServerWrapper is the RPC plugin server wrapper
-type RPCPluginServerWrapper struct {
-	impl       interface{}
-	dbAccessor DatabaseAccessor // Database accessor interface
+// GRPCPluginClientWrapper is the gRPC plugin client wrapper
+type GRPCPluginClientWrapper struct {
+	conn *grpc.ClientConn
 }
 
-// Ping is the ping method
-func (w *RPCPluginServerWrapper) Ping(args string, reply *string) error {
-	server := &Server{
-		info:       PluginInfo{},
-		instance:   w.impl,
-		dbAccessor: w.dbAccessor,
-	}
-	return server.Ping(args, reply)
-}
-
-func (w *RPCPluginServerWrapper) GetInfo(args string, reply *PluginInfo) error {
-	server := &Server{
-		info:       PluginInfo{},
-		instance:   w.impl,
-		dbAccessor: w.dbAccessor,
-	}
-	return server.GetInfo(args, reply)
-}
-
-func (w *RPCPluginServerWrapper) GetMetrics(args string, reply *PluginMetrics) error {
-	server := &Server{
-		info:       PluginInfo{},
-		instance:   w.impl,
-		dbAccessor: w.dbAccessor,
-	}
-	return server.GetMetrics(args, reply)
-}
-
-func (w *RPCPluginServerWrapper) Init(config json.RawMessage, reply *string) error {
-	server := &Server{
-		info:       PluginInfo{},
-		instance:   w.impl,
-		dbAccessor: w.dbAccessor,
-	}
-	return server.Init(config, reply)
-}
-
-func (w *RPCPluginServerWrapper) Cleanup(args string, reply *string) error {
-	server := &Server{
-		info:       PluginInfo{},
-		instance:   w.impl,
-		dbAccessor: w.dbAccessor,
-	}
-	return server.Cleanup(args, reply)
-}
-
-// Note: Plugin-specific methods (Send, Build, Deploy, etc.) are defined in each plugin's RPC server
-// They use the unified signature: MethodName(args *MethodArgs, reply *MethodResult) error
-// The wrapper forwards these methods directly to the plugin's RPC server implementation
-
-// RPCPluginClientWrapper is the RPC plugin client wrapper
-type RPCPluginClientWrapper struct {
-	client *rpc.Client
-}
-
-// GetClient returns the underlying RPC client
-func (w *RPCPluginClientWrapper) GetClient() *rpc.Client {
-	return w.client
+// GetConn returns the underlying gRPC connection
+func (w *GRPCPluginClientWrapper) GetConn() *grpc.ClientConn {
+	return w.conn
 }
 
 // PluginMap is the plugin mapping
 var PluginMap = map[string]plugin.Plugin{
-	"plugin": &RPCPluginHandler{},
+	"plugin": &GRPCPlugin{},
 }

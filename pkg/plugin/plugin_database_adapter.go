@@ -9,9 +9,9 @@ import (
 	"github.com/go-arcade/arcade/pkg/database"
 )
 
-// DatabaseAccessor defines database capabilities accessible by plugins
+// DB defines database capabilities accessible by plugins
 // Plugins access database through this interface without directly depending on internal packages
-type DatabaseAccessor interface {
+type DB interface {
 	// QueryConfig queries plugin configuration
 	// pluginID: plugin ID
 	// Returns JSON string of plugin configuration
@@ -28,22 +28,22 @@ type DatabaseAccessor interface {
 	ListConfigs(ctx context.Context) (string, error)
 }
 
-// PluginDBAccessorAdapter is an adapter that adapts internal/repo implementation to pkg/plugin.DatabaseAccessor interface
+// PluginDBAdapter is an adapter that adapts internal/repo implementation to pkg/plugin.DatabaseAccessor interface
 // This avoids direct import of pkg/plugin by internal/repo, preventing circular dependencies
-type PluginDBAccessorAdapter struct {
+type PluginDBAdapter struct {
 	db database.IDatabase
 }
 
-// NewPluginDBAccessorAdapter creates a plugin database accessor adapter
+// NewPluginDBAdapter creates a plugin database accessor adapter
 // Directly receives database.IDatabase to avoid circular dependencies
-func NewPluginDBAccessorAdapter(db database.IDatabase) DatabaseAccessor {
-	return &PluginDBAccessorAdapter{
+func NewPluginDBAdapter(db database.IDatabase) DB {
+	return &PluginDBAdapter{
 		db: db,
 	}
 }
 
 // QueryConfig queries plugin configuration
-func (a *PluginDBAccessorAdapter) QueryConfig(ctx context.Context, pluginID string) (string, error) {
+func (a *PluginDBAdapter) QueryConfig(ctx context.Context, pluginID string) (string, error) {
 	if a.db == nil {
 		return "", fmt.Errorf("database is not initialized")
 	}
@@ -72,7 +72,7 @@ func (a *PluginDBAccessorAdapter) QueryConfig(ctx context.Context, pluginID stri
 }
 
 // QueryConfigByKey queries configuration value by key
-func (a *PluginDBAccessorAdapter) QueryConfigByKey(ctx context.Context, pluginID string, key string) (string, error) {
+func (a *PluginDBAdapter) QueryConfigByKey(ctx context.Context, pluginID string, key string) (string, error) {
 	if a.db == nil {
 		return "", fmt.Errorf("database is not initialized")
 	}
@@ -111,7 +111,7 @@ func (a *PluginDBAccessorAdapter) QueryConfigByKey(ctx context.Context, pluginID
 }
 
 // ListConfigs lists all plugin configurations
-func (a *PluginDBAccessorAdapter) ListConfigs(ctx context.Context) (string, error) {
+func (a *PluginDBAdapter) ListConfigs(ctx context.Context) (string, error) {
 	if a.db == nil {
 		return "", fmt.Errorf("database is not initialized")
 	}

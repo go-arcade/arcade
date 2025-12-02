@@ -6,12 +6,13 @@ Arcade 与 Agent 交互的 gRPC API 定义，使用 Protocol Buffers 定义，�
 
 ## 概述
 
-本目录包含了 Arcade 与 Agent 交互的所有的 gRPC API 定义，分为四个主要服务模块：
+本目录包含了 Arcade 与 Agent 交互的所有的 gRPC API 定义，分为五个主要服务模块：
 
 - **Agent Service** - Agent 端与 Server 端通信的核心接口
 - **Pipeline Service** - 流水线管理接口
 - **Task Service** - 任务管理接口
 - **Stream Service** - 实时数据流传输接口
+- **Plugin Service** - 插件通信接口
 
 ## 目录结构
 
@@ -33,10 +34,16 @@ api/
 │   ├── stream.proto
 │   ├── stream.pb.go
 │   └── stream_grpc.pb.go
-└── task/v1/                    # Task 服务 API
-    ├── task.proto
-    ├── task.pb.go
-    └── task_grpc.pb.go
+├── task/v1/                    # Task 服务 API
+│   ├── task.proto
+│   ├── task.pb.go
+│   └── task_grpc.pb.go
+└── plugin/v1/                  # Plugin 服务 API
+    ├── plugin.proto
+    ├── plugin_type.proto
+    ├── plugin.pb.go
+    ├── plugin_type.pb.go
+    └── plugin_grpc.pb.go
 ```
 
 ## API 服务说明
@@ -105,6 +112,133 @@ Agent 端与 Server 端通信的主要接口，负责 Agent 的生命周期管�
 - **Agent 通道** (`AgentChannel`) - Agent 与 Server 双向通信
 - **Agent 状态流** (`StreamAgentStatus`) - 实时监控 Agent 状态
 - **事件流** (`StreamEvents`) - 推送系统事件
+
+### 5. Plugin Service (`plugin/v1`)
+
+插件通信接口，提供统一的插件执行和管理能力。
+
+**主要功能：**
+- **健康检查** (`Ping`) - 检查插件健康状态
+- **插件信息** (`GetInfo`) - 获取插件元数据（名称、版本、类型、描述）
+- **插件指标** (`GetMetrics`) - 获取插件运行时指标（调用次数、错误次数、运行时间）
+- **插件初始化** (`Init`) - 使用配置初始化插件
+- **插件清理** (`Cleanup`) - 清理插件资源
+- **动作执行** (`Execute`) - 所有插件操作的统一入口点
+- **配置管理** (`ConfigQuery`, `ConfigQueryByKey`, `ConfigList`) - 查询插件配置
+
+**支持的插件类型：**
+- `SOURCE` - 源码管理插件（clone、pull、checkout 等）
+- `BUILD` - 构建插件（编译、打包、生成产物等）
+- `TEST` - 测试插件（单元测试、集成测试、覆盖率等）
+- `DEPLOY` - 部署插件（部署、回滚、扩缩容等）
+- `SECURITY` - 安全插件（漏洞扫描、合规检查等）
+- `NOTIFY` - 通知插件（邮件、Webhook、即时消息等）
+- `APPROVAL` - 审批插件（创建审批、批准、拒绝等）
+- `STORAGE` - 存储插件（保存、加载、删除、列表等）
+- `ANALYTICS` - 分析插件（事件追踪、查询、指标、报告等）
+- `INTEGRATION` - 集成插件（连接、调用、订阅等）
+- `CUSTOM` - 自定义插件（特殊用途功能）
+
+**核心特性：**
+- 统一的基于动作的执行模型
+- 支持动作注册和动态路由
+- 主机提供的能力（数据库访问、存储访问）
+- 完善的错误处理机制（结构化错误码）
+- 运行时指标和监控支持
+
+### Plugin Service 使用示例
+
+#### 执行插件动作
+
+```go
+// 执行插件动作
+req := &pluginv1.ExecuteRequest{
+    Action: "send",  // 动作名称
+    Params: []byte(`{"message": "Hello World"}`),  // 动作参数（JSON）
+    Opts:   []byte(`{"timeout": 30}`),  // 可选覆盖（JSON）
+}
+
+resp, err := client.Execute(context.Background(), req)
+if err != nil {
+    log.Fatalf("执行插件动作失败: %v", err)
+}
+
+if resp.Error != nil {
+    log.Fatalf("插件执行错误: %s (代码: %d)", resp.Error.Message, resp.Error.Code)
+}
+
+// 解析结果
+var result map[string]interface{}
+json.Unmarshal(resp.Result, &result)
+log.Printf("插件执行结果: %+v", result)
+```
+
+#### 获取插件信息
+
+```go
+// 获取插件信息
+infoResp, err := client.GetInfo(context.Background(), &pluginv1.GetInfoRequest{})
+if err != nil {
+    log.Fatalf("获取插件信息失败: %v", err)
+}
+
+info := infoResp.Info
+log.Printf("插件: %s v%s (%s)", info.Name, info.Version, info.Type)
+log.Printf("描述: %s", info.Description)
+```
+
+#### 查询插件配置
+
+```go
+// 查询插件配置
+configResp, err := client.ConfigQuery(context.Background(), &pluginv1.ConfigQueryRequest{
+    PluginId: "notify",
+})
+if err != nil {
+    log.Fatalf("查询配置失败: %v", err)
+}
+
+if configResp.Error != nil {
+    log.Fatalf("配置查询错误: %s", configResp.Error.Message)
+}
+
+var config map[string]interface{}
+json.Unmarshal(configResp.Config, &config)
+log.Printf("插件配置: %+v", config)
+```
+
+#### 标准动作名称
+
+插件使用统一的基于动作的执行模型。常见的动作名称包括：
+
+**源码插件动作：**
+- `clone` - 克隆仓库
+- `pull` - 拉取最新更改
+- `checkout` - 检出特定分支/提交
+- `commit.get` - 获取提交信息
+- `commit.diff` - 获取提交差异
+
+**构建插件动作：**
+- `build` - 构建项目
+- `artifacts.get` - 获取构建产物
+- `clean` - 清理构建产物
+
+**通知插件动作：**
+- `send` - 发送通知
+- `send.template` - 使用模板发送通知
+- `send.batch` - 批量发送通知
+
+**存储插件动作：**
+- `save` - 保存数据
+- `load` - 加载数据
+- `delete` - 删除数据
+- `list` - 列出项目
+- `exists` - 检查项目是否存在
+
+**主机提供的动作：**
+- `config.query` - 查询插件配置
+- `config.query.key` - 按 key 查询配置
+- `config.list` - 列出所有配置
 
 ## 快速开始
 

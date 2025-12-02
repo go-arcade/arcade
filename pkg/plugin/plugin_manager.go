@@ -1,12 +1,11 @@
-// Package plugin provides plugin system management based on HashiCorp go-plugin
 package plugin
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/rpc"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,8 +13,10 @@ import (
 	"sync"
 	"time"
 
+	pluginv1 "github.com/go-arcade/arcade/api/plugin/v1"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/hashicorp/go-plugin"
+	"google.golang.org/grpc"
 )
 
 // Manager is the plugin manager
@@ -31,8 +32,8 @@ type Manager struct {
 	config *ManagerConfig
 	// Plugin handler mapping
 	handlers map[string]plugin.Plugin
-	// Database accessor
-	dbAccessor DatabaseAccessor
+	// Database adapter
+	db DB
 }
 
 // ManagerConfig is the plugin manager configuration
@@ -89,23 +90,23 @@ func (w *logWriter) Write(p []byte) (n int, err error) {
 // NewManager creates a new plugin manager
 func NewManager(config *ManagerConfig) *Manager {
 	return &Manager{
-		plugins:    make(map[string]*Client),
-		clients:    make(map[string]*plugin.Client),
-		config:     config,
-		handlers:   make(map[string]plugin.Plugin),
-		dbAccessor: nil, // Will be set via SetDatabaseAccessor later
+		plugins:  make(map[string]*Client),
+		clients:  make(map[string]*plugin.Client),
+		config:   config,
+		handlers: make(map[string]plugin.Plugin),
+		db:       nil, // Will be set via SetDatabaseAccessor later
 	}
 }
 
 // SetDatabaseAccessor sets the database accessor
-func (m *Manager) SetDatabaseAccessor(accessor DatabaseAccessor) {
+func (m *Manager) SetDatabaseAccessor(db DB) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.dbAccessor = accessor
+	m.db = db
 }
 
 // RegisterPlugin registers a plugin
-func (m *Manager) RegisterPlugin(name string, pluginPath string, config PluginConfig) error {
+func (m *Manager) RegisterPlugin(name string, pluginPath string, config *RuntimePluginConfig) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -113,7 +114,7 @@ func (m *Manager) RegisterPlugin(name string, pluginPath string, config PluginCo
 }
 
 // registerPluginLocked registers a plugin (internal, assumes lock is already held)
-func (m *Manager) registerPluginLocked(name string, pluginPath string, config PluginConfig) error {
+func (m *Manager) registerPluginLocked(name string, pluginPath string, config *RuntimePluginConfig) error {
 	// Check if plugin already exists
 	if _, exists := m.plugins[name]; exists {
 		return fmt.Errorf("plugin %s already registered", name)
@@ -148,7 +149,7 @@ func (m *Manager) registerPluginLocked(name string, pluginPath string, config Pl
 		HandshakeConfig: m.config.HandshakeConfig,
 		Plugins:         m.getPluginMap(),
 		AllowedProtocols: []plugin.Protocol{
-			plugin.ProtocolNetRPC,
+			plugin.ProtocolGRPC,
 		},
 		SyncStdout: stdoutWriter,
 		SyncStderr: stderrWriter,
@@ -161,58 +162,71 @@ func (m *Manager) registerPluginLocked(name string, pluginPath string, config Pl
 		return fmt.Errorf("connect to plugin %s: %w", name, err)
 	}
 
-	// Get plugin instance
+	// Get plugin instance (gRPC connection)
 	raw, err := rpcClient.Dispense("plugin")
 	if err != nil {
 		client.Kill()
 		return fmt.Errorf("dispense plugin %s: %w", name, err)
 	}
 
-	// Get RPC client wrapper
-	var rpcClientInstance *rpc.Client
-	if wrapper, ok := raw.(*RPCPluginClientWrapper); ok {
-		rpcClientInstance = wrapper.GetClient()
-		log.Debugf("got RPC client from wrapper for plugin %s", name)
+	// Get gRPC connection from wrapper
+	var grpcConn *grpc.ClientConn
+	if wrapper, ok := raw.(*GRPCPluginClientWrapper); ok {
+		grpcConn = wrapper.GetConn()
+		log.Debugf("got gRPC connection from wrapper for plugin %s", name)
 	} else {
-		log.Errorf("dispensed plugin %s is not a RPCPluginClientWrapper: %T", name, raw)
+		log.Errorf("dispensed plugin %s is not a GRPCPluginClientWrapper: %T", name, raw)
 		client.Kill()
-		return fmt.Errorf("invalid plugin type for %s: expected RPCPluginClientWrapper, got %T", name, raw)
+		return fmt.Errorf("invalid plugin type for %s: expected GRPCPluginClientWrapper, got %T", name, raw)
 	}
 
+	// Create gRPC service client
+	grpcServiceClient := pluginv1.NewPluginServiceClient(grpcConn)
+
 	// Get plugin info from the plugin itself
-	var pluginInfo PluginInfo
-	if err := rpcClientInstance.Call("Plugin.GetInfo", "", &pluginInfo); err != nil {
+	ctx := context.Background()
+	infoResp, err := grpcServiceClient.GetInfo(ctx, &pluginv1.GetInfoRequest{})
+	var pluginInfo *PluginInfo
+	if err != nil {
 		log.Warnf("failed to get plugin info for %s, using config values: %v", name, err)
 		// Fallback to config values
-		pluginInfo = PluginInfo{
+		pluginInfo = &PluginInfo{
 			Name:    config.Name,
 			Type:    config.Type,
 			Version: config.Version,
 		}
 	} else {
-		log.Infof("retrieved plugin info from %s: type=%s, version=%s", name, pluginInfo.Type, pluginInfo.Version)
+		pluginInfo = infoResp.Info
+		if pluginInfo == nil {
+			pluginInfo = &PluginInfo{
+				Name:    config.Name,
+				Type:    config.Type,
+				Version: config.Version,
+			}
+		}
+		log.Infof("retrieved plugin info from %s: version=%s", name, pluginInfo.Version)
 	}
 
-	// Create RPC plugin client
-	rpcPluginClient := &Client{
+	// Create gRPC plugin client
+	grpcPluginClient := &Client{
 		info:          pluginInfo, // Use info from plugin
 		config:        config,
 		pluginPath:    pluginPath,
-		client:        rpcClientInstance, // Set RPC client from wrapper
+		conn:          grpcConn,
+		client:        grpcServiceClient,
 		pluginClient:  client,
-		instance:      raw,
-		connected:     rpcClientInstance != nil,
+		connected:     grpcConn != nil,
 		lastHeartbeat: time.Now().Unix(),
 	}
 
 	// Initialize plugin
-	if err := m.initializePlugin(rpcPluginClient); err != nil {
+	if err := m.initializePlugin(grpcPluginClient); err != nil {
 		client.Kill()
 		return fmt.Errorf("initialize plugin %s: %w", name, err)
 	}
 
 	// Register plugin
-	m.plugins[name] = rpcPluginClient
+	m.plugins[name] = grpcPluginClient
 	m.clients[name] = client
 
 	log.Infof("plugin %s registered successfully", name)
@@ -236,6 +250,9 @@ func (m *Manager) UnregisterPlugin(name string) error {
 	}
 
 	// Close connection
+	if pluginClient.conn != nil {
+		pluginClient.conn.Close()
+	}
 	if pluginClient.pluginClient != nil {
 		pluginClient.pluginClient.Kill()
 	}
@@ -270,6 +287,9 @@ func (m *Manager) ReloadPlugin(name string) error {
 	}
 
 	// stop old client
+	if oldClient.conn != nil {
+		oldClient.conn.Close()
+	}
 	if oldClient.pluginClient != nil {
 		oldClient.pluginClient.Kill()
 	}
@@ -350,11 +370,11 @@ func (m *Manager) GetPlugin(name string) (*Client, error) {
 }
 
 // ListPlugins lists all plugins
-func (m *Manager) ListPlugins() map[string]PluginInfo {
+func (m *Manager) ListPlugins() map[string]*PluginInfo {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	plugins := make(map[string]PluginInfo)
+	plugins := make(map[string]*PluginInfo)
 	for name, pluginClient := range m.plugins {
 		plugins[name] = pluginClient.info
 	}
@@ -363,46 +383,40 @@ func (m *Manager) ListPlugins() map[string]PluginInfo {
 }
 
 // GetPluginMetrics retrieves plugin metrics
-func (m *Manager) GetPluginMetrics(name string) (PluginMetrics, error) {
+func (m *Manager) GetPluginMetrics(name string) (*PluginMetrics, error) {
 	pluginClient, err := m.GetPlugin(name)
 	if err != nil {
-		return PluginMetrics{}, err
+		return nil, err
 	}
 
 	// Check connection status
 	if !pluginClient.connected {
-		return PluginMetrics{}, fmt.Errorf("plugin %s is not connected", name)
+		return nil, fmt.Errorf("plugin %s is not connected", name)
 	}
 
 	// Call plugin's GetMetrics method
-	var metrics PluginMetrics
-	err = pluginClient.client.Call("Plugin.GetMetrics", "", &metrics)
-	if err != nil {
-		return PluginMetrics{}, fmt.Errorf("get plugin metrics: %w", err)
-	}
-
-	return metrics, nil
+	return pluginClient.GetMetrics()
 }
 
 // GetAllPluginMetrics retrieves metrics for all plugins
-func (m *Manager) GetAllPluginMetrics() map[string]PluginMetrics {
+func (m *Manager) GetAllPluginMetrics() map[string]*PluginMetrics {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	metrics := make(map[string]PluginMetrics)
+	metrics := make(map[string]*PluginMetrics)
 	for name, pluginClient := range m.plugins {
 		if pluginClient.connected {
-			var pluginMetrics PluginMetrics
-			err := pluginClient.client.Call("Plugin.GetMetrics", "", &pluginMetrics)
+			pluginMetrics, err := pluginClient.GetMetrics()
 			if err != nil {
 				log.Warnf("get metrics for plugin %s failed: %v", name, err)
-				pluginMetrics = PluginMetrics{
+				metrics[name] = &PluginMetrics{
 					Name:      name,
 					Status:    "error",
 					LastError: err.Error(),
 				}
+			} else {
+				metrics[name] = pluginMetrics
 			}
-			metrics[name] = pluginMetrics
 		}
 	}
 
@@ -422,16 +436,16 @@ func (m *Manager) HealthCheck() map[string]bool {
 			continue
 		}
 
-		// Check if RPC client is available
+		// Check if gRPC client is available
 		if pluginClient.client == nil {
-			log.Warnf("plugin %s has no RPC client", name)
+			log.Warnf("plugin %s has no gRPC client", name)
 			health[name] = false
 			continue
 		}
 
 		// Send heartbeat
-		var result string
-		err := pluginClient.client.Call("Plugin.Ping", "", &result)
+		ctx := context.Background()
+		_, err := pluginClient.client.Ping(ctx, &pluginv1.PingRequest{Message: "ping"})
 		if err != nil {
 			pluginClient.errorCount++
 			health[name] = false
@@ -473,36 +487,37 @@ func (m *Manager) performHealthCheck() {
 // initializePlugin initializes a plugin
 func (m *Manager) initializePlugin(pluginClient *Client) error {
 	if pluginClient.client == nil {
-		log.Warnf("plugin %s has no RPC client, skipping initialization", pluginClient.info.Name)
+		log.Warnf("plugin %s has no gRPC client, skipping initialization", pluginClient.info.GetName())
 		return nil
 	}
 
 	// Call plugin's initialization method
-	var result string
-	err := pluginClient.client.Call("Plugin.Init", pluginClient.config.Config, &result)
+	ctx := context.Background()
+	protoConfig := pluginClient.config.ToProto()
+	resp, err := pluginClient.client.Init(ctx, &pluginv1.InitRequest{Config: protoConfig.Config})
 	if err != nil {
 		return fmt.Errorf("plugin init failed: %w", err)
 	}
 
-	log.Infof("plugin %s initialized: %s", pluginClient.info.Name, result)
+	log.Infof("plugin %s initialized: %s", pluginClient.info.GetName(), resp.Message)
 	return nil
 }
 
 // cleanupPlugin cleans up a plugin
 func (m *Manager) cleanupPlugin(pluginClient *Client) error {
 	if pluginClient.client == nil {
-		log.Warnf("plugin %s has no RPC client, skipping cleanup", pluginClient.info.Name)
+		log.Warnf("plugin %s has no gRPC client, skipping cleanup", pluginClient.info.GetName())
 		return nil
 	}
 
 	// Call plugin's cleanup method
-	var result string
-	err := pluginClient.client.Call("Plugin.Cleanup", "", &result)
+	ctx := context.Background()
+	resp, err := pluginClient.client.Cleanup(ctx, &pluginv1.CleanupRequest{})
 	if err != nil {
 		return fmt.Errorf("plugin cleanup failed: %w", err)
 	}
 
-	log.Infof("plugin %s cleaned up: %s", pluginClient.info.Name, result)
+	log.Infof("plugin %s cleaned up: %s", pluginClient.info.GetName(), resp.Message)
 	return nil
 }
 
@@ -510,8 +525,8 @@ func (m *Manager) cleanupPlugin(pluginClient *Client) error {
 func (m *Manager) getPluginMap() map[string]plugin.Plugin {
 	if len(m.handlers) == 0 {
 		// Register default plugin handler with database access
-		m.handlers["plugin"] = &RPCPluginHandler{
-			DbAccessor: m.dbAccessor,
+		m.handlers["plugin"] = &GRPCPlugin{
+			DB: m.db,
 		}
 	}
 	return m.handlers
@@ -564,7 +579,7 @@ func (m *Manager) LoadPluginsFromDir() error {
 		pluginPath := filepath.Join(m.config.PluginDir, entry.Name())
 
 		// Create default config (Type and Version will be retrieved from plugin)
-		config := PluginConfig{
+		config := &RuntimePluginConfig{
 			Name:   pluginName,
 			Config: json.RawMessage("{}"),
 			// Type and Version will be auto-detected from plugin
