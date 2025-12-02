@@ -3,7 +3,7 @@ package router
 import (
 	"strconv"
 
-	generalmodel "github.com/go-arcade/arcade/internal/engine/model/general_settings"
+	generalmodel "github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/gofiber/fiber/v2"

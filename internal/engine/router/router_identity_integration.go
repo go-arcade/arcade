@@ -3,8 +3,8 @@ package router
 import (
 	http2 "net/http"
 
-	identitymodel "github.com/go-arcade/arcade/internal/engine/model/identity_integration"
-	identityservice "github.com/go-arcade/arcade/internal/engine/service/identity_integration"
+	identitymodel "github.com/go-arcade/arcade/internal/engine/model"
+	identityservice "github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/gofiber/fiber/v2"

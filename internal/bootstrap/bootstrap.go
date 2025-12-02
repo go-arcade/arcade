@@ -10,7 +10,7 @@ import (
 
 	"github.com/go-arcade/arcade/internal/engine/conf"
 	"github.com/go-arcade/arcade/internal/engine/router"
-	serviceplugin "github.com/go-arcade/arcade/internal/engine/service/plugin"
+	serviceplugin "github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/internal/pkg/grpc"
 	"github.com/go-arcade/arcade/internal/pkg/storage"
 	"github.com/go-arcade/arcade/pkg/cache"

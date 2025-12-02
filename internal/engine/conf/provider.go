@@ -4,6 +4,7 @@ import (
 	"github.com/go-arcade/arcade/internal/engine/service/task"
 	"github.com/go-arcade/arcade/internal/pkg/grpc"
 	"github.com/go-arcade/arcade/pkg/http"
+	pluginpkg "github.com/go-arcade/arcade/pkg/plugin"
 	"github.com/google/wire"
 )
 
@@ -13,6 +14,7 @@ var ProviderSet = wire.NewSet(
 	ProvideTaskPoolConfig,
 	ProvideHttpConfig,
 	ProvideGrpcConfig,
+	ProvidePluginCacheDir,
 )
 
 // ProvideTaskPoolConfig 提供任务池配置
@@ -37,4 +39,9 @@ func ProvideHttpConfig(appConf AppConfig) *http.Http {
 // ProvideGrpcConfig 提供 gRPC 配置
 func ProvideGrpcConfig(appConf AppConfig) *grpc.Conf {
 	return &appConf.Grpc
+}
+
+// ProvidePluginCacheDir 提供插件缓存目录路径
+func ProvidePluginCacheDir(appConf AppConfig) pluginpkg.PluginCacheDir {
+	return pluginpkg.PluginCacheDir(appConf.Plugin.CacheDir)
 }

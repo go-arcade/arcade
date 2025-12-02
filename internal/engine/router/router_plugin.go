@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	serviceplugin "github.com/go-arcade/arcade/internal/engine/service/plugin"
+	serviceplugin "github.com/go-arcade/arcade/internal/engine/service"
 	httpx "github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/go-arcade/arcade/pkg/log"

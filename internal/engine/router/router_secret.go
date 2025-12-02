@@ -3,13 +3,12 @@ package router
 import (
 	"strconv"
 
-	secretmodel "github.com/go-arcade/arcade/internal/engine/model/secret"
+	secretmodel "github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/internal/engine/tool"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/gofiber/fiber/v2"
 )
-
 
 // secretRouter registers secret related routes
 func (rt *Router) secretRouter(r fiber.Router, auth fiber.Handler) {

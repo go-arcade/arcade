@@ -1,12 +1,11 @@
 package router
 
 import (
-	storageservice "github.com/go-arcade/arcade/internal/engine/service/storage"
+	storageservice "github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/gofiber/fiber/v2"
 )
-
 
 // storageRouter registers storage related routes
 func (rt *Router) storageRouter(r fiber.Router, auth fiber.Handler) {

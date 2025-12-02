@@ -3,14 +3,13 @@ package router
 import (
 	"strconv"
 
-	teammodel "github.com/go-arcade/arcade/internal/engine/model/team"
+	teammodel "github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/internal/engine/tool"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/gofiber/fiber/v2"
 )
-
 
 func (rt *Router) teamRouter(r fiber.Router, auth fiber.Handler) {
 	teamGroup := r.Group("/team")

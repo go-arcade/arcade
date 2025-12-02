@@ -3,7 +3,7 @@ package router
 import (
 	"time"
 
-	usermodel "github.com/go-arcade/arcade/internal/engine/model/user"
+	usermodel "github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/internal/engine/tool"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
