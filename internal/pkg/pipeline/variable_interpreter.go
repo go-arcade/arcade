@@ -77,9 +77,7 @@ func (vi *VariableInterpreter) Evaluate(exprStr string) (any, error) {
 
 	// Prepare environment
 	env := make(map[string]any)
-	for k, v := range vi.env {
-		env[k] = v
-	}
+	maps.Copy(env, vi.env)
 
 	// Add env map for accessing environment variables
 	env["env"] = vi.env
@@ -155,9 +153,7 @@ func (vi *VariableInterpreter) SetVariables(vars map[string]any) {
 	if vi.env == nil {
 		vi.env = make(map[string]any)
 	}
-	for k, v := range vars {
-		vi.env[k] = v
-	}
+	maps.Copy(vi.env, vars)
 }
 
 // GetVariable gets a variable value
