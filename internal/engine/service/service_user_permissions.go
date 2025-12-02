@@ -170,7 +170,7 @@ func (s *UserPermissionsService) GetUserPermissions(ctx context.Context, userId 
 	s.aggregatePermissions(summary)
 
 	// 5. 根据权限计算可访问路由
-	routes, err := s.calculateAccessibleRoutes(ctx, summary.AllPermissions)
+	routes, err := s.calculateAccessibleRoutes(summary.AllPermissions)
 	if err != nil {
 		log.Warnf("[UserPermissions] failed to calculate accessible routes: %v", err)
 	} else {
@@ -190,7 +190,7 @@ func (s *UserPermissionsService) GetUserPermissions(ctx context.Context, userId 
 // getUserOrganizations 获取用户所属组织
 func (s *UserPermissionsService) getUserOrganizations(ctx context.Context, userId string) ([]OrganizationPermission, error) {
 	var orgMembers []model.OrganizationMember
-	err := s.db.Database().Where("user_id = ?", userId).Find(&orgMembers).Error
+	err := s.db.Database().WithContext(ctx).Where("user_id = ?", userId).Find(&orgMembers).Error
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +199,7 @@ func (s *UserPermissionsService) getUserOrganizations(ctx context.Context, userI
 	for _, om := range orgMembers {
 		// 获取组织信息
 		var org model.Organization
-		if err := s.db.Database().Where("org_id = ?", om.OrgId).First(&org).Error; err != nil {
+		if err := s.db.Database().WithContext(ctx).Where("org_id = ?", om.OrgId).First(&org).Error; err != nil {
 			log.Warnf("[UserPermissions] failed to get org %s: %v", om.OrgId, err)
 			continue
 		}
@@ -239,7 +239,7 @@ func (s *UserPermissionsService) getUserOrganizations(ctx context.Context, userI
 // getUserTeams 获取用户所属团队
 func (s *UserPermissionsService) getUserTeams(ctx context.Context, userId string) ([]TeamPermission, error) {
 	var teamMembers []model.TeamMember
-	err := s.db.Database().Where("user_id = ?", userId).Find(&teamMembers).Error
+	err := s.db.Database().WithContext(ctx).Where("user_id = ?", userId).Find(&teamMembers).Error
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +248,7 @@ func (s *UserPermissionsService) getUserTeams(ctx context.Context, userId string
 	for _, tm := range teamMembers {
 		// 获取团队信息
 		var teamEntity model.Team
-		if err := s.db.Database().Where("team_id = ?", tm.TeamId).First(&teamEntity).Error; err != nil {
+		if err := s.db.Database().WithContext(ctx).Where("team_id = ?", tm.TeamId).First(&teamEntity).Error; err != nil {
 			log.Warnf("[UserPermissions] failed to get team %s: %v", tm.TeamId, err)
 			continue
 		}
@@ -484,7 +484,7 @@ func (s *UserPermissionsService) aggregatePermissions(summary *UserPermissionSum
 }
 
 // calculateAccessibleRoutes 计算可访问的路由
-func (s *UserPermissionsService) calculateAccessibleRoutes(ctx context.Context, permissions []string) ([]AccessibleRoute, error) {
+func (s *UserPermissionsService) calculateAccessibleRoutes(permissions []string) ([]AccessibleRoute, error) {
 	// 获取所有路由权限配置
 	routePerms, err := s.routerRepo.GetAllRoutePermissions()
 	if err != nil {
