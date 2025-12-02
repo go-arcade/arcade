@@ -14,6 +14,27 @@ import (
 	"gorm.io/gorm/schema"
 )
 
+// IDatabase define database interface (abstract)
+type IDatabase interface {
+	// Database return the underlying *gorm.DB
+	Database() *gorm.DB
+}
+
+// GormDB GORM database implementation
+type GormDB struct {
+	db *gorm.DB
+}
+
+// NewGormDB create GORM database instance
+func NewGormDB(db *gorm.DB) IDatabase {
+	return &GormDB{db: db}
+}
+
+// Database return the underlying *gorm.DB
+func (g *GormDB) Database() *gorm.DB {
+	return g.db
+}
+
 type Database struct {
 	Type         string
 	Host         string
@@ -61,7 +82,7 @@ func NewDatabase(cfg Database, zapLogger zap.Logger) (*gorm.DB, error) {
 
 	if cfg.OutPut {
 		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
-			Logger: NewGormLogger(logConfig, logger.Info, &zapLogger),
+			Logger: NewGormLoggerAdapter(logConfig, logger.Info, &zapLogger),
 			NamingStrategy: schema.NamingStrategy{
 				TablePrefix:   defaultTablePrefix,
 				SingularTable: true,
