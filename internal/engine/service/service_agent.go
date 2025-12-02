@@ -10,9 +10,8 @@ import (
 )
 
 type AgentService struct {
-	agentRepo        agentrepo.IAgentRepository
-	addAgentReq      *agentmodel.AddAgentReq
-	addAgentReqagent *agentmodel.AddAgentReq
+	agentRepo   agentrepo.IAgentRepository
+	addAgentReq *agentmodel.AddAgentReq
 }
 
 func NewAgentService(agentagent agentrepo.IAgentRepository, agentReq *agentmodel.AddAgentReq) *AgentService {

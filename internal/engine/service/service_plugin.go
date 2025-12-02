@@ -161,7 +161,7 @@ func (s *PluginService) InstallPlugin(req *InstallPluginRequest) (*InstallPlugin
 
 	case PluginSourceMarket:
 		// 从插件市场安装
-		pluginData, manifest, err = s.installFromMarket(req.MarketID)
+		pluginData, manifest, err = s.installFromMarket()
 		if err != nil {
 			return &InstallPluginResponse{
 				Success: false,
@@ -632,7 +632,7 @@ func (s *PluginService) extractZipPackage(zipData []byte, size int64) ([]byte, *
 }
 
 // installFromMarket 从插件市场安装
-func (s *PluginService) installFromMarket(marketID string) ([]byte, *PluginManifest, error) {
+func (s *PluginService) installFromMarket() ([]byte, *PluginManifest, error) {
 	// TODO: 实现从插件市场下载逻辑
 	// 1. 调用插件市场API获取插件信息和下载地址
 	// 2. 下载插件文件
