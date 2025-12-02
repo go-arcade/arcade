@@ -58,7 +58,7 @@ type PluginManifest struct {
 	EntryPoint    string           `json:"entryPoint"`
 	Dependencies  []string         `json:"dependencies,omitempty"`
 	Config        json.RawMessage  `json:"config,omitempty"`
-	Params        json.RawMessage  `json:"params,omitempty"`
+	Args          json.RawMessage  `json:"args,omitempty"`
 	DefaultConfig json.RawMessage  `json:"defaultConfig,omitempty"`
 	Icon          string           `json:"icon,omitempty"`
 	Tags          []string         `json:"tags,omitempty"`
@@ -125,14 +125,14 @@ type InstallPluginAsyncResponse struct {
 // UpdatePluginConfigRequest 更新插件配置请求
 type UpdatePluginConfigRequest struct {
 	PluginID string          `json:"pluginId"`
-	Params   json.RawMessage `json:"params"`
+	Args     json.RawMessage `json:"args"`
 	Config   json.RawMessage `json:"config"`
 }
 
 // PluginConfigResponse 插件配置响应
 type PluginConfigResponse struct {
 	PluginID  string          `json:"pluginId"`
-	Params    json.RawMessage `json:"params"`
+	Args      json.RawMessage `json:"args"`
 	Config    json.RawMessage `json:"config"`
 	CreatedAt string          `json:"createdAt"`
 	UpdatedAt string          `json:"updatedAt"`
@@ -253,10 +253,10 @@ func (s *PluginService) InstallPlugin(req *InstallPluginRequest) (*InstallPlugin
 	log.Infof("[PluginService] plugin record created in database successfully")
 
 	// 自动创建插件配置（存储Schema信息到配置表）
-	if len(manifest.Params) > 0 || len(manifest.Config) > 0 {
+	if len(manifest.Args) > 0 || len(manifest.Config) > 0 {
 		pluginConfig := &model.PluginConfig{
 			PluginId: pluginID,
-			Params:   datatypes.JSON(manifest.Params),
+			Args:     datatypes.JSON(manifest.Args),
 			Config:   datatypes.JSON(manifest.Config),
 		}
 
@@ -855,7 +855,7 @@ func (s *PluginService) GetPluginConfig(pluginID string) (*PluginConfigResponse,
 
 	return &PluginConfigResponse{
 		PluginID: config.PluginId,
-		Params:   json.RawMessage(config.Params),
+		Args:     json.RawMessage(config.Args),
 		Config:   json.RawMessage(config.Config),
 	}, nil
 }
@@ -879,7 +879,7 @@ func (s *PluginService) CreatePluginConfig(req *UpdatePluginConfigRequest) (*Plu
 	// 创建配置
 	config := &model.PluginConfig{
 		PluginId: req.PluginID,
-		Params:   datatypes.JSON(req.Params),
+		Args:     datatypes.JSON(req.Args),
 		Config:   datatypes.JSON(req.Config),
 	}
 
@@ -891,7 +891,7 @@ func (s *PluginService) CreatePluginConfig(req *UpdatePluginConfigRequest) (*Plu
 
 	return &PluginConfigResponse{
 		PluginID: config.PluginId,
-		Params:   json.RawMessage(config.Params),
+		Args:     json.RawMessage(config.Args),
 		Config:   json.RawMessage(config.Config),
 	}, nil
 }
@@ -908,8 +908,8 @@ func (s *PluginService) UpdatePluginConfig(req *UpdatePluginConfigRequest) (*Plu
 
 	// 构建更新数据
 	updates := make(map[string]interface{})
-	if len(req.Params) > 0 {
-		updates["params_schema"] = datatypes.JSON(req.Params)
+	if len(req.Args) > 0 {
+		updates["args_schema"] = datatypes.JSON(req.Args)
 	}
 	if len(req.Config) > 0 {
 		updates["config_schema"] = datatypes.JSON(req.Config)
@@ -934,7 +934,7 @@ func (s *PluginService) UpdatePluginConfig(req *UpdatePluginConfigRequest) (*Plu
 
 	return &PluginConfigResponse{
 		PluginID: updatedConfig.PluginId,
-		Params:   json.RawMessage(updatedConfig.Params),
+		Args:     json.RawMessage(updatedConfig.Args),
 		Config:   json.RawMessage(updatedConfig.Config),
 	}, nil
 }

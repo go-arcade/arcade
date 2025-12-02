@@ -88,8 +88,8 @@ type Step struct {
 	Uses string `json:"uses"`
 	// Step action
 	Action string `json:"action,omitempty"`
-	// Step params
-	Params map[string]any `json:"params,omitempty"`
+	// Step args
+	Args map[string]any `json:"args,omitempty"`
 	// Step environment variables
 	Env map[string]string `json:"env,omitempty"`
 	// Step continue on error

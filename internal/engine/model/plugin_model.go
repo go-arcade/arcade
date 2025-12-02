@@ -42,7 +42,7 @@ func (Plugin) TableName() string {
 type PluginConfig struct {
 	BaseModel
 	PluginId string         `gorm:"column:plugin_id" json:"pluginId"`
-	Params   datatypes.JSON `gorm:"column:params;type:json" json:"params"` // JSON Schema
+	Args     datatypes.JSON `gorm:"column:args;type:json" json:"args"`     // JSON Schema
 	Config   datatypes.JSON `gorm:"column:config;type:json" json:"config"` // JSON Schema
 }
 
@@ -56,7 +56,7 @@ type TaskPlugin struct {
 	TaskId         string         `gorm:"column:task_id" json:"taskId"`
 	PluginId       string         `gorm:"column:plugin_id" json:"pluginId"`
 	PluginConfigId string         `gorm:"column:plugin_config_id" json:"pluginConfigId"`
-	Params         datatypes.JSON `gorm:"column:params;type:json" json:"params"` // 任务特定参数
+	Args           datatypes.JSON `gorm:"column:args;type:json" json:"args"` // 任务特定参数
 	ExecutionOrder int            `gorm:"column:execution_order" json:"executionOrder"`
 	ExecutionStage string         `gorm:"column:execution_stage" json:"executionStage"` // before/after/on_success/on_failure
 	Status         int            `gorm:"column:status" json:"status"`                  // 0:未执行 1:执行中 2:成功 3:失败

@@ -152,7 +152,7 @@ func (r *StepRunner) executeLocally(ctx context.Context) error {
 	env := r.ctx.ResolveStepEnv(r.job, r.step)
 
 	// Resolve params with variable substitution
-	resolvedParams := r.ctx.ResolveVariables(r.step.Params)
+	resolvedParams := r.ctx.ResolveVariables(r.step.Args)
 
 	// Prepare params JSON
 	paramsJSON, err := json.Marshal(resolvedParams)
