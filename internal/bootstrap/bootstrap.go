@@ -122,7 +122,7 @@ func Bootstrap(configFile string, initApp InitAppFunc) (*App, func(), conf.AppCo
 
 // Run start app and wait for exit signal, then gracefully shutdown
 func Run(app *App, cleanup func()) {
-	logger := app.Logger
+	logger := app.Logger.Sugar()
 	appConf := app.AppConf
 
 	// plugin manager is initialized in wire
@@ -133,7 +133,7 @@ func Run(app *App, cleanup func()) {
 	if app.GrpcServer != nil && appConf.Grpc.Port > 0 {
 		go func() {
 			if err := app.GrpcServer.Start(appConf.Grpc); err != nil {
-				logger.Sugar().Errorf("gRPC server failed: %v", err)
+				logger.Errorf("gRPC server failed: %v", err)
 			}
 		}()
 	}
@@ -145,11 +145,11 @@ func Run(app *App, cleanup func()) {
 	// start HTTP server (async)
 	go func() {
 		addr := appConf.Http.Host + ":" + fmt.Sprintf("%d", appConf.Http.Port)
-		logger.Sugar().Infow("HTTP listener started",
+		logger.Infow("HTTP listener started",
 			"address", addr,
 		)
 		if err := app.HttpApp.Listen(addr); err != nil {
-			logger.Sugar().Errorw("HTTP listener failed",
+			logger.Error("HTTP listener failed",
 				"address", addr,
 				"error", err,
 			)
@@ -158,14 +158,14 @@ func Run(app *App, cleanup func()) {
 
 	// wait for exit signal
 	sig := <-quit
-	logger.Sugar().Infof("Received signal: %v, shutting down gracefully...", sig)
+	logger.Infof("Received signal: %v, shutting down gracefully...", sig)
 
 	// close components in order
 	// close HTTP server
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer shutdownCancel()
 	if err := app.HttpApp.ShutdownWithContext(shutdownCtx); err != nil {
-		logger.Sugar().Errorf("HTTP server shutdown error: %v", err)
+		logger.Errorf("HTTP server shutdown error: %v", err)
 	} else {
 		logger.Info("HTTP server shut down gracefully")
 	}

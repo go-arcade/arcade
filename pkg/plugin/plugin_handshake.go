@@ -43,9 +43,9 @@ func (h *GRPCPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error
 		server = srv
 	} else {
 		server = &Server{
-			info:       &PluginInfo{},
-			instance:   h.Impl,
-			dbAccessor: h.DB,
+			info:     &PluginInfo{},
+			instance: h.Impl,
+			db:       h.DB,
 		}
 	}
 	// Register gRPC service

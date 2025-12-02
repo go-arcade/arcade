@@ -17,15 +17,15 @@ type Server struct {
 	// Plugin instance (object that implements Plugin interface)
 	instance any
 	// Database accessor for config-related actions
-	dbAccessor DB
+	db DB
 }
 
 // NewServer creates a new gRPC plugin server
-func NewServer(info *PluginInfo, instance any, dbAccessor DB) *Server {
+func NewServer(info *PluginInfo, instance any, db DB) *Server {
 	return &Server{
-		info:       info,
-		instance:   instance,
-		dbAccessor: dbAccessor,
+		info:     info,
+		instance: instance,
+		db:       db,
 	}
 }
 
@@ -114,7 +114,7 @@ func (s *Server) callPluginMethod(method string, params json.RawMessage, opts js
 
 // ConfigQuery queries plugin config
 func (s *Server) ConfigQuery(ctx context.Context, req *pluginv1.ConfigQueryRequest) (*pluginv1.ConfigQueryResponse, error) {
-	if s.dbAccessor == nil {
+	if s.db == nil {
 		return &pluginv1.ConfigQueryResponse{
 			Error: &pluginv1.RPCError{
 				Code:    500,
@@ -122,7 +122,7 @@ func (s *Server) ConfigQuery(ctx context.Context, req *pluginv1.ConfigQueryReque
 			},
 		}, nil
 	}
-	result, err := s.dbAccessor.QueryConfig(ctx, req.PluginId)
+	result, err := s.db.QueryConfig(ctx, req.PluginId)
 	if err != nil {
 		return &pluginv1.ConfigQueryResponse{
 			Error: &pluginv1.RPCError{
@@ -136,7 +136,7 @@ func (s *Server) ConfigQuery(ctx context.Context, req *pluginv1.ConfigQueryReque
 
 // ConfigQueryByKey queries plugin config by key
 func (s *Server) ConfigQueryByKey(ctx context.Context, req *pluginv1.ConfigQueryByKeyRequest) (*pluginv1.ConfigQueryByKeyResponse, error) {
-	if s.dbAccessor == nil {
+	if s.db == nil {
 		return &pluginv1.ConfigQueryByKeyResponse{
 			Error: &pluginv1.RPCError{
 				Code:    500,
@@ -144,7 +144,7 @@ func (s *Server) ConfigQueryByKey(ctx context.Context, req *pluginv1.ConfigQuery
 			},
 		}, nil
 	}
-	result, err := s.dbAccessor.QueryConfigByKey(ctx, req.PluginId, req.Key)
+	result, err := s.db.QueryConfigByKey(ctx, req.PluginId, req.Key)
 	if err != nil {
 		return &pluginv1.ConfigQueryByKeyResponse{
 			Error: &pluginv1.RPCError{
@@ -158,7 +158,7 @@ func (s *Server) ConfigQueryByKey(ctx context.Context, req *pluginv1.ConfigQuery
 
 // ConfigList lists all plugin configs
 func (s *Server) ConfigList(ctx context.Context, req *pluginv1.ConfigListRequest) (*pluginv1.ConfigListResponse, error) {
-	if s.dbAccessor == nil {
+	if s.db == nil {
 		return &pluginv1.ConfigListResponse{
 			Error: &pluginv1.RPCError{
 				Code:    500,
@@ -166,7 +166,7 @@ func (s *Server) ConfigList(ctx context.Context, req *pluginv1.ConfigListRequest
 			},
 		}, nil
 	}
-	result, err := s.dbAccessor.ListConfigs(ctx)
+	result, err := s.db.ListConfigs(ctx)
 	if err != nil {
 		return &pluginv1.ConfigListResponse{
 			Error: &pluginv1.RPCError{

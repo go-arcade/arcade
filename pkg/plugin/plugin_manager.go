@@ -94,12 +94,12 @@ func NewManager(config *ManagerConfig) *Manager {
 		clients:  make(map[string]*plugin.Client),
 		config:   config,
 		handlers: make(map[string]plugin.Plugin),
-		db:       nil, // Will be set via SetDatabaseAccessor later
+		db:       nil, // Will be set via SetDB later
 	}
 }
 
-// SetDatabaseAccessor sets the database accessor
-func (m *Manager) SetDatabaseAccessor(db DB) {
+// SetDB sets the database adapter
+func (m *Manager) SetDB(db DB) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.db = db
@@ -153,6 +153,7 @@ func (m *Manager) registerPluginLocked(name string, pluginPath string, config *R
 		},
 		SyncStdout: stdoutWriter,
 		SyncStderr: stderrWriter,
+		Logger:     NewLogAdapter(&log.Logger{Log: log.GetLogger()}),
 	})
 
 	// Connect to plugin
@@ -517,7 +518,7 @@ func (m *Manager) cleanupPlugin(pluginClient *Client) error {
 		return fmt.Errorf("plugin cleanup failed: %w", err)
 	}
 
-	log.Infof("plugin %s cleaned up: %s", pluginClient.info.GetName(), resp.Message)
+	log.Infof("plugin %s is %s.", pluginClient.info.GetName(), resp.Message)
 	return nil
 }
 

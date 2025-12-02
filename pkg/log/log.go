@@ -138,6 +138,13 @@ func MustInit(conf *Conf) {
 	}
 }
 
+// GetLogger 获取全局 zap.Logger 实例
+func GetLogger() *zap.SugaredLogger {
+	mu.RLock()
+	defer mu.RUnlock()
+	return logger.Sugar()
+}
+
 // getEncoder returns the appropriate encoder based on the mode.
 func getEncoder() zapcore.Encoder {
 	encoderConfig := zap.NewDevelopmentEncoderConfig()
