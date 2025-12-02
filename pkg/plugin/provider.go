@@ -3,11 +3,13 @@ package plugin
 import (
 	"time"
 
-	"github.com/go-arcade/arcade/internal/engine/conf"
 	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/google/wire"
 )
+
+// PluginCacheDir is the plugin cache directory path type
+type PluginCacheDir string
 
 // ProviderSet provides plugin layer related dependencies
 var ProviderSet = wire.NewSet(
@@ -23,11 +25,12 @@ func ProvideDatabaseAccessor(db database.IDatabase) DatabaseAccessor {
 
 // ProvidePluginManager provides plugin manager instance
 // dbAccessor is provided by ProvideDatabaseAccessor
-func ProvidePluginManager(appConf conf.AppConfig, dbAccessor DatabaseAccessor) *Manager {
+// pluginCacheDir is the plugin cache directory path (can be empty to use default)
+func ProvidePluginManager(pluginCacheDir PluginCacheDir, dbAccessor DatabaseAccessor) *Manager {
 	// Get plugin directory from configuration (use default if not set)
 	pluginDir := "/var/lib/arcade/plugins"
-	if appConf.Plugin.CacheDir != "" {
-		pluginDir = appConf.Plugin.CacheDir
+	if string(pluginCacheDir) != "" {
+		pluginDir = string(pluginCacheDir)
 	}
 
 	// Create plugin manager configuration

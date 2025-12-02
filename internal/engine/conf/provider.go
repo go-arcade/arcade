@@ -1,7 +1,7 @@
 package conf
 
 import (
-	"github.com/go-arcade/arcade/internal/engine/service/task"
+	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/internal/pkg/grpc"
 	"github.com/go-arcade/arcade/pkg/http"
 	pluginpkg "github.com/go-arcade/arcade/pkg/plugin"
@@ -18,8 +18,8 @@ var ProviderSet = wire.NewSet(
 )
 
 // ProvideTaskPoolConfig 提供任务池配置
-func ProvideTaskPoolConfig(appConf AppConfig) task.TaskPoolConfig {
-	return task.TaskPoolConfig{
+func ProvideTaskPoolConfig(appConf AppConfig) service.TaskPoolConfig {
+	return service.TaskPoolConfig{
 		MaxWorkers:    appConf.Task.MaxWorkers,
 		QueueSize:     appConf.Task.QueueSize,
 		WorkerTimeout: appConf.Task.WorkerTimeout,

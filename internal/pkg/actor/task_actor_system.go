@@ -3,7 +3,7 @@ package actor
 import (
 	"sync"
 
-	logrepo "github.com/go-arcade/arcade/internal/engine/repo/log"
+	logrepo "github.com/go-arcade/arcade/internal/engine/repo"
 	"github.com/go-arcade/arcade/internal/pkg/sse"
 )
 

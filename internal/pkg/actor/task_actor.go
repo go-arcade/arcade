@@ -5,8 +5,8 @@ import (
 	"time"
 
 	streamv1 "github.com/go-arcade/arcade/api/stream/v1"
-	"github.com/go-arcade/arcade/internal/engine/model/log"
-	logrepo "github.com/go-arcade/arcade/internal/engine/repo/log"
+	"github.com/go-arcade/arcade/internal/engine/model"
+	logrepo "github.com/go-arcade/arcade/internal/engine/repo"
 	"github.com/go-arcade/arcade/internal/pkg/sse"
 )
 
@@ -40,7 +40,7 @@ func newTaskActor(taskID string, repo logrepo.LogRepository, hub *sse.SSEHub, ma
 
 func (a *taskActor) loop() {
 	defer a.wg.Done()
-	batchBuf := make([]log.TaskLog, 0, 256)
+	batchBuf := make([]model.TaskLog, 0, 256)
 	flush := func() {
 		if len(batchBuf) == 0 {
 			return
@@ -61,7 +61,7 @@ func (a *taskActor) loop() {
 
 			// 聚合写 Mongo，并实时广播给 SSE 与 gRPC 订阅者（SSE 使用 hub，gRPC 下方会利用 hub 同步获取）
 			for _, l := range b.Logs {
-				doc := log.TaskLog{
+				doc := model.TaskLog{
 					TaskId:  b.TaskID,
 					AgentId: b.AgentID,
 					Content: l.Content,

@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	storagemodel "github.com/go-arcade/arcade/internal/engine/model/storage"
-	storagerepo "github.com/go-arcade/arcade/internal/engine/repo/storage"
+	storagemodel "github.com/go-arcade/arcade/internal/engine/model"
+	storagerepo "github.com/go-arcade/arcade/internal/engine/repo"
 	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/log"
 )

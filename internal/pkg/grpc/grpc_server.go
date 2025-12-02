@@ -7,10 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/go-arcade/arcade/internal/engine/service/agent"
-	"github.com/go-arcade/arcade/internal/engine/service/pipeline"
-	"github.com/go-arcade/arcade/internal/engine/service/stream"
-	"github.com/go-arcade/arcade/internal/engine/service/task"
+	"github.com/go-arcade/arcade/internal/engine/service"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -64,10 +61,10 @@ func NewGrpcServer(cfg Conf, log *zap.Logger) *ServerWrapper {
 
 // Register 注册所有 gRPC 服务
 func (s *ServerWrapper) Register() {
-	agentv1.RegisterAgentServiceServer(s.svr, &agent.AgentServiceImpl{})
-	taskv1.RegisterTaskServiceServer(s.svr, &task.TaskServiceImpl{})
-	streamv1.RegisterStreamServiceServer(s.svr, &stream.StreamServiceImpl{})
-	pipelinev1.RegisterPipelineServiceServer(s.svr, &pipeline.PipelineServiceImpl{})
+	agentv1.RegisterAgentServiceServer(s.svr, &service.AgentServiceImpl{})
+	taskv1.RegisterTaskServiceServer(s.svr, &service.TaskServiceImpl{})
+	streamv1.RegisterStreamServiceServer(s.svr, &service.StreamServiceImpl{})
+	pipelinev1.RegisterPipelineServiceServer(s.svr, &service.PipelineServiceImpl{})
 	// reflection（调试）
 	reflection.Register(s.svr)
 }

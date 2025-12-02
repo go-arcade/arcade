@@ -84,7 +84,7 @@ func (c *Client) CallMethod(method string, params json.RawMessage, opts json.Raw
 }
 
 // Call invokes a generic RPC method
-func (c *Client) Call(method string, args interface{}, reply interface{}) error {
+func (c *Client) Call(method string, args any, reply any) error {
 	if c.client == nil {
 		return fmt.Errorf("RPC client is not initialized")
 	}
