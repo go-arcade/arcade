@@ -46,7 +46,7 @@ func ProvidePluginManager(pluginCacheDir PluginCacheDir, dbAccessor DB) *Manager
 	m := NewManager(config)
 
 	// Set database accessor (implemented by internal/repo)
-	m.SetDatabaseAccessor(dbAccessor)
+	m.SetDB(dbAccessor)
 
 	// Auto-load plugins from directory on startup
 	if err := m.LoadPluginsFromDir(); err != nil {
