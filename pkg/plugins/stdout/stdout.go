@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/rpc"
@@ -9,8 +10,10 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
+	pluginv1 "github.com/go-arcade/arcade/api/plugin/v1"
 	pluginpkg "github.com/go-arcade/arcade/pkg/plugin"
 	"github.com/hashicorp/go-plugin"
+	"google.golang.org/grpc"
 )
 
 // StdoutConfig is the plugin's configuration structure (can be passed from host via Init)
@@ -223,127 +226,32 @@ func (p *Stdout) SendTemplate(tpl string, data json.RawMessage, opts json.RawMes
 	return nil
 }
 
-// ===== RPC Server Implementation =====
+// ===== gRPC Plugin Handler =====
 
-// StdoutPlugin is the RPC server wrapper
-type StdoutPlugin struct {
-	impl *Stdout
+// StdoutNotifyPlugin is the gRPC plugin handler
+type StdoutNotifyPlugin struct {
+	plugin.Plugin
+	Impl *Stdout
 }
 
-// Name RPC method
-func (s *StdoutPlugin) Name(args string, reply *string) error {
-	name, err := s.impl.Name()
-	*reply = name
-	return err
+// Server returns the RPC server (required by plugin.Plugin interface, not used for gRPC)
+func (p *StdoutNotifyPlugin) Server(*plugin.MuxBroker) (any, error) {
+	return nil, fmt.Errorf("RPC protocol not supported, use gRPC protocol instead")
 }
 
-// Description RPC method
-func (s *StdoutPlugin) Description(args string, reply *string) error {
-	desc, err := s.impl.Description()
-	*reply = desc
-	return err
+// Client returns the RPC client (required by plugin.Plugin interface, not used for gRPC)
+func (p *StdoutNotifyPlugin) Client(*plugin.MuxBroker, *rpc.Client) (any, error) {
+	return nil, fmt.Errorf("RPC protocol not supported, use gRPC protocol instead")
 }
 
-// Version RPC method
-func (s *StdoutPlugin) Version(args string, reply *string) error {
-	ver, err := s.impl.Version()
-	*reply = ver
-	return err
-}
+// GRPCServer returns the gRPC server
+func (p *StdoutNotifyPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
+	name, _ := p.Impl.Name()
+	desc, _ := p.Impl.Description()
+	ver, _ := p.Impl.Version()
+	typ, _ := p.Impl.Type()
 
-// Type RPC method
-func (s *StdoutPlugin) Type(args string, reply *string) error {
-	typ, err := s.impl.Type()
-	*reply = typ
-	return err
-}
-
-// Init RPC method
-func (s *StdoutPlugin) Init(config json.RawMessage, reply *string) error {
-	err := s.impl.Init(config)
-	*reply = "initialized"
-	return err
-}
-
-// Cleanup RPC method
-func (s *StdoutPlugin) Cleanup(args string, reply *string) error {
-	err := s.impl.Cleanup()
-	*reply = "cleaned up"
-	return err
-}
-
-// Send RPC method - uses method name + json.RawMessage
-// params: json.RawMessage containing SendArgs
-// opts: json.RawMessage containing optional overrides
-func (s *StdoutPlugin) Send(args *pluginpkg.MethodArgs, reply *pluginpkg.MethodResult) error {
-	var sendParams SendArgs
-	if err := pluginpkg.UnmarshalParams(args.Params, &sendParams); err != nil {
-		reply.Error = fmt.Sprintf("failed to parse params: %v", err)
-		return nil
-	}
-	err := s.impl.Send(sendParams.Message, sendParams.Opts)
-	if err != nil {
-		reply.Error = err.Error()
-		return nil
-	}
-	result, _ := sonic.Marshal(map[string]string{"status": "sent"})
-	reply.Result = result
-	return nil
-}
-
-// SendTemplate RPC method - uses method name + json.RawMessage
-// params: json.RawMessage containing SendTemplateArgs
-// opts: json.RawMessage containing optional overrides
-func (s *StdoutPlugin) SendTemplate(args *pluginpkg.MethodArgs, reply *pluginpkg.MethodResult) error {
-	var tplParams SendTemplateArgs
-	if err := pluginpkg.UnmarshalParams(args.Params, &tplParams); err != nil {
-		reply.Error = fmt.Sprintf("failed to parse params: %v", err)
-		return nil
-	}
-	err := s.impl.SendTemplate(tplParams.Template, tplParams.Data, tplParams.Opts)
-	if err != nil {
-		reply.Error = err.Error()
-		return nil
-	}
-	result, _ := sonic.Marshal(map[string]string{"status": "sent"})
-	reply.Result = result
-	return nil
-}
-
-// SendBatch RPC method - uses method name + json.RawMessage
-// params: json.RawMessage containing SendBatchArgs
-// opts: json.RawMessage containing optional overrides
-func (s *StdoutPlugin) SendBatch(args *pluginpkg.MethodArgs, reply *pluginpkg.MethodResult) error {
-	var batchParams SendBatchArgs
-	if err := pluginpkg.UnmarshalParams(args.Params, &batchParams); err != nil {
-		reply.Error = fmt.Sprintf("failed to parse params: %v", err)
-		return nil
-	}
-	for _, msg := range batchParams.Messages {
-		if err := s.impl.Send(msg, batchParams.Opts); err != nil {
-			reply.Error = fmt.Sprintf("failed to send batch message: %v", err)
-			return nil
-		}
-	}
-	result, _ := sonic.Marshal(map[string]string{"status": "sent", "count": fmt.Sprintf("%d", len(batchParams.Messages))})
-	reply.Result = result
-	return nil
-}
-
-// Ping RPC method
-func (s *StdoutPlugin) Ping(args string, reply *string) error {
-	*reply = "pong"
-	return nil
-}
-
-// GetInfo RPC method
-func (s *StdoutPlugin) GetInfo(args string, reply *pluginpkg.PluginInfo) error {
-	name, _ := s.impl.Name()
-	desc, _ := s.impl.Description()
-	ver, _ := s.impl.Version()
-	typ, _ := s.impl.Type()
-
-	*reply = pluginpkg.PluginInfo{
+	info := &pluginpkg.PluginInfo{
 		Name:        name,
 		Description: desc,
 		Version:     ver,
@@ -351,50 +259,27 @@ func (s *StdoutPlugin) GetInfo(args string, reply *pluginpkg.PluginInfo) error {
 		Author:      "Arcade Team",
 		Homepage:    "https://github.com/go-arcade/arcade",
 	}
+
+	server := pluginpkg.NewServer(info, p.Impl, nil)
+	pluginv1.RegisterPluginServiceServer(s, server)
 	return nil
 }
 
-// GetMetrics RPC method
-func (s *StdoutPlugin) GetMetrics(args string, reply *pluginpkg.PluginMetrics) error {
-	name, _ := s.impl.Name()
-	ver, _ := s.impl.Version()
-	typ, _ := s.impl.Type()
-
-	*reply = pluginpkg.PluginMetrics{
-		Name:    name,
-		Type:    typ,
-		Version: ver,
-		Status:  "running",
-	}
-	return nil
-}
-
-// ===== Plugin Handler =====
-
-// StdoutNotifyPlugin is the plugin handler
-type StdoutNotifyPlugin struct {
-	plugin.Plugin
-	Impl *Stdout
-}
-
-// Server returns the RPC server
-func (p *StdoutNotifyPlugin) Server(*plugin.MuxBroker) (any, error) {
-	return &StdoutPlugin{impl: p.Impl}, nil
-}
-
-// Client returns the RPC client (not used in plugin side)
-func (p *StdoutNotifyPlugin) Client(b *plugin.MuxBroker, c *rpc.Client) (any, error) {
+// GRPCClient returns the gRPC client (not used in plugin side)
+func (p *StdoutNotifyPlugin) GRPCClient(context.Context, *plugin.GRPCBroker, *grpc.ClientConn) (any, error) {
 	return nil, nil
 }
 
 // ===== Main Entry Point =====
 
 func main() {
-
 	plugin.Serve(&plugin.ServeConfig{
-		HandshakeConfig: pluginpkg.RPCHandshake,
+		HandshakeConfig: pluginpkg.PluginHandshake,
 		Plugins: map[string]plugin.Plugin{
 			"plugin": &StdoutNotifyPlugin{Impl: NewStdout()},
+		},
+		GRPCServer: func(opts []grpc.ServerOption) *grpc.Server {
+			return grpc.NewServer(opts...)
 		},
 	})
 }

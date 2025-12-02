@@ -742,7 +742,7 @@ func (s *PluginService) hotReloadPlugin(pluginName, localPath string, defaultCon
 	_ = s.pluginManager.UnregisterPlugin(pluginName)
 
 	// create plugin config (basic information will be retrieved from plugin itself)
-	pluginConfig := pluginpkg.PluginConfig{
+	pluginConfig := &pluginpkg.RuntimePluginConfig{
 		Name:   pluginName,
 		Config: configJSON,
 		// Type and Version will be retrieved from plugin instance, here no need to set
@@ -755,7 +755,7 @@ func (s *PluginService) hotReloadPlugin(pluginName, localPath string, defaultCon
 		_ = s.pluginRepo.UpdatePluginRegistrationStatus(pluginRecord.PluginId, model.PluginRegisterStatusRegistering, "")
 	}
 
-	// register new plugin (directly use original path, RPC plugin has no path limitation)
+	// register new plugin (directly use original path, gRPC plugin has no path limitation)
 	if err := s.pluginManager.RegisterPlugin(pluginName, localPath, pluginConfig); err != nil {
 		// 注册失败，更新数据库状态
 		if pluginRecord != nil {

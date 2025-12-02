@@ -6,12 +6,13 @@ gRPC API definitions for the Arcade and Agent interaction, defined using Protoco
 
 ## Overview
 
-This directory contains all gRPC API definitions for the Arcade and Agent interaction, divided into four main service modules:
+This directory contains all gRPC API definitions for the Arcade and Agent interaction, divided into five main service modules:
 
 - **Agent Service** - Core interface for communication between Agent and Server
 - **Pipeline Service** - Pipeline management interface
 - **Task Service** - Task management interface
 - **Stream Service** - Real-time data streaming interface
+- **Plugin Service** - Plugin communication interface
 
 ## Directory Structure
 
@@ -33,10 +34,16 @@ api/
 │   ├── stream.proto
 │   ├── stream.pb.go
 │   └── stream_grpc.pb.go
-└── task/v1/                    # Task Service API
-    ├── task.proto
-    ├── task.pb.go
-    └── task_grpc.pb.go
+├── task/v1/                    # Task Service API
+│   ├── task.proto
+│   ├── task.pb.go
+│   └── task_grpc.pb.go
+└── plugin/v1/                  # Plugin Service API
+    ├── plugin.proto
+    ├── plugin_type.proto
+    ├── plugin.pb.go
+    ├── plugin_type.pb.go
+    └── plugin_grpc.pb.go
 ```
 
 ## API Service Description
@@ -132,6 +139,39 @@ Real-time data streaming interface, providing bidirectional streaming communicat
 - Task events (created, started, completed, failed, cancelled)
 - Pipeline events (started, completed, failed)
 - Agent events (registered, unregistered, offline)
+
+### 5. Plugin Service (`plugin/v1`)
+
+Plugin communication interface, providing unified plugin execution and management capabilities.
+
+**Main Features:**
+- **Health Check** (`Ping`) - Check plugin health status
+- **Plugin Information** (`GetInfo`) - Get plugin metadata (name, version, type, description)
+- **Plugin Metrics** (`GetMetrics`) - Get plugin runtime metrics (call count, error count, uptime)
+- **Plugin Initialization** (`Init`) - Initialize plugin with configuration
+- **Plugin Cleanup** (`Cleanup`) - Cleanup plugin resources
+- **Action Execution** (`Execute`) - Unified entry point for all plugin operations
+- **Config Management** (`ConfigQuery`, `ConfigQueryByKey`, `ConfigList`) - Query plugin configurations
+
+**Supported Plugin Types:**
+- `SOURCE` - Source code management plugin (clone, pull, checkout, etc.)
+- `BUILD` - Build plugin (compile, package, generate artifacts, etc.)
+- `TEST` - Test plugin (unit tests, integration tests, coverage, etc.)
+- `DEPLOY` - Deployment plugin (deploy, rollback, scaling, etc.)
+- `SECURITY` - Security plugin (vulnerability scanning, compliance checks, etc.)
+- `NOTIFY` - Notification plugin (email, webhook, instant messaging, etc.)
+- `APPROVAL` - Approval plugin (create approval, approve, reject, etc.)
+- `STORAGE` - Storage plugin (save, load, delete, list, etc.)
+- `ANALYTICS` - Analytics plugin (event tracking, queries, metrics, reports, etc.)
+- `INTEGRATION` - Integration plugin (connect, call, subscribe, etc.)
+- `CUSTOM` - Custom plugin for special-purpose functionality
+
+**Core Features:**
+- Unified action-based execution model
+- Support for action registry and dynamic routing
+- Host-provided capabilities (database access, storage access)
+- Comprehensive error handling with structured error codes
+- Runtime metrics and monitoring support
 
 ## Quick Start
 
@@ -373,6 +413,100 @@ labelSelector := &agentv1.LabelSelector{
 - `NOT_EXISTS` - Label key does not exist
 - `GT` - Label value greater than specified value (for numeric comparison)
 - `LT` - Label value less than specified value (for numeric comparison)
+
+## Plugin Service Usage
+
+### Execute Plugin Action Example
+
+```go
+// Execute a plugin action
+req := &pluginv1.ExecuteRequest{
+    Action: "send",  // Action name
+    Params: []byte(`{"message": "Hello World"}`),  // Action parameters (JSON)
+    Opts:   []byte(`{"timeout": 30}`),  // Optional overrides (JSON)
+}
+
+resp, err := client.Execute(context.Background(), req)
+if err != nil {
+    log.Fatalf("Failed to execute plugin action: %v", err)
+}
+
+if resp.Error != nil {
+    log.Fatalf("Plugin execution error: %s (code: %d)", resp.Error.Message, resp.Error.Code)
+}
+
+// Parse result
+var result map[string]interface{}
+json.Unmarshal(resp.Result, &result)
+log.Printf("Plugin execution result: %+v", result)
+```
+
+### Get Plugin Information Example
+
+```go
+// Get plugin information
+infoResp, err := client.GetInfo(context.Background(), &pluginv1.GetInfoRequest{})
+if err != nil {
+    log.Fatalf("Failed to get plugin info: %v", err)
+}
+
+info := infoResp.Info
+log.Printf("Plugin: %s v%s (%s)", info.Name, info.Version, info.Type)
+log.Printf("Description: %s", info.Description)
+```
+
+### Query Plugin Configuration Example
+
+```go
+// Query plugin configuration
+configResp, err := client.ConfigQuery(context.Background(), &pluginv1.ConfigQueryRequest{
+    PluginId: "notify",
+})
+if err != nil {
+    log.Fatalf("Failed to query config: %v", err)
+}
+
+if configResp.Error != nil {
+    log.Fatalf("Config query error: %s", configResp.Error.Message)
+}
+
+var config map[string]interface{}
+json.Unmarshal(configResp.Config, &config)
+log.Printf("Plugin config: %+v", config)
+```
+
+### Standard Action Names
+
+Plugins use a unified action-based execution model. Common action names include:
+
+**Source Plugin Actions:**
+- `clone` - Clone repository
+- `pull` - Pull latest changes
+- `checkout` - Checkout specific branch/commit
+- `commit.get` - Get commit information
+- `commit.diff` - Get commit diff
+
+**Build Plugin Actions:**
+- `build` - Build project
+- `artifacts.get` - Get build artifacts
+- `clean` - Clean build artifacts
+
+**Notify Plugin Actions:**
+- `send` - Send notification
+- `send.template` - Send notification using template
+- `send.batch` - Send batch notifications
+
+**Storage Plugin Actions:**
+- `save` - Save data
+- `load` - Load data
+- `delete` - Delete data
+- `list` - List items
+- `exists` - Check if item exists
+
+**Host-Provided Actions:**
+- `config.query` - Query plugin configuration
+- `config.query.key` - Query configuration by key
+- `config.list` - List all configurations
 
 ## Plugin Distribution Mechanism
 

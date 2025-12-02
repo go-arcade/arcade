@@ -206,7 +206,7 @@ func (w *Watcher) unloadPlugin(pluginName string) {
 
 // loadPlugin loads a plugin
 func (w *Watcher) loadPlugin(pluginName, pluginPath string) {
-	config := PluginConfig{
+	config := &RuntimePluginConfig{
 		Name:   pluginName,
 		Type:   "", // Default type is empty, will be retrieved from plugin itself
 		Config: json.RawMessage("{}"),

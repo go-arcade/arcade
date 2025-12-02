@@ -19,14 +19,14 @@ var ProviderSet = wire.NewSet(
 
 // ProvideDatabaseAccessor provides database accessor
 // Creates an adapter from database.IDatabase, implementing DatabaseAccessor interface
-func ProvideDatabaseAccessor(db database.IDatabase) DatabaseAccessor {
-	return NewPluginDBAccessorAdapter(db)
+func ProvideDatabaseAccessor(db database.IDatabase) DB {
+	return NewPluginDBAdapter(db)
 }
 
 // ProvidePluginManager provides plugin manager instance
 // dbAccessor is provided by ProvideDatabaseAccessor
 // pluginCacheDir is the plugin cache directory path (can be empty to use default)
-func ProvidePluginManager(pluginCacheDir PluginCacheDir, dbAccessor DatabaseAccessor) *Manager {
+func ProvidePluginManager(pluginCacheDir PluginCacheDir, dbAccessor DB) *Manager {
 	// Get plugin directory from configuration (use default if not set)
 	pluginDir := "/var/lib/arcade/plugins"
 	if string(pluginCacheDir) != "" {
@@ -36,7 +36,7 @@ func ProvidePluginManager(pluginCacheDir PluginCacheDir, dbAccessor DatabaseAcce
 	// Create plugin manager configuration
 	config := &ManagerConfig{
 		PluginDir:       pluginDir,
-		HandshakeConfig: RPCHandshake,
+		HandshakeConfig: PluginHandshake,
 		PluginConfig:    make(map[string]any),
 		Timeout:         30 * time.Second,
 		MaxRetries:      3,
