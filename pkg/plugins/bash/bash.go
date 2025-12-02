@@ -169,7 +169,7 @@ func (p *Bash) Execute(action string, params json.RawMessage, opts json.RawMessa
 func (p *Bash) executeScript(params json.RawMessage, opts json.RawMessage) (json.RawMessage, error) {
 	var scriptParams BashScriptArgs
 
-	if err := pluginpkg.UnmarshalParams(params, &scriptParams); err != nil {
+	if err := sonic.Unmarshal(params, &scriptParams); err != nil {
 		return nil, fmt.Errorf("failed to parse script params: %w", err)
 	}
 
@@ -221,7 +221,7 @@ func (p *Bash) executeScript(params json.RawMessage, opts json.RawMessage) (json
 func (p *Bash) executeCommand(params json.RawMessage, opts json.RawMessage) (json.RawMessage, error) {
 	var cmdParams BashCommandArgs
 
-	if err := pluginpkg.UnmarshalParams(params, &cmdParams); err != nil {
+	if err := sonic.Unmarshal(params, &cmdParams); err != nil {
 		return nil, fmt.Errorf("failed to parse command params: %w", err)
 	}
 
@@ -305,7 +305,7 @@ func (p *Bash) runCommand(command string, args []string, env map[string]string) 
 // BashPluginHandler is the gRPC plugin handler
 type BashPluginHandler struct {
 	plugin.Plugin
-	Impl *Bash
+	pluginInstance *Bash
 }
 
 // Server returns the RPC server (required by plugin.Plugin interface, not used for gRPC)
@@ -320,10 +320,10 @@ func (p *BashPluginHandler) Client(*plugin.MuxBroker, *rpc.Client) (any, error) 
 
 // GRPCServer returns the gRPC server
 func (p *BashPluginHandler) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
-	name, _ := p.Impl.Name()
-	desc, _ := p.Impl.Description()
-	ver, _ := p.Impl.Version()
-	typ, _ := p.Impl.Type()
+	name, _ := p.pluginInstance.Name()
+	desc, _ := p.pluginInstance.Description()
+	ver, _ := p.pluginInstance.Version()
+	typ, _ := p.pluginInstance.Type()
 
 	info := &pluginpkg.PluginInfo{
 		Name:        name,
@@ -334,7 +334,7 @@ func (p *BashPluginHandler) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server
 		Homepage:    "https://github.com/go-arcade/arcade",
 	}
 
-	server := pluginpkg.NewServer(info, p.Impl, nil)
+	server := pluginpkg.NewServer(info, p.pluginInstance, nil)
 	pluginv1.RegisterPluginServiceServer(s, server)
 	return nil
 }
@@ -350,7 +350,7 @@ func main() {
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: pluginpkg.PluginHandshake,
 		Plugins: map[string]plugin.Plugin{
-			"plugin": &BashPluginHandler{Impl: NewBash()},
+			"plugin": &BashPluginHandler{pluginInstance: NewBash()},
 		},
 		GRPCServer: func(opts []grpc.ServerOption) *grpc.Server {
 			return grpc.NewServer(opts...)

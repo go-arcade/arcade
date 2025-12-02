@@ -22,9 +22,9 @@ type ActionInfo struct {
 	// Handler is the function that handles this action
 	Handler ActionHandler `json:"-"`
 	// ParamsSchema is optional JSON schema for parameters validation
-	ParamsSchema json.RawMessage `json:"params_schema,omitempty"`
+	Args json.RawMessage `json:"args,omitempty"`
 	// ResultSchema is optional JSON schema for result validation
-	ResultSchema json.RawMessage `json:"result_schema,omitempty"`
+	Returns json.RawMessage `json:"returns,omitempty"`
 }
 
 // ActionRegistry manages action handlers for plugins
@@ -150,10 +150,10 @@ func (r *ActionRegistry) ListActionInfos() []*ActionInfo {
 	for _, info := range r.actions {
 		// Create a copy without the handler (for JSON serialization)
 		infos = append(infos, &ActionInfo{
-			Name:         info.Name,
-			Description:  info.Description,
-			ParamsSchema: info.ParamsSchema,
-			ResultSchema: info.ResultSchema,
+			Name:        info.Name,
+			Description: info.Description,
+			Args:        info.Args,
+			Returns:     info.Returns,
 		})
 	}
 	return infos
