@@ -83,7 +83,7 @@ func (p *Stdout) registerActions() {
 	// Register "send" action
 	if err := p.Registry().RegisterFunc("send", actions["send"], func(params json.RawMessage, opts json.RawMessage) (json.RawMessage, error) {
 		var sendParams SendArgs
-		if err := pluginpkg.UnmarshalParams(params, &sendParams); err != nil {
+		if err := sonic.Unmarshal(params, &sendParams); err != nil {
 			return nil, fmt.Errorf("failed to parse send params: %w", err)
 		}
 		if err := p.Send(sendParams.Message, sendParams.Opts); err != nil {
@@ -97,7 +97,7 @@ func (p *Stdout) registerActions() {
 	// Register "send.template" action
 	if err := p.Registry().RegisterFunc("send.template", actions["send.template"], func(params json.RawMessage, opts json.RawMessage) (json.RawMessage, error) {
 		var tplParams SendTemplateArgs
-		if err := pluginpkg.UnmarshalParams(params, &tplParams); err != nil {
+		if err := sonic.Unmarshal(params, &tplParams); err != nil {
 			return nil, fmt.Errorf("failed to parse template params: %w", err)
 		}
 		if err := p.SendTemplate(tplParams.Template, tplParams.Data, tplParams.Opts); err != nil {
@@ -111,7 +111,7 @@ func (p *Stdout) registerActions() {
 	// Register "send.batch" action
 	if err := p.Registry().RegisterFunc("send.batch", actions["send.batch"], func(params json.RawMessage, opts json.RawMessage) (json.RawMessage, error) {
 		var batchParams SendBatchArgs
-		if err := pluginpkg.UnmarshalParams(params, &batchParams); err != nil {
+		if err := sonic.Unmarshal(params, &batchParams); err != nil {
 			return nil, fmt.Errorf("failed to parse batch params: %w", err)
 		}
 		for _, msg := range batchParams.Messages {
@@ -231,7 +231,7 @@ func (p *Stdout) SendTemplate(tpl string, data json.RawMessage, opts json.RawMes
 // StdoutNotifyPlugin is the gRPC plugin handler
 type StdoutNotifyPlugin struct {
 	plugin.Plugin
-	Impl *Stdout
+	pluginInstance *Stdout
 }
 
 // Server returns the RPC server (required by plugin.Plugin interface, not used for gRPC)
@@ -246,10 +246,10 @@ func (p *StdoutNotifyPlugin) Client(*plugin.MuxBroker, *rpc.Client) (any, error)
 
 // GRPCServer returns the gRPC server
 func (p *StdoutNotifyPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
-	name, _ := p.Impl.Name()
-	desc, _ := p.Impl.Description()
-	ver, _ := p.Impl.Version()
-	typ, _ := p.Impl.Type()
+	name, _ := p.pluginInstance.Name()
+	desc, _ := p.pluginInstance.Description()
+	ver, _ := p.pluginInstance.Version()
+	typ, _ := p.pluginInstance.Type()
 
 	info := &pluginpkg.PluginInfo{
 		Name:        name,
@@ -260,7 +260,7 @@ func (p *StdoutNotifyPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Serve
 		Homepage:    "https://github.com/go-arcade/arcade",
 	}
 
-	server := pluginpkg.NewServer(info, p.Impl, nil)
+	server := pluginpkg.NewServer(info, p.pluginInstance, nil)
 	pluginv1.RegisterPluginServiceServer(s, server)
 	return nil
 }
@@ -276,7 +276,7 @@ func main() {
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: pluginpkg.PluginHandshake,
 		Plugins: map[string]plugin.Plugin{
-			"plugin": &StdoutNotifyPlugin{Impl: NewStdout()},
+			"plugin": &StdoutNotifyPlugin{pluginInstance: NewStdout()},
 		},
 		GRPCServer: func(opts []grpc.ServerOption) *grpc.Server {
 			return grpc.NewServer(opts...)
