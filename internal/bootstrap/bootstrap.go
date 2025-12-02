@@ -10,7 +10,7 @@ import (
 
 	"github.com/go-arcade/arcade/internal/engine/conf"
 	"github.com/go-arcade/arcade/internal/engine/router"
-	serviceplugin "github.com/go-arcade/arcade/internal/engine/service"
+	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/internal/pkg/grpc"
 	"github.com/go-arcade/arcade/internal/pkg/storage"
 	"github.com/go-arcade/arcade/pkg/cache"
@@ -47,7 +47,7 @@ func NewApp(
 	httpApp := rt.Router(logger)
 
 	// init plugin task manager
-	serviceplugin.InitTaskManager(mongoDB)
+	service.InitTaskManager(mongoDB)
 	logger.Info("Plugin task manager initialized with MongoDB persistence")
 
 	cleanup := func() {
@@ -99,6 +99,8 @@ func Bootstrap(configFile string, initApp InitAppFunc) (*App, func(), conf.AppCo
 	if err != nil {
 		return nil, nil, appConf, err
 	}
+
+	// init MongoDB
 	mongoClient, err := database.NewMongoDB(appConf.Database.MongoDB, context.Background())
 	if err != nil {
 		return nil, nil, appConf, err
