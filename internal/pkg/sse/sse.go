@@ -7,11 +7,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type sseEvent struct {
-	TaskID string
-	Data   []byte // 已经是 JSON 序列化后的
-}
-
 type SSEHub struct {
 	mu      sync.RWMutex
 	subs    map[string]map[chan []byte]struct{} // task_id -> set(ch)
