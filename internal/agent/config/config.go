@@ -1,63 +1,51 @@
-package conf
+package config
 
 import (
 	"fmt"
 	"sync"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/go-arcade/arcade/internal/pkg/grpc"
 	"github.com/go-arcade/arcade/pkg/http"
-	"github.com/spf13/viper"
-
-	"github.com/go-arcade/arcade/pkg/cache"
-	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/spf13/viper"
 )
 
-type TaskConfig struct {
-	MaxWorkers    int
-	QueueSize     int
-	WorkerTimeout int
+// AgentConfig holds all configuration settings
+type AgentConfig struct {
+	AgentId    string
+	ServerAddr string
+	APIkey     string
+	Log        log.Conf
+	Http       http.Http
 }
 
-type PluginConfig struct {
-	CacheDir string `mapstructure:"cacheDir"` // 插件本地缓存目录
-}
-
-type AppConfig struct {
-	Log      log.Conf
-	Grpc     grpc.Conf
-	Http     http.Http
-	Database database.Database
-	Redis    cache.Redis
-	Task     TaskConfig
-	Plugin   PluginConfig
+type Agent struct {
+	Interval int
+	Labels   map[string]string
 }
 
 var (
-	cfg  AppConfig
+	cfg  AgentConfig
 	once sync.Once
 )
 
-func NewConf(confDir string) AppConfig {
+func NewConf(confDir string) AgentConfig {
 	once.Do(func() {
 		var err error
-		cfg, err = LoadConfigFile(confDir)
+		cfg, err = loadConfigFile(confDir)
 		if err != nil {
-			panic(fmt.Sprintf("load conf file error: %s", err))
+			panic(fmt.Sprintf("load config file error: %s", err))
 		}
 	})
 	return cfg
 }
 
-// LoadConfigFile load conf file
-func LoadConfigFile(confDir string) (AppConfig, error) {
+// LoadConfigFile load config file
+func loadConfigFile(confDir string) (AgentConfig, error) {
 
 	config := viper.New()
 	config.SetConfigFile(confDir) //文件名
-	config.AddConfigPath("./conf.d")
-	config.SetConfigName("config")
-	config.SetConfigType("toml")
+
 	if err := config.ReadInConfig(); err != nil {
 		return cfg, fmt.Errorf("failed to read configuration file: %v", err)
 	}

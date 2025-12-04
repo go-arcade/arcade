@@ -1,6 +1,7 @@
 package ctx
 
 import (
+	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/google/wire"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
@@ -17,9 +18,9 @@ func ProvideBaseContext() context.Context {
 // ProvideContext 提供应用上下文
 func ProvideContext(
 	baseCtx context.Context,
-	logger *zap.SugaredLogger,
+	logger *log.Logger,
 ) *Context {
-	return NewContext(baseCtx, logger)
+	return NewContext(baseCtx, logger.Log)
 }
 
 type Context struct {

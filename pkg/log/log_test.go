@@ -12,7 +12,7 @@ import (
 )
 
 func TestDefaultConf(t *testing.T) {
-	conf := DefaultConf()
+	conf := SetDefaults()
 
 	if conf.Output != "stdout" {
 		t.Errorf("expected output to be stdout, got %s", conf.Output)
@@ -145,14 +145,14 @@ func TestNewLog_File(t *testing.T) {
 	logger.Sync()
 
 	// 验证日志文件存在
-	logFile := filepath.Join(tmpDir, defaultFilename)
+	logFile := filepath.Join(tmpDir, "arcade.LOG")
 	if _, err := os.Stat(logFile); os.IsNotExist(err) {
 		t.Errorf("log file should exist at %s", logFile)
 	}
 }
 
 func TestInit(t *testing.T) {
-	conf := DefaultConf()
+	conf := SetDefaults()
 	err := Init(conf)
 	if err != nil {
 		t.Fatalf("Init() error = %v", err)
@@ -185,7 +185,7 @@ func TestGlobalLogFunctions(t *testing.T) {
 }
 
 func TestGlobalLogFunctions_Formatted(t *testing.T) {
-	conf := DefaultConf()
+	conf := SetDefaults()
 	Init(conf)
 
 	Infof("formatted info: %s", "test")
@@ -195,7 +195,7 @@ func TestGlobalLogFunctions_Formatted(t *testing.T) {
 }
 
 func TestGlobalLogFunctions_WithFields(t *testing.T) {
-	conf := DefaultConf()
+	conf := SetDefaults()
 	Init(conf)
 
 	Infow("structured info", "key1", "value1", "key2", 123)
@@ -213,7 +213,7 @@ const (
 )
 
 func TestWithContext(t *testing.T) {
-	conf := DefaultConf()
+	conf := SetDefaults()
 	Init(conf)
 
 	// 创建带有字段的 context
@@ -233,7 +233,7 @@ func TestWithContext(t *testing.T) {
 }
 
 func TestWith(t *testing.T) {
-	conf := DefaultConf()
+	conf := SetDefaults()
 	Init(conf)
 
 	// 使用 With 添加字段
@@ -246,7 +246,7 @@ func TestWith(t *testing.T) {
 }
 
 func TestSync(t *testing.T) {
-	conf := DefaultConf()
+	conf := SetDefaults()
 	Init(conf)
 
 	Info("test message")
@@ -259,7 +259,7 @@ func TestSync(t *testing.T) {
 }
 
 func TestConcurrentLogging(t *testing.T) {
-	conf := DefaultConf()
+	conf := SetDefaults()
 	Init(conf)
 
 	// 并发写日志
@@ -275,7 +275,7 @@ func TestConcurrentLogging(t *testing.T) {
 	}
 
 	// 等待所有 goroutine 完成
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		<-done
 	}
 }
@@ -283,7 +283,7 @@ func TestConcurrentLogging(t *testing.T) {
 func TestMultipleInit(t *testing.T) {
 	// 测试多次初始化
 	for i := 0; i < 3; i++ {
-		conf := DefaultConf()
+		conf := SetDefaults()
 		err := Init(conf)
 		if err != nil {
 			t.Fatalf("Init() iteration %d error = %v", i, err)
@@ -344,7 +344,7 @@ func TestLogRotation(t *testing.T) {
 	logger.Sync()
 
 	// 验证日志文件存在
-	logFile := filepath.Join(tmpDir, defaultFilename)
+	logFile := filepath.Join(tmpDir, "arcade.LOG")
 	if _, err := os.Stat(logFile); os.IsNotExist(err) {
 		t.Errorf("log file should exist at %s", logFile)
 	}
@@ -361,31 +361,31 @@ func TestLogRotation(t *testing.T) {
 }
 
 func BenchmarkInfo(b *testing.B) {
-	conf := DefaultConf()
+	conf := SetDefaults()
 	Init(conf)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	
+	for b.Loop() {
 		Info("benchmark message")
 	}
 }
 
 func BenchmarkInfof(b *testing.B) {
-	conf := DefaultConf()
+	conf := SetDefaults()
 	Init(conf)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	
+	for i := 0; b.Loop(); i++ {
 		Infof("benchmark message %d", i)
 	}
 }
 
 func BenchmarkInfow(b *testing.B) {
-	conf := DefaultConf()
+	conf := SetDefaults()
 	Init(conf)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	
+	for i := 0; b.Loop(); i++ {
 		Infow("benchmark message", "iteration", i, "timestamp", time.Now())
 	}
 }

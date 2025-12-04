@@ -13,14 +13,6 @@ keepHours = 4
 rotateNum = 3
 # unit: MB
 rotateSize = 256
-# kafka brokers
-#kafkaBrokers = [
-#    "127.0.0.1:9092",
-#    "127.0.0.1:9093",
-#    "127.0.0.1:9094"
-#]
-# kafka topic
-# kafkaTopic = ""
 
 [grpc]
 host = "0.0.0.0"
@@ -33,18 +25,14 @@ readWriteTimeout = 5
 [http]
 host = "0.0.0.0"
 port = 8080
-# debug, release
-mode = "debug"
 # unit: second
 heartbeat = 60
 # enable pprof, false or true
 pprof = true
-# enable metrics, false or true
-exposeMetrics = true
 # access log, false or true
 accessLog = true
 # use file assets, false or true
-UseFileAssets = false
+useFileAssets = false
 # read timeout
 # unit: second
 readTimeout = 60
@@ -132,18 +120,6 @@ readTimeout = 10
 # unit: second
 writeTimeout = 10
 
-# 存储配置已移至数据库管理
-# 请使用 API 或管理界面配置存储
-# [storage]
-# Provider  = "minio"
-# AccessKey = ""
-# SecretKey = ""
-# Endpoint  = ""
-# Bucket    = ""
-# Region    = ""
-# UseTLS    = false
-# BasePath  = ""
-
 [job]
 # Job worker pool configuration
 # If maxWorkers is 0, it will be calculated based on CPU cores (CPU * 2)
@@ -154,6 +130,3 @@ queueSize = 0
 workerTimeout = 1800
 
 [plugin]
-# Plugin cache directory for storing downloaded plugin files
-# Default: /var/lib/arcade/plugins
-cacheDir = "plugins"

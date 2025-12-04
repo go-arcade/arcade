@@ -18,7 +18,7 @@ var (
 	sugar  *zap.SugaredLogger
 )
 
-// ProviderSet 提供日志相关的依赖
+// ProviderSet
 var ProviderSet = wire.NewSet(ProvideLogger)
 
 // ProvideLogger 提供 Logger 实例
@@ -43,10 +43,12 @@ type Conf struct {
 	KafkaTopic   string
 }
 
-// DefaultConf 返回默认配置
-func DefaultConf() *Conf {
+// SetDefaults 返回默认配置
+func SetDefaults() *Conf {
 	return &Conf{
 		Output:     "stdout",
+		Path:       "./logs",
+		Filename:   "app.log",
 		Level:      "INFO",
 		KeepHours:  7,   // 默认保留7天
 		RotateSize: 100, // 默认100MB

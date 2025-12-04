@@ -9,22 +9,14 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-const defaultFilename string = "log.LOG"
-
 // getFileLogWriter returns the WriteSyncer for logging to a file.
 func getFileLogWriter(config *Conf) (zapcore.WriteSyncer, error) {
-	// 确保日志目录存在
+	// confirm log directory if not exists
 	if err := os.MkdirAll(config.Path, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create log directory: %w", err)
 	}
 
-	// 如果 filename 为空，使用默认值
-	filename := config.Filename
-	if filename == "" {
-		filename = defaultFilename
-	}
-
-	logPath := filepath.Join(config.Path, filename)
+	logPath := filepath.Join(config.Path, config.Filename)
 
 	lumberJackLogger := &lumberjack.Logger{
 		Filename:   logPath,

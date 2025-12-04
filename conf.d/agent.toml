@@ -1,0 +1,53 @@
+agentId = "your_agent_id_here"
+serverAddr = "https://arcade.devops.mn"
+apiKey = "your_api_key_here"
+
+[agent]
+# heartbeat interval in seconds
+interval = 60
+# labels for the agent
+labels = { "env" = "production", "region" = "us-west" }
+
+[log]
+# support stdout, file, kafka
+output = "stdout"
+# log level: DEBUG INFO WARNING ERROR FATAL
+level = "DEBUG"
+# log write directory
+path = "logs"
+# log file name
+filename = "arcade.LOG"
+# rotate by time
+keepHours = 4
+# rotate by size
+rotateNum = 3
+# unit: MB
+rotateSize = 256
+
+[http]
+host = "0.0.0.0"
+port = 8081
+# unit: second
+heartbeat = 60
+# enable pprof, false or true
+pprof = true
+# access log, false or true
+accessLog = true
+# use file assets, false or true
+useFileAssets = false
+# read timeout
+# unit: second
+readTimeout = 60
+# write timeout
+# unit: second
+writeTimeout = 60
+# idle timeout
+# unit: second
+idleTimeout = 60
+# shutdown timeout
+# unit: second
+shutdownTimeout = 10
+# request body size limit (bytes)
+# default: 104857600 (100MB) - for plugin uploads
+# unit: bytes
+bodyLimit = 104857600

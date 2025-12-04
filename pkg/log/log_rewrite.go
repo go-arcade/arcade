@@ -18,7 +18,7 @@ func ensureLogger() {
 	if !initialized {
 		once.Do(func() {
 			// 使用默认配置初始化
-			if err := Init(DefaultConf()); err != nil {
+			if err := Init(SetDefaults()); err != nil {
 				// 如果初始化失败，创建一个基本的 stdout logger
 				zapLogger, _ := zap.NewProduction()
 				mu.Lock()

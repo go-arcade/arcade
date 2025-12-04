@@ -13,11 +13,16 @@ import (
 )
 
 // ProviderSet 提供缓存相关的依赖
-var ProviderSet = wire.NewSet(ProvideRedis)
+var ProviderSet = wire.NewSet(ProvideRedis, ProvideICache)
 
 // ProvideRedis 提供 Redis 实例
 func ProvideRedis(conf Redis) (*redis.Client, error) {
 	return NewRedis(conf)
+}
+
+// ProvideICache 提供 ICache 接口实例
+func ProvideICache(client *redis.Client) ICache {
+	return NewRedisCache(client)
 }
 
 type Redis struct {

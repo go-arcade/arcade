@@ -1,25 +1,16 @@
 package http
 
 import (
-	"context"
-	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/go-arcade/arcade/pkg/ctx"
-	"github.com/go-arcade/arcade/pkg/log"
-	"github.com/gofiber/fiber/v2"
 )
 
 type Http struct {
 	Host            string
 	Port            int
-	Mode            string
 	Heartbeat       int64
 	Pprof           bool
-	ExposeMetrics   bool
 	AccessLog       bool
 	UseFileAssets   bool
 	ReadTimeout     int
@@ -43,44 +34,35 @@ type Auth struct {
 	RefreshExpire time.Duration
 }
 
-// NewHttp 创建并启动 HTTP 服务器
-func NewHttp(cfg Http, app *fiber.App) func() {
-	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
-
-	go func() {
-		log.Infof("HTTP server started at %s", addr)
-		if cfg.TLS.CertFile != "" && cfg.TLS.KeyFile != "" {
-			if err := app.ListenTLS(addr, cfg.TLS.CertFile, cfg.TLS.KeyFile); err != nil {
-				log.Fatalf("HTTP server failed: %v", err)
-			}
-		} else {
-			if err := app.Listen(addr); err != nil {
-				log.Fatalf("HTTP server failed: %v", err)
-			}
-		}
-	}()
-
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-
-	return createShutdownHook(app, cfg.ShutdownTimeout, sc)
-}
-
-// createShutdownHook 创建关闭钩子函数
-func createShutdownHook(app *fiber.App, shutdownTimeout int, signalChan chan os.Signal) func() {
-	signal.Notify(signalChan, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-
-	return func() {
-		<-signalChan
-		log.Info("Shutting down HTTP server...")
-
-		ctx2, cancel := context.WithTimeout(context.Background(), time.Duration(shutdownTimeout)*time.Second)
-		defer cancel()
-
-		if err := app.ShutdownWithContext(ctx2); err != nil {
-			log.Errorf("HTTP server shutdown error: %v", err)
-		} else {
-			log.Info("HTTP server shut down gracefully")
-		}
+func (h *Http) SetDefaults() {
+	if h.Host == "" {
+		h.Host = "127.0.0.1"
+	}
+	if h.Port == 0 {
+		h.Port = 8080
+	}
+	if h.Heartbeat == 0 {
+		h.Heartbeat = 60
+	}
+	if h.ReadTimeout == 0 {
+		h.ReadTimeout = 60
+	}
+	if h.WriteTimeout == 0 {
+		h.WriteTimeout = 60
+	}
+	if h.IdleTimeout == 0 {
+		h.IdleTimeout = 60
+	}
+	if h.ShutdownTimeout == 0 {
+		h.ShutdownTimeout = 10
+	}
+	if h.BodyLimit == 0 {
+		h.BodyLimit = 100 * 1024 * 1024 // 100MB
+	}
+	if h.Auth.AccessExpire == 0 {
+		h.Auth.AccessExpire = 3600 * time.Minute
+	}
+	if h.Auth.RefreshExpire == 0 {
+		h.Auth.RefreshExpire = 7200 * time.Minute
 	}
 }

@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 
-	"github.com/go-arcade/arcade/internal/bootstrap"
+	"github.com/go-arcade/arcade/internal/engine/bootstrap"
 )
 
 var (
@@ -12,7 +12,7 @@ var (
 )
 
 func init() {
-	flag.StringVar(&configFile, "conf", "conf.d/config.toml", "conf file path, e.g. -conf ./conf.d")
+	flag.StringVar(&configFile, "conf", "conf.d/config.toml", "config file path, e.g. -conf ./conf.d")
 	flag.StringVar(&pluginDir, "plugin", "plugins", "plugin dir path, e.g. -plugin ./plugins")
 }
 

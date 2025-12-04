@@ -111,11 +111,17 @@ prebuild: ## download and embed the front-end file
 build: wire plugins buf ## build main program
 	go build -ldflags "${LDFLAGS}" -o arcade ./cmd/arcade/
 
+build-agent: wire buf ## build agent program
+	go build -ldflags "${LDFLAGS}" -o arcade ./cmd/arcade-agent/
+
 build-cli: ## build CLI tool
 	go build -ldflags "${LDFLAGS}" -o arcade-cli ./cmd/cli/
 
 run: deps-sync wire buf
 	go run ./cmd/arcade/
+
+run-agent: deps-sync wire buf
+	go run ./cmd/arcade-agent/
 
 release: ## create release version
 	goreleaser --skip-validate --skip-publish --snapshot
@@ -166,6 +172,7 @@ wire-install: ## install wire tool
 wire: ## generate wire dependency injection code
 	@echo ">> generating wire code..."
 	@cd cmd/arcade && wire
+	@cd cmd/arcade-agent && wire
 	@echo ">> wire code generation done."
 
 wire-clean: ## clean wire generated code

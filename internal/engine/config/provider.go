@@ -1,10 +1,12 @@
-package conf
+package config
 
 import (
 	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/internal/pkg/grpc"
+	"github.com/go-arcade/arcade/pkg/cache"
+	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/go-arcade/arcade/pkg/http"
-	pluginpkg "github.com/go-arcade/arcade/pkg/plugin"
+	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/google/wire"
 )
 
@@ -14,7 +16,9 @@ var ProviderSet = wire.NewSet(
 	ProvideTaskPoolConfig,
 	ProvideHttpConfig,
 	ProvideGrpcConfig,
-	ProvidePluginCacheDir,
+	ProvideLogConfig,
+	ProvideDatabaseConfig,
+	ProvideRedisConfig,
 )
 
 // ProvideTaskPoolConfig 提供任务池配置
@@ -33,7 +37,9 @@ func ProvideConf(configPath string) AppConfig {
 
 // ProvideHttpConfig 提供 HTTP 配置
 func ProvideHttpConfig(appConf AppConfig) *http.Http {
-	return &appConf.Http
+	httpConfig := &appConf.Http
+	httpConfig.SetDefaults()
+	return httpConfig
 }
 
 // ProvideGrpcConfig 提供 gRPC 配置
@@ -41,7 +47,17 @@ func ProvideGrpcConfig(appConf AppConfig) *grpc.Conf {
 	return &appConf.Grpc
 }
 
-// ProvidePluginCacheDir 提供插件缓存目录路径
-func ProvidePluginCacheDir(appConf AppConfig) pluginpkg.PluginCacheDir {
-	return pluginpkg.PluginCacheDir(appConf.Plugin.CacheDir)
+// ProvideLogConfig 提供日志配置
+func ProvideLogConfig(appConf AppConfig) *log.Conf {
+	return &appConf.Log
+}
+
+// ProvideDatabaseConfig 提供数据库配置
+func ProvideDatabaseConfig(appConf AppConfig) database.Database {
+	return appConf.Database
+}
+
+// ProvideRedisConfig 提供 Redis 配置
+func ProvideRedisConfig(appConf AppConfig) cache.Redis {
+	return appConf.Redis
 }
