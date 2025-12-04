@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -13,6 +14,32 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/go-arcade/arcade/pkg/log"
 )
+
+// PluginEvent represents a plugin file system event
+type PluginEvent struct {
+	// File path
+	Path string
+	// Event operation type
+	Op fsnotify.Op
+	// Event timestamp
+	Timestamp time.Time
+	// Plugin name (if known)
+	PluginName string
+}
+
+// PluginFileState tracks the state of a plugin file
+type PluginFileState struct {
+	// File path
+	Path string
+	// Last event timestamp
+	LastEventTime time.Time
+	// Last event operation
+	LastEventOp fsnotify.Op
+	// Load timestamp (for ignoring events shortly after loading)
+	LoadTime time.Time
+	// Whether this file was recently loaded
+	RecentlyLoaded bool
+}
 
 // Watcher is the plugin directory monitor
 // Automatically monitors plugin directory changes, supports hot loading and unloading of plugins
@@ -33,8 +60,10 @@ type Watcher struct {
 	debounceTime time.Duration
 	// Mutex
 	mu sync.Mutex
-	// Pending operations mapping (file path -> last operation time)
-	pendingOps map[string]time.Time
+	// Pending operations mapping (file path -> event state)
+	pendingOps map[string]*PluginFileState
+	// File states (file path -> state)
+	fileStates map[string]*PluginFileState
 }
 
 // NewWatcher creates a new plugin watcher
@@ -53,7 +82,8 @@ func NewWatcher(manager *Manager) (*Watcher, error) {
 		ctx:          ctx,
 		cancel:       cancel,
 		debounceTime: 500 * time.Millisecond, // Debounce delay
-		pendingOps:   make(map[string]time.Time),
+		pendingOps:   make(map[string]*PluginFileState),
+		fileStates:   make(map[string]*PluginFileState),
 	}, nil
 }
 
@@ -86,7 +116,10 @@ func (w *Watcher) Start() {
 // Stop stops the monitoring
 func (w *Watcher) Stop() {
 	w.cancel()
-	w.watcher.Close()
+	err := w.watcher.Close()
+	if err != nil {
+		return
+	}
 	w.wg.Wait()
 	log.Info("plugin watcher stopped")
 }
@@ -122,7 +155,61 @@ func (w *Watcher) handleEvent(event fsnotify.Event) {
 		return
 	}
 
+	// Ignore CHMOD events (permission changes don't require reload)
+	if event.Op&fsnotify.Chmod == fsnotify.Chmod {
+		log.Debugf("ignoring CHMOD event for %s", event.Name)
+		return
+	}
+
 	log.Debugf("detected file event: %s %s", event.Op.String(), event.Name)
+
+	// Get or create file state
+	w.mu.Lock()
+	state, exists := w.fileStates[event.Name]
+	if !exists {
+		state = &PluginFileState{
+			Path:           event.Name,
+			RecentlyLoaded: false,
+		}
+		w.fileStates[event.Name] = state
+	}
+	w.mu.Unlock()
+
+	// Handle RENAME events immediately (file might be moved/deleted)
+	if event.Op&fsnotify.Rename == fsnotify.Rename {
+		// Check if file still exists at the original path
+		if _, err := os.Stat(event.Name); os.IsNotExist(err) {
+			// File was moved/deleted, find plugin and unload it
+			pluginName := w.getPluginNameFromPath(event.Name)
+			if pluginName != "" {
+				log.Infof("plugin file [%s] was moved/deleted (RENAME), unloading plugin [%s]", event.Name, pluginName)
+				w.unloadPlugin(pluginName)
+			}
+			// Clean up state
+			w.mu.Lock()
+			delete(w.fileStates, event.Name)
+			delete(w.pendingOps, event.Name)
+			w.mu.Unlock()
+			return
+		}
+		// File was renamed but still exists, treat as modification
+	}
+
+	// Check if this plugin was recently loaded (within 2 seconds)
+	w.mu.Lock()
+	if state.RecentlyLoaded {
+		if time.Since(state.LoadTime) < 2*time.Second {
+			log.Debugf("ignoring event for recently loaded plugin: %s", event.Name)
+			w.mu.Unlock()
+			return
+		}
+		// Remove recently loaded flag if enough time has passed
+		state.RecentlyLoaded = false
+	}
+	// Update state
+	state.LastEventTime = time.Now()
+	state.LastEventOp = event.Op
+	w.mu.Unlock()
 
 	// Handle plugin file changes
 	// RPC plugins are executable binaries, check if it's likely a plugin file
@@ -143,8 +230,22 @@ func (w *Watcher) schedulePluginOperation(event fsnotify.Event) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	// Record operation time for debouncing
-	w.pendingOps[event.Name] = time.Now()
+	// Get or create file state
+	state, exists := w.fileStates[event.Name]
+	if !exists {
+		state = &PluginFileState{
+			Path:           event.Name,
+			RecentlyLoaded: false,
+		}
+		w.fileStates[event.Name] = state
+	}
+
+	// Update state
+	state.LastEventTime = time.Now()
+	state.LastEventOp = event.Op
+
+	// Add to pending operations for debouncing
+	w.pendingOps[event.Name] = state
 }
 
 // debounceLoop debounce processing loop
@@ -168,39 +269,72 @@ func (w *Watcher) debounceLoop() {
 // processPendingOps processes pending operations
 func (w *Watcher) processPendingOps() {
 	w.mu.Lock()
-	defer w.mu.Unlock()
-
 	now := time.Now()
-	for path, opTime := range w.pendingOps {
+	var toProcess []*PluginFileState
+	for path, state := range w.pendingOps {
 		// If the operation time has exceeded the debounce time
-		if now.Sub(opTime) >= w.debounceTime {
-			w.reloadPlugin(path)
+		if now.Sub(state.LastEventTime) >= w.debounceTime {
+			toProcess = append(toProcess, state)
 			delete(w.pendingOps, path)
 		}
 	}
+	w.mu.Unlock()
+
+	// Process events outside of lock
+	for _, state := range toProcess {
+		w.handlePluginChange(state.Path, state.LastEventOp)
+	}
 }
 
-// reloadPlugin reloads a plugin
-func (w *Watcher) reloadPlugin(path string) {
+// handlePluginChange handles plugin file changes
+func (w *Watcher) handlePluginChange(path string, op fsnotify.Op) {
 	pluginName := w.getPluginNameFromPath(path)
 	if pluginName == "" {
-		log.Warnf("cannot determine plugin name from path: %s", path)
+		log.Warnf("cannot determine plugin name from path: [%s]", path)
 		return
 	}
 
-	// Try to unload the old plugin
+	// Check if file exists
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		// File was deleted, just unload the plugin
+		log.Infof("plugin file [%s] was deleted (op: %s), unloading plugin [%s]", path, op.String(), pluginName)
+		w.unloadPlugin(pluginName)
+		// Clean up state
+		w.mu.Lock()
+		delete(w.fileStates, path)
+		w.mu.Unlock()
+		return
+	}
+
+	// File exists or was modified, reload the plugin
+	log.Debugf("handling plugin change: path=[%s], op=%s, plugin=[%s]", path, op.String(), pluginName)
+	w.reloadPlugin(pluginName, path)
+}
+
+// reloadPlugin reloads a plugin
+func (w *Watcher) reloadPlugin(pluginName, path string) {
+	// Try to unload the old plugin first
 	w.unloadPlugin(pluginName)
 
-	// Load new plugin directly (RPC plugins don't have path limitations)
+	// Wait a bit for the plugin to fully shutdown before loading new one
+	time.Sleep(100 * time.Millisecond)
+
+	// Verify file still exists before loading
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		log.Warnf("plugin file [%s] no longer exists, skipping load", path)
+		return
+	}
+
+	// Load new plugin
 	w.loadPlugin(pluginName, path)
 }
 
 // unloadPlugin unloads a plugin
 func (w *Watcher) unloadPlugin(pluginName string) {
 	if err := w.manager.UnregisterPlugin(pluginName); err != nil {
-		log.Debugf("unload plugin %s failed (maybe not loaded): %v", pluginName, err)
+		log.Debugf("unload plugin [%s] failed (maybe not loaded): %v", pluginName, err)
 	} else {
-		log.Infof("plugin %s unloaded", pluginName)
+		log.Infof("plugin [%s] unloaded", pluginName)
 	}
 }
 
@@ -213,26 +347,44 @@ func (w *Watcher) loadPlugin(pluginName, pluginPath string) {
 	}
 
 	if err := w.manager.RegisterPlugin(pluginName, pluginPath, config); err != nil {
-		log.Errorf("load plugin %s failed: %v", pluginName, err)
+		log.Errorf("load plugin [%s] failed: %v", pluginName, err)
 		return
 	}
 
-	log.Infof("plugin %s loaded successfully from %s", pluginName, pluginPath)
+	// Mark this plugin as recently loaded to ignore immediate file system events
+	w.mu.Lock()
+	state, exists := w.fileStates[pluginPath]
+	if !exists {
+		state = &PluginFileState{
+			Path: pluginPath,
+		}
+		w.fileStates[pluginPath] = state
+	}
+	state.RecentlyLoaded = true
+	state.LoadTime = time.Now()
+	w.mu.Unlock()
+
+	log.Infof("plugin [%s] loaded successfully from %s", pluginName, pluginPath)
 }
 
 // getPluginNameFromPath extracts the plugin name from file path
 func (w *Watcher) getPluginNameFromPath(path string) string {
-	// Iterate through all registered plugins to find matching path
+	// First, try to find plugin by exact path match
+	if pluginName := w.manager.FindPluginByPath(path); pluginName != "" {
+		return pluginName
+	}
+
+	// If not found by exact path, try to match by filename
+	base := filepath.Base(path)
 	plugins := w.manager.ListPlugins()
 	for name := range plugins {
-		// Match plugin name based on path
-		if strings.Contains(path, name) {
+		// Match plugin name based on filename
+		if strings.Contains(base, name) || strings.Contains(name, base) {
 			return name
 		}
 	}
 
 	// If no registered plugin is found, use the filename as the plugin name
-	base := filepath.Base(path)
 	// For executable binaries, the filename is the plugin name (may contain version)
 	// e.g., "stdout_1.0.0" -> extract plugin name before version
 	parts := strings.Split(base, "_")

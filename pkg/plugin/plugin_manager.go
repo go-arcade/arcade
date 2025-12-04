@@ -34,6 +34,8 @@ type Manager struct {
 	handlers map[string]plugin.Plugin
 	// Database adapter
 	db DB
+	// Plugin directory watcher
+	watcher *Watcher
 }
 
 // ManagerConfig is the plugin manager configuration
@@ -245,24 +247,66 @@ func (m *Manager) UnregisterPlugin(name string) error {
 		return fmt.Errorf("plugin %s not found", name)
 	}
 
-	// Cleanup plugin
-	if err := m.cleanupPlugin(pluginClient); err != nil {
-		log.Warnf("cleanup plugin %s failed: %v", name, err)
+	// Mark as disconnected to prevent new operations
+	pluginClient.connected = false
+
+	// Call plugin's cleanup method with timeout
+	cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cleanupCancel()
+
+	if err := m.cleanupPluginWithContext(cleanupCtx, pluginClient); err != nil {
+		// Ignore context deadline errors as they're expected during shutdown
+		if err != context.DeadlineExceeded {
+			log.Debugf("cleanup plugin [%s] failed: %v", name, err)
+		}
 	}
 
-	// Close connection
+	// Wait a bit for cleanup to complete
+	time.Sleep(100 * time.Millisecond)
+
+	// Close gRPC connection (this signals the plugin to shutdown)
 	if pluginClient.conn != nil {
-		pluginClient.conn.Close()
+		// Close connection and ignore "connection is closing" errors as they're normal during shutdown
+		err := pluginClient.conn.Close()
+		if err != nil && !strings.Contains(err.Error(), "closing") && !strings.Contains(err.Error(), "Canceled") {
+			log.Debugf("close connection for plugin [%s]: %v", name, err)
+		}
 	}
+
+	// Wait for plugin to gracefully shutdown
+	time.Sleep(300 * time.Millisecond)
+
+	// Kill the plugin process if it's still running
 	if pluginClient.pluginClient != nil {
-		pluginClient.pluginClient.Kill()
+		// Check if plugin has already exited
+		if exited := pluginClient.pluginClient.Exited(); !exited {
+			pluginClient.pluginClient.Kill()
+			// Wait for process to terminate
+			time.Sleep(200 * time.Millisecond)
+		}
 	}
 
 	// Delete plugin
 	delete(m.plugins, name)
 	delete(m.clients, name)
 
-	log.Infof("plugin %s unregistered", name)
+	log.Infof("plugin [%s] unregistered", name)
+	return nil
+}
+
+// cleanupPluginWithContext cleans up a plugin with context
+func (m *Manager) cleanupPluginWithContext(ctx context.Context, pluginClient *Client) error {
+	if pluginClient.client == nil {
+		return nil
+	}
+
+	// Call plugin's cleanup method with context
+	resp, err := pluginClient.client.Cleanup(ctx, &pluginv1.CleanupRequest{})
+	if err != nil {
+		return fmt.Errorf("plugin cleanup failed: %w", err)
+	}
+
+	log.Infof("plugin [%s] is %s.", pluginClient.info.GetName(), resp.Message)
 	return nil
 }
 
@@ -289,7 +333,10 @@ func (m *Manager) ReloadPlugin(name string) error {
 
 	// stop old client
 	if oldClient.conn != nil {
-		oldClient.conn.Close()
+		err := oldClient.conn.Close()
+		if err != nil {
+			return err
+		}
 	}
 	if oldClient.pluginClient != nil {
 		oldClient.pluginClient.Kill()
@@ -317,7 +364,7 @@ func (m *Manager) ReloadPlugin(name string) error {
 
 	// re-register (with retry)
 	var lastErr error
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		err := m.RegisterPlugin(name, pluginPath, pluginConfig)
 		if err == nil {
 			log.Infof("[plugin] reloaded %s successfully after %d attempt(s)", name, i+1)
@@ -381,6 +428,30 @@ func (m *Manager) ListPlugins() map[string]*PluginInfo {
 	}
 
 	return plugins
+}
+
+// FindPluginByPath finds plugin name by file path
+func (m *Manager) FindPluginByPath(path string) string {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	// Normalize path for comparison
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		absPath = path
+	}
+
+	for name, pluginClient := range m.plugins {
+		clientAbsPath, err := filepath.Abs(pluginClient.pluginPath)
+		if err != nil {
+			clientAbsPath = pluginClient.pluginPath
+		}
+		if clientAbsPath == absPath {
+			return name
+		}
+	}
+
+	return ""
 }
 
 // GetPluginMetrics retrieves plugin metrics
@@ -608,7 +679,6 @@ func (m *Manager) extractPluginName(filename string) string {
 		name = strings.TrimSuffix(name, ext)
 	}
 
-	// Extract name before version (format: pluginName_version)
 	parts := strings.Split(name, "_")
 	if len(parts) > 0 {
 		return parts[0]
@@ -620,6 +690,12 @@ func (m *Manager) extractPluginName(filename string) string {
 func (m *Manager) Close() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
+	// Stop watcher if it exists
+	if m.watcher != nil {
+		m.watcher.Stop()
+		m.watcher = nil
+	}
 
 	// Cleanup all plugins
 	for name, pluginClient := range m.plugins {
