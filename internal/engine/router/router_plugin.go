@@ -52,7 +52,7 @@ func (rt *Router) pluginRouter(r fiber.Router, auth fiber.Handler) {
 // getPluginService 获取插件服务实例
 func (rt *Router) getPluginService() *serviceplugin.PluginService {
 	if rt.Services.Plugin == nil {
-		log.Errorf("[PluginRouter] plugin service is nil")
+		log.Error("[PluginRouter] plugin service is nil")
 		return nil
 	}
 	return rt.Services.Plugin
@@ -75,7 +75,7 @@ func (rt *Router) listPlugins(c *fiber.Ctx) error {
 
 	plugins, err := pluginService.ListPlugins(pluginType, isEnabledInt)
 	if err != nil {
-		log.Errorf("[PluginRouter] failed to list plugins: %v", err)
+		log.Errorw("[PluginRouter] failed to list plugins", "error", err)
 		return httpx.WithRepErrMsg(c, httpx.Failed.Code, err.Error(), c.Path())
 	}
 
@@ -97,7 +97,7 @@ func (rt *Router) getPluginDetailByID(c *fiber.Ctx) error {
 
 	plugin, err := pluginService.GetPluginDetailByID(pluginID)
 	if err != nil {
-		log.Errorf("[PluginRouter] failed to get plugin detail: %v", err)
+		log.Errorw("[PluginRouter] failed to get plugin detail", "error", err)
 		return httpx.WithRepErrMsg(c, httpx.Failed.Code, err.Error(), c.Path())
 	}
 
@@ -151,7 +151,7 @@ func (rt *Router) installPlugin(c *fiber.Ctx) error {
 	// 异步安装插件
 	resp, err := pluginService.InstallPluginAsync(req)
 	if err != nil {
-		log.Errorf("[PluginRouter] failed to start async install: %v", err)
+		log.Errorw("[PluginRouter] failed to start async install", "error", err)
 		return httpx.WithRepErrMsg(c, httpx.Failed.Code, err.Error(), c.Path())
 	}
 
@@ -205,7 +205,7 @@ func (rt *Router) uninstallPlugin(c *fiber.Ctx) error {
 	}
 
 	if err := pluginService.UninstallPlugin(pluginID); err != nil {
-		log.Errorf("[PluginRouter] failed to uninstall plugin: %v", err)
+		log.Errorw("[PluginRouter] failed to uninstall plugin", "error", err)
 		return httpx.WithRepErrMsg(c, httpx.Failed.Code, err.Error(), c.Path())
 	}
 
@@ -226,7 +226,7 @@ func (rt *Router) enablePlugin(c *fiber.Ctx) error {
 	}
 
 	if err := pluginService.EnablePlugin(pluginID); err != nil {
-		log.Errorf("[PluginRouter] failed to enable plugin: %v", err)
+		log.Errorw("[PluginRouter] failed to enable plugin", "error", err)
 		return httpx.WithRepErrMsg(c, httpx.Failed.Code, err.Error(), c.Path())
 	}
 
@@ -247,7 +247,7 @@ func (rt *Router) disablePlugin(c *fiber.Ctx) error {
 	}
 
 	if err := pluginService.DisablePlugin(pluginID); err != nil {
-		log.Errorf("[PluginRouter] failed to disable plugin: %v", err)
+		log.Errorw("[PluginRouter] failed to disable plugin", "error", err)
 		return httpx.WithRepErrMsg(c, httpx.Failed.Code, err.Error(), c.Path())
 	}
 
@@ -280,7 +280,7 @@ func (rt *Router) updatePlugin(c *fiber.Ctx) error {
 	// 更新插件
 	resp, err := pluginService.UpdatePlugin(pluginID, req)
 	if err != nil {
-		log.Errorf("[PluginRouter] failed to update plugin: %v", err)
+		log.Errorw("[PluginRouter] failed to update plugin", "error", err)
 		return httpx.WithRepErrMsg(c, httpx.Failed.Code, err.Error(), c.Path())
 	}
 
@@ -363,7 +363,7 @@ func (rt *Router) getPluginConfig(c *fiber.Ctx) error {
 
 	config, err := pluginService.GetPluginConfig(pluginID)
 	if err != nil {
-		log.Errorf("[PluginRouter] failed to get plugin config: %v", err)
+		log.Errorw("[PluginRouter] failed to get plugin config", "error", err)
 		return httpx.WithRepErrMsg(c, httpx.Failed.Code, err.Error(), c.Path())
 	}
 
@@ -393,7 +393,7 @@ func (rt *Router) createPluginConfig(c *fiber.Ctx) error {
 
 	resp, err := pluginService.CreatePluginConfig(&req)
 	if err != nil {
-		log.Errorf("[PluginRouter] failed to create plugin config: %v", err)
+		log.Errorw("[PluginRouter] failed to create plugin config", "error", err)
 		return httpx.WithRepErrMsg(c, httpx.Failed.Code, err.Error(), c.Path())
 	}
 
@@ -424,7 +424,7 @@ func (rt *Router) updatePluginConfig(c *fiber.Ctx) error {
 
 	resp, err := pluginService.UpdatePluginConfig(&req)
 	if err != nil {
-		log.Errorf("[PluginRouter] failed to update plugin config: %v", err)
+		log.Errorw("[PluginRouter] failed to update plugin config", "error", err)
 		return httpx.WithRepErrMsg(c, httpx.Failed.Code, err.Error(), c.Path())
 	}
 

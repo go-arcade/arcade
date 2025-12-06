@@ -102,12 +102,6 @@ func (rt *Router) Router(log *zap.Logger) *fiber.App {
 		})
 	}
 
-	// pprof
-	if rt.Http.Pprof {
-		pprofGroup := app.Group("/debug/pprof")
-		rt.debugRouter(pprofGroup)
-	}
-
 	// 健康检查
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.SendString("ok")

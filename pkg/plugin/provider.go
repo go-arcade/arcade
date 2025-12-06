@@ -1,15 +1,14 @@
 package plugin
 
 import (
+	"path/filepath"
 	"time"
 
 	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/runner"
 	"github.com/google/wire"
 )
-
-// PluginCacheDir is the plugin cache directory path type
-type PluginCacheDir string
 
 // ProviderSet provides plugin layer related dependencies
 var ProviderSet = wire.NewSet(
@@ -25,13 +24,10 @@ func ProvideDatabaseAccessor(db database.IDatabase) DB {
 
 // ProvidePluginManager provides plugin manager instance
 // dbAccessor is provided by ProvideDatabaseAccessor
-// pluginCacheDir is the plugin cache directory path (can be empty to use default)
-func ProvidePluginManager(pluginCacheDir PluginCacheDir, dbAccessor DB) *Manager {
-	// Get plugin directory from configuration (use default if not set)
-	pluginDir := "/var/lib/arcade/plugins"
-	if string(pluginCacheDir) != "" {
-		pluginDir = string(pluginCacheDir)
-	}
+// Uses default plugin directory: /var/lib/arcade/plugins
+func ProvidePluginManager(dbAccessor DB) *Manager {
+	// Use default plugin directory
+	pluginDir := filepath.Join(runner.Pwd, "plugins")
 
 	// Create plugin manager configuration
 	config := &ManagerConfig{
@@ -50,9 +46,9 @@ func ProvidePluginManager(pluginCacheDir PluginCacheDir, dbAccessor DB) *Manager
 
 	// Auto-load plugins from directory on startup
 	if err := m.LoadPluginsFromDir(); err != nil {
-		log.Warnf("failed to auto-load plugins: %v", err)
+		log.Warnw("failed to auto-load plugins", "error", err)
 	}
 
-	log.Infof("plugin manager initialized with directory: %s", pluginDir)
+	log.Infow("plugin manager initialized with directory", "directory", pluginDir)
 	return m
 }

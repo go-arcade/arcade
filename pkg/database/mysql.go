@@ -81,8 +81,9 @@ func NewDatabase(cfg Database, zapLogger zap.Logger) (*gorm.DB, error) {
 	}
 
 	if cfg.OutPut {
+		loggerInstance := &log.Logger{Log: zapLogger.Sugar()}
 		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
-			Logger: NewGormLoggerAdapter(logConfig, logger.Info, &zapLogger),
+			Logger: NewGormLoggerAdapter(logConfig, logger.Info, loggerInstance),
 			NamingStrategy: schema.NamingStrategy{
 				TablePrefix:   defaultTablePrefix,
 				SingularTable: true,
@@ -115,7 +116,7 @@ func NewDatabase(cfg Database, zapLogger zap.Logger) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	log.Infof("database connected successfully")
+	log.Info("database connected successfully")
 
 	dbConnection = db
 	return db, nil

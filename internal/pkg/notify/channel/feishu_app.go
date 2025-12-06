@@ -167,12 +167,12 @@ func (c *FeishuAppChannel) sendRequest(ctx context.Context, payload map[string]i
 
 	resp, err := req.Post(c.webhookURL)
 	if err != nil {
-		log.Errorf("feishu send request failed: %v", err)
+		log.Error("feishu send request failed: %v", err)
 		return fmt.Errorf("failed to send request: %w", err)
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		log.Errorf("feishu request failed with status %d: %s", resp.StatusCode(), resp.String())
+		log.Error("feishu request failed with status %d: %s", resp.StatusCode(), resp.String())
 		return fmt.Errorf("feishu request failed with status %d", resp.StatusCode())
 	}
 

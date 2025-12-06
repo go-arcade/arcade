@@ -47,7 +47,7 @@ func AuthorizationMiddleware(secretKey string, cache cache.ICache) fiber.Handler
 			if errors.Is(err, goJwt.ErrTokenExpired) {
 				return http.WithRepErrMsg(c, http.TokenExpired.Code, http.TokenExpired.Msg, c.Path())
 			}
-			log.Errorf("parse token failed: %v", err)
+			log.Error("parse token failed: %v", err)
 			// 其他令牌无效的情况
 			return http.WithRepErrMsg(c, http.InvalidToken.Code, http.InvalidToken.Msg, c.Path())
 		}
@@ -56,20 +56,20 @@ func AuthorizationMiddleware(secretKey string, cache cache.ICache) fiber.Handler
 		tokenKey := TokenInfoKey + claims.UserId
 		tokenInfoStr, err := cache.Get(context.Background(), tokenKey).Result()
 		if err != nil {
-			log.Errorf("cache get token failed: %v", err)
+			log.Error("cache get token failed: %v", err)
 			return http.WithRepErrMsg(c, http.TokenExpired.Code, http.TokenExpired.Msg, c.Path())
 		}
 
 		// 解析 Token 信息
 		var tokenInfo TokenInfo
 		if err := sonic.UnmarshalString(tokenInfoStr, &tokenInfo); err != nil {
-			log.Errorf("failed to unmarshal token info: %v", err)
+			log.Error("failed to unmarshal token info: %v", err)
 			return http.WithRepErrMsg(c, http.InvalidToken.Code, http.InvalidToken.Msg, c.Path())
 		}
 
 		// 验证请求中的 Token 是否与 Redis 中存储的 Token 匹配
 		if tokenInfo.AccessToken != parts[1] {
-			log.Warnf("token mismatch for user: %s", claims.UserId)
+			log.Warn("token mismatch for user: %s", claims.UserId)
 			return http.WithRepErrMsg(c, http.InvalidToken.Code, http.InvalidToken.Msg, c.Path())
 		}
 

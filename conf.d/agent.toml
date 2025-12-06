@@ -1,12 +1,30 @@
-agentId = "your_agent_id_here"
-serverAddr = "https://arcade.devops.mn"
-apiKey = "your_api_key_here"
-
 [agent]
+# agent id
+id = "your_agent_id_here"
+# agent name
+name = "your_agent_name_here"
+# agent API key
+apiKey = "your_api_key_here"
 # heartbeat interval in seconds
 interval = 60
 # labels for the agent
 labels = { "env" = "production", "region" = "us-west" }
+
+[metrics]
+# metrics server host
+host = "0.0.0.0"
+# metrics server port
+port = 8082
+# enable metrics server, false or true
+enable = true
+
+[pprof]
+# pprof server host
+host = "0.0.0.0"
+# pprof server port
+port = 8083
+# enable pprof server, false or true
+enable = true
 
 [log]
 # support stdout, file, kafka
@@ -16,7 +34,7 @@ level = "DEBUG"
 # log write directory
 path = "logs"
 # log file name
-filename = "arcade.LOG"
+filename = "agent.LOG"
 # rotate by time
 keepHours = 4
 # rotate by size
@@ -25,12 +43,12 @@ rotateNum = 3
 rotateSize = 256
 
 [http]
+# http server host
 host = "0.0.0.0"
+# http server port
 port = 8081
 # unit: second
 heartbeat = 60
-# enable pprof, false or true
-pprof = true
 # access log, false or true
 accessLog = true
 # use file assets, false or true
@@ -51,3 +69,15 @@ shutdownTimeout = 10
 # default: 104857600 (100MB) - for plugin uploads
 # unit: bytes
 bodyLimit = 104857600
+
+[grpc]
+# server address (host:port format, e.g., "localhost:9090")
+serverAddr = "localhost:9090"
+# Bearer token for authentication (uses APIkey if not set)
+token = "your_token_here"
+# read write timeout (seconds, default: 30)
+readWriteTimeout = 5
+# unit: bytes (default: 100MB) - for plugin uploads
+maxMsgSize = 104857600
+# max reconnection attempts, 0 means unlimited
+maxReconnectAttempts = 5

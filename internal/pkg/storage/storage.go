@@ -88,7 +88,7 @@ func (pr *ProgressReader) Read(p []byte) (int, error) {
 
 // LogProgress 记录上传进度
 func (pr *ProgressReader) LogProgress(progress float64) {
-	log.Debugf("%s upload progress: %s - %.2f%% (%d/%d bytes)",
+	log.Debug("%s upload progress: %s - %.2f%% (%d/%d bytes)",
 		pr.provider, pr.fullPath, progress, pr.uploaded, pr.total)
 }
 

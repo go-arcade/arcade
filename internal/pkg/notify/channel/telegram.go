@@ -117,12 +117,12 @@ func (c *TelegramChannel) sendRequest(ctx context.Context, payload map[string]in
 
 	resp, err := req.Post(apiURL)
 	if err != nil {
-		log.Errorf("telegram send request failed: %v", err)
+		log.Error("telegram send request failed: %v", err)
 		return fmt.Errorf("failed to send request: %w", err)
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		log.Errorf("telegram request failed with status %d: %s", resp.StatusCode(), resp.String())
+		log.Error("telegram request failed with status %d: %s", resp.StatusCode(), resp.String())
 		return fmt.Errorf("telegram request failed with status %d", resp.StatusCode())
 	}
 

@@ -42,11 +42,9 @@ func TestGo(t *testing.T) {
 		{
 			args: args{
 				ctx: context.Background(),
-				fn: func(ctx context.Context) (interface{}, error) {
-					select {
-					case <-ctx.Done():
-						return nil, ctx.Err()
-					}
+				fn: func(ctx context.Context) (any, error) {
+					<-ctx.Done()
+					return nil, ctx.Err()
 				},
 				opts: []RunOption{WithTimeout(1 * time.Second)},
 			},

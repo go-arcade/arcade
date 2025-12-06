@@ -32,7 +32,7 @@ func NewIdentityIntegrationService(identityRepo userrepo.IIdentityIntegrationRep
 func (iis *IdentityIntegrationService) Authorize(providerName string) (string, error) {
 	integration, err := iis.identityRepo.GetProvider(providerName)
 	if err != nil {
-		log.Errorf("failed to get oauth provider: %v", err)
+		log.Error("failed to get oauth provider: %v", err)
 		return "", err
 	}
 
@@ -63,7 +63,7 @@ func (iis *IdentityIntegrationService) Authorize(providerName string) (string, e
 func (iis *IdentityIntegrationService) Callback(providerName, state, code string) (*identitymodel.Register, error) {
 	storedProviderName, ok := util.LoadAndDeleteState(state)
 	if !ok || storedProviderName != providerName {
-		log.Warnf("invalid state parameter for %s, storedProviderName: %s, providerName: %s, state: %s",
+		log.Warn("invalid state parameter for %s, storedProviderName: %s, providerName: %s, state: %s",
 			providerName, storedProviderName, providerName, state)
 		return nil, fmt.Errorf("invalid state parameter")
 	}
@@ -76,7 +76,7 @@ func (iis *IdentityIntegrationService) Callback(providerName, state, code string
 	// 序列化
 	var cfg sso.ProviderConfig
 	if err := sonic.Unmarshal(integration.Config, &cfg); err != nil {
-		log.Errorf("invalid provider config for %s: %v", providerName, err)
+		log.Error("invalid provider config for %s: %v", providerName, err)
 		return nil, fmt.Errorf("provider config invalid")
 	}
 
@@ -133,7 +133,7 @@ func splitName(name, nickname string) (firstName, lastName string) {
 func (iis *IdentityIntegrationService) GetProviderByType(providerType string) ([]identitymodel.IdentityIntegration, error) {
 	integrations, err := iis.identityRepo.GetProviderByType(providerType)
 	if err != nil {
-		log.Errorf("failed to get provider by type: %v", err)
+		log.Error("failed to get provider by type: %v", err)
 		return nil, err
 	}
 	return integrations, nil
@@ -142,7 +142,7 @@ func (iis *IdentityIntegrationService) GetProviderByType(providerType string) ([
 func (iis *IdentityIntegrationService) GetProvider(name string) (*identitymodel.IdentityIntegration, error) {
 	integration, err := iis.identityRepo.GetProvider(name)
 	if err != nil {
-		log.Errorf("failed to get provider: %v", err)
+		log.Error("failed to get provider: %v", err)
 		return nil, err
 	}
 	return integration, nil
@@ -152,7 +152,7 @@ func (iis *IdentityIntegrationService) GetProvider(name string) (*identitymodel.
 func (iis *IdentityIntegrationService) GetProviderList() ([]identitymodel.IdentityIntegration, error) {
 	integrations, err := iis.identityRepo.GetProviderList()
 	if err != nil {
-		log.Errorf("failed to get provider list: %v", err)
+		log.Error("failed to get provider list: %v", err)
 		return nil, err
 	}
 	return integrations, nil
@@ -161,7 +161,7 @@ func (iis *IdentityIntegrationService) GetProviderList() ([]identitymodel.Identi
 func (iis *IdentityIntegrationService) GetProviderTypeList() ([]string, error) {
 	providerTypes, err := iis.identityRepo.GetProviderTypeList()
 	if err != nil {
-		log.Errorf("failed to get provider type list: %v", err)
+		log.Error("failed to get provider type list: %v", err)
 		return nil, err
 	}
 	return providerTypes, nil
@@ -171,7 +171,7 @@ func (iis *IdentityIntegrationService) GetProviderTypeList() ([]string, error) {
 func (iis *IdentityIntegrationService) OIDCLogin(providerName string) (string, error) {
 	integration, err := iis.identityRepo.GetProvider(providerName)
 	if err != nil {
-		log.Errorf("failed to get OIDC provider: %v", err)
+		log.Error("failed to get OIDC provider: %v", err)
 		return "", err
 	}
 
@@ -190,7 +190,7 @@ func (iis *IdentityIntegrationService) OIDCLogin(providerName string) (string, e
 		oidcCfg.SkipVerify,
 	)
 	if err != nil {
-		log.Errorf("failed to create OIDC provider: %v", err)
+		log.Error("failed to create OIDC provider: %v", err)
 		return "", err
 	}
 
@@ -211,7 +211,7 @@ type LDAPLoginRequest struct {
 func (iis *IdentityIntegrationService) LDAPLogin(providerName, username, password string) (*identitymodel.Register, error) {
 	integration, err := iis.identityRepo.GetProvider(providerName)
 	if err != nil {
-		log.Errorf("failed to get LDAP provider: %v", err)
+		log.Error("failed to get LDAP provider: %v", err)
 		return nil, err
 	}
 
@@ -234,7 +234,7 @@ func (iis *IdentityIntegrationService) LDAPLogin(providerName, username, passwor
 	// 认证用户
 	userInfo, err := ldapClient.Authenticate(username, password)
 	if err != nil {
-		log.Errorf("LDAP authentication failed: %v", err)
+		log.Error("LDAP authentication failed: %v", err)
 		return nil, fmt.Errorf("authentication failed: %w", err)
 	}
 
@@ -280,7 +280,7 @@ func (iis *IdentityIntegrationService) registerOrLoginUser(providerName string, 
 
 	err = iis.userRepo.Register(registerUserInfo)
 	if err != nil {
-		log.Errorf("failed to register user: %v", err)
+		log.Error("failed to register user: %v", err)
 		return nil, err
 	}
 
@@ -292,7 +292,7 @@ func (iis *IdentityIntegrationService) CreateProvider(provider *identitymodel.Id
 	// check if provider name already exists
 	exists, err := iis.identityRepo.ProviderExists(provider.Name)
 	if err != nil {
-		log.Errorf("failed to check provider exists: %v", err)
+		log.Error("failed to check provider exists: %v", err)
 		return err
 	}
 	if exists {
@@ -303,7 +303,7 @@ func (iis *IdentityIntegrationService) CreateProvider(provider *identitymodel.Id
 	provider.ProviderId = id.GetUUID()
 
 	if err := iis.identityRepo.CreateProvider(provider); err != nil {
-		log.Errorf("failed to create provider: %v", err)
+		log.Error("failed to create provider: %v", err)
 		return err
 	}
 
@@ -315,7 +315,7 @@ func (iis *IdentityIntegrationService) UpdateProvider(name string, provider *ide
 	// check if provider exists
 	existing, err := iis.identityRepo.GetProvider(name)
 	if err != nil {
-		log.Errorf("failed to get provider: %v", err)
+		log.Error("failed to get provider: %v", err)
 		return fmt.Errorf("provider not found: %s", name)
 	}
 
@@ -325,7 +325,7 @@ func (iis *IdentityIntegrationService) UpdateProvider(name string, provider *ide
 	}
 
 	if err := iis.identityRepo.UpdateProvider(name, provider); err != nil {
-		log.Errorf("failed to update provider: %v", err)
+		log.Error("failed to update provider: %v", err)
 		return err
 	}
 
@@ -385,7 +385,7 @@ func (iis *IdentityIntegrationService) DeleteProvider(name string) error {
 	// check if provider exists
 	exists, err := iis.identityRepo.ProviderExists(name)
 	if err != nil {
-		log.Errorf("failed to check provider exists: %v", err)
+		log.Error("failed to check provider exists: %v", err)
 		return err
 	}
 	if !exists {
@@ -393,7 +393,7 @@ func (iis *IdentityIntegrationService) DeleteProvider(name string) error {
 	}
 
 	if err := iis.identityRepo.DeleteProvider(name); err != nil {
-		log.Errorf("failed to delete provider: %v", err)
+		log.Error("failed to delete provider: %v", err)
 		return err
 	}
 
@@ -405,7 +405,7 @@ func (iis *IdentityIntegrationService) ToggleProvider(name string) error {
 	// check if provider exists
 	exists, err := iis.identityRepo.ProviderExists(name)
 	if err != nil {
-		log.Errorf("failed to check provider exists: %v", err)
+		log.Error("failed to check provider exists: %v", err)
 		return err
 	}
 	if !exists {
@@ -413,7 +413,7 @@ func (iis *IdentityIntegrationService) ToggleProvider(name string) error {
 	}
 
 	if err := iis.identityRepo.ToggleProvider(name); err != nil {
-		log.Errorf("failed to toggle provider: %v", err)
+		log.Error("failed to toggle provider: %v", err)
 		return err
 	}
 

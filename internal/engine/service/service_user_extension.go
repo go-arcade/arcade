@@ -24,7 +24,7 @@ func NewUserExtensionService(userExtRepo userrepo.IUserExtensionRepository) *Use
 func (ues *UserExtensionService) GetUserExtension(userId string) (*model.UserExtension, error) {
 	extension, err := ues.userExtRepo.GetByUserId(userId)
 	if err != nil {
-		log.Errorf("failed to get user extension: %v", err)
+		log.Error("failed to get user extension: %v", err)
 		return nil, err
 	}
 	return extension, nil
@@ -35,7 +35,7 @@ func (ues *UserExtensionService) CreateUserExtension(extension *model.UserExtens
 	// check if already exists
 	exists, err := ues.userExtRepo.Exists(extension.UserId)
 	if err != nil {
-		log.Errorf("failed to check user extension exists: %v", err)
+		log.Error("failed to check user extension exists: %v", err)
 		return err
 	}
 	if exists {
@@ -43,7 +43,7 @@ func (ues *UserExtensionService) CreateUserExtension(extension *model.UserExtens
 	}
 
 	if err := ues.userExtRepo.Create(extension); err != nil {
-		log.Errorf("failed to create user extension: %v", err)
+		log.Error("failed to create user extension: %v", err)
 		return err
 	}
 
@@ -55,7 +55,7 @@ func (ues *UserExtensionService) UpdateUserExtension(userId string, extension *m
 	// check if exists
 	exists, err := ues.userExtRepo.Exists(userId)
 	if err != nil {
-		log.Errorf("failed to check user extension exists: %v", err)
+		log.Error("failed to check user extension exists: %v", err)
 		return err
 	}
 	if !exists {
@@ -63,7 +63,7 @@ func (ues *UserExtensionService) UpdateUserExtension(userId string, extension *m
 	}
 
 	if err := ues.userExtRepo.Update(userId, extension); err != nil {
-		log.Errorf("failed to update user extension: %v", err)
+		log.Error("failed to update user extension: %v", err)
 		return err
 	}
 
@@ -75,7 +75,7 @@ func (ues *UserExtensionService) UpdateLastLogin(userId string) error {
 	// create extension record if not exists
 	exists, err := ues.userExtRepo.Exists(userId)
 	if err != nil {
-		log.Errorf("failed to check user extension exists: %v", err)
+		log.Error("failed to check user extension exists: %v", err)
 		return err
 	}
 
@@ -89,14 +89,14 @@ func (ues *UserExtensionService) UpdateLastLogin(userId string) error {
 			InvitationStatus: model.UserInvitationStatusAccepted,
 		}
 		if err := ues.userExtRepo.Create(extension); err != nil {
-			log.Errorf("failed to create user extension: %v", err)
+			log.Error("failed to create user extension: %v", err)
 			return err
 		}
 		return nil
 	}
 
 	if err := ues.userExtRepo.UpdateLastLogin(userId); err != nil {
-		log.Errorf("failed to update last login: %v", err)
+		log.Error("failed to update last login: %v", err)
 		return err
 	}
 
@@ -106,7 +106,7 @@ func (ues *UserExtensionService) UpdateLastLogin(userId string) error {
 // UpdateTimezone updates user timezone
 func (ues *UserExtensionService) UpdateTimezone(userId, timezone string) error {
 	if err := ues.userExtRepo.UpdateTimezone(userId, timezone); err != nil {
-		log.Errorf("failed to update timezone: %v", err)
+		log.Error("failed to update timezone: %v", err)
 		return err
 	}
 	return nil
@@ -128,7 +128,7 @@ func (ues *UserExtensionService) UpdateInvitationStatus(userId, status string) e
 	}
 
 	if err := ues.userExtRepo.UpdateInvitationStatus(userId, status); err != nil {
-		log.Errorf("failed to update invitation status: %v", err)
+		log.Error("failed to update invitation status: %v", err)
 		return err
 	}
 

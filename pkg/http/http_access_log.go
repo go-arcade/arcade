@@ -7,11 +7,9 @@ import (
 	"go.uber.org/zap"
 )
 
-
 func AccessLogFormat(log *zap.Logger) fiber.Handler {
 	// 使用 sugar logger
 	sugar := log.Sugar()
-
 	// exclude api path
 	// tips: 这里的路径是不需要记录日志的路径，url为端口后的全部路径
 	excludedPaths := map[string]bool{
@@ -41,14 +39,14 @@ func AccessLogFormat(log *zap.Logger) fiber.Handler {
 		}
 
 		// 使用 sugar logger 记录访问日志
-		sugar.Infof("[%s %s %s %d] %s %s %s",
-			c.Method(),
-			c.Path(),
-			queryStr,
-			c.Response().StatusCode(),
-			c.IP(),
-			c.Get("User-Agent"),
-			latency.String(),
+		sugar.Infow("HTTP request",
+			"method", c.Method(),
+			"path", c.Path(),
+			"query", queryStr,
+			"status", c.Response().StatusCode(),
+			"ip", c.IP(),
+			"user_agent", c.Get("User-Agent"),
+			"latency", latency.String(),
 		)
 
 		return err

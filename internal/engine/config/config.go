@@ -12,6 +12,8 @@ import (
 	"github.com/go-arcade/arcade/pkg/cache"
 	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/metrics"
+	"github.com/go-arcade/arcade/pkg/pprof"
 )
 
 type TaskConfig struct {
@@ -31,6 +33,8 @@ type AppConfig struct {
 	Redis    cache.Redis
 	Task     TaskConfig
 	Plugin   PluginConfig
+	Metrics  metrics.MetricsConfig
+	Pprof    pprof.PprofConfig
 }
 
 var (
@@ -60,7 +64,7 @@ func LoadConfigFile(confDir string) (AppConfig, error) {
 
 	config.WatchConfig()
 	config.OnConfigChange(func(e fsnotify.Event) {
-		log.Infof("The configuration changes, re -analyze the configuration file: %s", e.Name)
+		log.Infow("The configuration changes, re-analyze the configuration file", "file", e.Name)
 		if err := config.Unmarshal(&cfg); err != nil {
 			_ = fmt.Errorf("failed to unmarshal configuration file: %v", err)
 		}

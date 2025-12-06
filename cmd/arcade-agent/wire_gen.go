@@ -10,7 +10,10 @@ import (
 	"github.com/go-arcade/arcade/internal/agent/bootstrap"
 	"github.com/go-arcade/arcade/internal/agent/config"
 	"github.com/go-arcade/arcade/internal/agent/router"
+	"github.com/go-arcade/arcade/internal/pkg/grpc"
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/metrics"
+	"github.com/go-arcade/arcade/pkg/pprof"
 )
 
 // Injectors from wire.go:
@@ -19,12 +22,21 @@ func initAgent(configPath string) (*bootstrap.Agent, func(), error) {
 	agentConfig := config.NewConf(configPath)
 	http := config.ProvideHttpConfig(agentConfig)
 	routerRouter := router.ProvideRouter(http)
+	clientConf := config.ProvideGrpcClientConfig(agentConfig)
+	clientWrapper, err := grpc.ProvideGrpcClient(clientConf)
+	if err != nil {
+		return nil, nil, err
+	}
+	metricsConfig := config.ProvideMetricsConfig(agentConfig)
+	server := metrics.NewMetricsServer(metricsConfig)
+	pprofConfig := config.ProvidePprofConfig(agentConfig)
+	pprofServer := pprof.NewPprofServer(pprofConfig)
 	conf := config.ProvideLogConfig(agentConfig)
 	logger, err := log.ProvideLogger(conf)
 	if err != nil {
 		return nil, nil, err
 	}
-	agent, cleanup, err := bootstrap.NewAgent(routerRouter, logger, agentConfig)
+	agent, cleanup, err := bootstrap.NewAgent(routerRouter, clientWrapper, server, pprofServer, logger, agentConfig)
 	if err != nil {
 		return nil, nil, err
 	}

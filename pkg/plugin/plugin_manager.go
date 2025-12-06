@@ -34,6 +34,8 @@ type Manager struct {
 	handlers map[string]plugin.Plugin
 	// Database adapter
 	db DB
+	// Plugin directory watcher
+	watcher *Watcher
 }
 
 // ManagerConfig is the plugin manager configuration
@@ -174,9 +176,9 @@ func (m *Manager) registerPluginLocked(name string, pluginPath string, config *R
 	var grpcConn *grpc.ClientConn
 	if wrapper, ok := raw.(*GRPCPluginClientWrapper); ok {
 		grpcConn = wrapper.GetConn()
-		log.Debugf("got gRPC connection from wrapper for plugin %s", name)
+		log.Debugw("got gRPC connection from wrapper for plugin", "plugin", name)
 	} else {
-		log.Errorf("dispensed plugin %s is not a GRPCPluginClientWrapper: %T", name, raw)
+		log.Errorw("dispensed plugin is not a GRPCPluginClientWrapper", "plugin", name, "type", fmt.Sprintf("%T", raw))
 		client.Kill()
 		return fmt.Errorf("invalid plugin type for %s: expected GRPCPluginClientWrapper, got %T", name, raw)
 	}
@@ -189,7 +191,7 @@ func (m *Manager) registerPluginLocked(name string, pluginPath string, config *R
 	infoResp, err := grpcServiceClient.GetInfo(ctx, &pluginv1.GetInfoRequest{})
 	var pluginInfo *PluginInfo
 	if err != nil {
-		log.Warnf("failed to get plugin info for %s, using config values: %v", name, err)
+		log.Warnw("failed to get plugin info, using config values", "plugin", name, "error", err)
 		// Fallback to config values
 		pluginInfo = &PluginInfo{
 			Name:    config.Name,
@@ -205,7 +207,7 @@ func (m *Manager) registerPluginLocked(name string, pluginPath string, config *R
 				Version: config.Version,
 			}
 		}
-		log.Infof("retrieved plugin info from %s: version=%s", name, pluginInfo.Version)
+		log.Infow("retrieved plugin info", "plugin", name, "version", pluginInfo.Version)
 	}
 
 	// Create gRPC plugin client
@@ -230,7 +232,7 @@ func (m *Manager) registerPluginLocked(name string, pluginPath string, config *R
 	m.plugins[name] = grpcPluginClient
 	m.clients[name] = client
 
-	log.Infof("plugin %s registered successfully", name)
+	log.Infow("plugin registered successfully", "plugin", name)
 	return nil
 }
 
@@ -245,24 +247,66 @@ func (m *Manager) UnregisterPlugin(name string) error {
 		return fmt.Errorf("plugin %s not found", name)
 	}
 
-	// Cleanup plugin
-	if err := m.cleanupPlugin(pluginClient); err != nil {
-		log.Warnf("cleanup plugin %s failed: %v", name, err)
+	// Mark as disconnected to prevent new operations
+	pluginClient.connected = false
+
+	// Call plugin's cleanup method with timeout
+	cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cleanupCancel()
+
+	if err := m.cleanupPluginWithContext(cleanupCtx, pluginClient); err != nil {
+		// Ignore context deadline errors as they're expected during shutdown
+		if err != context.DeadlineExceeded {
+			log.Debugw("cleanup plugin failed", "plugin", name, "error", err)
+		}
 	}
 
-	// Close connection
+	// Wait a bit for cleanup to complete
+	time.Sleep(100 * time.Millisecond)
+
+	// Close gRPC connection (this signals the plugin to shutdown)
 	if pluginClient.conn != nil {
-		pluginClient.conn.Close()
+		// Close connection and ignore "connection is closing" errors as they're normal during shutdown
+		err := pluginClient.conn.Close()
+		if err != nil && !strings.Contains(err.Error(), "closing") && !strings.Contains(err.Error(), "Canceled") {
+			log.Debugw("close connection for plugin", "plugin", name, "error", err)
+		}
 	}
+
+	// Wait for plugin to gracefully shutdown
+	time.Sleep(300 * time.Millisecond)
+
+	// Kill the plugin process if it's still running
 	if pluginClient.pluginClient != nil {
-		pluginClient.pluginClient.Kill()
+		// Check if plugin has already exited
+		if exited := pluginClient.pluginClient.Exited(); !exited {
+			pluginClient.pluginClient.Kill()
+			// Wait for process to terminate
+			time.Sleep(200 * time.Millisecond)
+		}
 	}
 
 	// Delete plugin
 	delete(m.plugins, name)
 	delete(m.clients, name)
 
-	log.Infof("plugin %s unregistered", name)
+	log.Infow("plugin unregistered", "plugin", name)
+	return nil
+}
+
+// cleanupPluginWithContext cleans up a plugin with context
+func (m *Manager) cleanupPluginWithContext(ctx context.Context, pluginClient *Client) error {
+	if pluginClient.client == nil {
+		return nil
+	}
+
+	// Call plugin's cleanup method with context
+	resp, err := pluginClient.client.Cleanup(ctx, &pluginv1.CleanupRequest{})
+	if err != nil {
+		return fmt.Errorf("plugin cleanup failed: %w", err)
+	}
+
+	log.Infow("plugin cleanup", "plugin", pluginClient.info.GetName(), "message", resp.Message)
 	return nil
 }
 
@@ -280,16 +324,19 @@ func (m *Manager) ReloadPlugin(name string) error {
 	pluginConfig := oldClient.config
 	m.mu.Unlock()
 
-	log.Infof("[plugin] reloading %s from %s ...", name, pluginPath)
+	log.Infow("[plugin] reloading", "plugin", name, "path", pluginPath)
 
 	// graceful cleanup
 	if err := m.cleanupPlugin(oldClient); err != nil {
-		log.Warnf("[plugin] cleanup failed for %s: %v", name, err)
+		log.Warnw("[plugin] cleanup failed", "plugin", name, "error", err)
 	}
 
 	// stop old client
 	if oldClient.conn != nil {
-		oldClient.conn.Close()
+		err := oldClient.conn.Close()
+		if err != nil {
+			return err
+		}
 	}
 	if oldClient.pluginClient != nil {
 		oldClient.pluginClient.Kill()
@@ -303,7 +350,7 @@ func (m *Manager) ReloadPlugin(name string) error {
 			break
 		}
 		if time.Since(waitStart) > 5*time.Second {
-			log.Warnf("[plugin] wait for old %s to exit timeout, continuing reload", name)
+			log.Warnw("[plugin] wait for old plugin to exit timeout, continuing reload", "plugin", name)
 			break
 		}
 		time.Sleep(200 * time.Millisecond)
@@ -317,18 +364,18 @@ func (m *Manager) ReloadPlugin(name string) error {
 
 	// re-register (with retry)
 	var lastErr error
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		err := m.RegisterPlugin(name, pluginPath, pluginConfig)
 		if err == nil {
-			log.Infof("[plugin] reloaded %s successfully after %d attempt(s)", name, i+1)
+			log.Infow("[plugin] reloaded successfully", "plugin", name, "attempts", i+1)
 			return nil
 		}
 		lastErr = err
-		log.Warnf("[plugin] retry reload %s (%d/3): %v", name, i+1, err)
+		log.Warnw("[plugin] retry reload", "plugin", name, "attempt", i+1, "max_attempts", 3, "error", err)
 		time.Sleep(time.Second)
 	}
 
-	log.Errorf("[plugin] failed to reload %s after 3 attempts: %v", name, lastErr)
+	log.Errorw("[plugin] failed to reload after 3 attempts", "plugin", name, "error", lastErr)
 	return fmt.Errorf("reload plugin %s failed: %w", name, lastErr)
 }
 
@@ -344,7 +391,7 @@ func (m *Manager) ReloadAllPlugins() error {
 	var failedPlugins []string
 	for _, name := range pluginNames {
 		if err := m.ReloadPlugin(name); err != nil {
-			log.Errorf("failed to reload plugin %s: %v", name, err)
+			log.Errorw("failed to reload plugin", "plugin", name, "error", err)
 			failedPlugins = append(failedPlugins, name)
 		}
 	}
@@ -353,7 +400,7 @@ func (m *Manager) ReloadAllPlugins() error {
 		return fmt.Errorf("failed to reload %d plugin(s): %v", len(failedPlugins), failedPlugins)
 	}
 
-	log.Infof("all plugins reloaded successfully")
+	log.Info("all plugins reloaded successfully")
 	return nil
 }
 
@@ -383,6 +430,30 @@ func (m *Manager) ListPlugins() map[string]*PluginInfo {
 	return plugins
 }
 
+// FindPluginByPath finds plugin name by file path
+func (m *Manager) FindPluginByPath(path string) string {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	// Normalize path for comparison
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		absPath = path
+	}
+
+	for name, pluginClient := range m.plugins {
+		clientAbsPath, err := filepath.Abs(pluginClient.pluginPath)
+		if err != nil {
+			clientAbsPath = pluginClient.pluginPath
+		}
+		if clientAbsPath == absPath {
+			return name
+		}
+	}
+
+	return ""
+}
+
 // GetPluginMetrics retrieves plugin metrics
 func (m *Manager) GetPluginMetrics(name string) (*PluginMetrics, error) {
 	pluginClient, err := m.GetPlugin(name)
@@ -409,7 +480,7 @@ func (m *Manager) GetAllPluginMetrics() map[string]*PluginMetrics {
 		if pluginClient.connected {
 			pluginMetrics, err := pluginClient.GetMetrics()
 			if err != nil {
-				log.Warnf("get metrics for plugin %s failed: %v", name, err)
+				log.Warnw("get metrics for plugin failed", "plugin", name, "error", err)
 				metrics[name] = &PluginMetrics{
 					Name:      name,
 					Status:    "error",
@@ -439,7 +510,7 @@ func (m *Manager) HealthCheck() map[string]bool {
 
 		// Check if gRPC client is available
 		if pluginClient.client == nil {
-			log.Warnf("plugin %s has no gRPC client", name)
+			log.Warnw("plugin has no gRPC client", "plugin", name)
 			health[name] = false
 			continue
 		}
@@ -450,7 +521,7 @@ func (m *Manager) HealthCheck() map[string]bool {
 		if err != nil {
 			pluginClient.errorCount++
 			health[name] = false
-			log.Warnf("health check failed for plugin %s: %v", name, err)
+			log.Warnw("health check failed for plugin", "plugin", name, "error", err)
 		} else {
 			pluginClient.errorCount = 0
 			pluginClient.lastHeartbeat = time.Now().Unix()
@@ -479,7 +550,7 @@ func (m *Manager) performHealthCheck() {
 
 	for name, isHealthy := range health {
 		if !isHealthy {
-			log.Warnf("plugin %s is unhealthy", name)
+			log.Warnw("plugin is unhealthy", "plugin", name)
 			// Auto-restart logic can be implemented here
 		}
 	}
@@ -488,7 +559,7 @@ func (m *Manager) performHealthCheck() {
 // initializePlugin initializes a plugin
 func (m *Manager) initializePlugin(pluginClient *Client) error {
 	if pluginClient.client == nil {
-		log.Warnf("plugin %s has no gRPC client, skipping initialization", pluginClient.info.GetName())
+		log.Warnw("plugin has no gRPC client, skipping initialization", "plugin", pluginClient.info.GetName())
 		return nil
 	}
 
@@ -500,14 +571,14 @@ func (m *Manager) initializePlugin(pluginClient *Client) error {
 		return fmt.Errorf("plugin init failed: %w", err)
 	}
 
-	log.Infof("plugin %s initialized: %s", pluginClient.info.GetName(), resp.Message)
+	log.Infow("plugin initialized", "plugin", pluginClient.info.GetName(), "message", resp.Message)
 	return nil
 }
 
 // cleanupPlugin cleans up a plugin
 func (m *Manager) cleanupPlugin(pluginClient *Client) error {
 	if pluginClient.client == nil {
-		log.Warnf("plugin %s has no gRPC client, skipping cleanup", pluginClient.info.GetName())
+		log.Warnw("plugin has no gRPC client, skipping cleanup", "plugin", pluginClient.info.GetName())
 		return nil
 	}
 
@@ -518,7 +589,7 @@ func (m *Manager) cleanupPlugin(pluginClient *Client) error {
 		return fmt.Errorf("plugin cleanup failed: %w", err)
 	}
 
-	log.Infof("plugin %s is %s.", pluginClient.info.GetName(), resp.Message)
+	log.Infow("plugin cleanup", "plugin", pluginClient.info.GetName(), "message", resp.Message)
 	return nil
 }
 
@@ -549,7 +620,7 @@ func (m *Manager) LoadPluginsFromDir() error {
 
 	// Check if directory exists
 	if _, err := os.Stat(m.config.PluginDir); os.IsNotExist(err) {
-		log.Warnf("plugin directory does not exist: %s", m.config.PluginDir)
+		log.Warnw("plugin directory does not exist", "directory", m.config.PluginDir)
 		return nil
 	}
 
@@ -588,15 +659,15 @@ func (m *Manager) LoadPluginsFromDir() error {
 
 		// Try to register the plugin
 		if err := m.RegisterPlugin(pluginName, pluginPath, config); err != nil {
-			log.Warnf("failed to load plugin %s from %s: %v", pluginName, pluginPath, err)
+			log.Warnw("failed to load plugin", "plugin", pluginName, "path", pluginPath, "error", err)
 			continue
 		}
 
 		loadedCount++
-		log.Infof("auto-loaded plugin: %s from %s", pluginName, pluginPath)
+		log.Infow("auto-loaded plugin", "plugin", pluginName, "path", pluginPath)
 	}
 
-	log.Infof("auto-loaded %d plugin(s) from %s", loadedCount, m.config.PluginDir)
+	log.Infow("auto-loaded plugins", "count", loadedCount, "directory", m.config.PluginDir)
 	return nil
 }
 
@@ -608,7 +679,6 @@ func (m *Manager) extractPluginName(filename string) string {
 		name = strings.TrimSuffix(name, ext)
 	}
 
-	// Extract name before version (format: pluginName_version)
 	parts := strings.Split(name, "_")
 	if len(parts) > 0 {
 		return parts[0]
@@ -621,17 +691,23 @@ func (m *Manager) Close() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
+	// Stop watcher if it exists
+	if m.watcher != nil {
+		m.watcher.Stop()
+		m.watcher = nil
+	}
+
 	// Cleanup all plugins
 	for name, pluginClient := range m.plugins {
 		if err := m.cleanupPlugin(pluginClient); err != nil {
-			log.Warnf("cleanup plugin %s failed: %v", name, err)
+			log.Warnw("cleanup plugin failed", "plugin", name, "error", err)
 		}
 	}
 
 	// Close all clients
 	for name, client := range m.clients {
 		client.Kill()
-		log.Infof("plugin client %s closed", name)
+		log.Infow("plugin client closed", "plugin", name)
 	}
 
 	// Clear mappings

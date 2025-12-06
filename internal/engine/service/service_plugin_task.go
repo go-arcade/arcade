@@ -60,7 +60,7 @@ func InitTaskManager(mongoDB database.MongoDB) *TaskManager {
 	once.Do(func() {
 		repo := pluginrepo.NewPluginTaskRepo(mongoDB)
 		if err := repo.CreateIndexes(); err != nil {
-			log.Warnf("[TaskManager] failed to create indexes: %v", err)
+			log.Warn("[TaskManager] failed to create indexes: %v", err)
 		}
 		taskManager = &TaskManager{taskRepo: repo}
 		log.Info("[TaskManager] initialized with MongoDB persistence")
@@ -88,11 +88,11 @@ func (tm *TaskManager) CreateTask(pluginName, version string) *PluginInstallTask
 	}
 
 	if err := tm.taskRepo.CreateTask(taskModel); err != nil {
-		log.Errorf("[TaskManager] failed to create task: %v", err)
+		log.Error("[TaskManager] failed to create task: %v", err)
 		return nil
 	}
 
-	log.Infof("[TaskManager] created task: %s for plugin %s v%s", taskModel.TaskID, pluginName, version)
+	log.Info("[TaskManager] created task: %s for plugin %s v%s", taskModel.TaskID, pluginName, version)
 
 	return tm.modelToTask(taskModel)
 }
@@ -106,7 +106,7 @@ func (tm *TaskManager) GetTask(taskID string) *PluginInstallTask {
 
 	taskModel, err := tm.taskRepo.GetTaskByID(taskID)
 	if err != nil {
-		log.Debugf("[TaskManager] failed to get task %s: %v", taskID, err)
+		log.Debug("[TaskManager] failed to get task %s: %v", taskID, err)
 		return nil
 	}
 
@@ -123,7 +123,7 @@ func (tm *TaskManager) UpdateTask(taskID string, status PluginTaskStatus, progre
 	// 先获取任务
 	taskModel, err := tm.taskRepo.GetTaskByID(taskID)
 	if err != nil {
-		log.Errorf("[TaskManager] failed to get task %s for update: %v", taskID, err)
+		log.Error("[TaskManager] failed to get task %s for update: %v", taskID, err)
 		return
 	}
 
@@ -142,7 +142,7 @@ func (tm *TaskManager) UpdateTask(taskID string, status PluginTaskStatus, progre
 
 	// 保存到MongoDB
 	if err := tm.taskRepo.UpdateTask(taskModel); err != nil {
-		log.Errorf("[TaskManager] failed to update task %s: %v", taskID, err)
+		log.Error("[TaskManager] failed to update task %s: %v", taskID, err)
 	}
 }
 
@@ -155,7 +155,7 @@ func (tm *TaskManager) UpdateTaskError(taskID string, err error) {
 
 	taskModel, getErr := tm.taskRepo.GetTaskByID(taskID)
 	if getErr != nil {
-		log.Errorf("[TaskManager] failed to get task %s for error update: %v", taskID, getErr)
+		log.Error("[TaskManager] failed to get task %s for error update: %v", taskID, getErr)
 		return
 	}
 
@@ -169,7 +169,7 @@ func (tm *TaskManager) UpdateTaskError(taskID string, err error) {
 	taskModel.Duration = int64(now.Sub(taskModel.CreateTime).Seconds())
 
 	if updateErr := tm.taskRepo.UpdateTask(taskModel); updateErr != nil {
-		log.Errorf("[TaskManager] failed to update task error %s: %v", taskID, updateErr)
+		log.Error("[TaskManager] failed to update task error %s: %v", taskID, updateErr)
 	}
 }
 
@@ -182,7 +182,7 @@ func (tm *TaskManager) UpdateTaskSuccess(taskID string, pluginID string) {
 
 	taskModel, err := tm.taskRepo.GetTaskByID(taskID)
 	if err != nil {
-		log.Errorf("[TaskManager] failed to get task %s for success update: %v", taskID, err)
+		log.Error("[TaskManager] failed to get task %s for success update: %v", taskID, err)
 		return
 	}
 
@@ -197,7 +197,7 @@ func (tm *TaskManager) UpdateTaskSuccess(taskID string, pluginID string) {
 	taskModel.Duration = int64(now.Sub(taskModel.CreateTime).Seconds())
 
 	if err := tm.taskRepo.UpdateTask(taskModel); err != nil {
-		log.Errorf("[TaskManager] failed to update task success %s: %v", taskID, err)
+		log.Error("[TaskManager] failed to update task success %s: %v", taskID, err)
 	}
 }
 
@@ -210,7 +210,7 @@ func (tm *TaskManager) ListTasks() []*PluginInstallTask {
 
 	taskModels, err := tm.taskRepo.ListAllTasks()
 	if err != nil {
-		log.Errorf("[TaskManager] failed to list tasks: %v", err)
+		log.Error("[TaskManager] failed to list tasks: %v", err)
 		return []*PluginInstallTask{}
 	}
 
@@ -232,12 +232,12 @@ func (tm *TaskManager) CleanupOldTasks() {
 	cutoff := time.Now().Add(-24 * time.Hour)
 	count, err := tm.taskRepo.DeleteOldTasks(cutoff)
 	if err != nil {
-		log.Errorf("[TaskManager] failed to cleanup old tasks: %v", err)
+		log.Error("[TaskManager] failed to cleanup old tasks: %v", err)
 		return
 	}
 
 	if count > 0 {
-		log.Infof("[TaskManager] cleaned up %d old tasks", count)
+		log.Info("[TaskManager] cleaned up %d old tasks", count)
 	}
 }
 

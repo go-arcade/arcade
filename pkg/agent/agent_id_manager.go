@@ -10,7 +10,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/id"
 )
 
-
 // AgentIDInfo Agent ID信息
 type AgentIDInfo struct {
 	AgentID       string    `json:"agent_id"`

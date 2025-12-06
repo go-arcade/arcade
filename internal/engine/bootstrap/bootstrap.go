@@ -16,18 +16,22 @@ import (
 	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/metrics"
 	"github.com/go-arcade/arcade/pkg/plugin"
+	"github.com/go-arcade/arcade/pkg/pprof"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 )
 
 type App struct {
-	HttpApp    *fiber.App
-	PluginMgr  *plugin.Manager
-	GrpcServer *grpc.ServerWrapper
-	Logger     *log.Logger
-	Storage    storage.StorageProvider
-	AppConf    config.AppConfig
+	HttpApp       *fiber.App
+	PluginMgr     *plugin.Manager
+	GrpcServer    *grpc.ServerWrapper
+	MetricsServer *metrics.Server
+	PprofServer   *pprof.Server
+	Logger        *log.Logger
+	Storage       storage.StorageProvider
+	AppConf       config.AppConfig
 }
 
 // InitAppFunc init app function type
@@ -38,6 +42,8 @@ func NewApp(
 	logger *log.Logger,
 	pluginMgr *plugin.Manager,
 	grpcServer *grpc.ServerWrapper,
+	metricsServer *metrics.Server,
+	pprofServer *pprof.Server,
 	storage storage.StorageProvider,
 	appCtx *ctx.Context,
 	mongoDB database.MongoDB,
@@ -49,32 +55,52 @@ func NewApp(
 
 	// init plugin task manager
 	service.InitTaskManager(mongoDB)
-	zapLogger.Info("Plugin task manager initialized with MongoDB persistence")
+	log.Info("Plugin task manager initialized with MongoDB persistence")
 
 	// 设置 AppConf
 	app := &App{
-		HttpApp:    httpApp,
-		PluginMgr:  pluginMgr,
-		GrpcServer: grpcServer,
-		Logger:     logger,
-		Storage:    storage,
-		AppConf:    appConf,
+		HttpApp:       httpApp,
+		PluginMgr:     pluginMgr,
+		GrpcServer:    grpcServer,
+		MetricsServer: metricsServer,
+		PprofServer:   pprofServer,
+		Logger:        logger,
+		Storage:       storage,
+		AppConf:       appConf,
 	}
 
 	cleanup := func() {
+		// stop pprof server
+		if pprofServer != nil {
+			log.Info("Shutting down pprof server...")
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			if err := pprofServer.Stop(shutdownCtx); err != nil {
+				log.Errorw("Failed to stop pprof server", zap.Error(err))
+			}
+		}
+
+		// stop metrics server
+		if metricsServer != nil {
+			log.Info("Shutting down metrics server...")
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			if err := metricsServer.Stop(shutdownCtx); err != nil {
+				log.Errorw("Failed to stop metrics server", zap.Error(err))
+			}
+		}
+
 		// stop all plugins
 		if pluginMgr != nil {
-			zapLogger.Info("Shutting down plugin manager...")
+			log.Info("Shutting down plugin manager...")
 			if err := pluginMgr.Close(); err != nil {
-				zapLogger.Error("Failed to close plugin manager", zap.Error(err))
-			} else {
-				zapLogger.Info("Plugin manager stopped successfully")
+				log.Errorw("Failed to close plugin manager", zap.Error(err))
 			}
 		}
 
 		// stop gRPC server
 		if grpcServer != nil {
-			zapLogger.Info("Shutting down gRPC server...")
+			log.Info("Shutting down gRPC server...")
 			grpcServer.Stop()
 		}
 	}
@@ -105,11 +131,25 @@ func Run(app *App, cleanup func()) {
 	// optional: start heartbeat check
 	app.PluginMgr.StartHeartbeat(30 * time.Second)
 
+	// start metrics server
+	if app.MetricsServer != nil {
+		if err := app.MetricsServer.Start(); err != nil {
+			logger.Errorw("Metrics server failed: %v", err)
+		}
+	}
+
+	// start pprof server
+	if app.PprofServer != nil {
+		if err := app.PprofServer.Start(); err != nil {
+			logger.Errorw("Pprof server failed: %v", err)
+		}
+	}
+
 	// start gRPC server
 	if app.GrpcServer != nil && appConf.Grpc.Port > 0 {
 		go func() {
 			if err := app.GrpcServer.Start(appConf.Grpc); err != nil {
-				logger.Errorf("gRPC server failed: %v", err)
+				logger.Errorw("gRPC server failed: %v", err)
 			}
 		}()
 	}
@@ -120,13 +160,13 @@ func Run(app *App, cleanup func()) {
 
 	// start HTTP server (async)
 	go func() {
-		glog := app.Logger.Log.Desugar().WithOptions(zap.AddCallerSkip(-1)).Sugar()
+		// glog := app.Logger.Log.Desugar().WithOptions(zap.AddCallerSkip(-1)).Sugar()
 		addr := appConf.Http.Host + ":" + fmt.Sprintf("%d", appConf.Http.Port)
-		glog.Infow("HTTP listener started",
+		log.Infow("HTTP listener started",
 			"address", addr,
 		)
 		if err := app.HttpApp.Listen(addr); err != nil {
-			glog.Errorw("HTTP listener failed",
+			log.Errorw("HTTP listener failed",
 				"address", addr,
 				zap.Error(err),
 			)
@@ -135,20 +175,20 @@ func Run(app *App, cleanup func()) {
 
 	// wait for exit signal
 	sig := <-quit
-	logger.Infof("Received signal: %v, shutting down gracefully...", sig)
+	log.Infow("Received signal, shutting down gracefully...", "signal", sig)
 
 	// close components in order
 	// close HTTP server
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer shutdownCancel()
 	if err := app.HttpApp.ShutdownWithContext(shutdownCtx); err != nil {
-		logger.Errorf("HTTP server shutdown error: %v", err)
+		log.Errorw("HTTP server shutdown error: %v", err)
 	} else {
-		logger.Info("HTTP server shut down gracefully")
+		log.Info("HTTP server shut down gracefully")
 	}
 
 	// close plugin manager and other resources
 	cleanup()
 
-	logger.Info("Server shutdown complete")
+	log.Info("Server shutdown complete")
 }

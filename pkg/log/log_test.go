@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
-	"time"
 
 	"go.uber.org/zap/zapcore"
 )
@@ -121,6 +120,7 @@ func TestNewLog_File(t *testing.T) {
 	conf := &Conf{
 		Output:     "file",
 		Path:       tmpDir,
+		Filename:   "test.log",
 		Level:      "INFO",
 		KeepHours:  1,
 		RotateSize: 1,
@@ -141,11 +141,10 @@ func TestNewLog_File(t *testing.T) {
 	logger.Debug("test message 2")
 	logger.Warn("test message 3")
 
-	// 确保日志被写入
-	logger.Sync()
+	// slog 不需要 Sync，日志会自动刷新
 
 	// 验证日志文件存在
-	logFile := filepath.Join(tmpDir, "arcade.LOG")
+	logFile := filepath.Join(tmpDir, "test.log")
 	if _, err := os.Stat(logFile); os.IsNotExist(err) {
 		t.Errorf("log file should exist at %s", logFile)
 	}
@@ -159,7 +158,10 @@ func TestInit(t *testing.T) {
 	}
 
 	// 验证全局 logger 已初始化
-	if sugar == nil {
+	mu.RLock()
+	initialized := sugar != nil
+	mu.RUnlock()
+	if !initialized {
 		t.Error("global sugar logger should be initialized")
 	}
 }
@@ -179,7 +181,10 @@ func TestGlobalLogFunctions(t *testing.T) {
 	Error("test error message")
 
 	// 验证已自动初始化
-	if sugar == nil {
+	mu.RLock()
+	initialized := sugar != nil
+	mu.RUnlock()
+	if !initialized {
 		t.Error("global logger should be auto-initialized")
 	}
 }
@@ -188,20 +193,20 @@ func TestGlobalLogFunctions_Formatted(t *testing.T) {
 	conf := SetDefaults()
 	Init(conf)
 
-	Infof("formatted info: %s", "test")
-	Debugf("formatted debug: %d", 123)
-	Warnf("formatted warn: %v", true)
-	Errorf("formatted error: %f", 3.14)
+	Infow("formatted info", "value", "test")
+	Debugw("formatted debug", "value", 123)
+	Warn("formatted warn")
+	Error("formatted error")
 }
 
 func TestGlobalLogFunctions_WithFields(t *testing.T) {
 	conf := SetDefaults()
 	Init(conf)
 
-	Infow("structured info", "key1", "value1", "key2", 123)
-	Debugw("structured debug", "user", "alice", "action", "login")
-	Warnw("structured warn", "count", 5)
-	Errorw("structured error", "error", "something went wrong")
+	Info("structured info", "key1", "value1", "key2", 123)
+	Debug("structured debug", "user", "alice", "action", "login")
+	Warn("structured warn", "count", 5)
+	Error("structured error", "error", "something went wrong")
 }
 
 type contextKey string
@@ -222,27 +227,16 @@ func TestWithContext(t *testing.T) {
 	ctx = context.WithValue(ctx, userIDKey, "user-456")
 	ctx = context.WithValue(ctx, traceIDKey, "trace-789")
 
-	// 使用 WithContext 创建带上下文的 logger
-	ctxLogger := WithContext(ctx)
-	ctxLogger.Info("message with context")
-
-	// 验证返回的是 logger
-	if ctxLogger == nil {
-		t.Error("WithContext should return non-nil logger")
-	}
+	// 直接使用全局日志函数记录日志
+	Info("message with context", "request_id", ctx.Value(requestIDKey))
 }
 
 func TestWith(t *testing.T) {
 	conf := SetDefaults()
 	Init(conf)
 
-	// 使用 With 添加字段
-	logger := With("component", "test", "version", "1.0")
-	logger.Info("message with fields")
-
-	if logger == nil {
-		t.Error("With should return non-nil logger")
-	}
+	// 直接使用全局日志函数记录日志
+	Info("message with fields", "component", "test", "version", "1.0")
 }
 
 func TestSync(t *testing.T) {
@@ -251,10 +245,11 @@ func TestSync(t *testing.T) {
 
 	Info("test message")
 
+	// slog 不需要 Sync，但为了兼容性保留这个函数
 	err := Sync()
 	if err != nil {
-		// Sync 可能会返回错误（比如 stdout 无法 sync），这是正常的
-		t.Logf("Sync returned error (this is often expected): %v", err)
+		// Sync 现在总是返回 nil，不应该有错误
+		t.Errorf("Sync() should return nil, got %v", err)
 	}
 }
 
@@ -267,9 +262,9 @@ func TestConcurrentLogging(t *testing.T) {
 
 	for i := 0; i < 100; i++ {
 		go func(n int) {
-			Infof("concurrent message %d", n)
-			Debugf("debug message %d", n)
-			Warnf("warn message %d", n)
+			Infow("concurrent message", "number", n)
+			Debugw("debug message", "number", n)
+			Warnw("warn message", "number", n)
 			done <- true
 		}(i)
 	}
@@ -302,6 +297,7 @@ func TestParseLogLevel(t *testing.T) {
 		{"DEBUG", zapcore.DebugLevel},
 		{"INFO", zapcore.InfoLevel},
 		{"WARN", zapcore.WarnLevel},
+		{"WARNING", zapcore.WarnLevel},
 		{"ERROR", zapcore.ErrorLevel},
 		{"FATAL", zapcore.FatalLevel},
 		{"INVALID", zapcore.InfoLevel}, // 默认值
@@ -324,6 +320,7 @@ func TestLogRotation(t *testing.T) {
 	conf := &Conf{
 		Output:     "file",
 		Path:       tmpDir,
+		Filename:   "test.log",
 		Level:      "INFO",
 		KeepHours:  1,
 		RotateSize: 1, // 1MB，容易触发轮转
@@ -343,8 +340,10 @@ func TestLogRotation(t *testing.T) {
 
 	logger.Sync()
 
+	// slog 不需要 Sync，日志会自动刷新
+
 	// 验证日志文件存在
-	logFile := filepath.Join(tmpDir, "arcade.LOG")
+	logFile := filepath.Join(tmpDir, "test.log")
 	if _, err := os.Stat(logFile); os.IsNotExist(err) {
 		t.Errorf("log file should exist at %s", logFile)
 	}
@@ -364,19 +363,9 @@ func BenchmarkInfo(b *testing.B) {
 	conf := SetDefaults()
 	Init(conf)
 
-	
-	for b.Loop() {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
 		Info("benchmark message")
-	}
-}
-
-func BenchmarkInfof(b *testing.B) {
-	conf := SetDefaults()
-	Init(conf)
-
-	
-	for i := 0; b.Loop(); i++ {
-		Infof("benchmark message %d", i)
 	}
 }
 
@@ -384,8 +373,8 @@ func BenchmarkInfow(b *testing.B) {
 	conf := SetDefaults()
 	Init(conf)
 
-	
-	for i := 0; b.Loop(); i++ {
-		Infow("benchmark message", "iteration", i, "timestamp", time.Now())
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Infow("benchmark message", "number", i)
 	}
 }

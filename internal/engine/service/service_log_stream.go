@@ -44,7 +44,7 @@ func (h *LogStreamHandler) Upgrade() fiber.Handler {
 	return websocket.New(func(conn *websocket.Conn) {
 		defer func() {
 			if err := conn.Close(); err != nil {
-				log.Errorf("failed to close websocket: %v", err)
+				log.Error("failed to close websocket: %v", err)
 			}
 		}()
 
@@ -64,7 +64,7 @@ func (h *LogStreamHandler) Upgrade() fiber.Handler {
 		sendResponse := func(resp *LogStreamResponse) error {
 			data, err := sonic.Marshal(resp)
 			if err != nil {
-				log.Errorf("failed to marshal response: %v", err)
+				log.Error("failed to marshal response: %v", err)
 				return err
 			}
 			return conn.WriteMessage(websocket.TextMessage, data)
@@ -76,14 +76,14 @@ func (h *LogStreamHandler) Upgrade() fiber.Handler {
 			for {
 				_, message, err := conn.ReadMessage()
 				if err != nil {
-					log.Infof("websocket connection closed: %v", err)
+					log.Info("websocket connection closed: %v", err)
 					cancel()
 					return
 				}
 
 				var req LogStreamRequest
 				if err := sonic.Unmarshal(message, &req); err != nil {
-					log.Errorf("failed to unmarshal request: %v", err)
+					log.Error("failed to unmarshal request: %v", err)
 					sendResponse(&LogStreamResponse{
 						Type:  "error",
 						Error: fmt.Sprintf("invalid request format: %v", err),
@@ -104,7 +104,7 @@ func (h *LogStreamHandler) Upgrade() fiber.Handler {
 			case <-heartbeatTicker.C:
 				// 发送心跳
 				if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-					log.Errorf("failed to send ping: %v", err)
+					log.Error("failed to send ping: %v", err)
 					return
 				}
 
@@ -119,13 +119,13 @@ func (h *LogStreamHandler) Upgrade() fiber.Handler {
 					}
 
 					currentTaskID = req.TaskID
-					log.Infof("client subscribing to task %s from line %d", req.TaskID, req.FromLine)
+					log.Info("client subscribing to task %s from line %d", req.TaskID, req.FromLine)
 
 					// 先发送历史日志
 					go func() {
 						historicalLogs, err := h.logAggregator.GetLogsByTaskID(req.TaskID, req.FromLine, 1000)
 						if err != nil {
-							log.Errorf("failed to get historical logs: %v", err)
+							log.Error("failed to get historical logs: %v", err)
 							sendResponse(&LogStreamResponse{
 								Type:   "error",
 								TaskID: req.TaskID,
@@ -141,7 +141,7 @@ func (h *LogStreamHandler) Upgrade() fiber.Handler {
 								TaskID: req.TaskID,
 								Log:    entry,
 							}); err != nil {
-								log.Errorf("failed to send historical log: %v", err)
+								log.Error("failed to send historical log: %v", err)
 								return
 							}
 						}
@@ -204,7 +204,7 @@ func (h *LogStreamHandler) Upgrade() fiber.Handler {
 					TaskID: currentTaskID,
 					Log:    entry,
 				}); err != nil {
-					log.Errorf("failed to send real-time log: %v", err)
+					log.Error("failed to send real-time log: %v", err)
 					return
 				}
 			}

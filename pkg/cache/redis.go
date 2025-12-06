@@ -76,13 +76,13 @@ func NewRedis(cfg Redis) (*redis.Client, error) {
 		}
 		redisClient = redis.NewFailoverClient(redisOptions)
 	default:
-		log.Errorf("failed to init redis, redis type is illegal: %s", cfg.Mode)
+		log.Error("failed to init redis, redis type is illegal: %s", cfg.Mode)
 		os.Exit(1)
 	}
 
 	err := redisClient.Ping(context.Background()).Err()
 	if err != nil {
-		log.Errorf("failed to connect redis: %v", err)
+		log.Error("failed to connect redis: %v", err)
 		return nil, err
 	}
 

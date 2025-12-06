@@ -104,12 +104,12 @@ func (c *WebhookChannel) sendRequest(ctx context.Context, payload map[string]int
 	}
 
 	if err != nil {
-		log.Errorf("webhook send request failed: %v", err)
+		log.Error("webhook send request failed: %v", err)
 		return fmt.Errorf("failed to send request: %w", err)
 	}
 
 	if resp.StatusCode() < 200 || resp.StatusCode() >= 300 {
-		log.Errorf("webhook request failed with status %d: %s", resp.StatusCode(), resp.String())
+		log.Error("webhook request failed with status %d: %s", resp.StatusCode(), resp.String())
 		return fmt.Errorf("webhook request failed with status %d", resp.StatusCode())
 	}
 

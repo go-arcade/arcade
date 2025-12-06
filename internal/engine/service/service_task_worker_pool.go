@@ -125,7 +125,7 @@ func (p *TaskWorkerPool) Start() error {
 		return fmt.Errorf("worker pool already running")
 	}
 
-	log.Infof("starting task worker pool with %d workers", p.maxWorkers)
+	log.Info("starting task worker pool with %d workers", p.maxWorkers)
 
 	// 启动工作协程（从对象池获取 worker）
 	for i := 0; i < p.maxWorkers; i++ {
@@ -146,7 +146,7 @@ func (p *TaskWorkerPool) Start() error {
 	go p.priorityScheduler()
 
 	p.running = true
-	log.Infof("task worker pool started successfully")
+	log.Info("task worker pool started successfully")
 
 	return nil
 }
@@ -172,7 +172,7 @@ func (p *TaskWorkerPool) Stop() {
 	// 等待所有工作协程完成
 	p.wg.Wait()
 
-	log.Infof("task worker pool stopped. Stats: completed=%d, failed=%d, cancelled=%d",
+	log.Info("task worker pool stopped. Stats: completed=%d, failed=%d, cancelled=%d",
 		p.stats.TotalCompleted, p.stats.TotalFailed, p.stats.TotalCancelled)
 }
 
@@ -193,12 +193,12 @@ func (p *TaskWorkerPool) Submit(task Task) error {
 	// 尝试直接放入任务队列
 	select {
 	case p.taskQueue <- task:
-		log.Infof("task %s submitted to queue", task.GetTaskID())
+		log.Info("task %s submitted to queue", task.GetTaskID())
 		return nil
 	default:
 		// 队列已满，放入优先级队列
 		p.priorityQueue.Push(task)
-		log.Infof("task %s added to priority queue (queue full)", task.GetTaskID())
+		log.Info("task %s added to priority queue (queue full)", task.GetTaskID())
 		return nil
 	}
 }
@@ -219,7 +219,7 @@ func (p *TaskWorkerPool) SubmitWithPriority(task Task) error {
 
 	// 放入优先级队列
 	p.priorityQueue.Push(task)
-	log.Infof("task %s added to priority queue (priority=%d)", task.GetTaskID(), task.GetPriority())
+	log.Info("task %s added to priority queue (priority=%d)", task.GetTaskID(), task.GetPriority())
 
 	return nil
 }
@@ -231,12 +231,12 @@ func (p *TaskWorkerPool) CancelTask(taskId string) error {
 		p.stats.mu.Lock()
 		p.stats.TotalCancelled++
 		p.stats.mu.Unlock()
-		log.Infof("task %s cancelled from priority queue", taskId)
+		log.Info("task %s cancelled from priority queue", taskId)
 		return nil
 	}
 
 	// TODO: 支持取消正在执行的任务（需要通过 context）
-	log.Warnf("task %s not found in queue or already executing", taskId)
+	log.Warn("task %s not found in queue or already executing", taskId)
 	return fmt.Errorf("task %s not found or already executing", taskId)
 }
 
@@ -287,7 +287,7 @@ func (p *TaskWorkerPool) Resize(newSize int) error {
 			p.wg.Add(1)
 			go w.run()
 		}
-		log.Infof("worker pool resized from %d to %d workers", currentSize, newSize)
+		log.Info("worker pool resized from %d to %d workers", currentSize, newSize)
 	} else {
 		// 减少工作协程（归还对象池）
 		for i := currentSize - 1; i >= newSize; i-- {
@@ -303,7 +303,7 @@ func (p *TaskWorkerPool) Resize(newSize int) error {
 
 			p.workers = p.workers[:i]
 		}
-		log.Infof("worker pool resized from %d to %d workers", currentSize, newSize)
+		log.Info("worker pool resized from %d to %d workers", currentSize, newSize)
 	}
 
 	p.maxWorkers = newSize
@@ -328,7 +328,7 @@ func (p *TaskWorkerPool) priorityScheduler() {
 				if task != nil {
 					select {
 					case p.taskQueue <- task:
-						log.Debugf("task %s moved from priority queue to work queue", task.GetTaskID())
+						log.Debug("task %s moved from priority queue to work queue", task.GetTaskID())
 					default:
 						// 队列满了，放回优先级队列
 						p.priorityQueue.Push(task)
@@ -343,19 +343,19 @@ func (p *TaskWorkerPool) priorityScheduler() {
 func (w *worker) run() {
 	defer w.pool.wg.Done()
 
-	log.Infof("worker %d started", w.id)
+	log.Info("worker %d started", w.id)
 
 	for {
 		select {
 		case <-w.pool.workerCtx.Done():
-			log.Infof("worker %d stopped (context cancelled)", w.id)
+			log.Info("worker %d stopped (context cancelled)", w.id)
 			return
 		case <-w.stopChan:
-			log.Infof("worker %d stopped (stop signal)", w.id)
+			log.Info("worker %d stopped (stop signal)", w.id)
 			return
 		case task, ok := <-w.taskChan:
 			if !ok {
-				log.Infof("worker %d stopped (channel closed)", w.id)
+				log.Info("worker %d stopped (channel closed)", w.id)
 				return
 			}
 
@@ -386,14 +386,14 @@ func (w *worker) executeTask(task Task) {
 	defer func() {
 		// 恢复 panic
 		if r := recover(); r != nil {
-			log.Errorf("worker %d panic while executing task %s: %v", w.id, taskId, r)
+			log.Error("worker %d panic while executing task %s: %v", w.id, taskId, r)
 			update.failed = true
 			update.activeDec = 1
 			w.applyStatsUpdate(update, time.Since(startTime))
 		}
 	}()
 
-	log.Infof("worker %d executing task %s (priority=%d)", w.id, taskId, task.GetPriority())
+	log.Info("worker %d executing task %s (priority=%d)", w.id, taskId, task.GetPriority())
 
 	// 创建带超时的上下文（复用基础 context）
 	baseCtx := contextPool.Get().(context.Context)
@@ -414,11 +414,11 @@ func (w *worker) executeTask(task Task) {
 	if err != nil {
 		// 任务失败
 		update.failed = true
-		log.Errorf("worker %d task %s failed after %v: %v", w.id, taskId, duration, err)
+		log.Error("worker %d task %s failed after %v: %v", w.id, taskId, duration, err)
 	} else {
 		// 任务成功
 		update.completed = true
-		log.Infof("worker %d task %s completed in %v", w.id, taskId, duration)
+		log.Info("worker %d task %s completed in %v", w.id, taskId, duration)
 	}
 
 	// 应用统计更新

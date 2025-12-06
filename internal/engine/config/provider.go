@@ -7,6 +7,8 @@ import (
 	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/metrics"
+	"github.com/go-arcade/arcade/pkg/pprof"
 	"github.com/google/wire"
 )
 
@@ -19,6 +21,8 @@ var ProviderSet = wire.NewSet(
 	ProvideLogConfig,
 	ProvideDatabaseConfig,
 	ProvideRedisConfig,
+	ProvideMetricsConfig,
+	ProvidePprofConfig,
 )
 
 // ProvideTaskPoolConfig 提供任务池配置
@@ -60,4 +64,14 @@ func ProvideDatabaseConfig(appConf AppConfig) database.Database {
 // ProvideRedisConfig 提供 Redis 配置
 func ProvideRedisConfig(appConf AppConfig) cache.Redis {
 	return appConf.Redis
+}
+
+// ProvideMetricsConfig 提供 Metrics 配置
+func ProvideMetricsConfig(appConf AppConfig) metrics.MetricsConfig {
+	return appConf.Metrics
+}
+
+// ProvidePprofConfig 提供 Pprof 配置
+func ProvidePprofConfig(appConf AppConfig) pprof.PprofConfig {
+	return appConf.Pprof
 }

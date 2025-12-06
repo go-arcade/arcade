@@ -69,7 +69,7 @@ func (w *Watcher) AddWatchDir(dir string) error {
 	}
 
 	w.dirs = append(w.dirs, absDir)
-	log.Infof("start watch plugin dir: %s", absDir)
+	log.Infow("start watch plugin dir", "directory", absDir)
 	return nil
 }
 
@@ -110,7 +110,7 @@ func (w *Watcher) watchLoop() {
 			if !ok {
 				return
 			}
-			log.Errorf("file watch error: %v", err)
+			log.Errorw("file watch error", "error", err)
 		}
 	}
 }
@@ -122,7 +122,7 @@ func (w *Watcher) handleEvent(event fsnotify.Event) {
 		return
 	}
 
-	log.Debugf("detected file event: %s %s", event.Op.String(), event.Name)
+	log.Debugw("detected file event", "operation", event.Op.String(), "file", event.Name)
 
 	// Handle plugin file changes
 	// RPC plugins are executable binaries, check if it's likely a plugin file
@@ -184,7 +184,7 @@ func (w *Watcher) processPendingOps() {
 func (w *Watcher) reloadPlugin(path string) {
 	pluginName := w.getPluginNameFromPath(path)
 	if pluginName == "" {
-		log.Warnf("cannot determine plugin name from path: %s", path)
+		log.Warnw("cannot determine plugin name from path", "path", path)
 		return
 	}
 
@@ -198,9 +198,9 @@ func (w *Watcher) reloadPlugin(path string) {
 // unloadPlugin unloads a plugin
 func (w *Watcher) unloadPlugin(pluginName string) {
 	if err := w.manager.UnregisterPlugin(pluginName); err != nil {
-		log.Debugf("unload plugin %s failed (maybe not loaded): %v", pluginName, err)
+		log.Debugw("unload plugin failed (maybe not loaded)", "plugin", pluginName, "error", err)
 	} else {
-		log.Infof("plugin %s unloaded", pluginName)
+		log.Infow("plugin unloaded", "plugin", pluginName)
 	}
 }
 
@@ -213,11 +213,11 @@ func (w *Watcher) loadPlugin(pluginName, pluginPath string) {
 	}
 
 	if err := w.manager.RegisterPlugin(pluginName, pluginPath, config); err != nil {
-		log.Errorf("load plugin %s failed: %v", pluginName, err)
+		log.Errorw("load plugin failed", "plugin", pluginName, "error", err)
 		return
 	}
 
-	log.Infof("plugin %s loaded successfully from %s", pluginName, pluginPath)
+	log.Infow("plugin loaded successfully", "plugin", pluginName, "path", pluginPath)
 }
 
 // getPluginNameFromPath extracts the plugin name from file path

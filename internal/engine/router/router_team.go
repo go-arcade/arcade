@@ -51,14 +51,14 @@ func (rt *Router) teamRouter(r fiber.Router, auth fiber.Handler) {
 func (rt *Router) createTeam(c *fiber.Ctx) error {
 	var req teammodel.CreateTeamReq
 	if err := c.BodyParser(&req); err != nil {
-		log.Errorf("create team failed: %v", err)
+		log.Errorw("create team failed", "error", err)
 		return http.WithRepErrMsg(c, http.RequestParameterParsingFailed.Code, http.RequestParameterParsingFailed.Msg, c.Path())
 	}
 
 	// 获取当前用户ID
 	claims, err := tool.ParseAuthorizationToken(c, rt.Http.Auth.SecretKey)
 	if err != nil {
-		log.Errorf("authentication failed: %v", err)
+		log.Errorw("authentication failed", "error", err)
 		return http.WithRepErrMsg(c, http.AuthenticationFailed.Code, http.AuthenticationFailed.Msg, c.Path())
 	}
 
@@ -66,7 +66,7 @@ func (rt *Router) createTeam(c *fiber.Ctx) error {
 
 	result, err := teamService.CreateTeam(&req, claims.UserId)
 	if err != nil {
-		log.Errorf("create team failed: %v", err)
+		log.Errorw("create team failed", "error", err)
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
 
@@ -83,7 +83,7 @@ func (rt *Router) updateTeam(c *fiber.Ctx) error {
 
 	var req teammodel.UpdateTeamReq
 	if err := c.BodyParser(&req); err != nil {
-		log.Errorf("update team failed: %v", err)
+		log.Errorw("update team failed", "error", err)
 		return http.WithRepErrMsg(c, http.RequestParameterParsingFailed.Code, http.RequestParameterParsingFailed.Msg, c.Path())
 	}
 
@@ -91,7 +91,7 @@ func (rt *Router) updateTeam(c *fiber.Ctx) error {
 
 	result, err := teamService.UpdateTeam(teamId, &req)
 	if err != nil {
-		log.Errorf("update team failed: %v", err)
+		log.Errorw("update team failed", "error", err)
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
 
@@ -109,7 +109,7 @@ func (rt *Router) deleteTeam(c *fiber.Ctx) error {
 	teamService := rt.Services.Team
 
 	if err := teamService.DeleteTeam(teamId); err != nil {
-		log.Errorf("delete team failed: %v", err)
+		log.Errorw("delete team failed", "error", err)
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
 
@@ -128,7 +128,7 @@ func (rt *Router) getTeamById(c *fiber.Ctx) error {
 
 	result, err := teamService.GetTeamById(teamId)
 	if err != nil {
-		log.Errorf("get team by id failed: %v", err)
+		log.Errorw("get team by id failed", "error", err)
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
 
@@ -191,7 +191,7 @@ func (rt *Router) getTeamsByOrgId(c *fiber.Ctx) error {
 
 	result, err := teamService.GetTeamsByOrgId(orgId)
 	if err != nil {
-		log.Errorf("get teams by org id failed: %v", err)
+		log.Errorw("get teams by org id failed", "error", err)
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
 
@@ -210,7 +210,7 @@ func (rt *Router) getSubTeams(c *fiber.Ctx) error {
 
 	result, err := teamService.GetSubTeams(teamId)
 	if err != nil {
-		log.Errorf("get sub teams failed: %v", err)
+		log.Errorw("get sub teams failed", "error", err)
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
 
@@ -223,7 +223,7 @@ func (rt *Router) getUserTeams(c *fiber.Ctx) error {
 	// 获取当前用户ID
 	claims, err := tool.ParseAuthorizationToken(c, rt.Http.Auth.SecretKey)
 	if err != nil {
-		log.Errorf("authentication failed: %v", err)
+		log.Errorw("authentication failed", "error", err)
 		return http.WithRepErrMsg(c, http.AuthenticationFailed.Code, http.AuthenticationFailed.Msg, c.Path())
 	}
 
@@ -231,7 +231,7 @@ func (rt *Router) getUserTeams(c *fiber.Ctx) error {
 
 	result, err := teamService.GetTeamsByUserId(claims.UserId)
 	if err != nil {
-		log.Errorf("get teams by user id failed: %v", err)
+		log.Errorw("get teams by user id failed", "error", err)
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
 
@@ -249,7 +249,7 @@ func (rt *Router) enableTeam(c *fiber.Ctx) error {
 	teamService := rt.Services.Team
 
 	if err := teamService.EnableTeam(teamId); err != nil {
-		log.Errorf("enable team failed: %v", err)
+		log.Errorw("enable team failed", "error", err)
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
 
@@ -267,7 +267,7 @@ func (rt *Router) disableTeam(c *fiber.Ctx) error {
 	teamService := rt.Services.Team
 
 	if err := teamService.DisableTeam(teamId); err != nil {
-		log.Errorf("disable team failed: %v", err)
+		log.Errorw("disable team failed", "error", err)
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
 
@@ -285,7 +285,7 @@ func (rt *Router) updateTeamStatistics(c *fiber.Ctx) error {
 	teamService := rt.Services.Team
 
 	if err := teamService.UpdateTeamStatistics(teamId); err != nil {
-		log.Errorf("update team statistics failed: %v", err)
+		log.Errorw("update team statistics failed", "error", err)
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
 

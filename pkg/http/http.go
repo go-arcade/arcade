@@ -10,7 +10,6 @@ type Http struct {
 	Host            string
 	Port            int
 	Heartbeat       int64
-	Pprof           bool
 	AccessLog       bool
 	UseFileAssets   bool
 	ReadTimeout     int

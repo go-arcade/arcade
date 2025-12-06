@@ -7,7 +7,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/http"
 )
 
-
 func TestJwt(t *testing.T) {
 
 	userId := "1"

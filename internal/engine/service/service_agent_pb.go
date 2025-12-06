@@ -4,15 +4,15 @@ import (
 	"context"
 	"time"
 
-	agentapi "github.com/go-arcade/arcade/api/agent/v1"
+	agentv1 "github.com/go-arcade/arcade/api/agent/v1"
 )
 
 type AgentServiceImpl struct {
-	agentapi.UnimplementedAgentServiceServer
+	agentv1.UnimplementedAgentServiceServer
 }
 
-func (a *AgentServiceImpl) Heartbeat(ctx context.Context, req *agentapi.HeartbeatRequest) (*agentapi.HeartbeatResponse, error) {
-	return &agentapi.HeartbeatResponse{
+func (a *AgentServiceImpl) Heartbeat(ctx context.Context, req *agentv1.HeartbeatRequest) (*agentv1.HeartbeatResponse, error) {
+	return &agentv1.HeartbeatResponse{
 		Success:   true,
 		Message:   "pong",
 		Timestamp: time.Now().Unix(),

@@ -8,17 +8,15 @@ import (
 	"syscall"
 
 	"github.com/go-arcade/arcade/internal/engine/service"
-	"go.uber.org/zap"
+	"github.com/go-arcade/arcade/pkg/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-
-	"github.com/go-arcade/arcade/pkg/log"
 
 	agentv1 "github.com/go-arcade/arcade/api/agent/v1"
 	pipelinev1 "github.com/go-arcade/arcade/api/pipeline/v1"
 	streamv1 "github.com/go-arcade/arcade/api/stream/v1"
 	taskv1 "github.com/go-arcade/arcade/api/task/v1"
-	"github.com/go-arcade/arcade/internal/pkg/grpc/middleware"
+	"github.com/go-arcade/arcade/internal/pkg/grpc/interceptor"
 	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpcrecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpcctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
@@ -37,26 +35,28 @@ type ServerWrapper struct {
 }
 
 // NewGrpcServer 创建 gRPC 服务
-func NewGrpcServer(cfg Conf, log *zap.Logger) *ServerWrapper {
+func NewGrpcServer(cfg Conf) *ServerWrapper {
 	opts := []grpc.ServerOption{
 		grpc.MaxConcurrentStreams(uint32(cfg.MaxConnections)),
 		grpc.StreamInterceptor(grpcmiddleware.ChainStreamServer(
 			// 注意顺序，先 tags，再 logging，再 auth，最后 recovery
 			grpcctxtags.StreamServerInterceptor(),
-			middleware.LoggingStreamInterceptor(log), // 使用自定义日志拦截器，可过滤心跳接口
-			middleware.AuthStreamInterceptor(),       // 使用自定义认证拦截器，可跳过心跳接口
+			interceptor.LoggingStreamInterceptor(), // 使用自定义日志拦截器，可过滤心跳接口
+			//	interceptor.AuthStreamInterceptor(),       // 使用自定义认证拦截器，可跳过心跳接口
 			grpcrecovery.StreamServerInterceptor(),
 		)),
 		grpc.UnaryInterceptor(grpcmiddleware.ChainUnaryServer(
 			grpcctxtags.UnaryServerInterceptor(),
-			middleware.LoggingUnaryInterceptor(log), // 使用自定义日志拦截器，可过滤心跳接口
-			middleware.AuthUnaryInterceptor(),       // 使用自定义认证拦截器，可跳过心跳接口
+			interceptor.LoggingUnaryInterceptor(), // 使用自定义日志拦截器，可过滤心跳接口
+			//	interceptor.AuthUnaryInterceptor(),       // 使用自定义认证拦截器，可跳过心跳接口
 			grpcrecovery.UnaryServerInterceptor(),
 		)),
 	}
 
 	s := grpc.NewServer(opts...)
-	return &ServerWrapper{svr: s}
+	return &ServerWrapper{
+		svr: s,
+	}
 }
 
 // Register 注册所有 gRPC 服务

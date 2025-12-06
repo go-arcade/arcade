@@ -31,7 +31,7 @@ func (al *AgentService) AddAgent(addAgentReq *agentmodel.AddAgentReq) error {
 		CreateTime:  time.Now(),
 	}
 	if err = al.agentRepo.AddAgent(addAgentReqagent); err != nil {
-		log.Errorf("add agent err: %v", err)
+		log.Error("add agent err: %v", err)
 		return err
 	}
 	return err
@@ -51,7 +51,7 @@ func (al *AgentService) ListAgent(pageNum, pageSize int) ([]agentmodel.Agent, in
 	agents, count, err := al.agentRepo.ListAgent(offset, pageSize)
 
 	if err != nil {
-		log.Errorf("list agent err: %v", err)
+		log.Error("list agent err: %v", err)
 		return nil, 0, err
 	}
 	return agents, count, err

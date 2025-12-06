@@ -89,7 +89,7 @@ func NewPluginService(
 	storageProvider storage.StorageProvider,
 ) *PluginService {
 	if err := os.MkdirAll(getLocalCachePath(), 0755); err != nil {
-		log.Errorf("failed to create plugin cache dir: %v", err)
+		log.Error("failed to create plugin cache dir: %v", err)
 	}
 
 	return &PluginService{
@@ -140,7 +140,7 @@ type PluginConfigResponse struct {
 
 // InstallPlugin 安装插件
 func (s *PluginService) InstallPlugin(req *InstallPluginRequest) (*InstallPluginResponse, error) {
-	log.Infof("[PluginService] installing plugin from source: %s", req.Source)
+	log.Info("[PluginService] installing plugin from source: %s", req.Source)
 
 	var (
 		pluginData []byte
@@ -204,10 +204,10 @@ func (s *PluginService) InstallPlugin(req *InstallPluginRequest) (*InstallPlugin
 	go func() {
 		uploadedPath, uploadErr := s.uploadToStorage(manifest.Name, manifest.Version, localPath)
 		if uploadErr != nil {
-			log.Errorf("[PluginService] failed to upload to storage: %v", uploadErr)
+			log.Error("[PluginService] failed to upload to storage: %v", uploadErr)
 		} else {
 			s3Path = uploadedPath
-			log.Infof("[PluginService] plugin uploaded to storage: %s", s3Path)
+			log.Info("[PluginService] plugin uploaded to storage: %s", s3Path)
 		}
 	}()
 
@@ -240,17 +240,17 @@ func (s *PluginService) InstallPlugin(req *InstallPluginRequest) (*InstallPlugin
 		InstallTime:   time.Now(),
 	}
 
-	log.Infof("[PluginService] creating plugin record in database: %s", pluginID)
+	log.Info("[PluginService] creating plugin record in database: %s", pluginID)
 	if err := s.pluginRepo.CreatePlugin(pluginModel); err != nil {
 		// 回滚：删除本地文件和S3文件
-		log.Errorf("[PluginService] failed to save plugin to database: %v", err)
+		log.Error("[PluginService] failed to save plugin to database: %v", err)
 		s.cleanup(localPath, s3Path)
 		return &InstallPluginResponse{
 			Success: false,
 			Message: fmt.Sprintf("failed to save plugin to database: %v", err),
 		}, err
 	}
-	log.Infof("[PluginService] plugin record created in database successfully")
+	log.Info("[PluginService] plugin record created in database successfully")
 
 	// 自动创建插件配置（存储Schema信息到配置表）
 	if len(manifest.Args) > 0 || len(manifest.Config) > 0 {
@@ -261,10 +261,10 @@ func (s *PluginService) InstallPlugin(req *InstallPluginRequest) (*InstallPlugin
 		}
 
 		if err := s.pluginRepo.CreatePluginConfig(pluginConfig); err != nil {
-			log.Warnf("[PluginService] failed to create config for plugin %s: %v", pluginID, err)
+			log.Warn("[PluginService] failed to create config for plugin %s: %v", pluginID, err)
 			// 配置创建失败不影响插件安装
 		} else {
-			log.Infof("[PluginService] created config for plugin: %s", pluginID)
+			log.Info("[PluginService] created config for plugin: %s", pluginID)
 		}
 	}
 
@@ -274,11 +274,11 @@ func (s *PluginService) InstallPlugin(req *InstallPluginRequest) (*InstallPlugin
 		defaultConfigData = datatypes.JSON(manifest.DefaultConfig)
 	}
 	if err := s.hotReloadPlugin(manifest.Name, localPath, defaultConfigData); err != nil {
-		log.Warnf("[PluginService] failed to hot reload plugin: %v", err)
+		log.Warn("[PluginService] failed to hot reload plugin: %v", err)
 		// 热加载失败不影响安装流程，但要记录错误
 	}
 
-	log.Infof("[PluginService] plugin installed successfully: %s (v%s)", manifest.Name, manifest.Version)
+	log.Info("[PluginService] plugin installed successfully: %s (v%s)", manifest.Name, manifest.Version)
 
 	return &InstallPluginResponse{
 		Success:  true,
@@ -333,7 +333,7 @@ func (s *PluginService) InstallPluginAsync(req *InstallPluginRequest) (*InstallP
 	taskManager := GetTaskManager()
 	task := taskManager.CreateTask(manifest.Name, manifest.Version)
 
-	log.Infof("[PluginService] created async install task: %s for plugin %s v%s", task.TaskID, manifest.Name, manifest.Version)
+	log.Info("[PluginService] created async install task: %s for plugin %s v%s", task.TaskID, manifest.Name, manifest.Version)
 
 	// 启动后台安装
 	go s.executeInstallTask(task.TaskID, req)
@@ -354,20 +354,20 @@ func (s *PluginService) executeInstallTask(taskID string, req *InstallPluginRequ
 	// 执行安装
 	resp, err := s.InstallPlugin(req)
 	if err != nil {
-		log.Errorf("[PluginService] async install task %s failed: %v", taskID, err)
+		log.Error("[PluginService] async install task %s failed: %v", taskID, err)
 		taskManager.UpdateTaskError(taskID, err)
 		return
 	}
 
 	if !resp.Success {
-		log.Errorf("[PluginService] async install task %s failed: %s", taskID, resp.Message)
+		log.Error("[PluginService] async install task %s failed: %s", taskID, resp.Message)
 		taskManager.UpdateTaskError(taskID, fmt.Errorf("%s", resp.Message))
 		return
 	}
 
 	// 更新为成功
 	taskManager.UpdateTaskSuccess(taskID, resp.PluginID)
-	log.Infof("[PluginService] async install task %s completed successfully", taskID)
+	log.Info("[PluginService] async install task %s completed successfully", taskID)
 }
 
 // GetInstallTask 获取安装任务状态
@@ -384,7 +384,7 @@ func (s *PluginService) ListInstallTasks() []*PluginInstallTask {
 
 // UninstallPlugin 卸载插件
 func (s *PluginService) UninstallPlugin(pluginID string) error {
-	log.Infof("[PluginService] uninstalling plugin: %s", pluginID)
+	log.Info("[PluginService] uninstalling plugin: %s", pluginID)
 
 	// 1. 从数据库获取插件信息
 	pluginModel, err := s.pluginRepo.GetPluginByID(pluginID)
@@ -394,15 +394,15 @@ func (s *PluginService) UninstallPlugin(pluginID string) error {
 
 	// 2. 从内存中卸载
 	if err := s.pluginManager.UnregisterPlugin(pluginID); err != nil {
-		log.Warnf("[PluginService] failed to unregister plugin from memory: %v", err)
+		log.Warn("[PluginService] failed to unregister plugin from memory: %v", err)
 	}
 
 	// 3. 删除S3文件（使用插件名）
 	s3Path := s.getS3Path(pluginModel.Name, pluginModel.Version)
 	if err := s.storageProvider.Delete(s.ctx, s3Path); err != nil {
-		log.Warnf("[PluginService] failed to delete S3 file %s: %v", s3Path, err)
+		log.Warn("[PluginService] failed to delete S3 file %s: %v", s3Path, err)
 	} else {
-		log.Infof("[PluginService] deleted S3 file: %s", s3Path)
+		log.Info("[PluginService] deleted S3 file: %s", s3Path)
 	}
 
 	// 5. 删除数据库记录
@@ -412,16 +412,16 @@ func (s *PluginService) UninstallPlugin(pluginID string) error {
 
 	// 6. 删除相关配置
 	if err := s.pluginRepo.DeletePluginConfigs(pluginID); err != nil {
-		log.Warnf("[PluginService] failed to delete plugin configs: %v", err)
+		log.Warn("[PluginService] failed to delete plugin configs: %v", err)
 	}
 
-	log.Infof("[PluginService] plugin uninstalled successfully: %s", pluginID)
+	log.Info("[PluginService] plugin uninstalled successfully: %s", pluginID)
 	return nil
 }
 
 // EnablePlugin 启用插件
 func (s *PluginService) EnablePlugin(pluginID string) error {
-	log.Infof("[PluginService] enabling plugin: %s", pluginID)
+	log.Info("[PluginService] enabling plugin: %s", pluginID)
 
 	// 1. 更新数据库状态
 	if err := s.pluginRepo.UpdatePluginStatus(pluginID, int(PluginStatusEnabled)); err != nil {
@@ -445,17 +445,17 @@ func (s *PluginService) EnablePlugin(pluginID string) error {
 		return fmt.Errorf("failed to hot reload plugin: %v", err)
 	}
 
-	log.Infof("[PluginService] plugin enabled successfully: %s", pluginID)
+	log.Info("[PluginService] plugin enabled successfully: %s", pluginID)
 	return nil
 }
 
 // DisablePlugin 禁用插件
 func (s *PluginService) DisablePlugin(pluginID string) error {
-	log.Infof("[PluginService] disabling plugin: %s", pluginID)
+	log.Info("[PluginService] disabling plugin: %s", pluginID)
 
 	// 1. 从内存中卸载
 	if err := s.pluginManager.UnregisterPlugin(pluginID); err != nil {
-		log.Warnf("[PluginService] failed to unregister plugin from memory: %v", err)
+		log.Warn("[PluginService] failed to unregister plugin from memory: %v", err)
 	}
 
 	// 2. 更新数据库状态
@@ -463,7 +463,7 @@ func (s *PluginService) DisablePlugin(pluginID string) error {
 		return fmt.Errorf("failed to update plugin status: %v", err)
 	}
 
-	log.Infof("[PluginService] plugin disabled successfully: %s", pluginID)
+	log.Info("[PluginService] plugin disabled successfully: %s", pluginID)
 	return nil
 }
 
@@ -529,16 +529,16 @@ func (s *PluginService) extractZipPackage(zipData []byte, size int64) ([]byte, *
 	var soFilename string
 
 	// Log all files in the zip for debugging
-	log.Infof("[PluginService] extracting zip package with %d files", len(zipReader.File))
+	log.Info("[PluginService] extracting zip package with %d files", len(zipReader.File))
 	for _, file := range zipReader.File {
-		log.Debugf("[PluginService] found file in zip: %s (dir: %v, size: %d)", file.Name, file.FileInfo().IsDir(), file.FileInfo().Size())
+		log.Debug("[PluginService] found file in zip: %s (dir: %v, size: %d)", file.Name, file.FileInfo().IsDir(), file.FileInfo().Size())
 	}
 
 	// 遍历zip包中的文件
 	for _, file := range zipReader.File {
 		// 跳过目录
 		if file.FileInfo().IsDir() {
-			log.Debugf("[PluginService] skipping directory: %s", file.Name)
+			log.Debug("[PluginService] skipping directory: %s", file.Name)
 			continue
 		}
 
@@ -546,7 +546,7 @@ func (s *PluginService) extractZipPackage(zipData []byte, size int64) ([]byte, *
 		filename := filepath.Base(file.Name)
 		lowerFilename := strings.ToLower(filename)
 
-		log.Infof("[PluginService] processing file: %s (size: %d)", filename, file.FileInfo().Size())
+		log.Info("[PluginService] processing file: %s (size: %d)", filename, file.FileInfo().Size())
 
 		// 查找 manifest.json
 		if lowerFilename == "manifest.json" {
@@ -569,20 +569,20 @@ func (s *PluginService) extractZipPackage(zipData []byte, size int64) ([]byte, *
 			lowerFilename == "license" ||
 			lowerFilename == "license.txt" ||
 			lowerFilename == "changelog.md" {
-			log.Debugf("[PluginService] skipping documentation file: %s", filename)
+			log.Debug("[PluginService] skipping documentation file: %s", filename)
 			continue
 		}
 
 		// Look for executable plugin binary
 		// Accept: no extension, .bin, .exe, .so (for backward compatibility)
 		ext := strings.ToLower(filepath.Ext(filename))
-		log.Infof("[PluginService] checking file %s with extension '%s'", filename, ext)
+		log.Info("[PluginService] checking file %s with extension '%s'", filename, ext)
 
 		isExecutable := ext == "" || ext == ".bin" || ext == ".exe" || ext == ".so"
 
 		if isExecutable {
 			if len(pluginData) > 0 {
-				log.Warnf("[PluginService] found multiple executable files, using first one, skipping: %s", filename)
+				log.Warn("[PluginService] found multiple executable files, using first one, skipping: %s", filename)
 				continue
 			}
 
@@ -596,9 +596,9 @@ func (s *PluginService) extractZipPackage(zipData []byte, size int64) ([]byte, *
 				return nil, nil, fmt.Errorf("failed to read plugin file %s: %v", filename, err)
 			}
 			soFilename = filename
-			log.Infof("[PluginService] ✓ found plugin executable: %s (size: %d bytes)", filename, len(pluginData))
+			log.Info("[PluginService] ✓ found plugin executable: %s (size: %d bytes)", filename, len(pluginData))
 		} else {
-			log.Infof("[PluginService] skipping non-executable file: %s (ext: %s)", filename, ext)
+			log.Info("[PluginService] skipping non-executable file: %s (ext: %s)", filename, ext)
 		}
 	}
 
@@ -623,11 +623,11 @@ func (s *PluginService) extractZipPackage(zipData []byte, size int64) ([]byte, *
 
 	// 更新 entryPoint 为实际的可执行文件名
 	if manifest.EntryPoint == "" || manifest.EntryPoint != soFilename {
-		log.Infof("[PluginService] updating entryPoint from '%s' to '%s'", manifest.EntryPoint, soFilename)
+		log.Info("[PluginService] updating entryPoint from '%s' to '%s'", manifest.EntryPoint, soFilename)
 		manifest.EntryPoint = soFilename
 	}
 
-	log.Infof("[PluginService] extracted plugin package: %s v%s", manifest.Name, manifest.Version)
+	log.Info("[PluginService] extracted plugin package: %s v%s", manifest.Name, manifest.Version)
 	return pluginData, &manifest, nil
 }
 
@@ -652,7 +652,7 @@ func (s *PluginService) saveToLocalCache(pluginName, version string, data []byte
 		return "", fmt.Errorf("failed to write file: %v", err)
 	}
 
-	log.Infof("[PluginService] saved to local cache: %s", localPath)
+	log.Info("[PluginService] saved to local cache: %s", localPath)
 	return localPath, nil
 }
 
@@ -677,7 +677,7 @@ func (s *PluginService) uploadToStorage(pluginName, version string, localFilePat
 		return "", fmt.Errorf("failed to upload to storage: %v", err)
 	}
 
-	log.Infof("[PluginService] uploaded to storage: %s", url)
+	log.Info("[PluginService] uploaded to storage: %s", url)
 	return s3Path, nil
 }
 
@@ -769,7 +769,7 @@ func (s *PluginService) hotReloadPlugin(pluginName, localPath string, defaultCon
 		_ = s.pluginRepo.UpdatePluginRegistrationStatus(pluginRecord.PluginId, model.PluginRegisterStatusRegistered, "")
 	}
 
-	log.Infof("[PluginService] hot reloaded plugin: %s from %s", pluginName, localPath)
+	log.Info("[PluginService] hot reloaded plugin: %s from %s", pluginName, localPath)
 	return nil
 }
 
@@ -796,19 +796,19 @@ func (s *PluginService) getS3Path(pluginName, version string) string {
 func (s *PluginService) cleanup(localPath, s3Path string) {
 	if localPath != "" {
 		if err := os.Remove(localPath); err != nil {
-			log.Warnf("[PluginService] failed to remove local file %s: %v", localPath, err)
+			log.Warn("[PluginService] failed to remove local file %s: %v", localPath, err)
 		}
 	}
 	if s3Path != "" && s.storageProvider != nil {
 		if err := s.storageProvider.Delete(s.ctx, s3Path); err != nil {
-			log.Warnf("[PluginService] failed to remove S3 file %s: %v", s3Path, err)
+			log.Warn("[PluginService] failed to remove S3 file %s: %v", s3Path, err)
 		}
 	}
 }
 
 // UpdatePlugin 更新插件（版本升级）
 func (s *PluginService) UpdatePlugin(pluginID string, req *InstallPluginRequest) (*InstallPluginResponse, error) {
-	log.Infof("[PluginService] updating plugin: %s", pluginID)
+	log.Info("[PluginService] updating plugin: %s", pluginID)
 
 	// 1. 检查插件是否存在
 	oldPlugin, err := s.pluginRepo.GetPluginByID(pluginID)
@@ -818,7 +818,7 @@ func (s *PluginService) UpdatePlugin(pluginID string, req *InstallPluginRequest)
 
 	// 2. 先禁用旧插件
 	if err := s.DisablePlugin(pluginID); err != nil {
-		log.Warnf("[PluginService] failed to disable old plugin: %v", err)
+		log.Warn("[PluginService] failed to disable old plugin: %v", err)
 	}
 
 	// 3. 安装新版本
@@ -833,13 +833,13 @@ func (s *PluginService) UpdatePlugin(pluginID string, req *InstallPluginRequest)
 	oldLocalPath := s.getLocalPath(oldPlugin.Name, oldPlugin.Version)
 	s.cleanup(oldLocalPath, s.getS3Path(oldPlugin.Name, oldPlugin.Version))
 
-	log.Infof("[PluginService] plugin updated successfully: %s", pluginID)
+	log.Info("[PluginService] plugin updated successfully: %s", pluginID)
 	return installResp, nil
 }
 
 // GetPluginConfig 获取插件配置
 func (s *PluginService) GetPluginConfig(pluginID string) (*PluginConfigResponse, error) {
-	log.Infof("[PluginService] getting plugin config: %s", pluginID)
+	log.Info("[PluginService] getting plugin config: %s", pluginID)
 
 	// 验证插件是否存在
 	_, err := s.pluginRepo.GetPluginByID(pluginID)
@@ -862,7 +862,7 @@ func (s *PluginService) GetPluginConfig(pluginID string) (*PluginConfigResponse,
 
 // CreatePluginConfig 创建插件配置
 func (s *PluginService) CreatePluginConfig(req *UpdatePluginConfigRequest) (*PluginConfigResponse, error) {
-	log.Infof("[PluginService] creating plugin config for: %s", req.PluginID)
+	log.Info("[PluginService] creating plugin config for: %s", req.PluginID)
 
 	// 验证插件是否存在
 	_, err := s.pluginRepo.GetPluginByID(req.PluginID)
@@ -887,7 +887,7 @@ func (s *PluginService) CreatePluginConfig(req *UpdatePluginConfigRequest) (*Plu
 		return nil, fmt.Errorf("failed to create plugin config: %v", err)
 	}
 
-	log.Infof("[PluginService] plugin config created for: %s", req.PluginID)
+	log.Info("[PluginService] plugin config created for: %s", req.PluginID)
 
 	return &PluginConfigResponse{
 		PluginID: config.PluginId,
@@ -898,7 +898,7 @@ func (s *PluginService) CreatePluginConfig(req *UpdatePluginConfigRequest) (*Plu
 
 // UpdatePluginConfig 更新插件配置
 func (s *PluginService) UpdatePluginConfig(req *UpdatePluginConfigRequest) (*PluginConfigResponse, error) {
-	log.Infof("[PluginService] updating plugin config for: %s", req.PluginID)
+	log.Info("[PluginService] updating plugin config for: %s", req.PluginID)
 
 	// 验证插件是否存在
 	_, err := s.pluginRepo.GetPluginByID(req.PluginID)
@@ -930,7 +930,7 @@ func (s *PluginService) UpdatePluginConfig(req *UpdatePluginConfigRequest) (*Plu
 		return nil, fmt.Errorf("failed to get updated config: %v", err)
 	}
 
-	log.Infof("[PluginService] plugin config updated for: %s", req.PluginID)
+	log.Info("[PluginService] plugin config updated for: %s", req.PluginID)
 
 	return &PluginConfigResponse{
 		PluginID: updatedConfig.PluginId,
@@ -960,7 +960,7 @@ func (s *PluginService) ValidateManifest(manifest *PluginManifest) error {
 func getLocalCachePath() string {
 	localCachePath, err := os.Getwd()
 	if err != nil {
-		log.Errorf("failed to get current working directory: %v", err)
+		log.Error("failed to get current working directory: %v", err)
 		return ""
 	}
 	return filepath.Join(localCachePath, pluginCachePath)

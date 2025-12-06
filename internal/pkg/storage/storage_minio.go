@@ -80,7 +80,7 @@ func (m *MinioStorage) Upload(ctx *ctx.Context, objectName string, file *multipa
 			ContentType: contentType,
 		})
 		if err == nil {
-			log.Debugf("MinIO upload completed: %s - 100.00%% (%d bytes)", fullPath, fileSize)
+			log.Debug("MinIO upload completed: %s - 100.00%% (%d bytes)", fullPath, fileSize)
 		}
 		return fullPath, err
 	}
@@ -132,7 +132,7 @@ func (m *MinioStorage) Upload(ctx *ctx.Context, objectName string, file *multipa
 			_ = os.WriteFile(checkpointPath, mustJSON(checkpoint), 0644)
 
 			// 记录上传进度日志
-			// log.Debugf("MinIO upload progress: %s - %.2f%% (%d/%d bytes)",
+			// log.Debug("MinIO upload progress: %s - %.2f%% (%d/%d bytes)",
 			// 	fullPath, checkpoint.UploadProgress, uploaded, fileSize)
 		}
 	})
@@ -142,7 +142,7 @@ func (m *MinioStorage) Upload(ctx *ctx.Context, objectName string, file *multipa
 	})
 
 	if err == nil {
-		log.Debugf("MinIO upload completed: %s - 100.00%% (%d bytes)", fullPath, fileSize)
+		log.Debug("MinIO upload completed: %s - 100.00%% (%d bytes)", fullPath, fileSize)
 		_ = os.Remove(checkpointPath) // 成功则删除断点文件
 	}
 	return fullPath, err

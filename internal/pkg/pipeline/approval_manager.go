@@ -101,7 +101,7 @@ func (am *ApprovalManager) CreateApproval(ctx context.Context, jobName, stepName
 	}
 
 	if am.logger.Log != nil {
-		am.logger.Log.Infof("created approval request: %s for job %s, step %s", requestID, jobName, stepName)
+		am.logger.Log.Infow("created approval request", "request", requestID, "job", jobName, "step", stepName)
 	}
 
 	return request, nil
@@ -177,7 +177,7 @@ func (am *ApprovalManager) Approve(requestID, approvedBy, reason string) error {
 	request.Reason = reason
 
 	if am.logger.Log != nil {
-		am.logger.Log.Infof("approval request %s approved by %s", requestID, approvedBy)
+		am.logger.Log.Infow("approval request approved", "request", requestID, "approved_by", approvedBy)
 	}
 
 	return nil
@@ -202,7 +202,7 @@ func (am *ApprovalManager) Reject(requestID, rejectedBy, reason string) error {
 	request.Reason = reason
 
 	if am.logger.Log != nil {
-		am.logger.Log.Infof("approval request %s rejected by %s: %s", requestID, rejectedBy, reason)
+		am.logger.Log.Infow("approval request rejected", "request", requestID, "rejected_by", rejectedBy, "reason", reason)
 	}
 
 	return nil
