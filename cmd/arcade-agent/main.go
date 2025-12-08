@@ -9,7 +9,7 @@ import (
 var configFile string
 
 func init() {
-	flag.StringVar(&configFile, "config", "conf.d/agent.toml", "config file path, e.g. -config ./conf.d")
+	flag.StringVar(&configFile, "conf", "conf.d/agent.toml", "config file path, e.g. -conf ./conf.d")
 }
 
 func main() {

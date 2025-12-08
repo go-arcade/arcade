@@ -8,12 +8,10 @@ import (
 
 var (
 	configFile string
-	pluginDir  string
 )
 
 func init() {
 	flag.StringVar(&configFile, "conf", "conf.d/config.toml", "config file path, e.g. -conf ./conf.d")
-	flag.StringVar(&pluginDir, "plugin", "plugins", "plugin dir path, e.g. -plugin ./plugins")
 }
 
 func main() {

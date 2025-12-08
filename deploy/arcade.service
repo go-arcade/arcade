@@ -1,0 +1,36 @@
+[Unit]
+Description=Arcade CI/CD Platform Server
+Documentation=https://github.com/go-arcade/arcade
+After=network.target mysql.service mongodb.service
+Wants=network.target
+
+[Service]
+Type=simple
+User=arcade
+Group=arcade
+WorkingDirectory=/opt/arcade
+ExecStart=/opt/arcade/arcade -conf /opt/arcade/conf.d/config.toml -plugin /opt/arcade/plugins
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=arcade
+
+# 安全设置
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/arcade
+
+# 资源限制
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# 环境变量
+Environment="GOMAXPROCS=0"
+Environment="TZ=Asia/Shanghai"
+
+[Install]
+WantedBy=multi-user.target
