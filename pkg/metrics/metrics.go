@@ -17,6 +17,20 @@ type MetricsConfig struct {
 	Host   string
 	Port   int
 	Enable bool
+	Path   string
+}
+
+// SetDefaults sets default values for MetricsConfig
+func (m *MetricsConfig) SetDefaults() {
+	if m.Host == "" {
+		m.Host = "0.0.0.0"
+	}
+	if m.Port == 0 {
+		m.Port = 8082
+	}
+	if m.Path == "" {
+		m.Path = "/metrics"
+	}
 }
 
 // Server represents a metrics server
@@ -30,6 +44,8 @@ type Server struct {
 
 // NewServer creates a new metrics server
 func NewServer(config MetricsConfig) *Server {
+	config.SetDefaults()
+
 	registry := prometheus.NewRegistry()
 	// Register default collectors
 	registry.MustRegister(collectors.NewGoCollector())
@@ -61,8 +77,10 @@ func (s *Server) Start() error {
 		return nil
 	}
 
+	path := s.config.Path
+
 	mux := http.NewServeMux()
-	mux.Handle("/metrics", promhttp.HandlerFor(s.registry, promhttp.HandlerOpts{
+	mux.Handle(path, promhttp.HandlerFor(s.registry, promhttp.HandlerOpts{
 		EnableOpenMetrics: true,
 	}))
 

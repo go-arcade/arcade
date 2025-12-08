@@ -14,6 +14,20 @@ type PprofConfig struct {
 	Host   string
 	Port   int
 	Enable bool
+	Path   string
+}
+
+// SetDefaults sets default values for PprofConfig
+func (p *PprofConfig) SetDefaults() {
+	if p.Host == "" {
+		p.Host = "0.0.0.0"
+	}
+	if p.Port == 0 {
+		p.Port = 8083
+	}
+	if p.Path == "" {
+		p.Path = "/debug/pprof"
+	}
 }
 
 // Server represents a pprof server
@@ -24,6 +38,8 @@ type Server struct {
 
 // NewServer creates a new pprof server
 func NewServer(config PprofConfig) *Server {
+	config.SetDefaults()
+
 	return &Server{
 		config: config,
 	}
@@ -36,19 +52,22 @@ func (s *Server) Start() error {
 		return nil
 	}
 
+	// Use configured path prefix (defaults should be set via SetDefaults)
+	pathPrefix := s.config.Path
+
 	mux := http.NewServeMux()
 	// Register pprof routes
-	mux.HandleFunc("/debug/pprof/", pprof.Index)
-	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
-	mux.Handle("/debug/pprof/allocs", pprof.Handler("allocs"))
-	mux.Handle("/debug/pprof/block", pprof.Handler("block"))
-	mux.Handle("/debug/pprof/goroutine", pprof.Handler("goroutine"))
-	mux.Handle("/debug/pprof/heap", pprof.Handler("heap"))
-	mux.Handle("/debug/pprof/mutex", pprof.Handler("mutex"))
-	mux.Handle("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
+	mux.HandleFunc(pathPrefix+"/", pprof.Index)
+	mux.HandleFunc(pathPrefix+"/cmdline", pprof.Cmdline)
+	mux.HandleFunc(pathPrefix+"/profile", pprof.Profile)
+	mux.HandleFunc(pathPrefix+"/symbol", pprof.Symbol)
+	mux.HandleFunc(pathPrefix+"/trace", pprof.Trace)
+	mux.Handle(pathPrefix+"/allocs", pprof.Handler("allocs"))
+	mux.Handle(pathPrefix+"/block", pprof.Handler("block"))
+	mux.Handle(pathPrefix+"/goroutine", pprof.Handler("goroutine"))
+	mux.Handle(pathPrefix+"/heap", pprof.Handler("heap"))
+	mux.Handle(pathPrefix+"/mutex", pprof.Handler("mutex"))
+	mux.Handle(pathPrefix+"/threadcreate", pprof.Handler("threadcreate"))
 
 	addr := fmt.Sprintf("%s:%d", s.config.Host, s.config.Port)
 	s.server = &http.Server{

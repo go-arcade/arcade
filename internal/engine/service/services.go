@@ -12,19 +12,19 @@ import (
 
 // Services 统一管理所有 service
 type Services struct {
-	User                *UserService
-	Agent               *AgentService
-	IdentityIntegration *IdentityIntegrationService
-	Role                *RoleService
-	Team                *TeamService
-	Storage             *StorageService
-	Upload              *UploadService
-	Secret              *SecretService
-	GeneralSettings     *GeneralSettingsService
-	UserExtension       *UserExtensionService
-	Permission          *PermissionService
-	UserPermissions     *UserPermissionsService
-	Plugin              *PluginService
+	User            *UserService
+	Agent           *AgentService
+	Identity        *IdentityService
+	Role            *RoleService
+	Team            *TeamService
+	Storage         *StorageService
+	Upload          *UploadService
+	Secret          *SecretService
+	GeneralSettings *GeneralSettingsService
+	UserExtension   *UserExtensionService
+	Permission      *PermissionService
+	UserPermissions *UserPermissionsService
+	Plugin          *PluginService
 }
 
 // NewServices 初始化所有 service
@@ -39,7 +39,7 @@ func NewServices(
 	// 基础服务
 	userService := NewUserService(ctx, cache, repos.User)
 	agentService := NewAgentService(repos.Agent, nil)
-	identityIntegrationService := NewIdentityIntegrationService(repos.IdentityIntegration, repos.User)
+	identityService := NewIdentityService(repos.Identity, repos.User)
 	roleService := NewRoleService(repos.Role)
 	teamService := NewTeamService(ctx, repos.Team)
 	storageService := NewStorageService(ctx, repos.Storage)
@@ -58,19 +58,19 @@ func NewServices(
 	}
 
 	return &Services{
-		User:                userService,
-		Agent:               agentService,
-		IdentityIntegration: identityIntegrationService,
-		Role:                roleService,
-		Team:                teamService,
-		Storage:             storageService,
-		Upload:              uploadService,
-		Secret:              secretService,
-		GeneralSettings:     generalSettingsService,
-		UserExtension:       userExtensionService,
-		Permission:          permissionService,
-		UserPermissions:     userPermissionsService,
-		Plugin:              pluginService,
+		User:            userService,
+		Agent:           agentService,
+		Identity:        identityService,
+		Role:            roleService,
+		Team:            teamService,
+		Storage:         storageService,
+		Upload:          uploadService,
+		Secret:          secretService,
+		GeneralSettings: generalSettingsService,
+		UserExtension:   userExtensionService,
+		Permission:      permissionService,
+		UserPermissions: userPermissionsService,
+		Plugin:          pluginService,
 	}
 }
 

@@ -68,10 +68,14 @@ func ProvideRedisConfig(appConf AppConfig) cache.Redis {
 
 // ProvideMetricsConfig 提供 Metrics 配置
 func ProvideMetricsConfig(appConf AppConfig) metrics.MetricsConfig {
-	return appConf.Metrics
+	metricsConfig := appConf.Metrics
+	metricsConfig.SetDefaults()
+	return metricsConfig
 }
 
 // ProvidePprofConfig 提供 Pprof 配置
 func ProvidePprofConfig(appConf AppConfig) pprof.PprofConfig {
-	return appConf.Pprof
+	pprofConfig := appConf.Pprof
+	pprofConfig.SetDefaults()
+	return pprofConfig
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	fiberrecover "github.com/gofiber/fiber/v2/middleware/recover"
-	"go.uber.org/zap"
 )
 
 type Router struct {
@@ -24,7 +23,7 @@ func NewRouter(
 	}
 }
 
-func (rt *Router) Router(log *zap.Logger) *fiber.App {
+func (rt *Router) Router() *fiber.App {
 	// 设置默认的 BodyLimit（100MB）
 	bodyLimit := rt.Http.BodyLimit
 	if bodyLimit <= 0 {
@@ -41,7 +40,7 @@ func (rt *Router) Router(log *zap.Logger) *fiber.App {
 	})
 
 	if rt.Http.AccessLog {
-		app.Use(httpx.AccessLogFormat(log))
+		app.Use(httpx.AccessLogFormat())
 	}
 
 	// 中间件

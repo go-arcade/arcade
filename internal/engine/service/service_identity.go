@@ -15,34 +15,36 @@ import (
 	"github.com/go-arcade/arcade/pkg/sso/ldap"
 	"github.com/go-arcade/arcade/pkg/sso/oidc"
 	"github.com/go-arcade/arcade/pkg/sso/util"
+	"golang.org/x/oauth2"
 )
 
-type IdentityIntegrationService struct {
-	identityRepo userrepo.IIdentityIntegrationRepository
+type IdentityService struct {
+	identityRepo userrepo.IIdentityRepository
 	userRepo     userrepo.IUserRepository
 }
 
-func NewIdentityIntegrationService(identityRepo userrepo.IIdentityIntegrationRepository, userRepo userrepo.IUserRepository) *IdentityIntegrationService {
-	return &IdentityIntegrationService{
+func NewIdentityService(identityRepo userrepo.IIdentityRepository, userRepo userrepo.IUserRepository) *IdentityService {
+	return &IdentityService{
 		identityRepo: identityRepo,
 		userRepo:     userRepo,
 	}
 }
 
-func (iis *IdentityIntegrationService) Authorize(providerName string) (string, error) {
+func (iis *IdentityService) Authorize(providerName string) (string, error) {
 	integration, err := iis.identityRepo.GetProvider(providerName)
 	if err != nil {
 		log.Error("failed to get oauth provider: %v", err)
 		return "", err
 	}
 
-	var cfg sso.ProviderConfig
-	if err := sonic.Unmarshal(integration.Config, &cfg); err != nil {
-		return "", fmt.Errorf("unmarshal provider config failed: %w", err)
+	cfg, err := iis.convertToProviderConfig(integration)
+	if err != nil {
+		return "", fmt.Errorf("convert provider config failed: %w", err)
 	}
 
-	provider, err := sso.NewSSOProvider(&cfg)
+	provider, err := sso.NewSSOProvider(cfg)
 	if err != nil {
+		log.Errorw("failed to create SSO provider", "provider", providerName, "error", err)
 		return "", fmt.Errorf("failed to create SSO provider: %w", err)
 	}
 
@@ -60,7 +62,7 @@ func (iis *IdentityIntegrationService) Authorize(providerName string) (string, e
 }
 
 // Callback 统一的 OAuth/OIDC 回调处理（根据 provider 类型自动识别）
-func (iis *IdentityIntegrationService) Callback(providerName, state, code string) (*identitymodel.Register, error) {
+func (iis *IdentityService) Callback(providerName, state, code string) (*identitymodel.Register, error) {
 	storedProviderName, ok := util.LoadAndDeleteState(state)
 	if !ok || storedProviderName != providerName {
 		log.Warn("invalid state parameter for %s, storedProviderName: %s, providerName: %s, state: %s",
@@ -73,14 +75,13 @@ func (iis *IdentityIntegrationService) Callback(providerName, state, code string
 		return nil, fmt.Errorf("load provider failed: %w", err)
 	}
 
-	// 序列化
-	var cfg sso.ProviderConfig
-	if err := sonic.Unmarshal(integration.Config, &cfg); err != nil {
+	cfg, err := iis.convertToProviderConfig(integration)
+	if err != nil {
 		log.Error("invalid provider config for %s: %v", providerName, err)
-		return nil, fmt.Errorf("provider config invalid")
+		return nil, fmt.Errorf("provider config invalid: %w", err)
 	}
 
-	provider, err := sso.NewSSOProvider(&cfg)
+	provider, err := sso.NewSSOProvider(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("create provider failed: %w", err)
 	}
@@ -130,7 +131,58 @@ func splitName(name, nickname string) (firstName, lastName string) {
 	return firstName, lastName
 }
 
-func (iis *IdentityIntegrationService) GetProviderByType(providerType string) ([]identitymodel.IdentityIntegration, error) {
+// convertToProviderConfig converts database config to sso.ProviderConfig
+func (iis *IdentityService) convertToProviderConfig(integration *identitymodel.Identity) (*sso.ProviderConfig, error) {
+	cfg := &sso.ProviderConfig{
+		Type: integration.ProviderType,
+	}
+
+	switch integration.ProviderType {
+	case "oauth":
+		var oauthCfg identitymodel.OAuthConfig
+		if err := sonic.Unmarshal(integration.Config, &oauthCfg); err != nil {
+			return nil, fmt.Errorf("unmarshal oauth config failed: %w", err)
+		}
+
+		cfg.ClientID = oauthCfg.ClientID
+		cfg.ClientSecret = oauthCfg.ClientSecret
+		cfg.RedirectURL = oauthCfg.RedirectURL
+		cfg.Scopes = oauthCfg.Scopes
+		cfg.UserInfoURL = oauthCfg.UserInfoURL
+
+		// Convert AuthURL and TokenURL to Endpoint
+		if oauthCfg.Endpoint.AuthURL != "" && oauthCfg.Endpoint.TokenURL != "" {
+			cfg.Endpoint = oauthCfg.Endpoint
+		} else if oauthCfg.AuthURL != "" && oauthCfg.TokenURL != "" {
+			cfg.Endpoint = oauth2.Endpoint{
+				AuthURL:  oauthCfg.AuthURL,
+				TokenURL: oauthCfg.TokenURL,
+			}
+		} else {
+			return nil, fmt.Errorf("missing authURL or tokenURL in oauth config")
+		}
+
+	case "oidc":
+		var oidcCfg identitymodel.OIDCConfig
+		if err := sonic.Unmarshal(integration.Config, &oidcCfg); err != nil {
+			return nil, fmt.Errorf("unmarshal oidc config failed: %w", err)
+		}
+
+		cfg.Issuer = oidcCfg.Issuer
+		cfg.ClientID = oidcCfg.ClientID
+		cfg.ClientSecret = oidcCfg.ClientSecret
+		cfg.RedirectURL = oidcCfg.RedirectURL
+		cfg.Scopes = oidcCfg.Scopes
+		cfg.SkipVerify = oidcCfg.SkipVerify
+
+	default:
+		return nil, fmt.Errorf("unsupported provider type: %s", integration.ProviderType)
+	}
+
+	return cfg, nil
+}
+
+func (iis *IdentityService) GetProviderByType(providerType string) ([]identitymodel.Identity, error) {
 	integrations, err := iis.identityRepo.GetProviderByType(providerType)
 	if err != nil {
 		log.Error("failed to get provider by type: %v", err)
@@ -139,7 +191,7 @@ func (iis *IdentityIntegrationService) GetProviderByType(providerType string) ([
 	return integrations, nil
 }
 
-func (iis *IdentityIntegrationService) GetProvider(name string) (*identitymodel.IdentityIntegration, error) {
+func (iis *IdentityService) GetProvider(name string) (*identitymodel.Identity, error) {
 	integration, err := iis.identityRepo.GetProvider(name)
 	if err != nil {
 		log.Error("failed to get provider: %v", err)
@@ -149,7 +201,7 @@ func (iis *IdentityIntegrationService) GetProvider(name string) (*identitymodel.
 }
 
 // GetProviderList 获取提供者列表
-func (iis *IdentityIntegrationService) GetProviderList() ([]identitymodel.IdentityIntegration, error) {
+func (iis *IdentityService) GetProviderList() ([]identitymodel.Identity, error) {
 	integrations, err := iis.identityRepo.GetProviderList()
 	if err != nil {
 		log.Error("failed to get provider list: %v", err)
@@ -158,7 +210,7 @@ func (iis *IdentityIntegrationService) GetProviderList() ([]identitymodel.Identi
 	return integrations, nil
 }
 
-func (iis *IdentityIntegrationService) GetProviderTypeList() ([]string, error) {
+func (iis *IdentityService) GetProviderTypeList() ([]string, error) {
 	providerTypes, err := iis.identityRepo.GetProviderTypeList()
 	if err != nil {
 		log.Error("failed to get provider type list: %v", err)
@@ -168,7 +220,7 @@ func (iis *IdentityIntegrationService) GetProviderTypeList() ([]string, error) {
 }
 
 // OIDCLogin OIDC 登录
-func (iis *IdentityIntegrationService) OIDCLogin(providerName string) (string, error) {
+func (iis *IdentityService) OIDCLogin(providerName string) (string, error) {
 	integration, err := iis.identityRepo.GetProvider(providerName)
 	if err != nil {
 		log.Error("failed to get OIDC provider: %v", err)
@@ -208,7 +260,7 @@ type LDAPLoginRequest struct {
 }
 
 // LDAPLogin LDAP 登录
-func (iis *IdentityIntegrationService) LDAPLogin(providerName, username, password string) (*identitymodel.Register, error) {
+func (iis *IdentityService) LDAPLogin(providerName, username, password string) (*identitymodel.Register, error) {
 	integration, err := iis.identityRepo.GetProvider(providerName)
 	if err != nil {
 		log.Error("failed to get LDAP provider: %v", err)
@@ -248,7 +300,7 @@ func (iis *IdentityIntegrationService) LDAPLogin(providerName, username, passwor
 }
 
 // registerOrLoginUser common user registration or login logic
-func (iis *IdentityIntegrationService) registerOrLoginUser(providerName string, userInfo *sso.UserInfoAdapter) (*identitymodel.Register, error) {
+func (iis *IdentityService) registerOrLoginUser(providerName string, userInfo *sso.UserInfoAdapter) (*identitymodel.Register, error) {
 	// split name into first and last name
 	firstName, lastName := splitName(userInfo.Name, userInfo.Nickname)
 
@@ -287,8 +339,8 @@ func (iis *IdentityIntegrationService) registerOrLoginUser(providerName string, 
 	return registerUserInfo, nil
 }
 
-// CreateProvider creates an identity integration provider
-func (iis *IdentityIntegrationService) CreateProvider(provider *identitymodel.IdentityIntegration) error {
+// CreateProvider creates an identity provider
+func (iis *IdentityService) CreateProvider(provider *identitymodel.Identity) error {
 	// check if provider name already exists
 	exists, err := iis.identityRepo.ProviderExists(provider.Name)
 	if err != nil {
@@ -310,8 +362,8 @@ func (iis *IdentityIntegrationService) CreateProvider(provider *identitymodel.Id
 	return nil
 }
 
-// UpdateProvider updates an identity integration provider
-func (iis *IdentityIntegrationService) UpdateProvider(name string, provider *identitymodel.IdentityIntegration) error {
+// UpdateProvider updates an identity provider
+func (iis *IdentityService) UpdateProvider(name string, provider *identitymodel.Identity) error {
 	// check if provider exists
 	existing, err := iis.identityRepo.GetProvider(name)
 	if err != nil {
@@ -333,7 +385,7 @@ func (iis *IdentityIntegrationService) UpdateProvider(name string, provider *ide
 }
 
 // preserveConfigKeys ensures key fields in config cannot be updated
-func (iis *IdentityIntegrationService) preserveConfigKeys(existing, updated *identitymodel.IdentityIntegration) error {
+func (iis *IdentityService) preserveConfigKeys(existing, updated *identitymodel.Identity) error {
 	// unmarshal existing config
 	var existingConfig map[string]interface{}
 	if err := sonic.Unmarshal(existing.Config, &existingConfig); err != nil {
@@ -380,8 +432,8 @@ func getImmutableConfigKeys(providerType string) []string {
 	}
 }
 
-// DeleteProvider deletes an identity integration provider
-func (iis *IdentityIntegrationService) DeleteProvider(name string) error {
+// DeleteProvider deletes an identity provider
+func (iis *IdentityService) DeleteProvider(name string) error {
 	// check if provider exists
 	exists, err := iis.identityRepo.ProviderExists(name)
 	if err != nil {
@@ -400,8 +452,8 @@ func (iis *IdentityIntegrationService) DeleteProvider(name string) error {
 	return nil
 }
 
-// ToggleProvider toggles the enabled status of an identity integration provider
-func (iis *IdentityIntegrationService) ToggleProvider(name string) error {
+// ToggleProvider toggles the enabled status of an identity provider
+func (iis *IdentityService) ToggleProvider(name string) error {
 	// check if provider exists
 	exists, err := iis.identityRepo.ProviderExists(name)
 	if err != nil {

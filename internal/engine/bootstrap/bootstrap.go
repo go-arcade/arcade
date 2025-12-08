@@ -50,8 +50,7 @@ func NewApp(
 	appConf config.AppConfig,
 	db database.IDatabase,
 ) (*App, func(), error) {
-	zapLogger := logger.Log.Desugar()
-	httpApp := rt.Router(zapLogger)
+	httpApp := rt.Router()
 
 	// init plugin task manager
 	service.InitTaskManager(mongoDB)

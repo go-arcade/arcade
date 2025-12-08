@@ -8,43 +8,43 @@ import (
 
 // Repositories 统一管理所有 repository
 type Repositories struct {
-	User                IUserRepository
-	Agent               IAgentRepository
-	Plugin              IPluginRepository
-	PluginTask          IPluginTaskRepository
-	Permission          IPermissionRepository
-	Role                IRoleRepository
-	Storage             IStorageRepository
-	Team                ITeamRepository
-	IdentityIntegration IIdentityIntegrationRepository
-	GeneralSettings     IGeneralSettingsRepository
-	RouterPermission    IRouterPermissionRepository
-	ProjectMember       IProjectMemberRepository
-	ProjectTeamAccess   IProjectTeamAccessRepository
-	TeamMember          ITeamMemberRepository
-	UserExtension       IUserExtensionRepository
-	Secret              ISecretRepository
+	User              IUserRepository
+	Agent             IAgentRepository
+	Plugin            IPluginRepository
+	PluginTask        IPluginTaskRepository
+	Permission        IPermissionRepository
+	Role              IRoleRepository
+	Storage           IStorageRepository
+	Team              ITeamRepository
+	Identity          IIdentityRepository
+	GeneralSettings   IGeneralSettingsRepository
+	RouterPermission  IRouterPermissionRepository
+	ProjectMember     IProjectMemberRepository
+	ProjectTeamAccess IProjectTeamAccessRepository
+	TeamMember        ITeamMemberRepository
+	UserExtension     IUserExtensionRepository
+	Secret            ISecretRepository
 }
 
 // NewRepositories 初始化所有 repository
 func NewRepositories(db database.IDatabase, mongo database.MongoDB, cache cache.ICache) *Repositories {
 	return &Repositories{
-		User:                NewUserRepo(db, cache),
-		Agent:               NewAgentRepo(db),
-		Plugin:              NewPluginRepo(db),
-		PluginTask:          NewPluginTaskRepo(mongo),
-		Permission:          NewPermissionRepo(db, cache),
-		Role:                NewRoleRepo(db),
-		Storage:             NewStorageRepo(db, cache),
-		Team:                NewTeamRepo(db),
-		IdentityIntegration: NewIdentityIntegrationRepo(db),
-		GeneralSettings:     NewGeneralSettingsRepo(db),
-		RouterPermission:    NewRouterPermissionRepo(db),
-		ProjectMember:       NewProjectMemberRepo(db),
-		ProjectTeamAccess:   NewProjectTeamAccessRepo(db),
-		TeamMember:          NewTeamMemberRepo(db),
-		UserExtension:       NewUserExtensionRepo(db),
-		Secret:              NewSecretRepo(db),
+		User:              NewUserRepo(db, cache),
+		Agent:             NewAgentRepo(db),
+		Plugin:            NewPluginRepo(db),
+		PluginTask:        NewPluginTaskRepo(mongo),
+		Permission:        NewPermissionRepo(db, cache),
+		Role:              NewRoleRepo(db),
+		Storage:           NewStorageRepo(db, cache),
+		Team:              NewTeamRepo(db),
+		Identity:          NewIdentityRepo(db),
+		GeneralSettings:   NewGeneralSettingsRepo(db),
+		RouterPermission:  NewRouterPermissionRepo(db),
+		ProjectMember:     NewProjectMemberRepo(db),
+		ProjectTeamAccess: NewProjectTeamAccessRepo(db),
+		TeamMember:        NewTeamMemberRepo(db),
+		UserExtension:     NewUserExtensionRepo(db),
+		Secret:            NewSecretRepo(db),
 	}
 }
 

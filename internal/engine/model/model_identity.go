@@ -5,8 +5,8 @@ import (
 	"gorm.io/datatypes"
 )
 
-// IdentityIntegration 身份集成提供者表
-type IdentityIntegration struct {
+// Identity 身份提供者表
+type Identity struct {
 	BaseModel
 	ProviderId   string         `gorm:"column:provider_id" json:"providerId"`
 	Name         string         `gorm:"column:name" json:"name"`
@@ -17,8 +17,8 @@ type IdentityIntegration struct {
 	IsEnabled    int            `gorm:"column:is_enabled" json:"isEnabled"` // 0: disabled, 1: enabled
 }
 
-func (s *IdentityIntegration) TableName() string {
-	return "t_identity_integration"
+func (s *Identity) TableName() string {
+	return "t_identity"
 }
 
 // OAuthConfig OAuth 配置
@@ -30,7 +30,7 @@ type OAuthConfig struct {
 	UserInfoURL  string          `json:"userInfoURL"`
 	RedirectURL  string          `json:"redirectURL"`
 	Scopes       []string        `json:"scopes"`
-	Endpoint     oauth2.Endpoint `json:"endpoint,omitempty"`
+	Endpoint     oauth2.Endpoint `json:"endpoint"`
 }
 
 // LDAPConfig LDAP 配置

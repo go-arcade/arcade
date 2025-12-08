@@ -41,8 +41,7 @@ func NewAgent(
 	logger *log.Logger,
 	agentConf config.AgentConfig,
 ) (*Agent, func(), error) {
-	zaplog := logger.Log.Desugar()
-	httpApp := rt.Router(zaplog)
+	httpApp := rt.Router()
 
 	// Create agent service
 	agentService := service.NewAgentService(agentConf, grpcClient)

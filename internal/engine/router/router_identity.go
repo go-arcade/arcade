@@ -10,7 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func (rt *Router) identityIntegrationRouter(r fiber.Router, auth fiber.Handler) {
+func (rt *Router) identityRouter(r fiber.Router, auth fiber.Handler) {
 	identityGroup := r.Group("/identity")
 	{
 		// Provider resource management (authentication required)
@@ -31,7 +31,7 @@ func (rt *Router) identityIntegrationRouter(r fiber.Router, auth fiber.Handler) 
 
 // authorize initiates authorization (OAuth/OIDC)
 func (rt *Router) authorize(c *fiber.Ctx) error {
-	identityService := rt.Services.IdentityIntegration
+	identityService := rt.Services.Identity
 
 	providerName := c.Params("provider")
 	if providerName == "" {
@@ -48,7 +48,7 @@ func (rt *Router) authorize(c *fiber.Ctx) error {
 
 // callback handles OAuth/OIDC authorization callback
 func (rt *Router) callback(c *fiber.Ctx) error {
-	identityService := rt.Services.IdentityIntegration
+	identityService := rt.Services.Identity
 
 	providerName := c.Params("provider")
 	state := c.Query("state")
@@ -68,7 +68,7 @@ func (rt *Router) callback(c *fiber.Ctx) error {
 
 // listProviders lists all providers (supports ?type=xxx filter)
 func (rt *Router) listProviders(c *fiber.Ctx) error {
-	identityService := rt.Services.IdentityIntegration
+	identityService := rt.Services.Identity
 
 	// support filtering by type through query parameter
 	providerType := c.Query("type")
@@ -98,7 +98,7 @@ func (rt *Router) listProviders(c *fiber.Ctx) error {
 
 	var response []ProviderResponse
 	switch v := integrations.(type) {
-	case []identitymodel.IdentityIntegration:
+	case []identitymodel.Identity:
 		for _, integration := range v {
 			response = append(response, ProviderResponse{
 				ProviderId:   integration.ProviderId,
@@ -117,7 +117,7 @@ func (rt *Router) listProviders(c *fiber.Ctx) error {
 
 // getProvider gets a specific provider
 func (rt *Router) getProvider(c *fiber.Ctx) error {
-	identityService := rt.Services.IdentityIntegration
+	identityService := rt.Services.Identity
 
 	name := c.Params("name")
 	if name == "" {
@@ -135,7 +135,7 @@ func (rt *Router) getProvider(c *fiber.Ctx) error {
 
 // listProviderTypes lists all provider types
 func (rt *Router) listProviderTypes(c *fiber.Ctx) error {
-	identityService := rt.Services.IdentityIntegration
+	identityService := rt.Services.Identity
 
 	providerTypes, err := identityService.GetProviderTypeList()
 	if err != nil {
@@ -148,7 +148,7 @@ func (rt *Router) listProviderTypes(c *fiber.Ctx) error {
 
 // ldapLogin handles LDAP login (authentication methods requiring username and password)
 func (rt *Router) ldapLogin(c *fiber.Ctx) error {
-	identityService := rt.Services.IdentityIntegration
+	identityService := rt.Services.Identity
 
 	providerName := c.Params("provider")
 	if providerName == "" {
@@ -173,11 +173,11 @@ func (rt *Router) ldapLogin(c *fiber.Ctx) error {
 	return nil
 }
 
-// createProvider creates an identity integration provider
+// createProvider creates an identity provider
 func (rt *Router) createProvider(c *fiber.Ctx) error {
-	identityService := rt.Services.IdentityIntegration
+	identityService := rt.Services.Identity
 
-	var provider identitymodel.IdentityIntegration
+	var provider identitymodel.Identity
 	if err := c.BodyParser(&provider); err != nil {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid request parameters", c.Path())
 	}
@@ -192,20 +192,20 @@ func (rt *Router) createProvider(c *fiber.Ctx) error {
 	}
 
 	c.Locals(middleware.DETAIL, provider)
-	c.Locals(middleware.OPERATION, "create identity integration provider")
+	c.Locals(middleware.OPERATION, "create identity provider")
 	return nil
 }
 
-// updateProvider updates an identity integration provider
+// updateProvider updates an identity provider
 func (rt *Router) updateProvider(c *fiber.Ctx) error {
-	identityService := rt.Services.IdentityIntegration
+	identityService := rt.Services.Identity
 
 	name := c.Params("name")
 	if name == "" {
 		return http.WithRepErrMsg(c, http.ProviderIsRequired.Code, http.ProviderIsRequired.Msg, c.Path())
 	}
 
-	var provider identitymodel.IdentityIntegration
+	var provider identitymodel.Identity
 	if err := c.BodyParser(&provider); err != nil {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid request parameters", c.Path())
 	}
@@ -214,13 +214,13 @@ func (rt *Router) updateProvider(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
 	}
 
-	c.Locals(middleware.OPERATION, "update identity integration provider")
+	c.Locals(middleware.OPERATION, "update identity provider")
 	return nil
 }
 
-// toggleProvider toggles the enabled status of an identity integration provider
+// toggleProvider toggles the enabled status of an identity provider
 func (rt *Router) toggleProvider(c *fiber.Ctx) error {
-	identityService := rt.Services.IdentityIntegration
+	identityService := rt.Services.Identity
 
 	name := c.Params("name")
 	if name == "" {
@@ -231,13 +231,13 @@ func (rt *Router) toggleProvider(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
 	}
 
-	c.Locals(middleware.OPERATION, "toggle identity integration provider status")
+	c.Locals(middleware.OPERATION, "toggle identity provider status")
 	return nil
 }
 
-// deleteProvider deletes an identity integration provider
+// deleteProvider deletes an identity provider
 func (rt *Router) deleteProvider(c *fiber.Ctx) error {
-	identityService := rt.Services.IdentityIntegration
+	identityService := rt.Services.Identity
 
 	name := c.Params("name")
 	if name == "" {
@@ -248,6 +248,6 @@ func (rt *Router) deleteProvider(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
 	}
 
-	c.Locals(middleware.OPERATION, "delete identity integration provider")
+	c.Locals(middleware.OPERATION, "delete identity provider")
 	return nil
 }

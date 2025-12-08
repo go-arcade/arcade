@@ -45,10 +45,14 @@ func ProvideGrpcClientConfig(agentConf AgentConfig) *grpcclient.ClientConf {
 
 // ProvideMetricsConfig 提供 Metrics 配置
 func ProvideMetricsConfig(agentConf AgentConfig) metrics.MetricsConfig {
-	return agentConf.Metrics
+	metricsConfig := agentConf.Metrics
+	metricsConfig.SetDefaults()
+	return metricsConfig
 }
 
 // ProvidePprofConfig 提供 Pprof 配置
 func ProvidePprofConfig(agentConf AgentConfig) pprof.PprofConfig {
-	return agentConf.Pprof
+	pprofConfig := agentConf.Pprof
+	pprofConfig.SetDefaults()
+	return pprofConfig
 }

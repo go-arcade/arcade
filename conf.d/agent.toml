@@ -11,20 +11,24 @@ interval = 60
 labels = { "env" = "production", "region" = "us-west" }
 
 [metrics]
+# enable metrics server, false or true
+enable = true
 # metrics server host
 host = "0.0.0.0"
 # metrics server port
 port = 8082
-# enable metrics server, false or true
-enable = true
+# metrics server request path, default: "/metrics"
+path = "/metrics"
 
 [pprof]
+# enable pprof server, false or true
+enable = true
 # pprof server host
 host = "0.0.0.0"
 # pprof server port
 port = 8083
-# enable pprof server, false or true
-enable = true
+# pprof server request path prefix, default: "/debug/pprof"
+path = "/debug/pprof"
 
 [log]
 # support stdout, file, kafka
