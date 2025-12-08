@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -238,4 +239,61 @@ func VerifyToken(tokenString, apikey string) (string, error) {
 	}
 
 	return agentID, nil
+}
+
+// UpdateConfigFile update configuration file, write serverAddr, token, agentId, heartbeatInterval and labels
+func UpdateConfigFile(configFile, serverAddr, token, agentID string, heartbeatInterval int, labels map[string]string) error {
+	// use viper to read existing configuration
+	v := viper.New()
+	v.SetConfigFile(configFile)
+	v.SetConfigType("toml")
+
+	// read existing configuration (if file exists)
+	if err := v.ReadInConfig(); err != nil {
+		// if file does not exist, create a new one
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			// create default configuration
+			v.Set("grpc.serverAddr", serverAddr)
+			v.Set("grpc.token", token)
+			v.Set("agent.id", agentID)
+			if heartbeatInterval > 0 {
+				v.Set("agent.interval", heartbeatInterval)
+			}
+			if len(labels) > 0 {
+				v.Set("agent.labels", labels)
+			}
+		} else {
+			return fmt.Errorf("read configuration file failed: %w", err)
+		}
+	} else {
+		// update configuration values
+		v.Set("grpc.serverAddr", serverAddr)
+		v.Set("grpc.token", token)
+		v.Set("agent.id", agentID)
+		if heartbeatInterval > 0 {
+			v.Set("agent.interval", heartbeatInterval)
+		}
+		if len(labels) > 0 {
+			v.Set("agent.labels", labels)
+		}
+	}
+
+	// ensure configuration file directory exists
+	configDir := configFile
+	if idx := strings.LastIndex(configFile, "/"); idx != -1 {
+		configDir = configFile[:idx]
+		if err := os.MkdirAll(configDir, 0755); err != nil {
+			return fmt.Errorf("create configuration directory failed: %w", err)
+		}
+	}
+
+	// write back configuration file
+	if err := v.WriteConfig(); err != nil {
+		// if WriteConfig fails, try SafeWriteConfig
+		if err := v.SafeWriteConfigAs(configFile); err != nil {
+			return fmt.Errorf("write configuration file failed: %w", err)
+		}
+	}
+
+	return nil
 }

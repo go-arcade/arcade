@@ -112,7 +112,7 @@ build: wire plugins buf ## build main program
 	go build -ldflags "${LDFLAGS}" -o arcade ./cmd/arcade/
 
 build-agent: wire buf ## build agent program
-	go build -ldflags "${LDFLAGS}" -o arcade ./cmd/arcade-agent/
+	go build -ldflags "${LDFLAGS}" -o arcade-agent ./cmd/arcade-agent/
 
 build-cli: ## build CLI tool
 	go build -ldflags "${LDFLAGS}" -o arcade-cli ./cmd/cli/

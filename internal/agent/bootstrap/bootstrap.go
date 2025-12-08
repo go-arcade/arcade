@@ -141,8 +141,12 @@ func Run(app *Agent, cleanup func()) {
 			}
 		}()
 
-		// start periodic heartbeat using global cron
-		app.startPeriodicHeartbeat()
+		// 如果已注册（有token和serverAddr），启动心跳
+		if appConf.Grpc.Token != "" && appConf.Grpc.ServerAddr != "" && appConf.Agent.ID != "" {
+			app.startPeriodicHeartbeat()
+		} else {
+			log.Warn("Agent未注册，跳过心跳启动。请先运行 'arcade-agent register' 命令进行注册")
+		}
 	}
 
 	// set signal listener (graceful shutdown)

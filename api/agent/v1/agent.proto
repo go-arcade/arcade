@@ -84,6 +84,7 @@ message RegisterResponse {
   string message = 2;
   string agent_id = 3;                // Agent ID assigned or confirmed by Server
   int64 heartbeat_interval = 4;       // Heartbeat interval (seconds)
+  map<string, string> labels = 5;     // Agent labels assigned by Server
 }
 
 // Agent unregistration request
