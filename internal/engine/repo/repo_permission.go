@@ -35,14 +35,14 @@ type IPermissionRepository interface {
 }
 
 type PermissionRepo struct {
-	db    database.IDatabase
-	cache cache.ICache
+	database.IDatabase
+	cache.ICache
 }
 
 func NewPermissionRepo(db database.IDatabase, cache cache.ICache) IPermissionRepository {
 	return &PermissionRepo{
-		db:    db,
-		cache: cache,
+		IDatabase: db,
+		ICache:    cache,
 	}
 }
 
@@ -50,18 +50,19 @@ func NewPermissionRepo(db database.IDatabase, cache cache.ICache) IPermissionRep
 
 // CreateRoleBinding 创建用户角色绑定
 func (r *PermissionRepo) CreateRoleBinding(binding *model.UserRoleBinding) error {
-	return r.db.Database().Create(binding).Error
+	return r.Database().Create(binding).Error
 }
 
 // DeleteRoleBinding 删除用户角色绑定
 func (r *PermissionRepo) DeleteRoleBinding(bindingId string) error {
-	return r.db.Database().Where("binding_id = ?", bindingId).Delete(&model.UserRoleBinding{}).Error
+	return r.Database().Where("binding_id = ?", bindingId).Delete(&model.UserRoleBinding{}).Error
 }
 
 // GetRoleBinding 根据ID获取角色绑定
 func (r *PermissionRepo) GetRoleBinding(bindingId string) (*model.UserRoleBinding, error) {
 	var binding model.UserRoleBinding
-	err := r.db.Database().Where("binding_id = ?", bindingId).First(&binding).Error
+	err := r.Database().Select("id", "binding_id", "user_id", "role_id", "scope", "resource_id", "granted_by", "create_time", "update_time").
+		Where("binding_id = ?", bindingId).First(&binding).Error
 	if err != nil {
 		return nil, err
 	}
@@ -71,21 +72,24 @@ func (r *PermissionRepo) GetRoleBinding(bindingId string) (*model.UserRoleBindin
 // GetUserRoleBindings 获取用户的所有角色绑定
 func (r *PermissionRepo) GetUserRoleBindings(userId string) ([]*model.UserRoleBinding, error) {
 	var bindings []*model.UserRoleBinding
-	err := r.db.Database().Where("user_id = ?", userId).Find(&bindings).Error
+	err := r.Database().Select("id", "binding_id", "user_id", "role_id", "scope", "resource_id", "granted_by", "create_time", "update_time").
+		Where("user_id = ?", userId).Find(&bindings).Error
 	return bindings, err
 }
 
 // GetUserRoleBindingsByScope 获取用户在指定作用域的角色绑定
 func (r *PermissionRepo) GetUserRoleBindingsByScope(userId, scope string) ([]*model.UserRoleBinding, error) {
 	var bindings []*model.UserRoleBinding
-	err := r.db.Database().Where("user_id = ? AND scope = ?", userId, scope).Find(&bindings).Error
+	err := r.Database().Select("id", "binding_id", "user_id", "role_id", "scope", "resource_id", "granted_by", "create_time", "update_time").
+		Where("user_id = ? AND scope = ?", userId, scope).Find(&bindings).Error
 	return bindings, err
 }
 
 // GetUserRoleBindingByResource 获取用户在指定资源的角色绑定
 func (r *PermissionRepo) GetUserRoleBindingByResource(userId, scope, resourceId string) (*model.UserRoleBinding, error) {
 	var binding model.UserRoleBinding
-	err := r.db.Database().Where("user_id = ? AND scope = ? AND resource_id = ?", userId, scope, resourceId).First(&binding).Error
+	err := r.Database().Select("id", "binding_id", "user_id", "role_id", "scope", "resource_id", "granted_by", "create_time", "update_time").
+		Where("user_id = ? AND scope = ? AND resource_id = ?", userId, scope, resourceId).First(&binding).Error
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +101,7 @@ func (r *PermissionRepo) ListRoleBindings(query *model.RoleBindingQuery) ([]*mod
 	var bindings []*model.UserRoleBinding
 	var total int64
 
-	db := r.db.Database().Model(&model.UserRoleBinding{})
+	db := r.Database().Model(&model.UserRoleBinding{})
 
 	// 条件查询
 	if query.UserId != "" {
@@ -124,14 +128,15 @@ func (r *PermissionRepo) ListRoleBindings(query *model.RoleBindingQuery) ([]*mod
 		db = db.Offset(offset).Limit(query.PageSize)
 	}
 
-	err := db.Find(&bindings).Error
+	err := db.Select("id", "binding_id", "user_id", "role_id", "scope", "resource_id", "granted_by", "create_time", "update_time").
+		Find(&bindings).Error
 	return bindings, total, err
 }
 
 // HasRoleBinding 检查用户是否有指定的角色绑定
 func (r *PermissionRepo) HasRoleBinding(userId, roleId, scope, resourceId string) (bool, error) {
 	var count int64
-	query := r.db.Database().Model(&model.UserRoleBinding{}).Where("user_id = ? AND role_id = ? AND scope = ?", userId, roleId, scope)
+	query := r.Database().Model(&model.UserRoleBinding{}).Where("user_id = ? AND role_id = ? AND scope = ?", userId, roleId, scope)
 
 	if resourceId != "" {
 		query = query.Where("resource_id = ?", resourceId)
@@ -159,7 +164,8 @@ func (r *PermissionRepo) GetUserPermissions(userId string) (*model.UserPermissio
 
 	// 1. 检查是否超级管理员
 	var u model.User
-	if err := r.db.Database().Where("user_id = ?", userId).First(&u).Error; err != nil {
+	if err := r.Database().Select("id", "user_id", "username", "first_name", "last_name", "password", "avatar", "email", "phone", "is_enabled", "is_superadmin", "created_at", "updated_at").
+		Where("user_id = ?", userId).First(&u).Error; err != nil {
 		return nil, err
 	}
 
@@ -224,7 +230,7 @@ func (r *PermissionRepo) GetUserPermissions(userId string) (*model.UserPermissio
 func (r *PermissionRepo) GetRolePermissionCodes(roleId string) ([]string, error) {
 	var codes []string
 
-	err := r.db.Database().Table("t_role_permission rp").
+	err := r.Database().Table("t_role_permission rp").
 		Select("p.code").
 		Joins("JOIN t_permission p ON rp.permission_id = p.permission_id").
 		Where("rp.role_id = ? AND p.is_enabled = ?", roleId, 1).
@@ -310,19 +316,21 @@ func contains(slice []string, item string) bool {
 
 func (r *PermissionRepo) getTeamById(teamId string) (*model.Team, error) {
 	var t model.Team
-	err := r.db.Database().Where("team_id = ?", teamId).First(&t).Error
+	err := r.Database().Select("id", "team_id", "org_id", "name", "display_name", "description", "avatar", "parent_team_id", "path", "level", "settings", "visibility", "is_enabled", "total_members", "total_projects", "created_at", "updated_at").
+		Where("team_id = ?", teamId).First(&t).Error
 	return &t, err
 }
 
 func (r *PermissionRepo) getProjectById(projectId string) (*model.Project, error) {
 	var p model.Project
-	err := r.db.Database().Where("project_id = ?", projectId).First(&p).Error
+	err := r.Database().Select("id", "project_id", "org_id", "name", "display_name", "namespace", "description", "repo_url", "repo_type", "default_branch", "auth_type", "credential", "trigger_mode", "webhook_secret", "cron_expr", "build_config", "env_vars", "settings", "tags", "language", "framework", "status", "visibility", "access_level", "created_by", "is_enabled", "icon", "homepage", "total_pipelines", "total_builds", "success_builds", "failed_builds", "created_at", "updated_at").
+		Where("project_id = ?", projectId).First(&p).Error
 	return &p, err
 }
 
 func (r *PermissionRepo) getProjectTeams(projectId string) ([]string, error) {
 	var teamIds []string
-	err := r.db.Database().Table("t_project_team_relation").
+	err := r.Database().Table("t_project_team_relation").
 		Where("project_id = ?", projectId).
 		Pluck("team_id", &teamIds).Error
 	return teamIds, err
@@ -338,15 +346,16 @@ func (r *PermissionRepo) GetAccessibleResources(userId string) (*model.Accessibl
 
 	// 检查是否超管
 	var u model.User
-	if err := r.db.Database().Where("user_id = ?", userId).First(&u).Error; err != nil {
+	if err := r.Database().Select("id", "user_id", "username", "first_name", "last_name", "password", "avatar", "email", "phone", "is_enabled", "is_superadmin", "created_at", "updated_at").
+		Where("user_id = ?", userId).First(&u).Error; err != nil {
 		return nil, err
 	}
 
 	if u.IsSuperAdmin == 1 {
 		// 超管可访问所有资源
-		r.db.Database().Table("t_organization").Pluck("org_id", &resources.Organizations)
-		r.db.Database().Table("t_team").Pluck("team_id", &resources.Teams)
-		r.db.Database().Table("t_project").Pluck("project_id", &resources.Projects)
+		r.Database().Table("t_organization").Pluck("org_id", &resources.Organizations)
+		r.Database().Table("t_team").Pluck("team_id", &resources.Teams)
+		r.Database().Table("t_project").Pluck("project_id", &resources.Projects)
 		return resources, nil
 	}
 
@@ -413,13 +422,15 @@ func (r *PermissionRepo) GetAccessibleRoutes(userId string) ([]*model.RouterPerm
 	// 超管可访问所有路由
 	if userPerms.IsSuperAdmin {
 		var allRoutes []*model.RouterPermission
-		r.db.Database().Where("is_enabled = ?", 1).Find(&allRoutes)
+		r.Database().Select("id", "route_id", "path", "method", "name", "group", "category", "required_permissions", "icon", "order", "is_menu", "is_enabled", "description", "created_at", "updated_at").
+			Where("is_enabled = ?", 1).Find(&allRoutes)
 		return allRoutes, nil
 	}
 
 	// 获取所有启用的路由
 	var allRoutes []*model.RouterPermission
-	if err := r.db.Database().Where("is_enabled = ?", 1).Find(&allRoutes).Error; err != nil {
+	if err := r.Database().Select("id", "route_id", "path", "method", "name", "group", "category", "required_permissions", "icon", "order", "is_menu", "is_enabled", "description", "created_at", "updated_at").
+		Where("is_enabled = ?", 1).Find(&allRoutes).Error; err != nil {
 		return nil, err
 	}
 
@@ -469,7 +480,7 @@ func (r *PermissionRepo) BatchCreateRoleBindings(bindings []*model.UserRoleBindi
 	if len(bindings) == 0 {
 		return errors.New("no bindings to create")
 	}
-	return r.db.Database().Create(&bindings).Error
+	return r.Database().Create(&bindings).Error
 }
 
 // BatchDeleteRoleBindings 批量删除角色绑定
@@ -477,18 +488,18 @@ func (r *PermissionRepo) BatchDeleteRoleBindings(bindingIds []string) error {
 	if len(bindingIds) == 0 {
 		return errors.New("no bindings to delete")
 	}
-	return r.db.Database().Where("binding_id IN ?", bindingIds).Delete(&model.UserRoleBinding{}).Error
+	return r.Database().Where("binding_id IN ?", bindingIds).Delete(&model.UserRoleBinding{}).Error
 }
 
 // DeleteUserRoleBindingsByResource 删除用户在指定资源的所有角色绑定
 func (r *PermissionRepo) DeleteUserRoleBindingsByResource(userId, scope, resourceId string) error {
-	return r.db.Database().Where("user_id = ? AND scope = ? AND resource_id = ?", userId, scope, resourceId).
+	return r.Database().Where("user_id = ? AND scope = ? AND resource_id = ?", userId, scope, resourceId).
 		Delete(&model.UserRoleBinding{}).Error
 }
 
 // DeleteRoleBindingsByResource 删除指定资源的所有角色绑定
 func (r *PermissionRepo) DeleteRoleBindingsByResource(scope, resourceId string) error {
-	return r.db.Database().Where("scope = ? AND resource_id = ?", scope, resourceId).
+	return r.Database().Where("scope = ? AND resource_id = ?", scope, resourceId).
 		Delete(&model.UserRoleBinding{}).Error
 }
 
@@ -496,22 +507,22 @@ func (r *PermissionRepo) DeleteRoleBindingsByResource(scope, resourceId string) 
 
 // ClearUserPermissionsCache 清除用户权限缓存
 func (r *PermissionRepo) ClearUserPermissionsCache(userId string) error {
-	if r.cache == nil {
+	if r.ICache == nil {
 		return nil
 	}
 	ctx := context.Background()
 	cacheKey := fmt.Sprintf("user:permissions:%s", userId)
-	return r.cache.Del(ctx, cacheKey).Err()
+	return r.ICache.Del(ctx, cacheKey).Err()
 }
 
 // ClearRolePermissionsCache 清除角色权限缓存
 func (r *PermissionRepo) ClearRolePermissionsCache(roleId string) error {
-	if r.cache == nil {
+	if r.ICache == nil {
 		return nil
 	}
 	ctx := context.Background()
 	cacheKey := fmt.Sprintf("role:permissions:%s", roleId)
-	return r.cache.Del(ctx, cacheKey).Err()
+	return r.ICache.Del(ctx, cacheKey).Err()
 }
 
 // parseRequiredPermissions 解析 JSON 格式的权限列表

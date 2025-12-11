@@ -32,34 +32,35 @@ type ITeamRepository interface {
 }
 
 type TeamRepo struct {
-	db database.IDatabase
+	database.IDatabase
 }
 
 func NewTeamRepo(db database.IDatabase) ITeamRepository {
-	return &TeamRepo{db: db}
+	return &TeamRepo{IDatabase: db}
 }
 
 // CreateTeam 创建团队
 func (r *TeamRepo) CreateTeam(t *model.Team) error {
-	return r.db.Database().Create(t).Error
+	return r.Database().Create(t).Error
 }
 
 // UpdateTeam 更新团队
 func (r *TeamRepo) UpdateTeam(teamId string, updates map[string]interface{}) error {
-	return r.db.Database().Model(&model.Team{}).
+	return r.Database().Model(&model.Team{}).
 		Where("team_id = ?", teamId).
 		Updates(updates).Error
 }
 
 // DeleteTeam 删除团队（软删除或硬删除）
 func (r *TeamRepo) DeleteTeam(teamId string) error {
-	return r.db.Database().Where("team_id = ?", teamId).Delete(&model.Team{}).Error
+	return r.Database().Where("team_id = ?", teamId).Delete(&model.Team{}).Error
 }
 
 // GetTeamById 根据团队ID获取团队信息
 func (r *TeamRepo) GetTeamById(teamId string) (*model.Team, error) {
 	var t model.Team
-	err := r.db.Database().Where("team_id = ?", teamId).First(&t).Error
+	err := r.Database().Select("id", "team_id", "org_id", "name", "display_name", "description", "avatar", "parent_team_id", "path", "level", "settings", "visibility", "is_enabled", "total_members", "total_projects", "created_at", "updated_at").
+		Where("team_id = ?", teamId).First(&t).Error
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +70,8 @@ func (r *TeamRepo) GetTeamById(teamId string) (*model.Team, error) {
 // GetTeamByName 根据团队名称和组织ID获取团队
 func (r *TeamRepo) GetTeamByName(orgId, name string) (*model.Team, error) {
 	var t model.Team
-	err := r.db.Database().Where("org_id = ? AND name = ?", orgId, name).First(&t).Error
+	err := r.Database().Select("id", "team_id", "org_id", "name", "display_name", "description", "avatar", "parent_team_id", "path", "level", "settings", "visibility", "is_enabled", "total_members", "total_projects", "created_at", "updated_at").
+		Where("org_id = ? AND name = ?", orgId, name).First(&t).Error
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +83,7 @@ func (r *TeamRepo) ListTeams(query *model.TeamQueryReq) ([]*model.Team, int64, e
 	var teams []*model.Team
 	var total int64
 
-	db := r.db.Database().Model(&model.Team{})
+	db := r.Database().Model(&model.Team{})
 
 	// 条件查询
 	if query.OrgId != "" {
@@ -124,7 +126,7 @@ func (r *TeamRepo) ListTeams(query *model.TeamQueryReq) ([]*model.Team, int64, e
 // GetTeamsByOrgId 获取组织下的所有团队
 func (r *TeamRepo) GetTeamsByOrgId(orgId string) ([]*model.Team, error) {
 	var teams []*model.Team
-	err := r.db.Database().
+	err := r.Database().
 		Select("team_id", "org_id", "name", "display_name", "description", "avatar", "parent_team_id", "path", "level", "settings", "visibility", "is_enabled", "total_members", "total_projects").
 		Where("org_id = ? AND is_enabled = ?", orgId, 1).
 		Order("level ASC, team_id DESC").
@@ -135,7 +137,7 @@ func (r *TeamRepo) GetTeamsByOrgId(orgId string) ([]*model.Team, error) {
 // GetSubTeams 获取子团队
 func (r *TeamRepo) GetSubTeams(parentTeamId string) ([]*model.Team, error) {
 	var teams []*model.Team
-	err := r.db.Database().
+	err := r.Database().
 		Select("team_id", "org_id", "name", "display_name", "description", "avatar", "parent_team_id", "path", "level", "settings", "visibility", "is_enabled", "total_members", "total_projects").
 		Where("parent_team_id = ? AND is_enabled = ?", parentTeamId, 1).
 		Order("team_id DESC").
@@ -146,7 +148,7 @@ func (r *TeamRepo) GetSubTeams(parentTeamId string) ([]*model.Team, error) {
 // CheckTeamExists 检查团队是否存在
 func (r *TeamRepo) CheckTeamExists(teamId string) (bool, error) {
 	var count int64
-	err := r.db.Database().Model(&model.Team{}).
+	err := r.Database().Model(&model.Team{}).
 		Where("team_id = ?", teamId).
 		Count(&count).Error
 	return count > 0, err
@@ -154,7 +156,7 @@ func (r *TeamRepo) CheckTeamExists(teamId string) (bool, error) {
 
 // CheckTeamNameExists 检查团队名称在组织内是否已存在
 func (r *TeamRepo) CheckTeamNameExists(orgId, name string, excludeTeamId ...string) (bool, error) {
-	query := r.db.Database().Model(&model.Team{}).
+	query := r.Database().Model(&model.Team{}).
 		Where("org_id = ? AND name = ?", orgId, name)
 
 	if len(excludeTeamId) > 0 && excludeTeamId[0] != "" {
@@ -168,7 +170,7 @@ func (r *TeamRepo) CheckTeamNameExists(orgId, name string, excludeTeamId ...stri
 
 // UpdateTeamPath 更新团队路径
 func (r *TeamRepo) UpdateTeamPath(teamId, path string, level int) error {
-	return r.db.Database().Model(&model.Team{}).
+	return r.Database().Model(&model.Team{}).
 		Where("team_id = ?", teamId).
 		Updates(map[string]interface{}{
 			"path":  path,
@@ -178,14 +180,14 @@ func (r *TeamRepo) UpdateTeamPath(teamId, path string, level int) error {
 
 // IncrementTeamMembers 增加团队成员数量
 func (r *TeamRepo) IncrementTeamMembers(teamId string, delta int) error {
-	return r.db.Database().Model(&model.Team{}).
+	return r.Database().Model(&model.Team{}).
 		Where("team_id = ?", teamId).
 		Update("total_members", gorm.Expr("total_members + ?", delta)).Error
 }
 
 // IncrementTeamProjects 增加团队项目数量
 func (r *TeamRepo) IncrementTeamProjects(teamId string, delta int) error {
-	return r.db.Database().Model(&model.Team{}).
+	return r.Database().Model(&model.Team{}).
 		Where("team_id = ?", teamId).
 		Update("total_projects", gorm.Expr("total_projects + ?", delta)).Error
 }
@@ -194,7 +196,7 @@ func (r *TeamRepo) IncrementTeamProjects(teamId string, delta int) error {
 func (r *TeamRepo) UpdateTeamStatistics(teamId string) error {
 	// 更新成员数量
 	var memberCount int64
-	if err := r.db.Database().Model(&model.TeamMember{}).
+	if err := r.Database().Model(&model.TeamMember{}).
 		Where("team_id = ?", teamId).
 		Count(&memberCount).Error; err != nil {
 		return err
@@ -202,11 +204,11 @@ func (r *TeamRepo) UpdateTeamStatistics(teamId string) error {
 
 	// 更新项目数量（假设有团队项目关联表）
 	var projectCount int64
-	r.db.Database().Table("t_project_team_relation").
+	r.Database().Table("t_project_team_relation").
 		Where("team_id = ?", teamId).
 		Count(&projectCount)
 
-	return r.db.Database().Model(&model.Team{}).
+	return r.Database().Model(&model.Team{}).
 		Where("team_id = ?", teamId).
 		Updates(map[string]interface{}{
 			"total_members":  memberCount,
@@ -250,14 +252,15 @@ func (r *TeamRepo) BatchGetTeams(teamIds []string) ([]*model.Team, error) {
 	}
 
 	var teams []*model.Team
-	err := r.db.Database().Where("team_id IN ?", teamIds).Find(&teams).Error
+	err := r.Database().Select("id", "team_id", "org_id", "name", "display_name", "description", "avatar", "parent_team_id", "path", "level", "settings", "visibility", "is_enabled", "total_members", "total_projects", "created_at", "updated_at").
+		Where("team_id IN ?", teamIds).Find(&teams).Error
 	return teams, err
 }
 
 // GetTeamsByUserId 获取用户所属的所有团队
 func (r *TeamRepo) GetTeamsByUserId(userId string) ([]*model.Team, error) {
 	var teams []*model.Team
-	err := r.db.Database().Table("t_team t").
+	err := r.Database().Table("t_team t").
 		Select("t.team_id", "t.org_id", "t.name", "t.display_name", "t.description", "t.avatar", "t.parent_team_id", "t.path", "t.level", "t.settings", "t.visibility", "t.is_enabled", "t.total_members", "t.total_projects").
 		Joins("JOIN t_team_member tm ON t.team_id = tm.team_id").
 		Where("tm.user_id = ? AND t.is_enabled = ?", userId, 1).

@@ -27,8 +27,7 @@ type IAgentRepository interface {
 
 type AgentRepo struct {
 	database.IDatabase
-	model.Agent
-	cache cache.ICache
+	cache.ICache
 }
 
 func NewAgentRepo(db database.IDatabase, cache cache.ICache) IAgentRepository {
@@ -37,14 +36,13 @@ func NewAgentRepo(db database.IDatabase, cache cache.ICache) IAgentRepository {
 	}
 	return &AgentRepo{
 		IDatabase: db,
-		Agent:     model.Agent{},
-		cache:     cache,
+		ICache:    cache,
 	}
 }
 
 // CreateAgent creates a new agent
 func (ar *AgentRepo) CreateAgent(agent *model.Agent) error {
-	if err := ar.Database().Table(ar.TableName()).Create(agent).Error; err != nil {
+	if err := ar.Database().Table(agent.TableName()).Create(agent).Error; err != nil {
 		return err
 	}
 	return nil
@@ -52,7 +50,9 @@ func (ar *AgentRepo) CreateAgent(agent *model.Agent) error {
 
 func (ar *AgentRepo) GetAgentById(id uint64) (*model.Agent, error) {
 	var agent model.Agent
-	if err := ar.Database().Table(ar.TableName()).Where("id = ?", id).First(&agent).Error; err != nil {
+	if err := ar.Database().Table(agent.TableName()).
+		Select("id", "agent_id", "agent_name", "address", "port", "os", "arch", "version", "status", "labels", "metrics", "is_enabled", "created_at", "updated_at").
+		Where("id = ?", id).First(&agent).Error; err != nil {
 		return nil, err
 	}
 	return &agent, nil
@@ -60,7 +60,9 @@ func (ar *AgentRepo) GetAgentById(id uint64) (*model.Agent, error) {
 
 func (ar *AgentRepo) GetAgentByAgentId(agentId string) (*model.Agent, error) {
 	var agent model.Agent
-	if err := ar.Database().Table(ar.TableName()).Where("agent_id = ?", agentId).First(&agent).Error; err != nil {
+	if err := ar.Database().Table(agent.TableName()).
+		Select("id", "agent_id", "agent_name", "address", "port", "os", "arch", "version", "status", "labels", "metrics", "is_enabled", "created_at", "updated_at").
+		Where("agent_id = ?", agentId).First(&agent).Error; err != nil {
 		return nil, err
 	}
 	return &agent, nil
@@ -68,7 +70,9 @@ func (ar *AgentRepo) GetAgentByAgentId(agentId string) (*model.Agent, error) {
 
 func (ar *AgentRepo) GetAgentDetailById(id uint64) (*model.AgentDetail, error) {
 	var agent model.Agent
-	if err := ar.Database().Table(ar.TableName()).Where("id = ?", id).First(&agent).Error; err != nil {
+	if err := ar.Database().Table(agent.TableName()).
+		Select("id", "agent_id", "agent_name", "address", "port", "os", "arch", "version", "status", "labels", "metrics", "is_enabled", "created_at", "updated_at").
+		Where("id = ?", id).First(&agent).Error; err != nil {
 		return nil, err
 	}
 
@@ -81,8 +85,8 @@ func (ar *AgentRepo) getAgentDetailByAgentId(agentId string) (*model.AgentDetail
 	cacheKey := consts.AgentDetailKey + agentId
 
 	// Try to get from cache first
-	if ar.cache != nil {
-		cachedData, err := ar.cache.Get(ctx, cacheKey).Result()
+	if ar.ICache != nil {
+		cachedData, err := ar.ICache.Get(ctx, cacheKey).Result()
 		if err == nil && cachedData != "" {
 			var detail model.AgentDetail
 			if err := sonic.UnmarshalString(cachedData, &detail); err == nil {
@@ -96,7 +100,9 @@ func (ar *AgentRepo) getAgentDetailByAgentId(agentId string) (*model.AgentDetail
 
 	// Query from database
 	var agent model.Agent
-	if err := ar.Database().Table(ar.TableName()).Where("agent_id = ?", agentId).First(&agent).Error; err != nil {
+	if err := ar.Database().Table(agent.TableName()).
+		Select("id", "agent_id", "agent_name", "address", "port", "os", "arch", "version", "status", "labels", "metrics", "is_enabled", "created_at", "updated_at").
+		Where("agent_id = ?", agentId).First(&agent).Error; err != nil {
 		return nil, err
 	}
 
@@ -105,12 +111,12 @@ func (ar *AgentRepo) getAgentDetailByAgentId(agentId string) (*model.AgentDetail
 	}
 
 	// Cache the result
-	if ar.cache != nil {
+	if ar.ICache != nil {
 		detailJson, err := sonic.MarshalString(detail)
 		if err != nil {
 			log.Warnw("failed to marshal agent detail for caching", "agentId", agentId, "error", err)
 		} else {
-			if err := ar.cache.Set(ctx, cacheKey, detailJson, 5*time.Minute).Err(); err != nil {
+			if err := ar.ICache.Set(ctx, cacheKey, detailJson, 5*time.Minute).Err(); err != nil {
 				log.Warnw("failed to cache agent detail", "agentId", agentId, "cacheKey", cacheKey, "error", err)
 			}
 		}
@@ -136,11 +142,13 @@ func (ar *AgentRepo) UpdateAgent(a *model.Agent) error {
 func (ar *AgentRepo) UpdateAgentById(id uint64, updates map[string]any) error {
 	// Get agent_id before update for cache invalidation
 	var agent model.Agent
-	if err := ar.Database().Table(ar.TableName()).Where("id = ?", id).First(&agent).Error; err != nil {
+	if err := ar.Database().Table(agent.TableName()).
+		Select("id", "agent_id", "agent_name", "address", "port", "os", "arch", "version", "status", "labels", "metrics", "is_enabled", "created_at", "updated_at").
+		Where("id = ?", id).First(&agent).Error; err != nil {
 		return err
 	}
 
-	if err := ar.Database().Table(ar.TableName()).Where("id = ?", id).Updates(updates).Error; err != nil {
+	if err := ar.Database().Table(agent.TableName()).Where("id = ?", id).Updates(updates).Error; err != nil {
 		return err
 	}
 
@@ -150,7 +158,8 @@ func (ar *AgentRepo) UpdateAgentById(id uint64, updates map[string]any) error {
 }
 
 func (ar *AgentRepo) UpdateAgentByAgentId(agentId string, updates map[string]any) error {
-	if err := ar.Database().Table(ar.TableName()).Where("agent_id = ?", agentId).Updates(updates).Error; err != nil {
+	var agent model.Agent
+	if err := ar.Database().Table(agent.TableName()).Where("agent_id = ?", agentId).Updates(updates).Error; err != nil {
 		return err
 	}
 
@@ -174,11 +183,13 @@ func (ar *AgentRepo) UpdateAgentByAgentId(agentId string, updates map[string]any
 func (ar *AgentRepo) DeleteAgent(id uint64) error {
 	// Get agent_id before delete for cache invalidation
 	var agent model.Agent
-	if err := ar.Database().Table(ar.TableName()).Where("id = ?", id).First(&agent).Error; err != nil {
+	if err := ar.Database().Table(agent.TableName()).
+		Select("id", "agent_id", "agent_name", "address", "port", "os", "arch", "version", "status", "labels", "metrics", "is_enabled", "created_at", "updated_at").
+		Where("id = ?", id).First(&agent).Error; err != nil {
 		return err
 	}
 
-	if err := ar.Database().Table(ar.TableName()).Where("id = ?", id).Delete(&model.Agent{}).Error; err != nil {
+	if err := ar.Database().Table(agent.TableName()).Where("id = ?", id).Delete(&model.Agent{}).Error; err != nil {
 		return err
 	}
 
@@ -189,15 +200,16 @@ func (ar *AgentRepo) DeleteAgent(id uint64) error {
 
 func (ar *AgentRepo) ListAgent(pageNum, pageSize int) ([]model.Agent, int64, error) {
 	var agents []model.Agent
+	var agent model.Agent
 	var count int64
 	offset := (pageNum - 1) * pageSize
 
-	if err := ar.Database().Table(ar.TableName()).Count(&count).Error; err != nil {
+	if err := ar.Database().Table(agent.TableName()).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 
 	if err := ar.Database().Select("id, agent_id, agent_name, address, port, os, arch, version, status, labels, metrics, last_heartbeat, is_enabled").
-		Table(ar.TableName()).
+		Table(agent.TableName()).
 		Offset(offset).Limit(pageSize).Find(&agents).Error; err != nil {
 		return nil, 0, err
 	}
@@ -206,13 +218,13 @@ func (ar *AgentRepo) ListAgent(pageNum, pageSize int) ([]model.Agent, int64, err
 
 // invalidateAgentCache 清除 agent 缓存
 func (ar *AgentRepo) invalidateAgentCache(agentId string) {
-	if ar.cache == nil {
+	if ar.ICache == nil {
 		log.Debugw("cache is nil, cannot invalidate", "agentId", agentId)
 		return
 	}
 	ctx := context.Background()
 	cacheKey := consts.AgentDetailKey + agentId
-	if err := ar.cache.Del(ctx, cacheKey).Err(); err != nil {
+	if err := ar.ICache.Del(ctx, cacheKey).Err(); err != nil {
 		log.Warnw("failed to invalidate agent cache", "agentId", agentId, "cacheKey", cacheKey, "error", err)
 	} else {
 		log.Debugw("agent cache invalidated successfully", "agentId", agentId, "cacheKey", cacheKey)
@@ -221,7 +233,7 @@ func (ar *AgentRepo) invalidateAgentCache(agentId string) {
 
 // refreshAgentCache 刷新 agent 缓存（重新加载并缓存，用于心跳等频繁更新场景）
 func (ar *AgentRepo) refreshAgentCache(agentId string) {
-	if ar.cache == nil {
+	if ar.ICache == nil {
 		return
 	}
 	// Re-fetch and cache the agent detail (this will update cache with latest data)

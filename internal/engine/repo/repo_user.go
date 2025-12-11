@@ -37,39 +37,38 @@ type IUserRepository interface {
 }
 
 type UserRepo struct {
-	db        database.IDatabase
-	cache     cache.ICache
-	userModel *model.User
+	database.IDatabase
+	cache.ICache
 }
 
 func NewUserRepo(db database.IDatabase, cache cache.ICache) IUserRepository {
 	return &UserRepo{
-		db:        db,
-		cache:     cache,
-		userModel: &model.User{},
+		IDatabase: db,
+		ICache:    cache,
 	}
 }
 
 func (ur *UserRepo) AddUser(addUserReq *model.AddUserReq) error {
-	return ur.db.Database().Create(addUserReq).Error
+	return ur.Database().Create(addUserReq).Error
 }
 
 // UpdateUser updates user information (user_id, username, password, created_at cannot be updated)
-func (ur *UserRepo) UpdateUser(userId string, u *model.User) error {
-	return ur.db.Database().Table(ur.userModel.TableName()).
+func (ur *UserRepo) UpdateUser(userId string, user *model.User) error {
+	return ur.Database().Table(user.TableName()).
 		Where("user_id = ?", userId).
 		Omit("user_id", "username", "password", "created_at").
-		Updates(u).Error
+		Updates(user).Error
 }
 
 func (ur *UserRepo) FetchUserInfo(userId string) (*model.UserInfo, error) {
 	ctx := context.Background()
 	key := consts.UserInfoKey + userId
 	u := &model.UserInfo{UserId: userId}
+	var user model.User
 
 	// 从 Redis 获取用户信息
-	if ur.cache != nil {
-		userInfoStr, err := ur.cache.Get(ctx, key).Result()
+	if ur.ICache != nil {
+		userInfoStr, err := ur.ICache.Get(ctx, key).Result()
 		if err == nil && userInfoStr != "" {
 			if err := sonic.UnmarshalString(userInfoStr, u); err != nil {
 				log.Errorw("failed to unmarshal user info from Redis", "userId", userId, "error", err)
@@ -80,20 +79,20 @@ func (ur *UserRepo) FetchUserInfo(userId string) (*model.UserInfo, error) {
 	}
 
 	// fetch from database
-	err := ur.db.Database().Table(ur.userModel.TableName()).
+	err := ur.Database().Table(user.TableName()).
 		Select("user_id, username, first_name, last_name, avatar, email, phone").
-		Where("user_id = ?", userId).First(u).Error
+		Where("user_id = ?", userId).First(&user).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user info: %w", err)
 	}
 
 	// cache to Redis
-	if ur.cache != nil {
+	if ur.ICache != nil {
 		userInfoJson, err := sonic.MarshalString(u)
 		if err != nil {
 			log.Errorw("failed to marshal user info", "userId", userId, "error", err)
 		} else {
-			if err := ur.cache.Set(ctx, key, userInfoJson, time.Hour).Err(); err != nil {
+			if err := ur.ICache.Set(ctx, key, userInfoJson, time.Hour).Err(); err != nil {
 				log.Errorw("failed to cache user info", "userId", userId, "error", err)
 			}
 		}
@@ -103,46 +102,46 @@ func (ur *UserRepo) FetchUserInfo(userId string) (*model.UserInfo, error) {
 }
 
 func (ur *UserRepo) GetUserByUsername(username string) (string, error) {
-	var u = &model.User{}
-	err := ur.db.Database().Table(ur.userModel.TableName()).Select("user_id").Where("username = ?", username).
-		First(u).Error
-	return u.UserId, err
+	var user model.User
+	err := ur.Database().Table(user.TableName()).Select("user_id").Where("username = ?", username).
+		First(&user).Error
+	return user.UserId, err
 }
 
 func (ur *UserRepo) Login(login *model.Login) (*model.User, error) {
-	var u = &model.User{}
+	var user model.User
 	scope := func(db *gorm.DB) *gorm.DB {
-		return db.Table(ur.userModel.TableName()).Select("user_id, username, first_name, last_name, avatar, email, phone, password")
+		return db.Table(user.TableName()).Select("user_id, username, first_name, last_name, avatar, email, phone, password")
 	}
 
-	err := ur.db.Database().Scopes(scope).Where(
+	err := ur.Database().Scopes(scope).Where(
 		"(username = ? OR email = ?)",
 		login.Username, login.Email,
-	).First(&u).Error
+	).First(&user).Error
 
 	if err != nil {
 		return nil, errors.New(http.UserNotExist.Msg)
 	}
-	return u, err
+	return &user, err
 }
 
 func (ur *UserRepo) Register(register *model.Register) error {
-	var u model.User
-	err := ur.db.Database().Table(ur.userModel.TableName()).Select("username").
+	var user model.User
+	err := ur.Database().Table(user.TableName()).Select("username").
 		Where("username = ?", register.Username).
-		First(&u).Error
+		First(&user).Error
 	if err == nil {
 		return errors.New(http.UserAlreadyExist.Msg)
 	}
-	return ur.db.Database().Table(ur.userModel.TableName()).Create(register).Error
+	return ur.Database().Table(user.TableName()).Create(register).Error
 }
 
 func (ur *UserRepo) Logout(userKey string) error {
-	if ur.cache == nil {
+	if ur.ICache == nil {
 		return nil
 	}
 	ctx := context.Background()
-	return ur.cache.Del(ctx, userKey).Err()
+	return ur.ICache.Del(ctx, userKey).Err()
 }
 
 // UserWithExtension combines user and extension information
@@ -153,11 +152,12 @@ type UserWithExtension struct {
 }
 
 func (ur *UserRepo) GetUserList(offset int, pageSize int) ([]UserWithExtension, int64, error) {
-	var users []UserWithExtension
+	var usersExt []UserWithExtension
+	var user model.User
 	var count int64
 
 	// join with user extension table to get last login time and invitation status
-	err := ur.db.Database().Table(ur.userModel.TableName() + " AS u").
+	err := ur.Database().Table(user.TableName() + " AS u").
 		Select(`u.user_id, u.username, u.first_name, u.last_name, u.avatar, u.email, u.phone,
 			u.is_enabled, u.is_superadmin,
 			ue.last_login_at,
@@ -166,17 +166,17 @@ func (ur *UserRepo) GetUserList(offset int, pageSize int) ([]UserWithExtension, 
 		Offset(offset).
 		Limit(pageSize).
 		Order("u.created_at DESC").
-		Find(&users).Error
+		Find(&usersExt).Error
 	if err != nil {
 		return nil, 0, err
 	}
 
-	err = ur.db.Database().Model(&model.User{}).Count(&count).Error
-	return users, count, err
+	err = ur.Database().Model(&user).Count(&count).Error
+	return usersExt, count, err
 }
 
 func (ur *UserRepo) SetToken(userId, aToken string, auth http.Auth) (string, error) {
-	if ur.cache == nil {
+	if ur.ICache == nil {
 		return "", fmt.Errorf("cache not available")
 	}
 	ctx := context.Background()
@@ -197,19 +197,19 @@ func (ur *UserRepo) SetToken(userId, aToken string, auth http.Auth) (string, err
 	}
 
 	key := consts.UserTokenKey + userId
-	if err := ur.cache.Set(ctx, key, tokenInfoJson, auth.AccessExpire*time.Second).Err(); err != nil {
+	if err := ur.ICache.Set(ctx, key, tokenInfoJson, auth.AccessExpire*time.Second).Err(); err != nil {
 		return "", fmt.Errorf("failed to set token in Redis: %w", err)
 	}
 	return key, nil
 }
 
 func (ur *UserRepo) SetLoginRespInfo(accessExpire time.Duration, loginResp *model.LoginResp) error {
-	if ur.cache == nil {
+	if ur.ICache == nil {
 		return fmt.Errorf("cache not available")
 	}
 	ctx := context.Background()
 
-	pipe := ur.cache.Pipeline()
+	pipe := ur.ICache.Pipeline()
 
 	tokenInfo := middleware.TokenInfo{
 		AccessToken:  loginResp.Token["accessToken"],
@@ -245,11 +245,11 @@ func (ur *UserRepo) SetLoginRespInfo(accessExpire time.Duration, loginResp *mode
 }
 
 func (ur *UserRepo) GetToken(key string) (string, error) {
-	if ur.cache == nil {
+	if ur.ICache == nil {
 		return "", fmt.Errorf("cache not available")
 	}
 	ctx := context.Background()
-	token, err := ur.cache.Get(ctx, key).Result()
+	token, err := ur.ICache.Get(ctx, key).Result()
 	if err != nil {
 		return "", fmt.Errorf("failed to get token from Redis: %w", err)
 	}
@@ -257,11 +257,11 @@ func (ur *UserRepo) GetToken(key string) (string, error) {
 }
 
 func (ur *UserRepo) DelToken(key string) error {
-	if ur.cache == nil {
+	if ur.ICache == nil {
 		return nil
 	}
 	ctx := context.Background()
-	if err := ur.cache.Del(ctx, key).Err(); err != nil {
+	if err := ur.ICache.Del(ctx, key).Err(); err != nil {
 		return fmt.Errorf("failed to delete token from Redis: %w", err)
 	}
 	return nil
@@ -269,27 +269,29 @@ func (ur *UserRepo) DelToken(key string) error {
 
 // GetUserPassword gets user password hash by user ID
 func (ur *UserRepo) GetUserPassword(userId string) (string, error) {
-	var u model.User
-	err := ur.db.Database().Table(ur.userModel.TableName()).
+	var user model.User
+	err := ur.Database().Table(user.TableName()).
 		Select("password").
 		Where("user_id = ?", userId).
-		First(&u).Error
+		First(&user).Error
 	if err != nil {
 		return "", err
 	}
-	return u.Password, nil
+	return user.Password, nil
 }
 
 // ResetPassword resets user password
 func (ur *UserRepo) ResetPassword(userId, newPasswordHash string) error {
-	return ur.db.Database().Table(ur.userModel.TableName()).
+	var user model.User
+	return ur.Database().Table(user.TableName()).
 		Where("user_id = ?", userId).
 		Update("password", newPasswordHash).Error
 }
 
 // UpdateAvatar updates user avatar URL
 func (ur *UserRepo) UpdateAvatar(userId, avatarUrl string) error {
-	result := ur.db.Database().Table(ur.userModel.TableName()).
+	var user model.User
+	result := ur.Database().Table(user.TableName()).
 		Where("user_id = ?", userId).
 		Update("avatar", avatarUrl)
 
@@ -307,13 +309,13 @@ func (ur *UserRepo) UpdateAvatar(userId, avatarUrl string) error {
 
 // GetUserAvatar gets user avatar URL by user ID
 func (ur *UserRepo) GetUserAvatar(userId string) (string, error) {
-	var u model.User
-	err := ur.db.Database().Table(ur.userModel.TableName()).
+	var user model.User
+	err := ur.Database().Table(user.TableName()).
 		Select("avatar").
 		Where("user_id = ?", userId).
-		First(&u).Error
+		First(&user).Error
 	if err != nil {
 		return "", err
 	}
-	return u.Avatar, nil
+	return user.Avatar, nil
 }
