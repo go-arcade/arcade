@@ -10,9 +10,6 @@ option go_package = "github.com/go-arcade/arcade/api/stream/v1;streamv1";
 
 // StreamService - Real-time data streaming interface
 service StreamService {
-  // Ping service health check
-  rpc Ping(PingRequest) returns (PingResponse) {}
-
   // Stream task logs in real-time - Server-side streaming pushes logs to client
   rpc StreamTaskLog(StreamTaskLogRequest) returns (stream StreamTaskLogResponse) {}
 
@@ -58,15 +55,6 @@ enum EventType {
   EVENT_TYPE_AGENT_REGISTERED = 9;  // Agent registered
   EVENT_TYPE_AGENT_UNREGISTERED = 10; // Agent unregistered
   EVENT_TYPE_AGENT_OFFLINE = 11;    // Agent offline
-}
-
-message PingRequest {
-    string message = 1;
-}
-
-message PingResponse {
-    string message = 1;
-    int64 timestamp = 2;
 }
 
 // ============ Task Log Stream Related ============

@@ -95,7 +95,7 @@ type AccessibleRoute struct {
 
 // GetUserPermissions 获取用户的所有权限汇总
 func (s *UserPermissionsService) GetUserPermissions(ctx context.Context, userId string) (*UserPermissionSummary, error) {
-	log.Info("[UserPermissions] getting permissions for user: %s", userId)
+	log.Infow("[UserPermissions] getting permissions for user", "userId", userId)
 
 	summary := &UserPermissionSummary{
 		UserId:              userId,
@@ -163,7 +163,7 @@ func (s *UserPermissionsService) GetUserPermissions(ctx context.Context, userId 
 	wg.Wait()
 
 	if len(errors) > 0 {
-		log.Warn("[UserPermissions] errors occurred: %v", errors)
+		log.Warnw("[UserPermissions] errors occurred", "userId", userId, "errors", errors)
 	}
 
 	// 4. 汇总所有权限点
@@ -172,7 +172,7 @@ func (s *UserPermissionsService) GetUserPermissions(ctx context.Context, userId 
 	// 5. 根据权限计算可访问路由
 	routes, err := s.calculateAccessibleRoutes(summary.AllPermissions)
 	if err != nil {
-		log.Warn("[UserPermissions] failed to calculate accessible routes: %v", err)
+		log.Warnw("[UserPermissions] failed to calculate accessible routes", "userId", userId, "error", err)
 	} else {
 		summary.AccessibleRoutes = routes
 	}
@@ -180,9 +180,7 @@ func (s *UserPermissionsService) GetUserPermissions(ctx context.Context, userId 
 	// 6. 汇总可访问资源
 	s.aggregateAccessibleResources(summary)
 
-	log.Info("[UserPermissions] user %s has %d orgs, %d teams, %d projects, %d permissions, %d routes",
-		userId, len(summary.Organizations), len(summary.Teams), len(summary.Projects),
-		len(summary.AllPermissions), len(summary.AccessibleRoutes))
+	log.Infow("[UserPermissions] user permissions summary", "userId", userId, "orgs", len(summary.Organizations), "teams", len(summary.Teams), "projects", len(summary.Projects), "permissions", len(summary.AllPermissions), "routes", len(summary.AccessibleRoutes))
 
 	return summary, nil
 }
@@ -200,7 +198,7 @@ func (s *UserPermissionsService) getUserOrganizations(ctx context.Context, userI
 		// 获取组织信息
 		var org model.Organization
 		if err := s.db.Database().WithContext(ctx).Where("org_id = ?", om.OrgId).First(&org).Error; err != nil {
-			log.Warn("[UserPermissions] failed to get org %s: %v", om.OrgId, err)
+			log.Warnw("[UserPermissions] failed to get org", "orgId", om.OrgId, "error", err)
 			continue
 		}
 
@@ -249,7 +247,7 @@ func (s *UserPermissionsService) getUserTeams(ctx context.Context, userId string
 		// 获取团队信息
 		var teamEntity model.Team
 		if err := s.db.Database().WithContext(ctx).Where("team_id = ?", tm.TeamId).First(&teamEntity).Error; err != nil {
-			log.Warn("[UserPermissions] failed to get team %s: %v", tm.TeamId, err)
+			log.Warnw("[UserPermissions] failed to get team", "teamId", tm.TeamId, "error", err)
 			continue
 		}
 
@@ -442,7 +440,7 @@ func (s *UserPermissionsService) getPermissionsForRole(roleId string) []string {
 		Pluck("code", &permissionCodes).Error
 
 	if err != nil {
-		log.Warn("[UserPermissions] failed to get permissions for role %s: %v", roleId, err)
+		log.Warnw("[UserPermissions] failed to get permissions for role", "roleId", roleId, "error", err)
 		return []string{}
 	}
 

@@ -37,7 +37,7 @@ func GenToken(userId string, secretKey []byte, accessExpired, refreshExpired tim
 	}
 	aToken, aErr := jwt.NewWithClaims(jwt.SigningMethodHS256, aClaims).SignedString(secretKey)
 	if aErr != nil {
-		log.Error("jwt.NewWithClaims err: %v", aErr)
+		log.Errorw("jwt.NewWithClaims err", "error", aErr)
 		return "", "", aErr
 	}
 
@@ -48,7 +48,7 @@ func GenToken(userId string, secretKey []byte, accessExpired, refreshExpired tim
 	}
 	rToken, rErr := jwt.NewWithClaims(jwt.SigningMethodHS256, rClaims).SignedString(secretKey)
 	if rErr != nil {
-		log.Debug("jwt.NewWithClaims err: %v", rErr)
+		log.Debugw("jwt.NewWithClaims err", "error", rErr)
 		return "", "", rErr
 	}
 

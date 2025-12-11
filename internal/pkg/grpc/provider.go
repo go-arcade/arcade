@@ -1,6 +1,7 @@
 package grpc
 
 import (
+	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/google/wire"
 )
 
@@ -11,9 +12,9 @@ var ProviderSet = wire.NewSet(
 )
 
 // ProvideGrpcServer 提供 gRPC 服务器实例
-func ProvideGrpcServer(cfg *Conf) *ServerWrapper {
+func ProvideGrpcServer(cfg *Conf, services *service.Services) *ServerWrapper {
 	server := NewGrpcServer(*cfg)
-	server.Register()
+	server.Register(services)
 	return server
 }
 

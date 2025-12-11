@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	pluginv1 "github.com/go-arcade/arcade/api/plugin/v1"
 )
@@ -30,8 +31,12 @@ func NewServer(info *PluginInfo, instance any, db DB) *Server {
 }
 
 // Ping checks the plugin status
-func (s *Server) Ping(ctx context.Context, req *pluginv1.PingRequest) (*pluginv1.PingResponse, error) {
-	return &pluginv1.PingResponse{Message: "pong"}, nil
+func (s *Server) HealthCheck(ctx context.Context, req *pluginv1.HealthCheckRequest) (*pluginv1.HealthCheckResponse, error) {
+	return &pluginv1.HealthCheckResponse{
+		Success:   true,
+		Message:   "pong",
+		Timestamp: time.Now().Unix(),
+	}, nil
 }
 
 // GetInfo retrieves plugin information

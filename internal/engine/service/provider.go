@@ -53,18 +53,17 @@ func ProvideTaskWorkerPool(config TaskPoolConfig) *TaskWorkerPool {
 		} else {
 			maxWorkers = calculated
 		}
-		log.Info("maxWorkers not configured, calculated based on CPU: %d (CPU cores: %d)", maxWorkers, numCPU)
+		log.Infow("maxWorkers not configured, calculated based on CPU", "maxWorkers", maxWorkers, "cpuCores", numCPU)
 	}
 
 	// 如果配置中 queueSize 为 0，则根据 maxWorkers 计算
 	queueSize := config.QueueSize
 	if queueSize <= 0 {
 		queueSize = maxWorkers * 10 // 队列大小为工作协程数的 10 倍
-		log.Info("queueSize not configured, calculated as maxWorkers * 10: %d", queueSize)
+		log.Infow("queueSize not configured, calculated as maxWorkers * 10", "queueSize", queueSize)
 	}
 
-	log.Info("initializing task worker pool: workers=%d, queue_size=%d, timeout=%ds",
-		maxWorkers, queueSize, config.WorkerTimeout)
+	log.Infow("initializing task worker pool", "workers", maxWorkers, "queueSize", queueSize, "timeout", config.WorkerTimeout)
 
 	pool := NewTaskWorkerPool(maxWorkers, queueSize)
 

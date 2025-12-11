@@ -35,7 +35,7 @@ func (s *TeamService) CreateTeam(req *model.CreateTeamReq, createdBy string) (*m
 	// 2. 检查团队名称是否已存在
 	exists, err := s.teamRepo.CheckTeamNameExists(req.OrgId, req.Name)
 	if err != nil {
-		log.Error("check team name failed: %v", err)
+		log.Errorw("check team name failed", "orgId", req.OrgId, "name", req.Name, "error", err)
 		return nil, fmt.Errorf("check team name failed: %w", err)
 	}
 	if exists {
@@ -45,14 +45,14 @@ func (s *TeamService) CreateTeam(req *model.CreateTeamReq, createdBy string) (*m
 	// 3. 构建团队路径和层级
 	path, level, err := s.teamRepo.BuildTeamPath(req.ParentTeamId)
 	if err != nil {
-		log.Error("build team path failed: %v", err)
+		log.Errorw("build team path failed", "parentTeamId", req.ParentTeamId, "error", err)
 		return nil, fmt.Errorf("build team path failed: %w", err)
 	}
 
 	// 4. 处理 settings
 	settingsJSON, err := teamrepo.ConvertSettingsToJSON(req.Settings)
 	if err != nil {
-		log.Error("convert settings failed: %v", err)
+		log.Errorw("convert settings failed", "error", err)
 		return nil, fmt.Errorf("convert settings failed: %w", err)
 	}
 
@@ -79,11 +79,11 @@ func (s *TeamService) CreateTeam(req *model.CreateTeamReq, createdBy string) (*m
 
 	// 6. 保存到数据库
 	if err := s.teamRepo.CreateTeam(teamEntity); err != nil {
-		log.Error("create team failed: %v", err)
+		log.Errorw("create team failed", "name", teamEntity.Name, "error", err)
 		return nil, fmt.Errorf("create team failed: %w", err)
 	}
 
-	log.Info("success create team: %s (ID: %s)", teamEntity.Name, teamEntity.TeamId)
+	log.Infow("success create team", "name", teamEntity.Name, "teamId", teamEntity.TeamId)
 
 	// 7. 返回响应
 	return model.ToTeamResp(teamEntity), nil
@@ -147,7 +147,7 @@ func (s *TeamService) UpdateTeam(teamId string, req *model.UpdateTeamReq) (*mode
 	if len(updates) > 0 {
 		updates["updated_at"] = time.Now()
 		if err := s.teamRepo.UpdateTeam(teamId, updates); err != nil {
-			log.Error("update team failed: %v", err)
+			log.Errorw("update team failed", "teamId", teamId, "error", err)
 			return nil, fmt.Errorf("update team failed: %w", err)
 		}
 	}
@@ -158,7 +158,7 @@ func (s *TeamService) UpdateTeam(teamId string, req *model.UpdateTeamReq) (*mode
 		return nil, fmt.Errorf("get updated team failed: %w", err)
 	}
 
-	log.Info("success update team: %s (ID: %s)", updatedTeam.Name, teamId)
+	log.Infow("success update team", "name", updatedTeam.Name, "teamId", teamId)
 
 	return model.ToTeamResp(updatedTeam), nil
 }
@@ -195,11 +195,11 @@ func (s *TeamService) DeleteTeam(teamId string) error {
 
 	// 5. 执行删除
 	if err := s.teamRepo.DeleteTeam(teamId); err != nil {
-		log.Error("delete team failed: %v", err)
+		log.Errorw("delete team failed", "teamId", teamId, "error", err)
 		return fmt.Errorf("delete team failed: %w", err)
 	}
 
-	log.Info("success delete team: %s (ID: %s)", teamEntity.Name, teamId)
+	log.Infow("success delete team", "name", teamEntity.Name, "teamId", teamId)
 
 	return nil
 }
@@ -233,7 +233,7 @@ func (s *TeamService) ListTeams(query *model.TeamQueryReq) (*model.TeamListResp,
 	// 查询团队列表
 	teams, total, err := s.teamRepo.ListTeams(query)
 	if err != nil {
-		log.Error("list teams failed: %v", err)
+		log.Errorw("list teams failed", "error", err)
 		return nil, fmt.Errorf("list teams failed: %w", err)
 	}
 

@@ -60,8 +60,8 @@ func NewGrpcServer(cfg Conf) *ServerWrapper {
 }
 
 // Register 注册所有 gRPC 服务
-func (s *ServerWrapper) Register() {
-	agentv1.RegisterAgentServiceServer(s.svr, &service.AgentServiceImpl{})
+func (s *ServerWrapper) Register(services *service.Services) {
+	agentv1.RegisterAgentServiceServer(s.svr, service.NewAgentServiceImpl(services.Agent))
 	taskv1.RegisterTaskServiceServer(s.svr, &service.TaskServiceImpl{})
 	streamv1.RegisterStreamServiceServer(s.svr, &service.StreamServiceImpl{})
 	pipelinev1.RegisterPipelineServiceServer(s.svr, &service.PipelineServiceImpl{})

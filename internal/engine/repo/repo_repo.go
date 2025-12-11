@@ -30,7 +30,7 @@ type Repositories struct {
 func NewRepositories(db database.IDatabase, mongo database.MongoDB, cache cache.ICache) *Repositories {
 	return &Repositories{
 		User:              NewUserRepo(db, cache),
-		Agent:             NewAgentRepo(db),
+		Agent:             NewAgentRepo(db, cache),
 		Plugin:            NewPluginRepo(db),
 		PluginTask:        NewPluginTaskRepo(mongo),
 		Permission:        NewPermissionRepo(db, cache),

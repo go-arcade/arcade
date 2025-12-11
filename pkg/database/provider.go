@@ -18,8 +18,7 @@ var ProviderSet = wire.NewSet(
 
 // ProvideDatabase 提供 MySQL 数据库实例
 func ProvideDatabase(conf Database, logger *log.Logger) (*gorm.DB, error) {
-	zapLogger := logger.Log.Desugar()
-	return NewDatabase(conf, *zapLogger)
+	return NewDatabase(conf)
 }
 
 // ProvideMongoDB 提供 MongoDB 实例

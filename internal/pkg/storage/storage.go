@@ -88,8 +88,7 @@ func (pr *ProgressReader) Read(p []byte) (int, error) {
 
 // LogProgress 记录上传进度
 func (pr *ProgressReader) LogProgress(progress float64) {
-	log.Debug("%s upload progress: %s - %.2f%% (%d/%d bytes)",
-		pr.provider, pr.fullPath, progress, pr.uploaded, pr.total)
+	log.Debugw("upload progress", "provider", pr.provider, "fullPath", pr.fullPath, "progress", progress, "uploaded", pr.uploaded, "total", pr.total)
 }
 
 // NewStorage 根据配置创建存储提供者实例

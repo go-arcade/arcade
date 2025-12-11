@@ -39,7 +39,7 @@ func (us *UploadService) buildCompleteURL(objectPath string, storageConfig *stor
 	// parse storage config
 	var configDetail storagemodel.StorageConfigDetail
 	if err := json.Unmarshal(storageConfig.Config, &configDetail); err != nil {
-		log.Warn("failed to unmarshal storage config: %v", err)
+		log.Warnw("failed to unmarshal storage config", "error", err)
 		return objectPath
 	}
 
@@ -133,11 +133,11 @@ func (us *UploadService) uploadToStorage(file *multipart.FileHeader, storageId, 
 	// upload file
 	uploadedPath, err := provider.PutObject(us.ctx, objectPath, file, contentType)
 	if err != nil {
-		log.Error("failed to upload file: %v", err)
+		log.Errorw("failed to upload file", "objectPath", objectPath, "error", err)
 		return nil, fmt.Errorf("failed to upload file: %w", err)
 	}
 
-	log.Info("file uploaded successfully: %s, size: %d", uploadedPath, file.Size)
+	log.Infow("file uploaded successfully", "uploadedPath", uploadedPath, "size", file.Size)
 
 	// build complete URL
 	fileURL := us.buildCompleteURL(uploadedPath, storageConfig)

@@ -14,6 +14,7 @@ var excludedMethods = map[string]bool{
 	// "/api.job.v1.Job/Ping":           true,
 	// "/api.stream.v1.Stream/Ping":     true,
 	// "/api.pipeline.v1.Pipeline/Ping": true,
+	"/agent.v1.AgentService/Heartbeat": true,
 }
 
 // logCall logs a gRPC server call with common format

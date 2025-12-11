@@ -105,7 +105,7 @@ func (g *GCSStorage) Upload(ctx *ctx.Context, objectName string, file *multipart
 		if err := writer.Close(); err != nil {
 			return "", err
 		}
-		log.Debug("GCS upload completed: %s - 100.00%% (%d bytes)", fullPath, fileSize)
+		log.Debugw("GCS upload completed", "fullPath", fullPath, "fileSize", fileSize)
 		return fullPath, nil
 	}
 
@@ -174,7 +174,7 @@ func (g *GCSStorage) Upload(ctx *ctx.Context, objectName string, file *multipart
 		return "", err
 	}
 
-	log.Debug("GCS upload completed: %s - 100.00%% (%d bytes)", fullPath, fileSize)
+	log.Debugw("GCS upload completed", "fullPath", fullPath, "fileSize", fileSize)
 	// 成功则删除断点文件
 	_ = os.Remove(checkpointPath)
 	return fullPath, nil

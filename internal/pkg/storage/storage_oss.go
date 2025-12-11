@@ -82,7 +82,7 @@ func (o *OSSStorage) Upload(ctx *ctx.Context, objectName string, file *multipart
 	if fileSize <= defaultPartSize {
 		err = o.Bucket.PutObject(fullPath, src, oss.ContentType(contentType))
 		if err == nil {
-			log.Info("OSS upload completed: %s - 100.00%% (%d bytes)", fullPath, fileSize)
+			log.Infow("OSS upload completed", "fullPath", fullPath, "fileSize", fileSize)
 		}
 		return fullPath, err
 	}
@@ -161,7 +161,7 @@ func (o *OSSStorage) Upload(ctx *ctx.Context, objectName string, file *multipart
 	// 完成分片上传
 	_, err = o.Bucket.CompleteMultipartUpload(imur, parts)
 	if err == nil {
-		log.Debug("OSS upload completed: %s - 100.00%% (%d bytes)", fullPath, fileSize)
+		log.Debugw("OSS upload completed", "fullPath", fullPath, "fileSize", fileSize)
 		_ = os.Remove(checkpointPath) // 成功则删除断点文件
 	}
 	return fullPath, err

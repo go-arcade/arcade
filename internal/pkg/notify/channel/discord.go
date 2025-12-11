@@ -137,13 +137,13 @@ func (c *DiscordChannel) sendRequest(ctx context.Context, payload map[string]int
 
 	resp, err := req.Post(c.webhookURL)
 	if err != nil {
-		log.Error("discord send request failed: %v", err)
+		log.Errorw("discord send request failed", "error", err)
 		return fmt.Errorf("failed to send request: %w", err)
 	}
 
 	// Discord returns 204 No Content on success
 	if resp.StatusCode() != http.StatusNoContent && resp.StatusCode() != http.StatusOK {
-		log.Error("discord request failed with status %d: %s", resp.StatusCode(), resp.String())
+		log.Errorw("discord request failed", "statusCode", resp.StatusCode(), "response", resp.String())
 
 		// Try to parse error message
 		var errorResp map[string]interface{}

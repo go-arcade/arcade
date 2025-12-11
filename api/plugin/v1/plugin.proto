@@ -8,8 +8,9 @@ option go_package = "github.com/go-arcade/arcade/api/plugin/v1;pluginv1";
 
 // PluginService - Main interface for plugin communication
 service PluginService {
-    // Ping - Health check
-    rpc Ping(PingRequest) returns (PingResponse) {}
+
+    // Ping - Ping plugin status
+    rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse) {}
 
     // GetInfo - Get plugin information
     rpc GetInfo(GetInfoRequest) returns (GetInfoResponse) {}
@@ -36,14 +37,19 @@ service PluginService {
     rpc ConfigList(ConfigListRequest) returns (ConfigListResponse) {}
 }
 
-// Ping request
-message PingRequest {
-    string message = 1;
+// HealthCheck request
+message HealthCheckRequest {
+    string plugin_id = 1;
+    string message = 2;
+    int64 timestamp = 3;
 }
 
-// Ping response
-message PingResponse {
-    string message = 1;
+// HealthCheck response
+message HealthCheckResponse {
+    bool success = 1;
+    string message = 2;
+    int64 timestamp = 3;
+    RPCError error = 4;
 }
 
 // GetInfo request

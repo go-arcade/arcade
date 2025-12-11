@@ -38,7 +38,7 @@ func (s *AgentService) Heartbeat(ctx context.Context, req *agentv1.HeartbeatRequ
 
 // Register handles agent registration requests
 func (s *AgentService) Register(ctx context.Context, req *agentv1.RegisterRequest) (*agentv1.RegisterResponse, error) {
-	log.Infow("Register request received", "agent_id", req.AgentId, "hostname", req.Hostname, "version", req.Version)
+	log.Infow("Register request received", "agent_id", req.AgentId, "ip", req.Ip, "version", req.Version)
 
 	// TODO: Implement registration logic
 	// For now, return success with default heartbeat interval

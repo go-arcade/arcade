@@ -21,11 +21,11 @@ type MetricsRecorder interface {
 	UpdateJobsCount(count int)
 }
 
-var globalMetricsRecorder MetricsRecorder
+var metricsRecorder MetricsRecorder
 
 // SetMetricsRecorder sets the global metrics recorder for cron jobs
 func SetMetricsRecorder(recorder MetricsRecorder) {
-	globalMetricsRecorder = recorder
+	metricsRecorder = recorder
 }
 
 // Cron keeps track of any number of entries, invoking the associated func as
@@ -205,8 +205,8 @@ func (c *Cron) Remove(name string) error {
 
 		c.entries = c.entries[:p+copy(c.entries[p:], c.entries[p+1:])]
 		// Update metrics
-		if globalMetricsRecorder != nil {
-			globalMetricsRecorder.UpdateJobsCount(len(c.entries))
+		if metricsRecorder != nil {
+			metricsRecorder.UpdateJobsCount(len(c.entries))
 		}
 		return nil
 	}
@@ -250,8 +250,8 @@ func (c *Cron) Schedule(schedule Schedule, cmd Job, names ...string) {
 
 		c.entries = append(c.entries, entry)
 		// Update metrics
-		if globalMetricsRecorder != nil {
-			globalMetricsRecorder.UpdateJobsCount(len(c.entries))
+		if metricsRecorder != nil {
+			metricsRecorder.UpdateJobsCount(len(c.entries))
 		}
 		return
 	}
@@ -307,8 +307,8 @@ func (c *Cron) runWithRecovery(j Job, name string, t time.Time) {
 		}
 
 		// Record metrics if recorder is set
-		if globalMetricsRecorder != nil {
-			globalMetricsRecorder.RecordJobRun(name, duration, jobErr)
+		if metricsRecorder != nil {
+			metricsRecorder.RecordJobRun(name, duration, jobErr)
 		}
 	}()
 
@@ -335,7 +335,7 @@ func (c *Cron) runWithRecovery(j Job, name string, t time.Time) {
 		}()
 	}
 
-	log.Infow("crond: triggered success", "name", name, "time", t.String())
+	log.Infow("[CROND] triggered success", "name", name, "tigger time", t.String())
 	j.Run()
 }
 
@@ -347,13 +347,13 @@ func (c *Cron) run() {
 	for _, entry := range c.entries {
 		entry.Next = entry.Schedule.Next(now)
 		// Update metrics for initial next run times
-		if globalMetricsRecorder != nil {
-			globalMetricsRecorder.UpdateNextRun(entry.Name, entry.Next)
+		if metricsRecorder != nil {
+			metricsRecorder.UpdateNextRun(entry.Name, entry.Next)
 		}
 	}
 	// Update jobs count
-	if globalMetricsRecorder != nil {
-		globalMetricsRecorder.UpdateJobsCount(len(c.entries))
+	if metricsRecorder != nil {
+		metricsRecorder.UpdateJobsCount(len(c.entries))
 	}
 
 	for {
@@ -387,8 +387,8 @@ func (c *Cron) run() {
 					e.Prev = e.Next
 					e.Next = e.Schedule.Next(now)
 					// Update metrics for next run time
-					if globalMetricsRecorder != nil {
-						globalMetricsRecorder.UpdateNextRun(e.Name, e.Next)
+					if metricsRecorder != nil {
+						metricsRecorder.UpdateNextRun(e.Name, e.Next)
 					}
 				}
 
@@ -398,9 +398,9 @@ func (c *Cron) run() {
 				newEntry.Next = newEntry.Schedule.Next(now)
 				c.entries = append(c.entries, newEntry)
 				// Update metrics
-				if globalMetricsRecorder != nil {
-					globalMetricsRecorder.UpdateJobsCount(len(c.entries))
-					globalMetricsRecorder.UpdateNextRun(newEntry.Name, newEntry.Next)
+				if metricsRecorder != nil {
+					metricsRecorder.UpdateJobsCount(len(c.entries))
+					metricsRecorder.UpdateNextRun(newEntry.Name, newEntry.Next)
 				}
 
 			case name := <-c.remove:
@@ -411,8 +411,8 @@ func (c *Cron) run() {
 
 				c.entries = c.entries[:p+copy(c.entries[p:], c.entries[p+1:])]
 				// Update metrics
-				if globalMetricsRecorder != nil {
-					globalMetricsRecorder.UpdateJobsCount(len(c.entries))
+				if metricsRecorder != nil {
+					metricsRecorder.UpdateJobsCount(len(c.entries))
 				}
 
 			case <-c.snapshot:

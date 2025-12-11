@@ -42,7 +42,7 @@ func (r *RouterPermissionRepo) GetAllRoutePermissions() ([]model.RoutePermission
 		var permissions []string
 		if len(route.RequiredPermissions) > 0 {
 			if err := json.Unmarshal(route.RequiredPermissions, &permissions); err != nil {
-				log.Warn("failed to unmarshal permissions for route %s: %v", route.RouteId, err)
+				log.Warnw("failed to unmarshal permissions for route", "routeId", route.RouteId, "error", err)
 				permissions = []string{}
 			}
 		}
@@ -140,13 +140,13 @@ func (r *RouterPermissionRepo) InitBuiltinRoutes() error {
 
 	for _, routeDTO := range model.BuiltinRoutes {
 		if err := r.CreateOrUpdateRoute(routeDTO); err != nil {
-			log.Warn("failed to init route %s: %v", routeDTO.RouteId, err)
+			log.Warnw("failed to init route", "routeId", routeDTO.RouteId, "error", err)
 			continue
 		}
-		log.Info("initialized route: %s (%s %s)", routeDTO.Name, routeDTO.Method, routeDTO.Path)
+		log.Infow("initialized route", "name", routeDTO.Name, "method", routeDTO.Method, "path", routeDTO.Path)
 	}
 
-	log.Info("builtin routes initialized: %d routes", len(model.BuiltinRoutes))
+	log.Infow("builtin routes initialized", "count", len(model.BuiltinRoutes))
 	return nil
 }
 

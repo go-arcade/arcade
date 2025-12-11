@@ -1,35 +1,120 @@
+# grpc configuration
+[grpc]
+# server address (host:port format, e.g., "localhost:9090")
+serverAddr = "localhost:9090"
+# Bearer token for authentication (uses APIkey if not set)
+token = "8EdOp4FC5Khu8SraD6LKQXtG85G0xQYeahsUyCkoxDE="
+# read write timeout (seconds, default: 30)
+readWriteTimeout = 5
+# unit: bytes (default: 100MB) - for plugin uploads
+maxMsgSize = 104857600
+# max reconnection attempts, 0 means unlimited
+maxReconnectAttempts = 5
+
+# agent configuration
 [agent]
+# agent mode: sandbox, baremetal
+mode = "sandbox"
 # agent id
-id = "your_agent_id_here"
+id = "31t3aZMDg"
 # agent name
-name = "your_agent_name_here"
-# agent API key
-apiKey = "your_api_key_here"
+name = "agent-001"
 # heartbeat interval in seconds
 interval = 60
-# labels for the agent
-labels = { "env" = "production", "region" = "us-west" }
+# maximum concurrent jobs
+maxConcurrentJobs = 5
+# job timeout in seconds
+jobTimeout = 3600
+# workspace directory
+workspaceDir = "/var/lib/arcade/workspace"
+# temporary directory
+tempDir = "/var/lib/arcade/temp"
+# log level: DEBUG INFO WARNING ERROR FATAL
+logLevel = "INFO"
+# denied commands
+deniedCommands = ["rm", "shutdown", "reboot"]
+# proxy URL
+proxyUrl = "http://proxy.example.com"
+# cache directory
+cacheDir = "/tmp/cache"
+# description
+description = "This is a default agent configuration"
 
+# labels for the agent
+[agent.labels]
+env = "production"
+team = "backend"
+region = "us-west-1"
+
+# resource limits
+[agent.resourceLimits]
+cpu = "2"
+memory = "4G"
+
+# environment variables
+[agent.envVars]
+ENV_VAR_1 = "value1"
+ENV_VAR_2 = "value2"
+
+# cleanup policy
+[agent.cleanupPolicy]
+max_size_gb = 10
+max_age_days = 30
+
+# sandbox configuration
+[agent.sandbox]
+# sandbox mode: containerd, kubernetes
+mode = "containerd"
+
+# containerd configuration
+[agent.sandbox.containerd]
+# containerd network mode: bridge, host, none
+network = "bridge"
+# containerd unix socket
+unixSocket = "/run/containerd/containerd.sock"
+# containerd image
+image = "arcade-agent:latest"
+# containerd resources
+[agent.sandbox.containerd.resources]
+cpu = "1"
+memory = "1G"
+
+# kubernetes configuration
+[agent.sandbox.containerd.kubernetes]
+# kubernetes namespace
+namespace = "default"
+# kubernetes pod name
+podName = "arcade-agent"
+# kubernetes pod image
+image = "arcade-agent:latest"
+# kubernetes pod resources
+[agent.sandbox.containerd.kubernetes.resources]
+cpu = "1"
+memory = "1G"
+
+# metrics configuration
 [metrics]
 # enable metrics server, false or true
 enable = true
 # metrics server host
 host = "0.0.0.0"
 # metrics server port
-port = 8082
+port = 8084
 # metrics server request path, default: "/metrics"
 path = "/metrics"
 
+# pprof configuration
 [pprof]
 # enable pprof server, false or true
 enable = true
 # pprof server host
 host = "0.0.0.0"
 # pprof server port
-port = 8083
+port = 8085
 # pprof server request path prefix, default: "/debug/pprof"
 path = "/debug/pprof"
 
+# log configuration
 [log]
 # support stdout, file, kafka
 output = "stdout"
@@ -46,13 +131,12 @@ rotateNum = 3
 # unit: MB
 rotateSize = 256
 
+# http configuration
 [http]
 # http server host
 host = "0.0.0.0"
 # http server port
 port = 8081
-# unit: second
-heartbeat = 60
 # access log, false or true
 accessLog = true
 # use file assets, false or true
@@ -73,15 +157,3 @@ shutdownTimeout = 10
 # default: 104857600 (100MB) - for plugin uploads
 # unit: bytes
 bodyLimit = 104857600
-
-[grpc]
-# server address (host:port format, e.g., "localhost:9090")
-serverAddr = "localhost:9090"
-# Bearer token for authentication (uses APIkey if not set)
-token = "your_token_here"
-# read write timeout (seconds, default: 30)
-readWriteTimeout = 5
-# unit: bytes (default: 100MB) - for plugin uploads
-maxMsgSize = 104857600
-# max reconnection attempts, 0 means unlimited
-maxReconnectAttempts = 5

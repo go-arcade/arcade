@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -92,8 +93,8 @@ func (s *Server) Start() error {
 
 	go func() {
 		log.Infow("Metrics server started", "address", addr)
-		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Errorw("Metrics server failed", "error", err)
+		if err := s.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			panic(err)
 		}
 	}()
 

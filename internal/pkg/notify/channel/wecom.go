@@ -90,12 +90,12 @@ func (c *WeComChannel) sendRequest(ctx context.Context, payload map[string]inter
 
 	resp, err := req.Post(c.webhookURL)
 	if err != nil {
-		log.Error("wecom send request failed: %v", err)
+		log.Errorw("wecom send request failed", "error", err)
 		return fmt.Errorf("failed to send request: %w", err)
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		log.Error("wecom request failed with status %d: %s", resp.StatusCode(), resp.String())
+		log.Errorw("wecom request failed", "statusCode", resp.StatusCode(), "response", resp.String())
 		return fmt.Errorf("wecom request failed with status %d", resp.StatusCode())
 	}
 

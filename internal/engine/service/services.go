@@ -38,14 +38,14 @@ func NewServices(
 ) *Services {
 	// 基础服务
 	userService := NewUserService(ctx, cache, repos.User)
-	agentService := NewAgentService(repos.Agent, nil)
+	generalSettingsService := NewGeneralSettingsService(ctx, repos.GeneralSettings)
+	agentService := NewAgentService(repos.Agent, generalSettingsService)
 	identityService := NewIdentityService(repos.Identity, repos.User)
 	roleService := NewRoleService(repos.Role)
 	teamService := NewTeamService(ctx, repos.Team)
 	storageService := NewStorageService(ctx, repos.Storage)
 	uploadService := NewUploadService(ctx, repos.Storage)
 	secretService := NewSecretService(ctx, repos.Secret)
-	generalSettingsService := NewGeneralSettingsService(ctx, repos.GeneralSettings)
 	userExtensionService := NewUserExtensionService(repos.UserExtension)
 	permissionService := NewPermissionService(ctx, db, cache, repos.Permission, repos.Role, repos.User)
 

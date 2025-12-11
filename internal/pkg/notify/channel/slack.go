@@ -99,12 +99,12 @@ func (c *SlackChannel) sendRequest(ctx context.Context, payload map[string]inter
 
 	resp, err := req.Post(c.webhookURL)
 	if err != nil {
-		log.Error("slack send request failed: %v", err)
+		log.Errorw("slack send request failed", "error", err)
 		return fmt.Errorf("failed to send request: %w", err)
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		log.Error("slack request failed with status %d: %s", resp.StatusCode(), resp.String())
+		log.Errorw("slack request failed", "statusCode", resp.StatusCode(), "response", resp.String())
 		return fmt.Errorf("slack request failed with status %d", resp.StatusCode())
 	}
 

@@ -103,7 +103,7 @@ func (c *COSStorage) Upload(ctx *ctx.Context, objectName string, file *multipart
 		}
 		_, err = c.Client.Object.Put(context.Background(), fullPath, src, opt)
 		if err == nil {
-			log.Debug("COS upload completed: %s - 100.00%% (%d bytes)", fullPath, fileSize)
+			log.Debugw("COS upload completed", "fullPath", fullPath, "fileSize", fileSize)
 		}
 		return fullPath, err
 	}
@@ -207,7 +207,7 @@ func (c *COSStorage) Upload(ctx *ctx.Context, objectName string, file *multipart
 		opt,
 	)
 	if err == nil {
-		log.Debug("COS upload completed: %s - 100.00%% (%d bytes)", fullPath, fileSize)
+		log.Debugw("COS upload completed", "fullPath", fullPath, "fileSize", fileSize)
 		_ = os.Remove(checkpointPath) // 成功则删除断点文件
 	}
 	return fullPath, err

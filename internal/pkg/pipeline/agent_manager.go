@@ -533,19 +533,16 @@ func (am *AgentManager) UpdateAgentStatusFromHeartbeat(req *agentv1.HeartbeatReq
 	defer am.statusCacheMu.Unlock()
 
 	status := &AgentStatus{
-		AgentID:           req.AgentId,
-		Status:            am.convertAgentStatusToString(req.Status),
-		RunningJobsCount:  req.RunningJobsCount,
-		MaxConcurrentJobs: req.MaxConcurrentJobs,
-		Metrics:           req.Metrics,
-		Labels:            req.Labels,
-		LastHeartbeat:     time.Now(),
+		AgentID:          req.AgentId,
+		Status:           am.convertAgentStatusToString(req.Status),
+		RunningJobsCount: req.RunningJobsCount,
+		LastHeartbeat:    time.Now(),
 	}
 
 	am.agentStatusCache[req.AgentId] = status
 
 	if am.logger.Log != nil {
-		am.logger.Log.Debugw("updated agent status", "agent", req.AgentId, "status", status.Status, "running_jobs", req.RunningJobsCount, "max_jobs", req.MaxConcurrentJobs)
+		am.logger.Log.Debugw("updated agent status", "agent", req.AgentId, "status", status.Status, "running_jobs", req.RunningJobsCount)
 	}
 }
 

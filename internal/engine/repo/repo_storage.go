@@ -66,7 +66,7 @@ func (sr *StorageRepo) GetDefaultStorageConfig() (*model.StorageConfig, error) {
 				log.Debug("[StorageRepo] cache hit for default storage config")
 				return &storageConfig, nil
 			}
-			log.Warn("[StorageRepo] failed to unmarshal cached default storage config: %v", err)
+			log.Warnw("[StorageRepo] failed to unmarshal cached default storage config", "error", err)
 		}
 	}
 
@@ -88,7 +88,7 @@ func (sr *StorageRepo) GetDefaultStorageConfig() (*model.StorageConfig, error) {
 				cacheData,
 				storageConfigCacheTTL).Err()
 			if err != nil {
-				log.Warn("[StorageRepo] failed to cache default storage config: %v", err)
+				log.Warnw("[StorageRepo] failed to cache default storage config", "error", err)
 			} else {
 				log.Debug("[StorageRepo] cached default storage config")
 			}
@@ -109,10 +109,10 @@ func (sr *StorageRepo) GetStorageConfigByID(storageID string) (*model.StorageCon
 		if err == nil && cacheData != "" {
 			var storageConfig model.StorageConfig
 			if err := json.Unmarshal([]byte(cacheData), &storageConfig); err == nil {
-				log.Debug("[StorageRepo] cache hit for storage config: %s", storageID)
+				log.Debugw("[StorageRepo] cache hit for storage config", "storageId", storageID)
 				return &storageConfig, nil
 			}
-			log.Warn("[StorageRepo] failed to unmarshal cached storage config %s: %v", storageID, err)
+			log.Warnw("[StorageRepo] failed to unmarshal cached storage config", "storageId", storageID, "error", err)
 		}
 	}
 
@@ -134,9 +134,9 @@ func (sr *StorageRepo) GetStorageConfigByID(storageID string) (*model.StorageCon
 				cacheData,
 				storageConfigCacheTTL).Err()
 			if err != nil {
-				log.Warn("[StorageRepo] failed to cache storage config %s: %v", storageID, err)
+				log.Warnw("[StorageRepo] failed to cache storage config", "storageId", storageID, "error", err)
 			} else {
-				log.Debug("[StorageRepo] cached storage config: %s", storageID)
+				log.Debugw("[StorageRepo] cached storage config", "storageId", storageID)
 			}
 		}
 	}
@@ -250,9 +250,9 @@ func (sr *StorageRepo) clearStorageConfigCache(storageID string) {
 	cacheKey := storageConfigCacheKeyPrefix + storageID
 	err := sr.cache.Del(ctx, cacheKey).Err()
 	if err != nil {
-		log.Warn("[StorageRepo] failed to clear cache for storage config %s: %v", storageID, err)
+		log.Warnw("[StorageRepo] failed to clear cache for storage config", "storageId", storageID, "error", err)
 	} else {
-		log.Debug("[StorageRepo] cleared cache for storage config: %s", storageID)
+		log.Debugw("[StorageRepo] cleared cache for storage config", "storageId", storageID)
 	}
 }
 
@@ -264,7 +264,7 @@ func (sr *StorageRepo) clearDefaultStorageConfigCache() {
 	ctx := context.Background()
 	err := sr.cache.Del(ctx, storageDefaultConfigCacheKey).Err()
 	if err != nil {
-		log.Warn("[StorageRepo] failed to clear default storage config cache: %v", err)
+		log.Warnw("[StorageRepo] failed to clear default storage config cache", "error", err)
 	} else {
 		log.Debug("[StorageRepo] cleared default storage config cache")
 	}

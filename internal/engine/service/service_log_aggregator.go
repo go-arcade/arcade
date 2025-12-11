@@ -102,7 +102,7 @@ func (la *LogAggregator) PushLog(entry *LogEntry) error {
 func (la *LogAggregator) PushBatch(entries []*LogEntry) error {
 	for _, entry := range entries {
 		if err := la.PushLog(entry); err != nil {
-			log.Error("failed to push log: %v", err)
+			log.Errorw("failed to push log", "taskId", entry.TaskID, "error", err)
 		}
 	}
 	return nil
@@ -125,7 +125,7 @@ func (la *LogAggregator) flushStream(stream *LogStream) error {
 
 		// 写入 MongoDB
 		if err := la.writeToMongo(logs); err != nil {
-			log.Error("failed to write logs to mongodb: %v", err)
+			log.Errorw("failed to write logs to mongodb", "logCount", len(logs), "error", err)
 		}
 	}()
 
@@ -298,7 +298,7 @@ func (la *LogAggregator) broadcastToSubscribers(taskID string, entry *LogEntry) 
 			// 发送成功
 		default:
 			// channel满了，跳过（避免阻塞）
-			log.Warn("subscriber channel full for task %s, skipping log entry", taskID)
+			log.Warnw("subscriber channel full for task, skipping log entry", "taskId", taskID)
 		}
 	}
 }

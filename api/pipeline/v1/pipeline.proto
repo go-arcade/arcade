@@ -6,9 +6,6 @@ option go_package = "github.com/go-arcade/arcade/api/pipeline/v1;pipelinev1";
 
 // PipelineService - Pipeline management interface
 service PipelineService {
-  // Ping service health check
-  rpc Ping(PingRequest) returns (PingResponse) {}
-    
   // Create pipeline
   rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {}
 
@@ -23,17 +20,6 @@ service PipelineService {
 
   // Stop pipeline
   rpc StopPipeline(StopPipelineRequest) returns (StopPipelineResponse) {}
-}
-
-// Ping request
-message PingRequest {
-  string message = 1;
-}
-
-// Ping response
-message PingResponse {
-  string message = 1;
-  int64 timestamp = 2;
 }
 
 // Pipeline status enum

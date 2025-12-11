@@ -517,7 +517,11 @@ func (m *Manager) HealthCheck() map[string]bool {
 
 		// Send heartbeat
 		ctx := context.Background()
-		_, err := pluginClient.client.Ping(ctx, &pluginv1.PingRequest{Message: "ping"})
+		_, err := pluginClient.client.HealthCheck(ctx, &pluginv1.HealthCheckRequest{
+			PluginId:  name,
+			Message:   "ping",
+			Timestamp: time.Now().Unix(),
+		})
 		if err != nil {
 			pluginClient.errorCount++
 			health[name] = false

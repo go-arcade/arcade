@@ -72,7 +72,7 @@ func (ur *UserRepo) FetchUserInfo(userId string) (*model.UserInfo, error) {
 		userInfoStr, err := ur.cache.Get(ctx, key).Result()
 		if err == nil && userInfoStr != "" {
 			if err := sonic.UnmarshalString(userInfoStr, u); err != nil {
-				log.Error("failed to unmarshal user info from Redis: %v", err)
+				log.Errorw("failed to unmarshal user info from Redis", "userId", userId, "error", err)
 			} else {
 				return u, nil
 			}
@@ -91,10 +91,10 @@ func (ur *UserRepo) FetchUserInfo(userId string) (*model.UserInfo, error) {
 	if ur.cache != nil {
 		userInfoJson, err := sonic.MarshalString(u)
 		if err != nil {
-			log.Error("failed to marshal user info: %v", err)
+			log.Errorw("failed to marshal user info", "userId", userId, "error", err)
 		} else {
 			if err := ur.cache.Set(ctx, key, userInfoJson, time.Hour).Err(); err != nil {
-				log.Error("failed to cache user info: %v", err)
+				log.Errorw("failed to cache user info", "userId", userId, "error", err)
 			}
 		}
 	}
@@ -299,7 +299,7 @@ func (ur *UserRepo) UpdateAvatar(userId, avatarUrl string) error {
 
 	// log if no rows were affected (user not found)
 	if result.RowsAffected == 0 {
-		log.Warn("no rows updated for user avatar, userId: %s", userId)
+		log.Warnw("no rows updated for user avatar", "userId", userId)
 	}
 
 	return nil

@@ -9,7 +9,6 @@ import (
 type Http struct {
 	Host            string
 	Port            int
-	Heartbeat       int64
 	AccessLog       bool
 	UseFileAssets   bool
 	ReadTimeout     int
@@ -39,9 +38,6 @@ func (h *Http) SetDefaults() {
 	}
 	if h.Port == 0 {
 		h.Port = 8080
-	}
-	if h.Heartbeat == 0 {
-		h.Heartbeat = 60
 	}
 	if h.ReadTimeout == 0 {
 		h.ReadTimeout = 60
