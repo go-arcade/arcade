@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-
 var (
 	Version   = ""
 	GitBranch = ""
@@ -36,10 +35,6 @@ type Info struct {
 	GoVersion string `json:"goVersion"`
 	Compiler  string `json:"compiler"`
 	Platform  string `json:"platform"`
-}
-
-func (v *Info) string() string {
-	return v.GitCommit
 }
 
 func GetVersion() *Info {

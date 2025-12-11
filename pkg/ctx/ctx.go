@@ -1,10 +1,11 @@
 package ctx
 
 import (
+	"context"
+
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/google/wire"
 	"go.uber.org/zap"
-	"golang.org/x/net/context"
 )
 
 // ProviderSet 提供上下文相关的依赖

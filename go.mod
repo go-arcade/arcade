@@ -11,7 +11,6 @@ require (
 	github.com/expr-lang/expr v1.17.6
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/go-resty/resty/v2 v2.16.5
-	github.com/gofiber/adaptor/v2 v2.2.1
 	github.com/gofiber/fiber/v2 v2.52.9
 	github.com/gofiber/websocket/v2 v2.2.1
 	github.com/golang-jwt/jwt/v5 v5.3.0
@@ -34,7 +33,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.38.0
 	go.uber.org/zap v1.18.1
 	golang.org/x/crypto v0.45.0
-	golang.org/x/net v0.47.0
+	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/oauth2 v0.32.0
 	google.golang.org/api v0.253.0
 	google.golang.org/grpc v1.76.0
