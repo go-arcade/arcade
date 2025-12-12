@@ -6,19 +6,27 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/hibiken/asynq"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// mockRedisClient 模拟 Redis 客户端
-type mockRedisClient struct {
-	redis.UniversalClient
+// mockMongoDB 模拟 MongoDB 客户端
+type mockMongoDB struct{}
+
+func (m *mockMongoDB) GetCollection(name string) *mongo.Collection {
+	// 返回 nil，测试中不需要真实的 MongoDB 连接
+	return nil
 }
 
-// 创建测试用的配置
-func createTestConfig() *Config {
+// 确保 mockMongoDB 实现了 database.MongoDB 接口
+var _ database.MongoDB = (*mockMongoDB)(nil)
+
+// 创建测试用的配置（用于 Server）
+func createTestConfigForServer() *Config {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: "localhost:6379",
 		DB:   1, // 使用不同的 DB 避免冲突
@@ -26,7 +34,7 @@ func createTestConfig() *Config {
 
 	return &Config{
 		RedisClient:      redisClient,
-		MongoDB:          nil, // 测试时不使用 MongoDB
+		MongoDB:          &mockMongoDB{}, // Server 需要 MongoDB
 		Concurrency:      2,
 		StrictPriority:   false,
 		Queues:           map[string]int{Critical: 6, Default: 3, Low: 1},
@@ -39,7 +47,80 @@ func createTestConfig() *Config {
 	}
 }
 
-func TestNewTaskQueue(t *testing.T) {
+// 创建测试用的配置（用于 Client）
+func createTestConfig() *Config {
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: "localhost:6379",
+		DB:   1, // 使用不同的 DB 避免冲突
+	})
+
+	return &Config{
+		RedisClient:      redisClient,
+		MongoDB:          nil, // Client 不需要 MongoDB
+		Concurrency:      2,
+		StrictPriority:   false,
+		Queues:           map[string]int{Critical: 6, Default: 3, Low: 1},
+		DefaultQueue:     Default,
+		LogLevel:         "info",
+		ShutdownTimeout:  10,
+		GroupGracePeriod: 5,
+		GroupMaxDelay:    20,
+		GroupMaxSize:     100,
+	}
+}
+
+func TestNewQueueServer(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     *Config
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name:    "nil config",
+			cfg:     nil,
+			wantErr: true,
+			errMsg:  "queue config is required",
+		},
+		{
+			name:    "nil redis client",
+			cfg:     &Config{RedisClient: nil},
+			wantErr: true,
+			errMsg:  "redis client is required",
+		},
+		{
+			name:    "nil mongodb",
+			cfg:     &Config{RedisClient: redis.NewClient(&redis.Options{Addr: "localhost:6379"})},
+			wantErr: true,
+			errMsg:  "mongodb is required for queue server",
+		},
+		{
+			name:    "valid config",
+			cfg:     createTestConfig(),
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server, err := NewQueueServer(tt.cfg)
+			if tt.wantErr {
+				assert.Error(t, err)
+				if tt.errMsg != "" {
+					assert.Contains(t, err.Error(), tt.errMsg)
+				}
+				assert.Nil(t, server)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, server)
+				assert.NotNil(t, server.client)
+				assert.NotNil(t, server.config)
+			}
+		})
+	}
+}
+
+func TestNewQueueClient(t *testing.T) {
 	tests := []struct {
 		name    string
 		cfg     *Config
@@ -67,29 +148,30 @@ func TestNewTaskQueue(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			queue, err := NewTaskQueue(tt.cfg)
+			client, err := NewQueueClient(tt.cfg)
 			if tt.wantErr {
 				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errMsg)
-				assert.Nil(t, queue)
+				if tt.errMsg != "" {
+					assert.Contains(t, err.Error(), tt.errMsg)
+				}
+				assert.Nil(t, client)
 			} else {
 				assert.NoError(t, err)
-				assert.NotNil(t, queue)
-				assert.NotNil(t, queue.client)
-				assert.NotNil(t, queue.server)
-				assert.NotNil(t, queue.mux)
-				assert.NotNil(t, queue.config)
-				assert.NotNil(t, queue.handlers)
+				assert.NotNil(t, client)
+				assert.NotNil(t, client.server)
+				assert.NotNil(t, client.mux)
+				assert.NotNil(t, client.config)
+				assert.NotNil(t, client.handlers)
 			}
 		})
 	}
 }
 
-func TestTaskQueue_Enqueue(t *testing.T) {
-	cfg := createTestConfig()
-	queue, err := NewTaskQueue(cfg)
+func TestQueueServer_Enqueue(t *testing.T) {
+	cfg := createTestConfigForServer()
+	server, err := NewQueueServer(cfg)
 	require.NoError(t, err)
-	defer queue.Shutdown()
+	defer server.Shutdown()
 
 	tests := []struct {
 		name      string
@@ -137,7 +219,7 @@ func TestTaskQueue_Enqueue(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := queue.Enqueue(tt.payload, tt.queueName)
+			err := server.Enqueue(tt.payload, tt.queueName)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -147,11 +229,11 @@ func TestTaskQueue_Enqueue(t *testing.T) {
 	}
 }
 
-func TestTaskQueue_EnqueueWithPriority(t *testing.T) {
-	cfg := createTestConfig()
-	queue, err := NewTaskQueue(cfg)
+func TestQueueServer_EnqueueWithPriority(t *testing.T) {
+	cfg := createTestConfigForServer()
+	server, err := NewQueueServer(cfg)
 	require.NoError(t, err)
-	defer queue.Shutdown()
+	defer server.Shutdown()
 
 	tests := []struct {
 		name           string
@@ -212,7 +294,7 @@ func TestTaskQueue_EnqueueWithPriority(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := queue.EnqueueWithPriority(tt.payload, tt.priorityWeight)
+			err := server.EnqueueWithPriority(tt.payload, tt.priorityWeight)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -222,11 +304,11 @@ func TestTaskQueue_EnqueueWithPriority(t *testing.T) {
 	}
 }
 
-func TestTaskQueue_EnqueueDelayed(t *testing.T) {
-	cfg := createTestConfig()
-	queue, err := NewTaskQueue(cfg)
+func TestQueueServer_EnqueueDelayed(t *testing.T) {
+	cfg := createTestConfigForServer()
+	server, err := NewQueueServer(cfg)
 	require.NoError(t, err)
-	defer queue.Shutdown()
+	defer server.Shutdown()
 
 	payload := &TaskPayload{
 		TaskID:     "test-delayed-task",
@@ -237,89 +319,99 @@ func TestTaskQueue_EnqueueDelayed(t *testing.T) {
 	}
 
 	delay := 5 * time.Second
-	err = queue.EnqueueDelayed(payload, delay, "")
+	err = server.EnqueueDelayed(payload, delay, "")
 	assert.NoError(t, err)
 }
 
-func TestTaskQueue_RegisterHandler(t *testing.T) {
+func TestQueueClient_RegisterHandler(t *testing.T) {
 	cfg := createTestConfig()
-	queue, err := NewTaskQueue(cfg)
+	client, err := NewQueueClient(cfg)
 	require.NoError(t, err)
-	defer queue.Shutdown()
+	defer client.Shutdown()
 
 	handler := TaskHandlerFunc(func(ctx context.Context, payload *TaskPayload) error {
 		assert.Equal(t, "test-task", payload.TaskID)
 		return nil
 	})
 
-	queue.RegisterHandler("test-type", handler)
-	assert.NotNil(t, queue.handlers["test-type"])
+	client.RegisterHandler("test-type", handler)
+	assert.NotNil(t, client.handlers["test-type"])
 }
 
-func TestTaskQueue_RegisterHandlerFunc(t *testing.T) {
+func TestQueueClient_RegisterHandlerFunc(t *testing.T) {
 	cfg := createTestConfig()
-	queue, err := NewTaskQueue(cfg)
+	client, err := NewQueueClient(cfg)
 	require.NoError(t, err)
-	defer queue.Shutdown()
+	defer client.Shutdown()
 
 	handlerFunc := func(ctx context.Context, payload *TaskPayload) error {
 		return nil
 	}
 
-	queue.RegisterHandlerFunc("test-func-type", handlerFunc)
-	assert.NotNil(t, queue.handlers["test-func-type"])
+	client.RegisterHandlerFunc("test-func-type", handlerFunc)
+	assert.NotNil(t, client.handlers["test-func-type"])
 }
 
-func TestTaskQueue_GetClient(t *testing.T) {
-	cfg := createTestConfig()
-	queue, err := NewTaskQueue(cfg)
+func TestQueueServer_GetClient(t *testing.T) {
+	cfg := createTestConfigForServer()
+	server, err := NewQueueServer(cfg)
 	require.NoError(t, err)
-	defer queue.Shutdown()
+	defer server.Shutdown()
 
-	client := queue.GetClient()
+	client := server.GetClient()
 	assert.NotNil(t, client)
 	assert.IsType(t, &asynq.Client{}, client)
 }
 
-func TestTaskQueue_GetServer(t *testing.T) {
-	cfg := createTestConfig()
-	queue, err := NewTaskQueue(cfg)
+func TestQueueServer_GetRedisConnOpt(t *testing.T) {
+	cfg := createTestConfigForServer()
+	server, err := NewQueueServer(cfg)
 	require.NoError(t, err)
-	defer queue.Shutdown()
+	defer server.Shutdown()
 
-	server := queue.GetServer()
+	redisOpt := server.GetRedisConnOpt()
+	assert.NotNil(t, redisOpt)
+}
+
+func TestQueueClient_GetServer(t *testing.T) {
+	cfg := createTestConfig()
+	client, err := NewQueueClient(cfg)
+	require.NoError(t, err)
+	defer client.Shutdown()
+
+	server := client.GetServer()
 	assert.NotNil(t, server)
 	assert.IsType(t, &asynq.Server{}, server)
 }
 
-func TestTaskQueue_GetRedisConnOpt(t *testing.T) {
+func TestQueueClient_GetRedisConnOpt(t *testing.T) {
 	cfg := createTestConfig()
-	queue, err := NewTaskQueue(cfg)
+	client, err := NewQueueClient(cfg)
 	require.NoError(t, err)
-	defer queue.Shutdown()
+	defer client.Shutdown()
 
-	redisOpt := queue.GetRedisConnOpt()
+	redisOpt := client.GetRedisConnOpt()
 	assert.NotNil(t, redisOpt)
 }
 
 func TestNewTaskManager(t *testing.T) {
-	cfg := createTestConfig()
-	queue, err := NewTaskQueue(cfg)
+	cfg := createTestConfigForServer()
+	server, err := NewQueueServer(cfg)
 	require.NoError(t, err)
-	defer queue.Shutdown()
+	defer server.Shutdown()
 
-	manager := NewTaskManager(queue)
+	manager := NewTaskManager(server)
 	assert.NotNil(t, manager)
-	assert.Equal(t, queue, manager.queue)
+	assert.Equal(t, server, manager.server)
 }
 
 func TestTaskManager_EnqueueTask(t *testing.T) {
-	cfg := createTestConfig()
-	queue, err := NewTaskQueue(cfg)
+	cfg := createTestConfigForServer()
+	server, err := NewQueueServer(cfg)
 	require.NoError(t, err)
-	defer queue.Shutdown()
+	defer server.Shutdown()
 
-	manager := NewTaskManager(queue)
+	manager := NewTaskManager(server)
 
 	tests := []struct {
 		name           string
@@ -378,12 +470,12 @@ func TestTaskManager_EnqueueTask(t *testing.T) {
 }
 
 func TestTaskManager_EnqueueDelayedTask(t *testing.T) {
-	cfg := createTestConfig()
-	queue, err := NewTaskQueue(cfg)
+	cfg := createTestConfigForServer()
+	server, err := NewQueueServer(cfg)
 	require.NoError(t, err)
-	defer queue.Shutdown()
+	defer server.Shutdown()
 
-	manager := NewTaskManager(queue)
+	manager := NewTaskManager(server)
 
 	payload := &TaskPayload{
 		TaskID:     "test-delayed-manager-task",

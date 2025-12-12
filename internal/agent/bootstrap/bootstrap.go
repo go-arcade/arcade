@@ -26,7 +26,7 @@ import (
 type Agent struct {
 	HttpApp       *fiber.App
 	GrpcClient    *grpcclient.ClientWrapper
-	TaskQueue     *queue.TaskQueue
+	QueueClient   *queue.Client // 队列客户端（任务执行者）
 	MetricsServer *metrics.Server
 	PprofServer   *pprof.Server
 	Logger        *log.Logger
@@ -40,7 +40,7 @@ type InitAppFunc func(configPath string) (*Agent, func(), error)
 func NewAgent(
 	rt *router.Router,
 	grpcClient *grpcclient.ClientWrapper,
-	taskQueue *queue.TaskQueue,
+	queueClient *queue.Client,
 	metricsServer *metrics.Server,
 	pprofServer *pprof.Server,
 	logger *log.Logger,
@@ -54,18 +54,18 @@ func NewAgent(
 	// Create agent service
 	agentService := service.NewAgentService(agentConf, grpcClient)
 
-	// 注册任务处理器
-	if taskQueue != nil {
-		taskQueue.RegisterHandler(queue.TaskTypePipeline, pipelineHandler)
-		taskQueue.RegisterHandler(queue.TaskTypeJob, jobHandler)
-		taskQueue.RegisterHandler(queue.TaskTypeStep, stepHandler)
+	// 注册任务处理器（Agent 作为 worker 执行任务）
+	if queueClient != nil {
+		queueClient.RegisterHandler(queue.TaskTypePipeline, pipelineHandler)
+		queueClient.RegisterHandler(queue.TaskTypeJob, jobHandler)
+		queueClient.RegisterHandler(queue.TaskTypeStep, stepHandler)
 	}
 
 	cleanup := func() {
-		// stop task queue
-		if taskQueue != nil {
-			log.Info("Shutting down task queue...")
-			taskQueue.Shutdown()
+		// stop queue client
+		if queueClient != nil {
+			log.Info("Shutting down queue client...")
+			queueClient.Shutdown()
 		}
 
 		// stop pprof server
@@ -102,7 +102,7 @@ func NewAgent(
 	app := &Agent{
 		HttpApp:       httpApp,
 		GrpcClient:    grpcClient,
-		TaskQueue:     taskQueue,
+		QueueClient:   queueClient,
 		MetricsServer: metricsServer,
 		PprofServer:   pprofServer,
 		Logger:        logger,
@@ -137,6 +137,11 @@ func Run(app *Agent, cleanup func()) {
 	cron.Start()
 	log.Info("Cron scheduler started.")
 
+	// Register Task Queue metrics if queue client is available
+	if app.MetricsServer != nil && app.QueueClient != nil {
+		metrics.RegisterAsynqMetricsFromQueueClient(app.MetricsServer.GetRegistry(), app.QueueClient)
+	}
+
 	// start metrics server
 	if app.MetricsServer != nil {
 		if err := app.MetricsServer.Start(); err != nil {
@@ -170,14 +175,14 @@ func Run(app *Agent, cleanup func()) {
 		go app.waitForRegistrationAndStartHeartbeat()
 	}
 
-	// start task queue server
-	if app.TaskQueue != nil {
+	// start queue client (Agent 作为 worker 执行任务)
+	if app.QueueClient != nil {
 		go func() {
-			if err := app.TaskQueue.Start(); err != nil {
-				log.Errorw("Task queue server failed", "error", err)
+			if err := app.QueueClient.Start(); err != nil {
+				log.Errorw("Queue client failed", "error", err)
 			}
 		}()
-		log.Info("Task queue server started")
+		log.Info("Queue client started")
 	}
 
 	// set signal listener (graceful shutdown)

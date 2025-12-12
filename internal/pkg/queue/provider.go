@@ -11,16 +11,13 @@ import (
 // ProviderSet 提供 queue 相关的依赖（主程序使用）
 var ProviderSet = wire.NewSet(
 	ProvideConfig,
-	ProvideTaskQueue,
-	ProvidePipelineTaskHandler,
-	ProvideJobTaskHandler,
-	ProvideStepTaskHandler,
+	ProvideQueueServer,
 )
 
 // AgentProviderSet 提供 queue 相关的依赖（Agent 使用）
 var AgentProviderSet = wire.NewSet(
 	ProvideAgentConfig,
-	ProvideTaskQueue,
+	ProvideQueueClient,
 	ProvidePipelineTaskHandler,
 	ProvideJobTaskHandler,
 	ProvideStepTaskHandler,
@@ -96,8 +93,14 @@ func ProvideAgentConfig(agentConf *agentconfig.AgentConfig, redisClient *redis.C
 	}
 }
 
-func ProvideTaskQueue(taskQueueConfig *Config) (*TaskQueue, error) {
-	return NewTaskQueue(taskQueueConfig)
+// ProvideQueueServer 提供队列服务器（主程序使用）
+func ProvideQueueServer(taskQueueConfig *Config) (*Server, error) {
+	return NewQueueServer(taskQueueConfig)
+}
+
+// ProvideQueueClient 提供队列客户端（Agent 使用）
+func ProvideQueueClient(taskQueueConfig *Config) (*Client, error) {
+	return NewQueueClient(taskQueueConfig)
 }
 
 // ProvidePipelineTaskHandler 提供流水线任务处理器

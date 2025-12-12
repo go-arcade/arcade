@@ -2,10 +2,10 @@ package queue
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
+	"github.com/bytedance/sonic"
 	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/hibiken/asynq"
@@ -199,7 +199,7 @@ func (q *TaskQueue) RegisterHandler(taskType string, handler TaskHandler) {
 	q.mux.HandleFunc(taskType, func(ctx context.Context, t *asynq.Task) error {
 		// 解析任务负载
 		var taskPayload TaskPayload
-		if err := json.Unmarshal(t.Payload(), &taskPayload); err != nil {
+		if err := sonic.Unmarshal(t.Payload(), &taskPayload); err != nil {
 			return fmt.Errorf("unmarshal task payload: %w", err)
 		}
 
@@ -241,7 +241,7 @@ func (q *TaskQueue) RegisterHandlerFunc(taskType string, handlerFunc TaskHandler
 
 // Enqueue 入队任务
 func (q *TaskQueue) Enqueue(payload *TaskPayload, queueName string) error {
-	data, err := json.Marshal(payload)
+	data, err := sonic.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("marshal task payload: %w", err)
 	}
@@ -326,7 +326,7 @@ func (q *TaskQueue) EnqueueWithPriority(payload *TaskPayload, priorityWeight int
 
 // EnqueueDelayed 延迟入队任务
 func (q *TaskQueue) EnqueueDelayed(payload *TaskPayload, delay time.Duration, queueName string) error {
-	data, err := json.Marshal(payload)
+	data, err := sonic.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("marshal task payload: %w", err)
 	}

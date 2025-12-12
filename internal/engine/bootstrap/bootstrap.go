@@ -28,7 +28,7 @@ type App struct {
 	HttpApp       *fiber.App
 	PluginMgr     *plugin.Manager
 	GrpcServer    *grpc.ServerWrapper
-	TaskQueue     *queue.TaskQueue
+	QueueServer   *queue.Server // 队列服务器（任务发布者）
 	MetricsServer *metrics.Server
 	PprofServer   *pprof.Server
 	Logger        *log.Logger
@@ -44,7 +44,7 @@ func NewApp(
 	logger *log.Logger,
 	pluginMgr *plugin.Manager,
 	grpcServer *grpc.ServerWrapper,
-	taskQueue *queue.TaskQueue,
+	queueServer *queue.Server,
 	metricsServer *metrics.Server,
 	pprofServer *pprof.Server,
 	storage storage.StorageProvider,
@@ -52,28 +52,21 @@ func NewApp(
 	mongoDB database.MongoDB,
 	appConf *config.AppConfig,
 	db database.IDatabase,
-	pipelineHandler *queue.PipelineTaskHandler,
-	jobHandler *queue.JobTaskHandler,
-	stepHandler *queue.StepTaskHandler,
 ) (*App, func(), error) {
 	httpApp := rt.Router()
 
 	// init plugin task manager
 	service.InitDaemonTaskManager(mongoDB)
 
-	// 注册任务处理器
-	if taskQueue != nil {
-		taskQueue.RegisterHandler(queue.TaskTypePipeline, pipelineHandler)
-		taskQueue.RegisterHandler(queue.TaskTypeJob, jobHandler)
-		taskQueue.RegisterHandler(queue.TaskTypeStep, stepHandler)
-	}
+	// 主程序作为 queue server，只发布任务，不执行任务
+	// 不需要注册任务处理器
 
 	// 设置 AppConf
 	app := &App{
 		HttpApp:       httpApp,
 		PluginMgr:     pluginMgr,
 		GrpcServer:    grpcServer,
-		TaskQueue:     taskQueue,
+		QueueServer:   queueServer,
 		MetricsServer: metricsServer,
 		PprofServer:   pprofServer,
 		Logger:        logger,
@@ -82,10 +75,9 @@ func NewApp(
 	}
 
 	cleanup := func() {
-		// stop task queue
-		if taskQueue != nil {
-			log.Info("Shutting down task queue...")
-			taskQueue.Shutdown()
+		// stop queue server
+		if queueServer != nil {
+			queueServer.Shutdown()
 		}
 
 		// stop pprof server
@@ -149,6 +141,11 @@ func Run(app *App, cleanup func()) {
 	// optional: start heartbeat check
 	app.PluginMgr.StartHeartbeat(30 * time.Second)
 
+	// Register Task Queue metrics if queue server is available
+	if app.MetricsServer != nil && app.QueueServer != nil {
+		metrics.RegisterAsynqMetricsFromQueueServer(app.MetricsServer.GetRegistry(), app.QueueServer)
+	}
+
 	// start metrics server
 	if app.MetricsServer != nil {
 		if err := app.MetricsServer.Start(); err != nil {
@@ -172,15 +169,8 @@ func Run(app *App, cleanup func()) {
 		}()
 	}
 
-	// start task queue server
-	if app.TaskQueue != nil {
-		go func() {
-			if err := app.TaskQueue.Start(); err != nil {
-				logger.Errorw("Task queue server failed: %v", err)
-			}
-		}()
-		log.Info("Task queue server started")
-	}
+	// 主程序作为 queue server，只发布任务，不执行任务
+	// 不需要启动 task queue server
 
 	// set signal listener (graceful shutdown)
 	quit := make(chan os.Signal, 1)

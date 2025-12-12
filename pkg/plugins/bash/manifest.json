@@ -47,7 +47,7 @@
   "actionsSchema": {
     "script": {
       "description": "执行 bash 脚本字符串",
-      "params": {
+      "args": {
         "type": "object",
         "properties": {
           "script": {
@@ -108,7 +108,7 @@
     },
     "command": {
       "description": "执行单条 bash 命令",
-      "params": {
+      "args": {
         "type": "object",
         "properties": {
           "command": {
@@ -146,7 +146,7 @@
     },
     "file": {
       "description": "执行 bash 脚本文件",
-      "params": {
+      "args": {
         "type": "object",
         "properties": {
           "file_path": {
@@ -206,7 +206,7 @@
         "work_dir": "/tmp"
       },
       "action": "command",
-      "params": {
+      "args": {
         "command": "ls -la"
       }
     },
@@ -215,7 +215,7 @@
       "description": "执行一个简单的 Hello World 脚本",
       "config": {},
       "action": "script",
-      "params": {
+      "args": {
         "script": "#!/bin/bash\\necho 'Hello, World!'\\ndate\\nuname -a"
       }
     },
@@ -226,7 +226,7 @@
         "work_dir": "/app"
       },
       "action": "file",
-      "params": {
+      "args": {
         "file_path": "./scripts/deploy.sh",
         "args": ["production", "v1.0.0"],
         "env": {
@@ -242,7 +242,7 @@
         "timeout": 600
       },
       "action": "script",
-      "params": {
+      "args": {
         "script": "#!/bin/bash\\nset -e\\ngo mod download\\ngo build -o bin/app ./cmd/main.go\\necho 'Build completed'",
         "env": {
           "CGO_ENABLED": "0",

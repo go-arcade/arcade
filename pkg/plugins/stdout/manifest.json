@@ -27,7 +27,7 @@
   "actionsSchema": {
     "send": {
       "description": "发送消息到标准输出",
-      "params": {
+      "args": {
         "type": "object",
         "properties": {
           "message": {
@@ -53,7 +53,7 @@
     },
     "template": {
       "description": "使用模板发送消息到标准输出",
-      "params": {
+      "args": {
         "type": "object",
         "properties": {
           "template": {
@@ -84,6 +84,35 @@
           }
         }
       }
+    },
+    "send.batch": {
+      "description": "批量发送消息到标准输出",
+      "args": {
+        "type": "object",
+        "properties": {
+          "messages": {
+            "type": "array",
+            "description": "要发送的消息列表",
+            "items": {
+              "type": ["string", "object"]
+            }
+          }
+        },
+        "required": ["messages"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "执行状态"
+          },
+          "count": {
+            "type": "string",
+            "description": "发送的消息数量"
+          }
+        }
+      }
     }
   },
   "icon": "https://cdn.example.com/icons/stdout.png",
@@ -102,7 +131,7 @@
         "prefix": "INFO"
       },
       "action": "send",
-      "params": {
+      "args": {
         "message": "Hello, World!"
       }
     },
@@ -114,7 +143,7 @@
         "json": true
       },
       "action": "send",
-      "params": {
+      "args": {
         "message": {
           "level": "info",
           "project": "myapp",
@@ -130,7 +159,7 @@
         "prefix": "DEPLOY"
       },
       "action": "template",
-      "params": {
+      "args": {
         "template": "Deploy {{.ProjectName}} to {{.Environment}} completed in {{.Duration}}",
         "data": {
           "ProjectName": "myapp",
@@ -139,6 +168,13 @@
         }
       }
     }
-  ]
+  ],
+  "security": {
+    "capabilities": ["file_write"],
+    "recommendations": [
+      "此插件仅用于输出日志，不涉及敏感操作",
+      "在生产环境中注意日志输出量，避免日志过多影响性能"
+    ]
+  }
 }
 

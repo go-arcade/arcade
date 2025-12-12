@@ -36,7 +36,7 @@ func initApp(configPath string) (*bootstrap.App, func(), error) {
 		cache.ProviderSet,
 		// 任务队列层（依赖 config, cache）
 		queue.ProviderSet,
-		// 指标层（依赖 config, log）
+		// 指标层（依赖 config, queue）
 		metrics.ProviderSet,
 		// pprof层（依赖 config, log）
 		pprof.ProviderSet,

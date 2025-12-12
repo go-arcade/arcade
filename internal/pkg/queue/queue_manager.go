@@ -10,13 +10,13 @@ import (
 
 // TaskManager 任务管理器
 type TaskManager struct {
-	queue *TaskQueue
+	server *Server
 }
 
 // NewTaskManager 创建任务管理器
-func NewTaskManager(queue *TaskQueue) *TaskManager {
+func NewTaskManager(server *Server) *TaskManager {
 	return &TaskManager{
-		queue: queue,
+		server: server,
 	}
 }
 
@@ -26,6 +26,9 @@ func (m *TaskManager) EnqueueTask(ctx context.Context, payload *TaskPayload, pri
 	if payload == nil {
 		return fmt.Errorf("task payload is required")
 	}
+	if m.server == nil {
+		return fmt.Errorf("queue server is required")
+	}
 	// 设置默认值
 	if payload.Timeout == 0 {
 		payload.Timeout = 3600 // 默认1小时
@@ -34,23 +37,32 @@ func (m *TaskManager) EnqueueTask(ctx context.Context, payload *TaskPayload, pri
 		payload.RetryCount = 3
 	}
 	payload.Priority = priorityWeight
-	return m.queue.EnqueueWithPriority(payload, priorityWeight)
+	return m.server.EnqueueWithPriority(payload, priorityWeight)
 }
 
 // EnqueueDelayedTask 入队延迟任务
 func (m *TaskManager) EnqueueDelayedTask(ctx context.Context, payload *TaskPayload, delay time.Duration) error {
-	return m.queue.EnqueueDelayed(payload, delay, "")
+	if m.server == nil {
+		return fmt.Errorf("queue server is required")
+	}
+	return m.server.EnqueueDelayed(payload, delay, "")
 }
 
 // CancelTask 取消任务
 func (m *TaskManager) CancelTask(ctx context.Context, taskID string) error {
-	inspector := asynq.NewInspector(m.queue.GetRedisConnOpt())
+	if m.server == nil {
+		return fmt.Errorf("queue server is required")
+	}
+	inspector := asynq.NewInspector(m.server.GetRedisConnOpt())
 	return inspector.DeleteTask("", taskID)
 }
 
 // GetTaskStatus 获取任务状态
 func (m *TaskManager) GetTaskStatus(ctx context.Context, taskID string) (string, error) {
-	inspector := asynq.NewInspector(m.queue.GetRedisConnOpt())
+	if m.server == nil {
+		return "unknown", fmt.Errorf("queue server is required")
+	}
+	inspector := asynq.NewInspector(m.server.GetRedisConnOpt())
 	taskInfo, err := inspector.GetTaskInfo("", taskID)
 	if err != nil {
 		return "unknown", err
@@ -60,7 +72,10 @@ func (m *TaskManager) GetTaskStatus(ctx context.Context, taskID string) (string,
 
 // GetQueueStats 获取队列统计信息
 func (m *TaskManager) GetQueueStats(ctx context.Context) (map[string]interface{}, error) {
-	inspector := asynq.NewInspector(m.queue.GetRedisConnOpt())
+	if m.server == nil {
+		return nil, fmt.Errorf("queue server is required")
+	}
+	inspector := asynq.NewInspector(m.server.GetRedisConnOpt())
 	queues, err := inspector.Queues()
 	if err != nil {
 		return nil, err

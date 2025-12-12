@@ -63,6 +63,8 @@ max_age_days = 30
 
 # sandbox configuration
 [agent.sandbox]
+# enable sandbox, false or true
+enable = true
 # sandbox mode: containerd, kubernetes
 mode = "containerd"
 

@@ -26,7 +26,7 @@ func initAgent(configPath string) (*bootstrap.Agent, func(), error) {
 		cache.ProviderSet,
 		// 任务队列层（依赖 config, cache）
 		queue.AgentProviderSet,
-		// 指标层（依赖 config, log）
+		// 指标层（依赖 config）
 		metrics.ProviderSet,
 		// pprof层（依赖 config, log）
 		pprof.ProviderSet,
