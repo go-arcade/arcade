@@ -7,7 +7,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func AccessLogFormat() fiber.Handler {
+// AccessLogFormat 创建访问日志中间件（动态检查配置）
+func AccessLogFormat(httpConfig *Http) fiber.Handler {
 	// exclude api path
 	// tips: 这里的路径是不需要记录日志的路径，url为端口后的全部路径
 	excludedPaths := map[string]bool{
@@ -15,6 +16,10 @@ func AccessLogFormat() fiber.Handler {
 	}
 
 	return func(c *fiber.Ctx) error {
+		if httpConfig != nil && !httpConfig.AccessLog {
+			return c.Next()
+		}
+
 		// 检查是否需要跳过日志
 		if excludedPaths[c.Path()] {
 			return c.Next()

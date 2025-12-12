@@ -11,6 +11,8 @@ import (
 	"github.com/go-arcade/arcade/internal/agent/config"
 	"github.com/go-arcade/arcade/internal/agent/router"
 	"github.com/go-arcade/arcade/internal/pkg/grpc"
+	"github.com/go-arcade/arcade/internal/pkg/queue"
+	"github.com/go-arcade/arcade/pkg/cache"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/metrics"
 	"github.com/go-arcade/arcade/pkg/pprof"
@@ -27,6 +29,16 @@ func initAgent(configPath string) (*bootstrap.Agent, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
+	redis := config.ProvideRedisConfig(agentConfig)
+	client, err := cache.ProvideRedis(redis)
+	if err != nil {
+		return nil, nil, err
+	}
+	queueConfig := queue.ProvideAgentConfig(agentConfig, client)
+	taskQueue, err := queue.ProvideTaskQueue(queueConfig)
+	if err != nil {
+		return nil, nil, err
+	}
 	metricsConfig := config.ProvideMetricsConfig(agentConfig)
 	server := metrics.NewMetricsServer(metricsConfig)
 	pprofConfig := config.ProvidePprofConfig(agentConfig)
@@ -36,7 +48,10 @@ func initAgent(configPath string) (*bootstrap.Agent, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	agent, cleanup, err := bootstrap.NewAgent(routerRouter, clientWrapper, server, pprofServer, logger, agentConfig)
+	pipelineTaskHandler := queue.ProvidePipelineTaskHandler()
+	jobTaskHandler := queue.ProvideJobTaskHandler()
+	stepTaskHandler := queue.ProvideStepTaskHandler()
+	agent, cleanup, err := bootstrap.NewAgent(routerRouter, clientWrapper, taskQueue, server, pprofServer, logger, agentConfig, pipelineTaskHandler, jobTaskHandler, stepTaskHandler)
 	if err != nil {
 		return nil, nil, err
 	}

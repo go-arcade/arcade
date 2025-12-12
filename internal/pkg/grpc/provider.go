@@ -5,7 +5,7 @@ import (
 	"github.com/google/wire"
 )
 
-// ProviderSet 提供 gRPC 服务层相关的依赖
+// ProviderSet 提供 gRPC 服务层相关的依赖（主程序使用）
 var ProviderSet = wire.NewSet(
 	ProvideGrpcServer,
 	ProvideGrpcClient,

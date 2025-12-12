@@ -1,7 +1,7 @@
 package router
 
 import (
-	httpx "github.com/go-arcade/arcade/pkg/http"
+	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/google/wire"
 )
 
@@ -12,7 +12,7 @@ var ProviderSet = wire.NewSet(
 
 // ProvideRouter 提供路由实例
 func ProvideRouter(
-	httpConf *httpx.Http,
+	httpConf *http.Http,
 ) *Router {
 	return NewRouter(
 		httpConf,

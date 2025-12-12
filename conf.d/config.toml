@@ -48,8 +48,6 @@ readWriteTimeout = 5
 [http]
 host = "0.0.0.0"
 port = 8080
-# unit: second
-heartbeat = 60
 # access log, false or true
 accessLog = true
 # use file assets, false or true
@@ -70,10 +68,6 @@ shutdownTimeout = 10
 # default: 104857600 (100MB) - for plugin uploads
 # unit: bytes
 bodyLimit = 104857600
-
-[http.tls]
-certFile = ''
-keyFile = ''
 
 [http.auth]
 # jwt access token expire time
@@ -145,13 +139,29 @@ readTimeout = 10
 # unit: second
 writeTimeout = 10
 
-[job]
-# Job worker pool configuration
-# If maxWorkers is 0, it will be calculated based on CPU cores (CPU * 2)
-# If queueSize is 0, it will be calculated as maxWorkers * 10
-maxWorkers = 0
-queueSize = 0
-# unit: second
-workerTimeout = 1800
+[taskQueue]
+# Task queue configuration
+# Concurrency: number of workers processing tasks concurrently
+concurrency = 10
+# StrictPriority: if true, process tasks in strict priority order
+strictPriority = true
+# LogLevel: log level (debug, info, warn, error)
+logLevel = "info"
+# ShutdownTimeout: shutdown timeout in seconds
+shutdownTimeout = 10
+# GroupGracePeriod: group grace period in seconds
+groupGracePeriod = 5
+# GroupMaxDelay: group max delay in seconds
+groupMaxDelay = 20
+# GroupMaxSize: group max size
+groupMaxSize = 100
 
-[plugin]
+# Priority weight: queue name -> priority weight (higher weight = higher priority)
+# Critical queue has highest priority, low queue has lowest priority
+[taskQueue.priority]
+# Critical queue has highest priority, default queue has medium priority, low queue has lowest priority
+critical = 6
+# Default queue has medium priority
+default = 3
+# Low queue has lowest priority
+low = 1

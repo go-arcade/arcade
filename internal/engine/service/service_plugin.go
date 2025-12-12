@@ -329,75 +329,72 @@ func (s *PluginService) InstallPluginAsync(req *InstallPluginRequest) (*InstallP
 		return nil, fmt.Errorf("unsupported plugin source: %s", req.Source)
 	}
 
-	// 创建任务
-	taskManager := GetTaskManager()
-	task := taskManager.CreateTask(manifest.Name, manifest.Version)
+	// 创建守护任务
+	daemonTaskManager := GetDaemonTaskManager()
+	daemonTask := daemonTaskManager.CreateDaemonTask(manifest.Name, manifest.Version)
 
-	log.Infow("[PluginService] created async install task", "taskId", task.TaskID, "name", manifest.Name, "version", manifest.Version)
+	log.Infow("[PluginService] created async install daemon task", "taskId", daemonTask.TaskID, "name", manifest.Name, "version", manifest.Version)
 
 	// 启动后台安装
-	go s.executeInstallTask(task.TaskID, req)
+	go s.executeInstallDaemonTask(daemonTask.TaskID, req)
 
 	return &InstallPluginAsyncResponse{
-		TaskID:  task.TaskID,
+		TaskID:  daemonTask.TaskID,
 		Message: fmt.Sprintf("插件 %s v%s 正在后台安装，请使用任务ID查询进度", manifest.Name, manifest.Version),
 	}, nil
 }
 
-// executeInstallTask 执行安装任务
-func (s *PluginService) executeInstallTask(taskID string, req *InstallPluginRequest) {
-	taskManager := GetTaskManager()
+// executeInstallDaemonTask 执行安装守护任务
+func (s *PluginService) executeInstallDaemonTask(daemonTaskID string, req *InstallPluginRequest) {
+	daemonTaskManager := GetDaemonTaskManager()
 
 	// 更新为运行中
-	taskManager.UpdateTask(taskID, TaskStatusRunning, 10, "开始解析插件包")
+	daemonTaskManager.UpdateDaemonTask(daemonTaskID, DaemonTaskStatusRunning, 10, "开始解析插件包")
 
 	// 执行安装
 	resp, err := s.InstallPlugin(req)
 	if err != nil {
-		log.Errorw("[PluginService] async install task failed", "taskId", taskID, "error", err)
-		taskManager.UpdateTaskError(taskID, err)
+		log.Errorw("[PluginService] async install daemon task failed", "taskId", daemonTaskID, "error", err)
+		daemonTaskManager.UpdateDaemonTaskError(daemonTaskID, err)
 		return
 	}
 
 	if !resp.Success {
-		log.Errorw("[PluginService] async install task failed", "taskId", taskID, "message", resp.Message)
-		taskManager.UpdateTaskError(taskID, fmt.Errorf("%s", resp.Message))
+		log.Errorw("[PluginService] async install daemon task failed", "taskId", daemonTaskID, "message", resp.Message)
+		daemonTaskManager.UpdateDaemonTaskError(daemonTaskID, fmt.Errorf("%s", resp.Message))
 		return
 	}
 
 	// 更新为成功
-	taskManager.UpdateTaskSuccess(taskID, resp.PluginID)
-	log.Infow("[PluginService] async install task completed successfully", "taskId", taskID)
+	daemonTaskManager.UpdateDaemonTaskSuccess(daemonTaskID, resp.PluginID)
+	log.Infow("[PluginService] async install daemon task completed successfully", "taskId", daemonTaskID)
 }
 
 // GetInstallTask 获取安装任务状态
-func (s *PluginService) GetInstallTask(taskID string) *PluginInstallTask {
-	taskManager := GetTaskManager()
-	return taskManager.GetTask(taskID)
+func (s *PluginService) GetInstallTask(taskID string) *PluginInstallDaemonTask {
+	daemonTaskManager := GetDaemonTaskManager()
+	return daemonTaskManager.GetDaemonTask(taskID)
 }
 
 // ListInstallTasks 列出所有安装任务
-func (s *PluginService) ListInstallTasks() []*PluginInstallTask {
-	taskManager := GetTaskManager()
-	return taskManager.ListTasks()
+func (s *PluginService) ListInstallTasks() []*PluginInstallDaemonTask {
+	daemonTaskManager := GetDaemonTaskManager()
+	return daemonTaskManager.ListDaemonTasks()
 }
 
 // UninstallPlugin 卸载插件
 func (s *PluginService) UninstallPlugin(pluginID string) error {
 	log.Infow("[PluginService] uninstalling plugin", "pluginId", pluginID)
 
-	// 1. 从数据库获取插件信息
 	pluginModel, err := s.pluginRepo.GetPluginByID(pluginID)
 	if err != nil {
 		return fmt.Errorf("plugin not found: %v", err)
 	}
 
-	// 2. 从内存中卸载
 	if err := s.pluginManager.UnregisterPlugin(pluginID); err != nil {
 		log.Warnw("[PluginService] failed to unregister plugin from memory", "pluginId", pluginID, "error", err)
 	}
 
-	// 3. 删除S3文件（使用插件名）
 	s3Path := s.getS3Path(pluginModel.Name, pluginModel.Version)
 	if err := s.storageProvider.Delete(s.ctx, s3Path); err != nil {
 		log.Warnw("[PluginService] failed to delete S3 file", "s3Path", s3Path, "error", err)
@@ -405,12 +402,10 @@ func (s *PluginService) UninstallPlugin(pluginID string) error {
 		log.Infow("[PluginService] deleted S3 file", "s3Path", s3Path)
 	}
 
-	// 5. 删除数据库记录
 	if err := s.pluginRepo.DeletePlugin(pluginID); err != nil {
 		return fmt.Errorf("failed to delete plugin from database: %v", err)
 	}
 
-	// 6. 删除相关配置
 	if err := s.pluginRepo.DeletePluginConfigs(pluginID); err != nil {
 		log.Warnw("[PluginService] failed to delete plugin configs", "pluginId", pluginID, "error", err)
 	}
@@ -423,18 +418,18 @@ func (s *PluginService) UninstallPlugin(pluginID string) error {
 func (s *PluginService) EnablePlugin(pluginID string) error {
 	log.Infow("[PluginService] enabling plugin", "pluginId", pluginID)
 
-	// 1. 更新数据库状态
+	// 更新数据库状态
 	if err := s.pluginRepo.UpdatePluginStatus(pluginID, int(PluginStatusEnabled)); err != nil {
 		return fmt.Errorf("failed to update plugin status: %v", err)
 	}
 
-	// 2. 获取插件信息
+	// 获取插件信息
 	pluginModel, err := s.pluginRepo.GetPluginByID(pluginID)
 	if err != nil {
 		return fmt.Errorf("failed to get plugin info: %v", err)
 	}
 
-	// 3. 热加载到内存（使用插件名）
+	// 热加载到内存（使用插件名）
 	localPath := s.getLocalPath(pluginModel.Name, pluginModel.Version)
 	// 从配置表获取配置（如果存在）
 	var configData datatypes.JSON
@@ -476,8 +471,6 @@ func (s *PluginService) ListPlugins(pluginType string, isEnabled int) ([]model.P
 func (s *PluginService) GetPluginDetailByID(pluginID string) (*model.Plugin, error) {
 	return s.pluginRepo.GetPluginByID(pluginID)
 }
-
-// ======================== 私有方法 ========================
 
 // installFromLocal 从本地上传的zip包安装
 func (s *PluginService) installFromLocal(req *InstallPluginRequest) ([]byte, *PluginManifest, error) {

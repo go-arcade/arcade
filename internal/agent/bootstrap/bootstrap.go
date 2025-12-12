@@ -13,6 +13,7 @@ import (
 	"github.com/go-arcade/arcade/internal/agent/router"
 	"github.com/go-arcade/arcade/internal/agent/service"
 	grpcclient "github.com/go-arcade/arcade/internal/pkg/grpc"
+	"github.com/go-arcade/arcade/internal/pkg/queue"
 	"github.com/go-arcade/arcade/pkg/cron"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/metrics"
@@ -25,10 +26,11 @@ import (
 type Agent struct {
 	HttpApp       *fiber.App
 	GrpcClient    *grpcclient.ClientWrapper
+	TaskQueue     *queue.TaskQueue
 	MetricsServer *metrics.Server
 	PprofServer   *pprof.Server
 	Logger        *log.Logger
-	AgentConf     config.AgentConfig
+	AgentConf     *config.AgentConfig
 	AgentService  *service.AgentService
 	ConfigFile    string // Configuration file path
 }
@@ -38,17 +40,34 @@ type InitAppFunc func(configPath string) (*Agent, func(), error)
 func NewAgent(
 	rt *router.Router,
 	grpcClient *grpcclient.ClientWrapper,
+	taskQueue *queue.TaskQueue,
 	metricsServer *metrics.Server,
 	pprofServer *pprof.Server,
 	logger *log.Logger,
-	agentConf config.AgentConfig,
+	agentConf *config.AgentConfig,
+	pipelineHandler *queue.PipelineTaskHandler,
+	jobHandler *queue.JobTaskHandler,
+	stepHandler *queue.StepTaskHandler,
 ) (*Agent, func(), error) {
 	httpApp := rt.Router()
 
 	// Create agent service
 	agentService := service.NewAgentService(agentConf, grpcClient)
 
+	// 注册任务处理器
+	if taskQueue != nil {
+		taskQueue.RegisterHandler(queue.TaskTypePipeline, pipelineHandler)
+		taskQueue.RegisterHandler(queue.TaskTypeJob, jobHandler)
+		taskQueue.RegisterHandler(queue.TaskTypeStep, stepHandler)
+	}
+
 	cleanup := func() {
+		// stop task queue
+		if taskQueue != nil {
+			log.Info("Shutting down task queue...")
+			taskQueue.Shutdown()
+		}
+
 		// stop pprof server
 		if pprofServer != nil {
 			log.Info("Shutting down pprof server...")
@@ -83,6 +102,7 @@ func NewAgent(
 	app := &Agent{
 		HttpApp:       httpApp,
 		GrpcClient:    grpcClient,
+		TaskQueue:     taskQueue,
 		MetricsServer: metricsServer,
 		PprofServer:   pprofServer,
 		Logger:        logger,
@@ -93,11 +113,11 @@ func NewAgent(
 }
 
 // Bootstrap init app, return App instance and cleanup function
-func Bootstrap(configFile string, initApp InitAppFunc) (*Agent, func(), config.AgentConfig, error) {
+func Bootstrap(configFile string, initApp InitAppFunc) (*Agent, func(), *config.AgentConfig, error) {
 	// Wire build App (所有依赖都由 wire 自动注入)
 	app, cleanup, err := initApp(configFile)
 	if err != nil {
-		return nil, nil, config.AgentConfig{}, err
+		return nil, nil, nil, err
 	}
 
 	// 获取配置（从 app 中获取）
@@ -148,6 +168,16 @@ func Run(app *Agent, cleanup func()) {
 		// 等待 gRPC 客户端连接成功后，检查是否已注册，如果已注册则启动心跳
 		// 心跳将在注册成功后启动，而不是在启动时检查配置
 		go app.waitForRegistrationAndStartHeartbeat()
+	}
+
+	// start task queue server
+	if app.TaskQueue != nil {
+		go func() {
+			if err := app.TaskQueue.Start(); err != nil {
+				log.Errorw("Task queue server failed", "error", err)
+			}
+		}()
+		log.Info("Task queue server started")
 	}
 
 	// set signal listener (graceful shutdown)

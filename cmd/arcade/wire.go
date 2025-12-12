@@ -10,6 +10,7 @@ import (
 	"github.com/go-arcade/arcade/internal/engine/router"
 	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/internal/pkg/grpc"
+	"github.com/go-arcade/arcade/internal/pkg/queue"
 	"github.com/go-arcade/arcade/internal/pkg/storage"
 	"github.com/go-arcade/arcade/pkg/cache"
 	"github.com/go-arcade/arcade/pkg/ctx"
@@ -33,6 +34,8 @@ func initApp(configPath string) (*bootstrap.App, func(), error) {
 		database.ProviderSet,
 		// 缓存层（依赖 config）
 		cache.ProviderSet,
+		// 任务队列层（依赖 config, cache）
+		queue.ProviderSet,
 		// 指标层（依赖 config, log）
 		metrics.ProviderSet,
 		// pprof层（依赖 config, log）

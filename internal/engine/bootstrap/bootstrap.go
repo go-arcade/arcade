@@ -12,6 +12,7 @@ import (
 	"github.com/go-arcade/arcade/internal/engine/router"
 	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/internal/pkg/grpc"
+	"github.com/go-arcade/arcade/internal/pkg/queue"
 	"github.com/go-arcade/arcade/internal/pkg/storage"
 	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/database"
@@ -27,11 +28,12 @@ type App struct {
 	HttpApp       *fiber.App
 	PluginMgr     *plugin.Manager
 	GrpcServer    *grpc.ServerWrapper
+	TaskQueue     *queue.TaskQueue
 	MetricsServer *metrics.Server
 	PprofServer   *pprof.Server
 	Logger        *log.Logger
 	Storage       storage.StorageProvider
-	AppConf       config.AppConfig
+	AppConf       *config.AppConfig
 }
 
 // InitAppFunc init app function type
@@ -42,25 +44,36 @@ func NewApp(
 	logger *log.Logger,
 	pluginMgr *plugin.Manager,
 	grpcServer *grpc.ServerWrapper,
+	taskQueue *queue.TaskQueue,
 	metricsServer *metrics.Server,
 	pprofServer *pprof.Server,
 	storage storage.StorageProvider,
 	appCtx *ctx.Context,
 	mongoDB database.MongoDB,
-	appConf config.AppConfig,
+	appConf *config.AppConfig,
 	db database.IDatabase,
+	pipelineHandler *queue.PipelineTaskHandler,
+	jobHandler *queue.JobTaskHandler,
+	stepHandler *queue.StepTaskHandler,
 ) (*App, func(), error) {
 	httpApp := rt.Router()
 
 	// init plugin task manager
-	service.InitTaskManager(mongoDB)
-	log.Info("Plugin task manager initialized with MongoDB persistence")
+	service.InitDaemonTaskManager(mongoDB)
+
+	// 注册任务处理器
+	if taskQueue != nil {
+		taskQueue.RegisterHandler(queue.TaskTypePipeline, pipelineHandler)
+		taskQueue.RegisterHandler(queue.TaskTypeJob, jobHandler)
+		taskQueue.RegisterHandler(queue.TaskTypeStep, stepHandler)
+	}
 
 	// 设置 AppConf
 	app := &App{
 		HttpApp:       httpApp,
 		PluginMgr:     pluginMgr,
 		GrpcServer:    grpcServer,
+		TaskQueue:     taskQueue,
 		MetricsServer: metricsServer,
 		PprofServer:   pprofServer,
 		Logger:        logger,
@@ -69,6 +82,12 @@ func NewApp(
 	}
 
 	cleanup := func() {
+		// stop task queue
+		if taskQueue != nil {
+			log.Info("Shutting down task queue...")
+			taskQueue.Shutdown()
+		}
+
 		// stop pprof server
 		if pprofServer != nil {
 			log.Info("Shutting down pprof server...")
@@ -108,11 +127,11 @@ func NewApp(
 }
 
 // Bootstrap init app, return App instance and cleanup function
-func Bootstrap(configFile string, initApp InitAppFunc) (*App, func(), config.AppConfig, error) {
+func Bootstrap(configFile string, initApp InitAppFunc) (*App, func(), *config.AppConfig, error) {
 	// Wire build App (所有依赖都由 wire 自动注入)
 	app, cleanup, err := initApp(configFile)
 	if err != nil {
-		return nil, nil, config.AppConfig{}, err
+		return nil, nil, nil, err
 	}
 
 	// 获取配置（从 app 中获取）
@@ -151,6 +170,16 @@ func Run(app *App, cleanup func()) {
 				logger.Errorw("gRPC server failed: %v", err)
 			}
 		}()
+	}
+
+	// start task queue server
+	if app.TaskQueue != nil {
+		go func() {
+			if err := app.TaskQueue.Start(); err != nil {
+				logger.Errorw("Task queue server failed: %v", err)
+			}
+		}()
+		log.Info("Task queue server started")
 	}
 
 	// set signal listener (graceful shutdown)

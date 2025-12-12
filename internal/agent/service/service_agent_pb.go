@@ -13,12 +13,12 @@ import (
 // AgentService implements agent.v1.AgentServiceServer
 type AgentService struct {
 	agentv1.UnimplementedAgentServiceServer
-	agentConf  config.AgentConfig
+	agentConf  *config.AgentConfig
 	grpcClient *grpcclient.ClientWrapper
 }
 
 // NewAgentService creates a new AgentService instance
-func NewAgentService(agentConf config.AgentConfig, grpcClient *grpcclient.ClientWrapper) *AgentService {
+func NewAgentService(agentConf *config.AgentConfig, grpcClient *grpcclient.ClientWrapper) *AgentService {
 	return &AgentService{
 		agentConf:  agentConf,
 		grpcClient: grpcClient,

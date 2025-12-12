@@ -66,9 +66,7 @@ func (rt *Router) Router() *fiber.App {
 		BodyLimit:    bodyLimit, // 请求体大小限制，用于插件上传等
 	})
 
-	if rt.Http.AccessLog {
-		app.Use(httpx.AccessLogFormat())
-	}
+	app.Use(httpx.AccessLogFormat(rt.Http))
 
 	// 中间件
 	app.Use(

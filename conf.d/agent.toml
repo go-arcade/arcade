@@ -157,3 +157,53 @@ shutdownTimeout = 10
 # default: 104857600 (100MB) - for plugin uploads
 # unit: bytes
 bodyLimit = 104857600
+
+[redis]
+# support single, cluster, sentinel
+mode = "single"
+# address, ip:port or ip1:port,ip2:port for cluster and sentinel(SentinelAddrs)
+address = "127.0.0.1:6379"
+password = ""
+db = 0
+poolSize = 50
+#useTLS = false
+#tlsMinVersion = "1.0"
+#masterName = ""
+#sentinelUsername = ""
+#sentinelPassword = ""
+# dialTimeout
+# unit: second
+dialTimeout = 10
+# read timeout
+# unit: second
+readTimeout = 10
+# write timeout
+# unit: second
+writeTimeout = 10
+
+[taskQueue]
+# Task queue configuration
+# Concurrency: number of workers processing tasks concurrently
+concurrency = 10
+# StrictPriority: if true, process tasks in strict priority order
+strictPriority = true
+# LogLevel: log level (debug, info, warn, error)
+logLevel = "info"
+# ShutdownTimeout: shutdown timeout in seconds
+shutdownTimeout = 10
+# GroupGracePeriod: group grace period in seconds
+groupGracePeriod = 5
+# GroupMaxDelay: group max delay in seconds
+groupMaxDelay = 20
+# GroupMaxSize: group max size
+groupMaxSize = 100
+
+# Priority weight: queue name -> priority weight (higher weight = higher priority)
+# Critical queue has highest priority, low queue has lowest priority
+[taskQueue.priority]
+# Critical queue has highest priority, default queue has medium priority, low queue has lowest priority
+critical = 6
+# Default queue has medium priority
+default = 3
+# Low queue has lowest priority
+low = 1

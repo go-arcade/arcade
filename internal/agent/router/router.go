@@ -3,7 +3,7 @@ package router
 import (
 	"time"
 
-	httpx "github.com/go-arcade/arcade/pkg/http"
+	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/go-arcade/arcade/pkg/version"
 	"github.com/gofiber/fiber/v2"
@@ -12,11 +12,11 @@ import (
 )
 
 type Router struct {
-	Http *httpx.Http
+	Http *http.Http
 }
 
 func NewRouter(
-	httpConf *httpx.Http,
+	httpConf *http.Http,
 ) *Router {
 	return &Router{
 		Http: httpConf,
@@ -39,9 +39,7 @@ func (rt *Router) Router() *fiber.App {
 		BodyLimit:    bodyLimit, // 请求体大小限制，用于插件上传等
 	})
 
-	if rt.Http.AccessLog {
-		app.Use(httpx.AccessLogFormat())
-	}
+	app.Use(http.AccessLogFormat(rt.Http))
 
 	// 中间件
 	app.Use(
@@ -63,7 +61,7 @@ func (rt *Router) Router() *fiber.App {
 	// 找不到路径时的处理 - 必须在所有路由注册之后
 	app.Use(func(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).
-			JSON(httpx.WithRepErr(c, fiber.StatusNotFound, "request path not found", c.Path()))
+			JSON(http.WithRepErr(c, fiber.StatusNotFound, "request path not found", c.Path()))
 	})
 
 	return app
