@@ -14,7 +14,6 @@ import (
 	"github.com/go-arcade/arcade/internal/pkg/grpc"
 	"github.com/go-arcade/arcade/internal/pkg/queue"
 	"github.com/go-arcade/arcade/internal/pkg/storage"
-	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/metrics"
@@ -48,7 +47,6 @@ func NewApp(
 	metricsServer *metrics.Server,
 	pprofServer *pprof.Server,
 	storage storage.StorageProvider,
-	appCtx *ctx.Context,
 	mongoDB database.MongoDB,
 	appConf *config.AppConfig,
 	db database.IDatabase,

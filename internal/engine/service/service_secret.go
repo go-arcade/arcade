@@ -12,25 +12,22 @@ import (
 
 	"github.com/go-arcade/arcade/internal/engine/model"
 	secretrepo "github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/id"
 	"github.com/go-arcade/arcade/pkg/log"
 	"gorm.io/gorm"
 )
 
 type SecretService struct {
-	ctx        *ctx.Context
 	secretRepo secretrepo.ISecretRepository
 	encryptKey []byte // 32 bytes for AES-256
 }
 
-func NewSecretService(ctx *ctx.Context, secretRepo secretrepo.ISecretRepository) *SecretService {
+func NewSecretService(secretRepo secretrepo.ISecretRepository) *SecretService {
 	// TODO: load encryption key from config or environment variable
 	// For now, using a default key (should be replaced in production)
 	encryptKey := []byte("arcade-secret-encryption-key-32b") // 32 bytes for AES-256
 
 	return &SecretService{
-		ctx:        ctx,
 		secretRepo: secretRepo,
 		encryptKey: encryptKey,
 	}

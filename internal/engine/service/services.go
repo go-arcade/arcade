@@ -4,7 +4,6 @@ import (
 	"github.com/go-arcade/arcade/internal/engine/repo"
 	storagepkg "github.com/go-arcade/arcade/internal/pkg/storage"
 	"github.com/go-arcade/arcade/pkg/cache"
-	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/database"
 	pluginpkg "github.com/go-arcade/arcade/pkg/plugin"
 	"golang.org/x/crypto/bcrypt"
@@ -29,7 +28,6 @@ type Services struct {
 
 // NewServices 初始化所有 service
 func NewServices(
-	ctx *ctx.Context,
 	db database.IDatabase,
 	cache cache.ICache,
 	repos *repo.Repositories,
@@ -37,24 +35,24 @@ func NewServices(
 	storageProvider storagepkg.StorageProvider,
 ) *Services {
 	// 基础服务
-	userService := NewUserService(ctx, cache, repos.User)
-	generalSettingsService := NewGeneralSettingsService(ctx, repos.GeneralSettings)
+	userService := NewUserService(cache, repos.User)
+	generalSettingsService := NewGeneralSettingsService(repos.GeneralSettings)
 	agentService := NewAgentService(repos.Agent, generalSettingsService)
 	identityService := NewIdentityService(repos.Identity, repos.User)
 	roleService := NewRoleService(repos.Role)
-	teamService := NewTeamService(ctx, repos.Team)
-	storageService := NewStorageService(ctx, repos.Storage)
-	uploadService := NewUploadService(ctx, repos.Storage)
-	secretService := NewSecretService(ctx, repos.Secret)
+	teamService := NewTeamService(repos.Team)
+	storageService := NewStorageService(repos.Storage)
+	uploadService := NewUploadService(repos.Storage)
+	secretService := NewSecretService(repos.Secret)
 	userExtensionService := NewUserExtensionService(repos.UserExtension)
-	permissionService := NewPermissionService(ctx, db, cache, repos.Permission, repos.Role, repos.User)
+	permissionService := NewPermissionService(db, cache, repos.Permission, repos.Role, repos.User)
 
 	// UserPermissionsService 依赖 PermissionService
-	userPermissionsService := NewUserPermissionsService(ctx, db, permissionService, repos.RouterPermission)
+	userPermissionsService := NewUserPermissionsService(db, permissionService, repos.RouterPermission)
 	// PluginService 需要 pluginManager 和 storageProvider
 	var pluginService *PluginService
 	if pluginManager != nil && storageProvider != nil {
-		pluginService = NewPluginService(ctx, repos.Plugin, pluginManager, storageProvider)
+		pluginService = NewPluginService(repos.Plugin, pluginManager, storageProvider)
 	}
 
 	return &Services{

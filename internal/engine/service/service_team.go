@@ -7,20 +7,17 @@ import (
 
 	"github.com/go-arcade/arcade/internal/engine/model"
 	teamrepo "github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/id"
 	"github.com/go-arcade/arcade/pkg/log"
 	"gorm.io/gorm"
 )
 
 type TeamService struct {
-	ctx      *ctx.Context
 	teamRepo teamrepo.ITeamRepository
 }
 
-func NewTeamService(ctx *ctx.Context, teamRepo teamrepo.ITeamRepository) *TeamService {
+func NewTeamService(teamRepo teamrepo.ITeamRepository) *TeamService {
 	return &TeamService{
-		ctx:      ctx,
 		teamRepo: teamRepo,
 	}
 }

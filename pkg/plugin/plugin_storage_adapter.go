@@ -1,14 +1,14 @@
 package plugin
 
 import (
-	"github.com/go-arcade/arcade/pkg/ctx"
+	"context"
 )
 
 // StorageProvider is the storage provider interface
 // Consistent with the interface in the pkg/storage package
 type StorageProvider interface {
 	// Download downloads an object from the storage service
-	Download(ctx *ctx.Context, objectName string) ([]byte, error)
+	Download(ctx *context.Context, objectName string) ([]byte, error)
 }
 
 // StorageAdapter is the storage adapter
@@ -17,11 +17,11 @@ type StorageAdapter struct {
 	// Storage service instance
 	storage StorageProvider
 	// Context
-	ctx *ctx.Context
+	ctx *context.Context
 }
 
 // NewStorageAdapter creates a new storage adapter
-func NewStorageAdapter(storage StorageProvider, ctx *ctx.Context) *StorageAdapter {
+func NewStorageAdapter(storage StorageProvider, ctx *context.Context) *StorageAdapter {
 	return &StorageAdapter{
 		storage: storage,
 		ctx:     ctx,

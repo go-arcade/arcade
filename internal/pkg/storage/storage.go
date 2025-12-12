@@ -9,7 +9,6 @@ import (
 
 	storagemodel "github.com/go-arcade/arcade/internal/engine/model"
 	storagerepo "github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/log"
 )
 
@@ -24,7 +23,6 @@ const (
 
 // Storage 存储配置结构
 type Storage struct {
-	Ctx       *ctx.Context
 	Provider  string
 	AccessKey string
 	SecretKey string
@@ -37,7 +35,6 @@ type Storage struct {
 
 // StorageDBProvider 从数据库加载存储配置的提供者
 type StorageDBProvider struct {
-	ctx           *ctx.Context
 	storageRepo   storagerepo.IStorageRepository
 	storageConfig *storagemodel.StorageConfig
 }
@@ -110,7 +107,7 @@ func NewStorage(s *Storage) (StorageProvider, error) {
 }
 
 // NewStorageDBProvider 创建从数据库加载存储配置的提供者
-func NewStorageDBProvider(ctx *ctx.Context, storageRepo storagerepo.IStorageRepository) (*StorageDBProvider, error) {
+func NewStorageDBProvider(storageRepo storagerepo.IStorageRepository) (*StorageDBProvider, error) {
 	// 获取默认存储配置
 	storageConfig, err := storageRepo.GetDefaultStorageConfig()
 	if err != nil {
@@ -118,7 +115,6 @@ func NewStorageDBProvider(ctx *ctx.Context, storageRepo storagerepo.IStorageRepo
 	}
 
 	return &StorageDBProvider{
-		ctx:           ctx,
 		storageRepo:   storageRepo,
 		storageConfig: storageConfig,
 	}, nil

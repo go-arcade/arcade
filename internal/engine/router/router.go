@@ -11,7 +11,6 @@ import (
 
 	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/pkg/cache"
-	"github.com/go-arcade/arcade/pkg/ctx"
 	httpx "github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/go-arcade/arcade/pkg/version"
@@ -23,7 +22,6 @@ import (
 
 type Router struct {
 	Http     *httpx.Http
-	Ctx      *ctx.Context
 	Cache    cache.ICache
 	Services *service.Services
 }
@@ -38,13 +36,11 @@ var web embed.FS
 
 func NewRouter(
 	httpConf *httpx.Http,
-	ctx *ctx.Context,
 	cache cache.ICache,
 	services *service.Services,
 ) *Router {
 	return &Router{
 		Http:     httpConf,
-		Ctx:      ctx,
 		Cache:    cache,
 		Services: services,
 	}

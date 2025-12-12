@@ -3,6 +3,7 @@ package service
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -17,7 +18,6 @@ import (
 	"github.com/go-arcade/arcade/internal/engine/model"
 	pluginrepo "github.com/go-arcade/arcade/internal/engine/repo"
 	"github.com/go-arcade/arcade/internal/pkg/storage"
-	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/id"
 	"github.com/go-arcade/arcade/pkg/log"
 	pluginpkg "github.com/go-arcade/arcade/pkg/plugin"
@@ -75,7 +75,6 @@ type PluginResources struct {
 
 // PluginService 插件管理服务
 type PluginService struct {
-	ctx             *ctx.Context
 	pluginRepo      pluginrepo.IPluginRepository
 	pluginManager   *pluginpkg.Manager
 	storageProvider storage.StorageProvider
@@ -83,7 +82,6 @@ type PluginService struct {
 
 // NewPluginService 创建插件管理服务
 func NewPluginService(
-	ctx *ctx.Context,
 	pluginRepo pluginrepo.IPluginRepository,
 	pluginManager *pluginpkg.Manager,
 	storageProvider storage.StorageProvider,
@@ -93,7 +91,6 @@ func NewPluginService(
 	}
 
 	return &PluginService{
-		ctx:             ctx,
 		pluginRepo:      pluginRepo,
 		pluginManager:   pluginManager,
 		storageProvider: storageProvider,
@@ -396,7 +393,7 @@ func (s *PluginService) UninstallPlugin(pluginID string) error {
 	}
 
 	s3Path := s.getS3Path(pluginModel.Name, pluginModel.Version)
-	if err := s.storageProvider.Delete(s.ctx, s3Path); err != nil {
+	if err := s.storageProvider.Delete(context.Background(), s3Path); err != nil {
 		log.Warnw("[PluginService] failed to delete S3 file", "s3Path", s3Path, "error", err)
 	} else {
 		log.Infow("[PluginService] deleted S3 file", "s3Path", s3Path)
@@ -665,7 +662,7 @@ func (s *PluginService) uploadToStorage(pluginName, version string, localFilePat
 	defer os.Remove(fileHeader.Filename) // 清理临时文件
 
 	// 上传到storage
-	url, err := s.storageProvider.Upload(s.ctx, s3Path, fileHeader, "application/octet-stream")
+	url, err := s.storageProvider.Upload(context.Background(), s3Path, fileHeader, "application/octet-stream")
 	if err != nil {
 		return "", fmt.Errorf("failed to upload to storage: %v", err)
 	}
@@ -793,7 +790,7 @@ func (s *PluginService) cleanup(localPath, s3Path string) {
 		}
 	}
 	if s3Path != "" && s.storageProvider != nil {
-		if err := s.storageProvider.Delete(s.ctx, s3Path); err != nil {
+		if err := s.storageProvider.Delete(context.Background(), s3Path); err != nil {
 			log.Warnw("[PluginService] failed to remove S3 file", "s3Path", s3Path, "error", err)
 		}
 	}

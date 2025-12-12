@@ -2,6 +2,7 @@ package storage
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"mime/multipart"
 	"net/url"
@@ -9,7 +10,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -35,9 +35,9 @@ func newMinio(s *Storage) (*MinioStorage, error) {
 	}, nil
 }
 
-func (m *MinioStorage) GetObject(ctx *ctx.Context, objectName string) ([]byte, error) {
+func (m *MinioStorage) GetObject(ctx context.Context, objectName string) ([]byte, error) {
 	fullPath := getFullPath(m.s.BasePath, objectName)
-	obj, err := m.Client.GetObject(ctx.ContextIns(), m.s.Bucket, fullPath, minio.GetObjectOptions{})
+	obj, err := m.Client.GetObject(ctx, m.s.Bucket, fullPath, minio.GetObjectOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func (m *MinioStorage) GetObject(ctx *ctx.Context, objectName string) ([]byte, e
 	return buf.Bytes(), nil
 }
 
-func (m *MinioStorage) PutObject(ctx *ctx.Context, objectName string, file *multipart.FileHeader, contentType string) (string, error) {
+func (m *MinioStorage) PutObject(ctx context.Context, objectName string, file *multipart.FileHeader, contentType string) (string, error) {
 	src, err := file.Open()
 	if err != nil {
 		return "", err
@@ -55,7 +55,7 @@ func (m *MinioStorage) PutObject(ctx *ctx.Context, objectName string, file *mult
 	defer src.Close()
 
 	fullPath := getFullPath(m.s.BasePath, objectName)
-	_, err = m.Client.PutObject(ctx.ContextIns(), m.s.Bucket, fullPath, src, file.Size, minio.PutObjectOptions{
+	_, err = m.Client.PutObject(ctx, m.s.Bucket, fullPath, src, file.Size, minio.PutObjectOptions{
 		ContentType: contentType,
 	})
 	if err != nil {
@@ -64,7 +64,7 @@ func (m *MinioStorage) PutObject(ctx *ctx.Context, objectName string, file *mult
 	return fullPath, nil
 }
 
-func (m *MinioStorage) Upload(ctx *ctx.Context, objectName string, file *multipart.FileHeader, contentType string) (string, error) {
+func (m *MinioStorage) Upload(ctx context.Context, objectName string, file *multipart.FileHeader, contentType string) (string, error) {
 	src, err := file.Open()
 	if err != nil {
 		return "", err
@@ -76,7 +76,7 @@ func (m *MinioStorage) Upload(ctx *ctx.Context, objectName string, file *multipa
 
 	// 小文件直接PutObject
 	if fileSize <= defaultPartSize {
-		_, err = m.Client.PutObject(ctx.ContextIns(), m.s.Bucket, fullPath, src, fileSize, minio.PutObjectOptions{
+		_, err = m.Client.PutObject(ctx, m.s.Bucket, fullPath, src, fileSize, minio.PutObjectOptions{
 			ContentType: contentType,
 		})
 		if err == nil {
@@ -137,7 +137,7 @@ func (m *MinioStorage) Upload(ctx *ctx.Context, objectName string, file *multipa
 		}
 	})
 
-	_, err = m.Client.PutObject(ctx.ContextIns(), m.s.Bucket, fullPath, remainingReader, fileSize-uploadedSize, minio.PutObjectOptions{
+	_, err = m.Client.PutObject(ctx, m.s.Bucket, fullPath, remainingReader, fileSize-uploadedSize, minio.PutObjectOptions{
 		ContentType: contentType,
 	})
 
@@ -148,9 +148,9 @@ func (m *MinioStorage) Upload(ctx *ctx.Context, objectName string, file *multipa
 	return fullPath, err
 }
 
-func (m *MinioStorage) Download(ctx *ctx.Context, objectName string) ([]byte, error) {
+func (m *MinioStorage) Download(ctx context.Context, objectName string) ([]byte, error) {
 	fullPath := getFullPath(m.s.BasePath, objectName)
-	obj, err := m.Client.GetObject(ctx.ContextIns(), m.s.Bucket, fullPath, minio.GetObjectOptions{})
+	obj, err := m.Client.GetObject(ctx, m.s.Bucket, fullPath, minio.GetObjectOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -163,16 +163,16 @@ func (m *MinioStorage) Download(ctx *ctx.Context, objectName string) ([]byte, er
 	return buf.Bytes(), nil
 }
 
-func (m *MinioStorage) Delete(ctx *ctx.Context, objectName string) error {
+func (m *MinioStorage) Delete(ctx context.Context, objectName string) error {
 	fullPath := getFullPath(m.s.BasePath, objectName)
-	return m.Client.RemoveObject(ctx.ContextIns(), m.s.Bucket, fullPath, minio.RemoveObjectOptions{})
+	return m.Client.RemoveObject(ctx, m.s.Bucket, fullPath, minio.RemoveObjectOptions{})
 }
 
-func (m *MinioStorage) GetPresignedURL(ctx *ctx.Context, objectName string, expiry time.Duration) (string, error) {
+func (m *MinioStorage) GetPresignedURL(ctx context.Context, objectName string, expiry time.Duration) (string, error) {
 	fullPath := getFullPath(m.s.BasePath, objectName)
 
 	reqParams := make(url.Values)
-	presignedURL, err := m.Client.PresignedGetObject(ctx.ContextIns(), m.s.Bucket, fullPath, expiry, reqParams)
+	presignedURL, err := m.Client.PresignedGetObject(ctx, m.s.Bucket, fullPath, expiry, reqParams)
 	if err != nil {
 		return "", err
 	}

@@ -11,7 +11,6 @@ import (
 	userrepo "github.com/go-arcade/arcade/internal/engine/repo"
 	"github.com/go-arcade/arcade/internal/engine/tool"
 	"github.com/go-arcade/arcade/pkg/cache"
-	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/jwt"
 	"github.com/go-arcade/arcade/pkg/id"
@@ -24,14 +23,12 @@ type LoginService interface {
 }
 
 type UserService struct {
-	ctx      *ctx.Context
 	cache    cache.ICache
 	userRepo userrepo.IUserRepository
 }
 
-func NewUserService(ctx *ctx.Context, cache cache.ICache, userRepo userrepo.IUserRepository) *UserService {
+func NewUserService(cache cache.ICache, userRepo userrepo.IUserRepository) *UserService {
 	return &UserService{
-		ctx:      ctx,
 		cache:    cache,
 		userRepo: userRepo,
 	}

@@ -4,7 +4,6 @@ import (
 	"github.com/go-arcade/arcade/internal/engine/repo"
 	"github.com/go-arcade/arcade/internal/pkg/storage"
 	"github.com/go-arcade/arcade/pkg/cache"
-	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/database"
 	pluginpkg "github.com/go-arcade/arcade/pkg/plugin"
 	"github.com/google/wire"
@@ -17,12 +16,11 @@ var ProviderSet = wire.NewSet(
 
 // ProvideServices 提供统一的 Services 实例
 func ProvideServices(
-	ctx *ctx.Context,
 	db database.IDatabase,
 	cache cache.ICache,
 	repos *repo.Repositories,
 	pluginManager *pluginpkg.Manager,
 	storageProvider storage.StorageProvider,
 ) *Services {
-	return NewServices(ctx, db, cache, repos, pluginManager, storageProvider)
+	return NewServices(db, cache, repos, pluginManager, storageProvider)
 }

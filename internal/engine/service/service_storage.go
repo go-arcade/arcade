@@ -6,17 +6,14 @@ import (
 
 	"github.com/go-arcade/arcade/internal/engine/model"
 	storagerepo "github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/pkg/ctx"
 )
 
 type StorageService struct {
-	ctx         *ctx.Context
 	storageRepo storagerepo.IStorageRepository
 }
 
-func NewStorageService(ctx *ctx.Context, storageRepo storagerepo.IStorageRepository) *StorageService {
+func NewStorageService(storageRepo storagerepo.IStorageRepository) *StorageService {
 	return &StorageService{
-		ctx:         ctx,
 		storageRepo: storageRepo,
 	}
 }

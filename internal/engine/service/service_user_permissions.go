@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-arcade/arcade/internal/engine/model"
 	permissionrepo "github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/go-arcade/arcade/pkg/log"
 )
@@ -21,16 +20,14 @@ type PermissionServiceInterface interface {
 
 // UserPermissionsService 用户权限聚合服务
 type UserPermissionsService struct {
-	ctx        *ctx.Context
 	db         database.IDatabase
 	permSvc    PermissionServiceInterface
 	routerRepo permissionrepo.IRouterPermissionRepository
 }
 
 // NewUserPermissionsService 创建用户权限聚合服务
-func NewUserPermissionsService(ctx *ctx.Context, db database.IDatabase, permSvc PermissionServiceInterface, routerRepo permissionrepo.IRouterPermissionRepository) *UserPermissionsService {
+func NewUserPermissionsService(db database.IDatabase, permSvc PermissionServiceInterface, routerRepo permissionrepo.IRouterPermissionRepository) *UserPermissionsService {
 	return &UserPermissionsService{
-		ctx:        ctx,
 		db:         db,
 		permSvc:    permSvc,
 		routerRepo: routerRepo,

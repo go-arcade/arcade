@@ -2,8 +2,6 @@ package http
 
 import (
 	"time"
-
-	"github.com/go-arcade/arcade/pkg/ctx"
 )
 
 type Http struct {
@@ -17,7 +15,6 @@ type Http struct {
 	ShutdownTimeout int
 	BodyLimit       int // 请求体大小限制（字节），默认 100MB
 	Auth            Auth
-	Ctx             ctx.Context
 }
 
 type Auth struct {

@@ -4,6 +4,8 @@
 package main
 
 import (
+	"context"
+
 	"github.com/go-arcade/arcade/internal/engine/bootstrap"
 	"github.com/go-arcade/arcade/internal/engine/config"
 	"github.com/go-arcade/arcade/internal/engine/repo"
@@ -13,7 +15,6 @@ import (
 	"github.com/go-arcade/arcade/internal/pkg/queue"
 	"github.com/go-arcade/arcade/internal/pkg/storage"
 	"github.com/go-arcade/arcade/pkg/cache"
-	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/metrics"
@@ -22,14 +23,19 @@ import (
 	"github.com/google/wire"
 )
 
+// ProvideContext 提供基础 context.Context
+func ProvideContext() context.Context {
+	return context.Background()
+}
+
 func initApp(configPath string) (*bootstrap.App, func(), error) {
 	panic(wire.Build(
 		// 配置层
 		config.ProviderSet,
+		// 上下文层
+		ProvideContext,
 		// 日志层（依赖 config）
 		log.ProviderSet,
-		// 上下文层（依赖 log）
-		ctx.ProviderSet,
 		// 数据库层（依赖 config, log, ctx）
 		database.ProviderSet,
 		// 缓存层（依赖 config）
@@ -46,7 +52,7 @@ func initApp(configPath string) (*bootstrap.App, func(), error) {
 		storage.ProviderSet,
 		// 插件层（依赖 config, database）
 		plugin.ProviderSet,
-		// 服务层（依赖 repo, storage, plugin, database, cache, ctx）
+		// 服务层（依赖 repo, storage, plugin, database, cache）
 		service.ProviderSet,
 		// 路由层（依赖 config, repo, service, storage, plugin）
 		router.ProviderSet,

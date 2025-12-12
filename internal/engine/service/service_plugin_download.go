@@ -11,19 +11,16 @@ import (
 	v1 "github.com/go-arcade/arcade/api/agent/v1"
 	pluginmodel "github.com/go-arcade/arcade/internal/engine/model"
 	pluginrepo "github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/log"
 )
 
 type PluginDownloadService struct {
 	pluginRepo pluginrepo.IPluginRepository
-	ctx        *ctx.Context
 }
 
-func NewPluginDownloadService(ctx *ctx.Context, pluginRepo pluginrepo.IPluginRepository) *PluginDownloadService {
+func NewPluginDownloadService(pluginRepo pluginrepo.IPluginRepository) *PluginDownloadService {
 	return &PluginDownloadService{
 		pluginRepo: pluginRepo,
-		ctx:        ctx,
 	}
 }
 

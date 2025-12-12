@@ -2,6 +2,7 @@ package storage
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"mime/multipart"
@@ -10,7 +11,6 @@ import (
 	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/log"
 )
 
@@ -38,7 +38,7 @@ func newOSS(s *Storage) (*OSSStorage, error) {
 	}, nil
 }
 
-func (o *OSSStorage) GetObject(ctx *ctx.Context, objectName string) ([]byte, error) {
+func (o *OSSStorage) GetObject(ctx context.Context, objectName string) ([]byte, error) {
 	fullPath := getFullPath(o.s.BasePath, objectName)
 	body, err := o.Bucket.GetObject(fullPath)
 	if err != nil {
@@ -53,7 +53,7 @@ func (o *OSSStorage) GetObject(ctx *ctx.Context, objectName string) ([]byte, err
 	return buf.Bytes(), nil
 }
 
-func (o *OSSStorage) PutObject(ctx *ctx.Context, objectName string, file *multipart.FileHeader, contentType string) (string, error) {
+func (o *OSSStorage) PutObject(ctx context.Context, objectName string, file *multipart.FileHeader, contentType string) (string, error) {
 	src, err := file.Open()
 	if err != nil {
 		return "", err
@@ -68,7 +68,7 @@ func (o *OSSStorage) PutObject(ctx *ctx.Context, objectName string, file *multip
 	return fullPath, nil
 }
 
-func (o *OSSStorage) Upload(ctx *ctx.Context, objectName string, file *multipart.FileHeader, contentType string) (string, error) {
+func (o *OSSStorage) Upload(ctx context.Context, objectName string, file *multipart.FileHeader, contentType string) (string, error) {
 	src, err := file.Open()
 	if err != nil {
 		return "", err
@@ -167,7 +167,7 @@ func (o *OSSStorage) Upload(ctx *ctx.Context, objectName string, file *multipart
 	return fullPath, err
 }
 
-func (o *OSSStorage) Download(ctx *ctx.Context, objectName string) ([]byte, error) {
+func (o *OSSStorage) Download(ctx context.Context, objectName string) ([]byte, error) {
 	fullPath := getFullPath(o.s.BasePath, objectName)
 	body, err := o.Bucket.GetObject(fullPath)
 	if err != nil {
@@ -178,12 +178,12 @@ func (o *OSSStorage) Download(ctx *ctx.Context, objectName string) ([]byte, erro
 	return io.ReadAll(body)
 }
 
-func (o *OSSStorage) Delete(ctx *ctx.Context, objectName string) error {
+func (o *OSSStorage) Delete(ctx context.Context, objectName string) error {
 	fullPath := getFullPath(o.s.BasePath, objectName)
 	return o.Bucket.DeleteObject(fullPath)
 }
 
-func (o *OSSStorage) GetPresignedURL(ctx *ctx.Context, objectName string, expiry time.Duration) (string, error) {
+func (o *OSSStorage) GetPresignedURL(ctx context.Context, objectName string, expiry time.Duration) (string, error) {
 	fullPath := getFullPath(o.s.BasePath, objectName)
 
 	// OSS 的过期时间以秒为单位

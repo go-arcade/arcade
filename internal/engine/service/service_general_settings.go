@@ -5,19 +5,16 @@ import (
 
 	"github.com/go-arcade/arcade/internal/engine/model"
 	generalrepo "github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/log"
 	"gorm.io/gorm"
 )
 
 type GeneralSettingsService struct {
-	ctx                 *ctx.Context
 	generalSettingsRepo generalrepo.IGeneralSettingsRepository
 }
 
-func NewGeneralSettingsService(ctx *ctx.Context, generalSettingsRepo generalrepo.IGeneralSettingsRepository) *GeneralSettingsService {
+func NewGeneralSettingsService(generalSettingsRepo generalrepo.IGeneralSettingsRepository) *GeneralSettingsService {
 	return &GeneralSettingsService{
-		ctx:                 ctx,
 		generalSettingsRepo: generalSettingsRepo,
 	}
 }
