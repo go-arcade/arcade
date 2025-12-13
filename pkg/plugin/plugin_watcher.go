@@ -159,7 +159,7 @@ func (w *Watcher) handleEvent(event fsnotify.Event) {
 
 	// Ignore CHMOD events (permission changes don't require reload)
 	if event.Op&fsnotify.Chmod == fsnotify.Chmod {
-		log.Debugw("ignoring CHMOD event for %s", event.Name)
+		log.Debugw("ignoring CHMOD event", "file", event.Name)
 		return
 	}
 
@@ -297,7 +297,7 @@ func (w *Watcher) handlePluginChange(path string, op fsnotify.Op) {
 	// Check if file exists
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		// File was deleted, just unload the plugin
-		log.Infow("plugin file was deleted (op: %s), unloading plugin", "file", path, "op", op.String(), "plugin", pluginName)
+		log.Infow("plugin file was deleted, unloading plugin", "file", path, "op", op.String(), "plugin", pluginName)
 		w.unloadPlugin(pluginName)
 		// Clean up state
 		w.mu.Lock()
