@@ -44,6 +44,19 @@ func TestMessage_EmptyHeaders(t *testing.T) {
 	if msg.Headers != nil {
 		t.Error("expected Headers to be nil when not set")
 	}
+	if len(msg.Headers) != 0 {
+		t.Errorf("expected Headers to be empty, got %d", len(msg.Headers))
+	}
+
+	if msg.Key != "test-key" {
+		t.Errorf("expected Key to be 'test-key', got %s", msg.Key)
+	}
+	if string(msg.Value) != "test-value" {
+		t.Errorf("expected Value to be 'test-value', got %s", string(msg.Value))
+	}
+	if len(msg.Headers) != 0 {
+		t.Errorf("expected Headers to be empty, got %d", len(msg.Headers))
+	}
 }
 
 func TestMessageHandler(t *testing.T) {

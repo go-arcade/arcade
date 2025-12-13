@@ -110,4 +110,25 @@ func TestRocketMQConfig_AllFields(t *testing.T) {
 	if config.TopicPrefix == "" {
 		t.Error("expected TopicPrefix to be set")
 	}
+	if config.DelaySlotCount != 24 {
+		t.Errorf("expected DelaySlotCount to be 24, got %d", config.DelaySlotCount)
+	}
+	if config.DelaySlotDuration != time.Hour {
+		t.Errorf("expected DelaySlotDuration to be %v, got %v", time.Hour, config.DelaySlotDuration)
+	}
+	if config.ConsumerModel != consumer.Clustering {
+		t.Errorf("expected ConsumerModel to be Clustering, got %v", config.ConsumerModel)
+	}
+	if config.ConsumeTimeout != 5*time.Minute {
+		t.Errorf("expected ConsumeTimeout to be 5m, got %v", config.ConsumeTimeout)
+	}
+	if config.MaxReconsumeTimes != 3 {
+		t.Errorf("expected MaxReconsumeTimes to be 3, got %d", config.MaxReconsumeTimes)
+	}
+	if config.AccessKey != "access-key" {
+		t.Errorf("expected AccessKey to be 'access-key', got %s", config.AccessKey)
+	}
+	if config.SecretKey != "secret-key" {
+		t.Errorf("expected SecretKey to be 'secret-key', got %s", config.SecretKey)
+	}
 }

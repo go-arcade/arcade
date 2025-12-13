@@ -134,6 +134,24 @@ func TestTaskRecord_OptionalFields(t *testing.T) {
 	if record.Metadata != nil {
 		t.Error("expected Metadata to be nil")
 	}
+	if len(record.Metadata) != 0 {
+		t.Errorf("expected Metadata to be empty, got %d", len(record.Metadata))
+	}
+	if record.TaskID != "task-123" {
+		t.Errorf("expected TaskID to be 'task-123', got %s", record.TaskID)
+	}
+	if record.Task != nil {
+		t.Error("expected Task to be nil")
+	}
+	if record.Status != TaskStatusPending {
+		t.Errorf("expected Status to be TaskStatusPending, got %v", record.Status)
+	}
+	if record.Queue != "" {
+		t.Errorf("expected Queue to be empty, got %s", record.Queue)
+	}
+	if !record.CreatedAt.Equal(time.Now()) {
+		t.Errorf("expected CreatedAt to be %v, got %v", time.Now(), record.CreatedAt)
+	}
 }
 
 func TestTaskRecordFilter_Fields(t *testing.T) {

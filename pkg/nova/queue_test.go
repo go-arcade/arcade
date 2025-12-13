@@ -101,6 +101,27 @@ func TestNewTaskQueue_DefaultValues(t *testing.T) {
 	if config.TopicPrefix != DefaultTopicPrefix {
 		t.Errorf("expected default TopicPrefix to be %s, got %s", DefaultTopicPrefix, config.TopicPrefix)
 	}
+	if config.DelaySlotCount != 24 {
+		t.Errorf("expected DelaySlotCount to be 24, got %d", config.DelaySlotCount)
+	}
+	if config.DelaySlotDuration != time.Hour {
+		t.Errorf("expected DelaySlotDuration to be %v, got %v", time.Hour, config.DelaySlotDuration)
+	}
+	if config.AutoCommit != false {
+		t.Errorf("expected AutoCommit to be false, got %v", config.AutoCommit)
+	}
+	if config.SessionTimeout != 30000 {
+		t.Errorf("expected SessionTimeout to be 30000, got %d", config.SessionTimeout)
+	}
+	if config.MaxPollInterval != 300000 {
+		t.Errorf("expected MaxPollInterval to be 300000, got %d", config.MaxPollInterval)
+	}
+	if config.messageFormat != MessageFormatJSON {
+		t.Errorf("expected messageFormat to be MessageFormatJSON, got %v", config.messageFormat)
+	}
+	if config.messageCodec != DefaultMessageCodec {
+		t.Errorf("expected messageCodec to be DefaultMessageCodec, got %v", config.messageCodec)
+	}
 }
 
 func TestConstants(t *testing.T) {

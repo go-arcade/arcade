@@ -95,6 +95,27 @@ func TestRabbitMQConfig_AllFields(t *testing.T) {
 	if config.TopicPrefix == "" {
 		t.Error("expected TopicPrefix to be set")
 	}
+	if config.DelaySlotCount != 24 {
+		t.Errorf("expected DelaySlotCount to be 24, got %d", config.DelaySlotCount)
+	}
+	if config.DelaySlotDuration != time.Hour {
+		t.Errorf("expected DelaySlotDuration to be %v, got %v", time.Hour, config.DelaySlotDuration)
+	}
+	if config.PrefetchCount != 10 {
+		t.Errorf("expected PrefetchCount to be 10, got %d", config.PrefetchCount)
+	}
+	if config.PrefetchSize != 0 {
+		t.Errorf("expected PrefetchSize to be 0, got %d", config.PrefetchSize)
+	}
+	if config.Username != "user" {
+		t.Errorf("expected Username to be 'user', got %s", config.Username)
+	}
+	if config.Password != "pass" {
+		t.Errorf("expected Password to be 'pass', got %s", config.Password)
+	}
+	if config.TLSConfig != tlsConfig {
+		t.Error("expected TLSConfig to be set")
+	}
 }
 
 func TestContainsAuthInfo(t *testing.T) {
