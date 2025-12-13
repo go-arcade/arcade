@@ -257,6 +257,7 @@ func (m *Manager) UnregisterPlugin(name string) error {
 	if err := m.cleanupPluginWithContext(cleanupCtx, pluginClient); err != nil {
 		// Ignore context deadline errors as they're expected during shutdown
 		if err != context.DeadlineExceeded {
+
 			log.Debugw("cleanup plugin failed", "plugin", name, "error", err)
 		}
 	}

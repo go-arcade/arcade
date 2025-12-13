@@ -44,7 +44,7 @@ func ProvidePluginManager(dbAccessor DB) *Manager {
 	// Set database accessor (implemented by internal/repo)
 	m.SetDB(dbAccessor)
 
-	// Auto-load plugins from directory on startup
+	// Autoload plugins from directory on startup
 	if err := m.LoadPluginsFromDir(); err != nil {
 		log.Warnw("failed to auto-load plugins", "error", err)
 	}
