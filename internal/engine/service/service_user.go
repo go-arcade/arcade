@@ -11,7 +11,6 @@ import (
 	userrepo "github.com/go-arcade/arcade/internal/engine/repo"
 	"github.com/go-arcade/arcade/internal/engine/tool"
 	"github.com/go-arcade/arcade/pkg/cache"
-	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/jwt"
 	"github.com/go-arcade/arcade/pkg/id"
@@ -24,14 +23,12 @@ type LoginService interface {
 }
 
 type UserService struct {
-	ctx      *ctx.Context
 	cache    cache.ICache
 	userRepo userrepo.IUserRepository
 }
 
-func NewUserService(ctx *ctx.Context, cache cache.ICache, userRepo userrepo.IUserRepository) *UserService {
+func NewUserService(cache cache.ICache, userRepo userrepo.IUserRepository) *UserService {
 	return &UserService{
-		ctx:      ctx,
 		cache:    cache,
 		userRepo: userRepo,
 	}
@@ -40,13 +37,13 @@ func NewUserService(ctx *ctx.Context, cache cache.ICache, userRepo userrepo.IUse
 func (ul *UserService) Login(login *usermodel.Login, auth http.Auth) (*usermodel.LoginResp, error) {
 	pwd, err := tool.DecodeBase64(login.Password)
 	if err != nil {
-		log.Errorf("failed to decode password: %v", err)
+		log.Errorw("failed to decode password", "error", err)
 		return nil, errors.New(http.UserIncorrectPassword.Msg)
 	}
 
 	userInfo, err := ul.userRepo.Login(login)
 	if err != nil {
-		log.Errorf("login failed for userInfo: %v", err)
+		log.Errorw("login failed", "username", login.Username, "error", err)
 		return nil, err
 	}
 	if userInfo == nil || userInfo.Username == "" || userInfo.Username != login.Username {
@@ -62,7 +59,7 @@ func (ul *UserService) Login(login *usermodel.Login, auth http.Auth) (*usermodel
 
 	aToken, rToken, err := jwt.GenToken(userInfo.UserId, []byte(auth.SecretKey), auth.AccessExpire, auth.RefreshExpire)
 	if err != nil {
-		log.Errorf("failed to generate tokens: %v", err)
+		log.Errorw("failed to generate tokens", "userId", userInfo.UserId, "error", err)
 		return nil, err
 	}
 
@@ -93,7 +90,7 @@ func (ul *UserService) Login(login *usermodel.Login, auth http.Auth) (*usermodel
 
 	go func() {
 		if err = ul.userRepo.SetLoginRespInfo(auth.AccessExpire, resp); err != nil {
-			log.Errorf("failed to set login response info: %v", err)
+			log.Errorw("failed to set login response info", "userId", userInfo.UserId, "error", err)
 			return
 		}
 
@@ -108,7 +105,7 @@ func (ul *UserService) Login(login *usermodel.Login, auth http.Auth) (*usermodel
 func (ul *UserService) Refresh(userId, rToken string, auth *http.Auth) (map[string]string, error) {
 	token, err := jwt.RefreshToken(auth, userId, rToken)
 	if err != nil {
-		log.Errorf("failed to refresh token: %v", err)
+		log.Errorw("failed to refresh token", "userId", userId, "error", err)
 		return nil, err
 	}
 
@@ -117,9 +114,9 @@ func (ul *UserService) Refresh(userId, rToken string, auth *http.Auth) (map[stri
 	token["expireAt"] = fmt.Sprintf("%d", expireAt)
 
 	k, err := ul.userRepo.SetToken(userId, token["accessToken"], *auth)
-	log.Debugf("token key: %v", k)
+	log.Debugw("token key", "key", k)
 	if err != nil {
-		log.Errorf("failed to set token in Redis: %v", err)
+		log.Errorw("failed to set token in Redis", "userId", userId, "error", err)
 		return token, err
 	}
 
@@ -151,14 +148,14 @@ func (ul *UserService) Logout(userId string) error {
 	// delete token
 	tokenKey := consts.UserTokenKey + userId
 	if err := ul.userRepo.DelToken(tokenKey); err != nil {
-		log.Errorf("failed to delete token: %v", err)
+		log.Errorw("failed to delete token", "userId", userId, "error", err)
 		return errors.New(http.TokenBeEmpty.Msg)
 	}
 
 	// delete user info cache
 	userInfoKey := consts.UserInfoKey + userId
 	if err := ul.userRepo.DelToken(userInfoKey); err != nil {
-		log.Errorf("failed to delete user info: %v", err)
+		log.Errorw("failed to delete user info", "userId", userId, "error", err)
 		// user info deletion failure does not affect logout
 	}
 
@@ -186,7 +183,7 @@ func (ul *UserService) UpdateUser(userId string, userEntity *usermodel.User) err
 	// clear user info cache after update
 	userInfoKey := consts.UserInfoKey + userId
 	if err := ul.userRepo.DelToken(userInfoKey); err != nil {
-		log.Warnf("failed to clear user info cache: %v", err)
+		log.Warnw("failed to clear user info cache", "userId", userId, "error", err)
 	}
 
 	return err
@@ -234,7 +231,7 @@ func (ul *UserService) ResetPassword(userId string, req *usermodel.ResetPassword
 	// decode new password from base64
 	newPwd, err := tool.DecodeBase64(req.NewPassword)
 	if err != nil {
-		log.Errorf("failed to decode new password: %v", err)
+		log.Errorw("failed to decode new password", "userId", userId, "error", err)
 		return errors.New("invalid new password format")
 	}
 
@@ -246,24 +243,24 @@ func (ul *UserService) ResetPassword(userId string, req *usermodel.ResetPassword
 	// hash new password
 	newPasswordHash, err := getPassword(string(newPwd))
 	if err != nil {
-		log.Errorf("failed to hash new password: %v", err)
+		log.Errorw("failed to hash new password", "userId", userId, "error", err)
 		return errors.New("failed to process new password")
 	}
 
 	// update password
 	if err := ul.userRepo.ResetPassword(userId, string(newPasswordHash)); err != nil {
-		log.Errorf("failed to reset password: %v", err)
+		log.Errorw("failed to reset password", "userId", userId, "error", err)
 		return errors.New("failed to reset password")
 	}
 
 	// invalidate all tokens for security
 	tokenKey := consts.UserTokenKey + userId
 	if err := ul.userRepo.DelToken(tokenKey); err != nil {
-		log.Warnf("failed to delete token after password reset: %v", err)
+		log.Warnw("failed to delete token after password reset", "userId", userId, "error", err)
 		// this is not critical, continue
 	}
 
-	log.Infof("user password reset successfully: %s", userId)
+	log.Infow("user password reset successfully", "userId", userId)
 	return nil
 }
 
@@ -271,7 +268,7 @@ func (ul *UserService) ResetPassword(userId string, req *usermodel.ResetPassword
 func (ul *UserService) UpdateAvatar(userId, avatarUrl string) error {
 	// update avatar in database
 	if err := ul.userRepo.UpdateAvatar(userId, avatarUrl); err != nil {
-		log.Errorf("failed to update user avatar: %v", err)
+		log.Errorw("failed to update user avatar", "userId", userId, "error", err)
 		return errors.New("failed to update user avatar")
 	}
 
@@ -279,11 +276,11 @@ func (ul *UserService) UpdateAvatar(userId, avatarUrl string) error {
 	if ul.cache != nil {
 		key := consts.UserInfoKey + userId
 		if err := ul.cache.Del(context.Background(), key).Err(); err != nil {
-			log.Warnf("failed to clear user info cache: %v", err)
+			log.Warnw("failed to clear user info cache", "userId", userId, "error", err)
 			// not critical, continue
 		}
 	}
 
-	log.Infof("user avatar updated successfully: %s, url: %s", userId, avatarUrl)
+	log.Infow("user avatar updated successfully", "userId", userId, "avatarUrl", avatarUrl)
 	return nil
 }

@@ -3,15 +3,12 @@ package http
 import (
 	"time"
 
+	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/gofiber/fiber/v2"
-	"go.uber.org/zap"
 )
 
-
-func AccessLogFormat(log *zap.Logger) fiber.Handler {
-	// 使用 sugar logger
-	sugar := log.Sugar()
-
+// AccessLogFormat 创建访问日志中间件（动态检查配置）
+func AccessLogFormat(httpConfig *Http) fiber.Handler {
 	// exclude api path
 	// tips: 这里的路径是不需要记录日志的路径，url为端口后的全部路径
 	excludedPaths := map[string]bool{
@@ -19,6 +16,10 @@ func AccessLogFormat(log *zap.Logger) fiber.Handler {
 	}
 
 	return func(c *fiber.Ctx) error {
+		if httpConfig != nil && !httpConfig.AccessLog {
+			return c.Next()
+		}
+
 		// 检查是否需要跳过日志
 		if excludedPaths[c.Path()] {
 			return c.Next()
@@ -41,14 +42,14 @@ func AccessLogFormat(log *zap.Logger) fiber.Handler {
 		}
 
 		// 使用 sugar logger 记录访问日志
-		sugar.Infof("[%s %s %s %d] %s %s %s",
-			c.Method(),
-			c.Path(),
-			queryStr,
-			c.Response().StatusCode(),
-			c.IP(),
-			c.Get("User-Agent"),
-			latency.String(),
+		log.Infow("HTTP request",
+			"method", c.Method(),
+			"path", c.Path(),
+			"query", queryStr,
+			"status", c.Response().StatusCode(),
+			"ip", c.IP(),
+			"user_agent", c.Get("User-Agent"),
+			"latency", latency.String(),
 		)
 
 		return err

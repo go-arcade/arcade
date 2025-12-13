@@ -16,25 +16,23 @@ type ISecretRepository interface {
 }
 
 type SecretRepo struct {
-	db          database.IDatabase
-	secretModel *model.Secret
+	database.IDatabase
 }
 
 func NewSecretRepo(db database.IDatabase) ISecretRepository {
 	return &SecretRepo{
-		db:          db,
-		secretModel: &model.Secret{},
+		IDatabase: db,
 	}
 }
 
 // CreateSecret creates a new secret
 func (sr *SecretRepo) CreateSecret(secret *model.Secret) error {
-	return sr.db.Database().Table(sr.secretModel.TableName()).Create(secret).Error
+	return sr.Database().Table(secret.TableName()).Create(secret).Error
 }
 
 // UpdateSecret updates a secret by secret_id
 func (sr *SecretRepo) UpdateSecret(secret *model.Secret) error {
-	return sr.db.Database().Table(sr.secretModel.TableName()).
+	return sr.Database().Table(secret.TableName()).
 		Omit("id", "secret_id", "created_at").
 		Where("secret_id = ?", secret.SecretId).
 		Updates(secret).Error
@@ -42,19 +40,20 @@ func (sr *SecretRepo) UpdateSecret(secret *model.Secret) error {
 
 // GetSecretByID gets a secret by secret_id
 func (sr *SecretRepo) GetSecretByID(secretId string) (*model.Secret, error) {
-	var s model.Secret
-	err := sr.db.Database().Table(sr.secretModel.TableName()).
+	var secret model.Secret
+	err := sr.Database().Table(secret.TableName()).
 		Where("secret_id = ?", secretId).
-		First(&s).Error
-	return &s, err
+		First(&secret).Error
+	return &secret, err
 }
 
 // GetSecretList gets secret list with pagination and filters
 func (sr *SecretRepo) GetSecretList(pageNum, pageSize int, secretType, scope, scopeId, createdBy string) ([]*model.Secret, int64, error) {
 	var secrets []*model.Secret
+	var secret model.Secret
 	var total int64
 
-	query := sr.db.Database().Table(sr.secretModel.TableName())
+	query := sr.Database().Table(secret.TableName())
 
 	// apply filters
 	if secretType != "" {
@@ -88,7 +87,8 @@ func (sr *SecretRepo) GetSecretList(pageNum, pageSize int, secretType, scope, sc
 
 // DeleteSecret deletes a secret by secret_id
 func (sr *SecretRepo) DeleteSecret(secretId string) error {
-	return sr.db.Database().Table(sr.secretModel.TableName()).
+	var secret model.Secret
+	return sr.Database().Table(secret.TableName()).
 		Where("secret_id = ?", secretId).
 		Delete(&model.Secret{}).Error
 }
@@ -96,7 +96,8 @@ func (sr *SecretRepo) DeleteSecret(secretId string) error {
 // GetSecretsByScope gets secrets by scope and scope_id
 func (sr *SecretRepo) GetSecretsByScope(scope, scopeId string) ([]*model.Secret, error) {
 	var secrets []*model.Secret
-	err := sr.db.Database().Table(sr.secretModel.TableName()).
+	var secret model.Secret
+	err := sr.Database().Table(secret.TableName()).
 		Select("id", "secret_id", "name", "secret_type", "description", "scope", "scope_id", "created_by").
 		Where("scope = ? AND scope_id = ?", scope, scopeId).
 		Find(&secrets).Error
@@ -105,10 +106,10 @@ func (sr *SecretRepo) GetSecretsByScope(scope, scopeId string) ([]*model.Secret,
 
 // GetSecretValue gets the secret value (use with caution, only when needed)
 func (sr *SecretRepo) GetSecretValue(secretId string) (string, error) {
-	var s model.Secret
-	err := sr.db.Database().Table(sr.secretModel.TableName()).
+	var secret model.Secret
+	err := sr.Database().Table(secret.TableName()).
 		Select("secret_value").
 		Where("secret_id = ?", secretId).
-		First(&s).Error
-	return s.SecretValue, err
+		First(&secret).Error
+	return secret.SecretValue, err
 }

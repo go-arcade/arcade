@@ -66,7 +66,7 @@ func (am *AgentManager) ExecuteStepOnAgent(ctx context.Context, req *StepExecuti
 	}
 
 	if am.logger.Log != nil {
-		am.logger.Log.Infof("executing step %s/%s on agent %s", req.JobName, req.StepName, agentID)
+		am.logger.Log.Infow("executing step on agent", "job", req.JobName, "step", req.StepName, "agent", agentID)
 	}
 
 	// Convert step to agent task
@@ -81,7 +81,7 @@ func (am *AgentManager) ExecuteStepOnAgent(ctx context.Context, req *StepExecuti
 	}
 
 	if am.logger.Log != nil {
-		am.logger.Log.Infof("created task %s for step %s/%s, waiting for agent to fetch", taskID, req.JobName, req.StepName)
+		am.logger.Log.Infow("created task for step, waiting for agent to fetch", "task", taskID, "job", req.JobName, "step", req.StepName)
 	}
 
 	// 2-5. 等待 agent 拉取任务并执行，监听状态更新
@@ -325,7 +325,7 @@ func (am *AgentManager) WaitForTaskCompletion(ctx context.Context, taskID string
 				// Mark task as timeout
 				if err := am.cancelTask(ctx, taskID, "task execution timeout"); err != nil {
 					if am.logger.Log != nil {
-						am.logger.Log.Warnf("failed to cancel timeout task %s: %v", taskID, err)
+						am.logger.Log.Warnw("failed to cancel timeout task", "task", taskID, "error", err)
 					}
 				}
 				return nil, fmt.Errorf("task %s execution timeout after %v", taskID, timeout)
@@ -337,7 +337,7 @@ func (am *AgentManager) WaitForTaskCompletion(ctx context.Context, taskID string
 			task, err := am.getTaskStatus(ctx, taskID)
 			if err != nil {
 				if am.logger.Log != nil {
-					am.logger.Log.Warnf("failed to get task status for %s: %v", taskID, err)
+					am.logger.Log.Warnw("failed to get task status", "task", taskID, "error", err)
 				}
 				continue
 			}
@@ -361,7 +361,7 @@ func (am *AgentManager) WaitForTaskCompletion(ctx context.Context, taskID string
 					result.StartTime = time.Unix(task.StartedAt/1000, (task.StartedAt%1000)*1000000)
 				}
 				if am.logger.Log != nil {
-					am.logger.Log.Infof("task %s completed successfully", taskID)
+					am.logger.Log.Infow("task completed successfully", "task", taskID)
 				}
 				return result, nil
 
@@ -379,7 +379,7 @@ func (am *AgentManager) WaitForTaskCompletion(ctx context.Context, taskID string
 					result.StartTime = time.Unix(task.StartedAt/1000, (task.StartedAt%1000)*1000000)
 				}
 				if am.logger.Log != nil {
-					am.logger.Log.Errorf("task %s failed: %s", taskID, task.ErrorMessage)
+					am.logger.Log.Errorw("task failed", "task", taskID, "error", task.ErrorMessage)
 				}
 				return result, fmt.Errorf("task execution failed: %s", task.ErrorMessage)
 
@@ -390,7 +390,7 @@ func (am *AgentManager) WaitForTaskCompletion(ctx context.Context, taskID string
 				result.Error = "task cancelled"
 				result.EndTime = time.Now()
 				if am.logger.Log != nil {
-					am.logger.Log.Warnf("task %s was cancelled", taskID)
+					am.logger.Log.Warnw("task was cancelled", "task", taskID)
 				}
 				return result, fmt.Errorf("task was cancelled")
 
@@ -401,7 +401,7 @@ func (am *AgentManager) WaitForTaskCompletion(ctx context.Context, taskID string
 				result.Error = "task execution timeout"
 				result.EndTime = time.Now()
 				if am.logger.Log != nil {
-					am.logger.Log.Warnf("task %s timed out", taskID)
+					am.logger.Log.Warnw("task timed out", "task", taskID)
 				}
 				return result, fmt.Errorf("task execution timeout")
 
@@ -483,7 +483,7 @@ func (am *AgentManager) CancelTask(ctx context.Context, agentID, taskID, reason 
 	}
 
 	if am.logger.Log != nil {
-		am.logger.Log.Infof("cancelled task %s on agent %s: %s", taskID, agentID, reason)
+		am.logger.Log.Infow("cancelled task on agent", "task", taskID, "agent", agentID, "reason", reason)
 	}
 
 	return nil
@@ -533,20 +533,16 @@ func (am *AgentManager) UpdateAgentStatusFromHeartbeat(req *agentv1.HeartbeatReq
 	defer am.statusCacheMu.Unlock()
 
 	status := &AgentStatus{
-		AgentID:           req.AgentId,
-		Status:            am.convertAgentStatusToString(req.Status),
-		RunningJobsCount:  req.RunningJobsCount,
-		MaxConcurrentJobs: req.MaxConcurrentJobs,
-		Metrics:           req.Metrics,
-		Labels:            req.Labels,
-		LastHeartbeat:     time.Now(),
+		AgentID:          req.AgentId,
+		Status:           am.convertAgentStatusToString(req.Status),
+		RunningJobsCount: req.RunningJobsCount,
+		LastHeartbeat:    time.Now(),
 	}
 
 	am.agentStatusCache[req.AgentId] = status
 
 	if am.logger.Log != nil {
-		am.logger.Log.Debugf("updated agent %s status: %s (running jobs: %d/%d)",
-			req.AgentId, status.Status, req.RunningJobsCount, req.MaxConcurrentJobs)
+		am.logger.Log.Debugw("updated agent status", "agent", req.AgentId, "status", status.Status, "running_jobs", req.RunningJobsCount)
 	}
 }
 
@@ -591,7 +587,7 @@ func (am *AgentManager) RemoveAgentStatus(agentID string) {
 	delete(am.agentStatusCache, agentID)
 
 	if am.logger.Log != nil {
-		am.logger.Log.Debugf("removed agent %s from status cache", agentID)
+		am.logger.Log.Debugw("removed agent from status cache", "agent", agentID)
 	}
 }
 

@@ -73,7 +73,7 @@ func (lc *LogCapture) CaptureReader(reader io.Reader, stream string) {
 	}
 
 	if err := scanner.Err(); err != nil && err != io.EOF {
-		log.Errorf("error reading %s for plugin %s: %v", stream, lc.pluginName, err)
+		log.Errorw("error reading stream for plugin", "stream", stream, "plugin", lc.pluginName, "error", err)
 	}
 }
 

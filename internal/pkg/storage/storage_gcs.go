@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
-	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/log"
 	"google.golang.org/api/option"
 )
@@ -44,9 +43,9 @@ func newGCS(s *Storage) (*GCSStorage, error) {
 	}, nil
 }
 
-func (g *GCSStorage) GetObject(ctx *ctx.Context, objectName string) ([]byte, error) {
+func (g *GCSStorage) GetObject(ctx context.Context, objectName string) ([]byte, error) {
 	fullPath := getFullPath(g.s.BasePath, objectName)
-	reader, err := g.Bucket.Object(fullPath).NewReader(ctx.ContextIns())
+	reader, err := g.Bucket.Object(fullPath).NewReader(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +58,7 @@ func (g *GCSStorage) GetObject(ctx *ctx.Context, objectName string) ([]byte, err
 	return buf.Bytes(), nil
 }
 
-func (g *GCSStorage) PutObject(ctx *ctx.Context, objectName string, file *multipart.FileHeader, contentType string) (string, error) {
+func (g *GCSStorage) PutObject(ctx context.Context, objectName string, file *multipart.FileHeader, contentType string) (string, error) {
 	src, err := file.Open()
 	if err != nil {
 		return "", err
@@ -67,7 +66,7 @@ func (g *GCSStorage) PutObject(ctx *ctx.Context, objectName string, file *multip
 	defer src.Close()
 
 	fullPath := getFullPath(g.s.BasePath, objectName)
-	writer := g.Bucket.Object(fullPath).NewWriter(ctx.ContextIns())
+	writer := g.Bucket.Object(fullPath).NewWriter(ctx)
 	writer.ContentType = contentType
 
 	if _, err := io.Copy(writer, src); err != nil {
@@ -82,7 +81,7 @@ func (g *GCSStorage) PutObject(ctx *ctx.Context, objectName string, file *multip
 	return fullPath, nil
 }
 
-func (g *GCSStorage) Upload(ctx *ctx.Context, objectName string, file *multipart.FileHeader, contentType string) (string, error) {
+func (g *GCSStorage) Upload(ctx context.Context, objectName string, file *multipart.FileHeader, contentType string) (string, error) {
 	src, err := file.Open()
 	if err != nil {
 		return "", err
@@ -94,7 +93,7 @@ func (g *GCSStorage) Upload(ctx *ctx.Context, objectName string, file *multipart
 
 	// 小文件直接PutObject
 	if fileSize <= defaultPartSize {
-		writer := g.Bucket.Object(fullPath).NewWriter(ctx.ContextIns())
+		writer := g.Bucket.Object(fullPath).NewWriter(ctx)
 		writer.ContentType = contentType
 
 		if _, err := io.Copy(writer, src); err != nil {
@@ -105,7 +104,7 @@ func (g *GCSStorage) Upload(ctx *ctx.Context, objectName string, file *multipart
 		if err := writer.Close(); err != nil {
 			return "", err
 		}
-		log.Debugf("GCS upload completed: %s - 100.00%% (%d bytes)", fullPath, fileSize)
+		log.Debugw("GCS upload completed", "fullPath", fullPath, "fileSize", fileSize)
 		return fullPath, nil
 	}
 
@@ -128,7 +127,7 @@ func (g *GCSStorage) Upload(ctx *ctx.Context, objectName string, file *multipart
 	}
 
 	// 使用分段写入器，支持断点续传
-	writer := g.Bucket.Object(fullPath).NewWriter(ctx.ContextIns())
+	writer := g.Bucket.Object(fullPath).NewWriter(ctx)
 	writer.ContentType = contentType
 	writer.ChunkSize = defaultPartSize // 设置分片大小
 
@@ -157,7 +156,7 @@ func (g *GCSStorage) Upload(ctx *ctx.Context, objectName string, file *multipart
 			_ = os.WriteFile(checkpointPath, mustJSON(checkpoint), 0644)
 
 			// 记录上传进度日志
-			// log.Debugf("GCS upload progress: %s - %.2f%% (%d/%d bytes)",
+			// log.Debug("GCS upload progress: %s - %.2f%% (%d/%d bytes)",
 			// 	fullPath, checkpoint.UploadProgress, uploaded, fileSize)
 
 			partNumber = currentPart
@@ -174,15 +173,15 @@ func (g *GCSStorage) Upload(ctx *ctx.Context, objectName string, file *multipart
 		return "", err
 	}
 
-	log.Debugf("GCS upload completed: %s - 100.00%% (%d bytes)", fullPath, fileSize)
+	log.Debugw("GCS upload completed", "fullPath", fullPath, "fileSize", fileSize)
 	// 成功则删除断点文件
 	_ = os.Remove(checkpointPath)
 	return fullPath, nil
 }
 
-func (g *GCSStorage) Download(ctx *ctx.Context, objectName string) ([]byte, error) {
+func (g *GCSStorage) Download(ctx context.Context, objectName string) ([]byte, error) {
 	fullPath := getFullPath(g.s.BasePath, objectName)
-	reader, err := g.Bucket.Object(fullPath).NewReader(ctx.ContextIns())
+	reader, err := g.Bucket.Object(fullPath).NewReader(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -191,12 +190,12 @@ func (g *GCSStorage) Download(ctx *ctx.Context, objectName string) ([]byte, erro
 	return io.ReadAll(reader)
 }
 
-func (g *GCSStorage) Delete(ctx *ctx.Context, objectName string) error {
+func (g *GCSStorage) Delete(ctx context.Context, objectName string) error {
 	fullPath := getFullPath(g.s.BasePath, objectName)
-	return g.Bucket.Object(fullPath).Delete(ctx.ContextIns())
+	return g.Bucket.Object(fullPath).Delete(ctx)
 }
 
-func (g *GCSStorage) GetPresignedURL(ctx *ctx.Context, objectName string, expiry time.Duration) (string, error) {
+func (g *GCSStorage) GetPresignedURL(ctx context.Context, objectName string, expiry time.Duration) (string, error) {
 	fullPath := getFullPath(g.s.BasePath, objectName)
 
 	// GCS 使用 SignedURL 生成预签名链接

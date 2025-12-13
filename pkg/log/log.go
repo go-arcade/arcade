@@ -18,7 +18,7 @@ var (
 	sugar  *zap.SugaredLogger
 )
 
-// ProviderSet 提供日志相关的依赖
+// ProviderSet is the Wire provider set for the log package.
 var ProviderSet = wire.NewSet(ProvideLogger)
 
 // ProvideLogger 提供 Logger 实例
@@ -43,10 +43,12 @@ type Conf struct {
 	KafkaTopic   string
 }
 
-// DefaultConf 返回默认配置
-func DefaultConf() *Conf {
+// SetDefaults 返回默认配置
+func SetDefaults() *Conf {
 	return &Conf{
 		Output:     "stdout",
+		Path:       "./logs",
+		Filename:   "app.log",
 		Level:      "INFO",
 		KeepHours:  7,   // 默认保留7天
 		RotateSize: 100, // 默认100MB
@@ -145,6 +147,30 @@ func GetLogger() *zap.SugaredLogger {
 	return logger.Sugar()
 }
 
+// GetLevel 获取当前日志级别
+func GetLevel() zapcore.Level {
+	mu.RLock()
+	defer mu.RUnlock()
+	if logger == nil {
+		return zapcore.InfoLevel
+	}
+	// 通过检查不同级别是否启用来确定当前级别
+	core := logger.Core()
+	if core.Enabled(zapcore.DebugLevel) {
+		return zapcore.DebugLevel
+	}
+	if core.Enabled(zapcore.InfoLevel) {
+		return zapcore.InfoLevel
+	}
+	if core.Enabled(zapcore.WarnLevel) {
+		return zapcore.WarnLevel
+	}
+	if core.Enabled(zapcore.ErrorLevel) {
+		return zapcore.ErrorLevel
+	}
+	return zapcore.FatalLevel
+}
+
 // getEncoder returns the appropriate encoder based on the mode.
 func getEncoder() zapcore.Encoder {
 	encoderConfig := zap.NewDevelopmentEncoderConfig()
@@ -165,7 +191,7 @@ func getEncoder() zapcore.Encoder {
 	return zapcore.NewConsoleEncoder(encoderConfig)
 }
 
-// customTimeEncoder formats the time as 2024-06-08 00:51:55.
+// customTimeEncoder formats the time as 2006-01-02 15:04:05.
 func customTimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
 	enc.AppendString(t.Format("2006-01-02 15:04:05"))
 }

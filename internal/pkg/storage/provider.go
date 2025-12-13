@@ -2,7 +2,6 @@ package storage
 
 import (
 	"github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/google/wire"
 )
 
@@ -12,11 +11,10 @@ var ProviderSet = wire.NewSet(
 )
 
 // ProvideStorageFromDB 从数据库提供存储提供者
-func ProvideStorageFromDB(appCtx *ctx.Context, repos *repo.Repositories) (StorageProvider, error) {
-	dbProvider, err := NewStorageDBProvider(appCtx, repos.Storage)
+func ProvideStorageFromDB(repos *repo.Repositories) (StorageProvider, error) {
+	dbProvider, err := NewStorageDBProvider(repos.Storage)
 	if err != nil {
 		return nil, err
 	}
 	return dbProvider.GetStorageProvider()
 }
-

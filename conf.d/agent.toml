@@ -1,0 +1,211 @@
+# grpc configuration
+[grpc]
+# server address (host:port format, e.g., "localhost:9090")
+serverAddr = "localhost:9090"
+# Bearer token for authentication (uses APIkey if not set)
+token = "8EdOp4FC5Khu8SraD6LKQXtG85G0xQYeahsUyCkoxDE="
+# read write timeout (seconds, default: 30)
+readWriteTimeout = 5
+# unit: bytes (default: 100MB) - for plugin uploads
+maxMsgSize = 104857600
+# max reconnection attempts, 0 means unlimited
+maxReconnectAttempts = 5
+
+# agent configuration
+[agent]
+# agent mode: sandbox, baremetal
+mode = "sandbox"
+# agent id
+id = "31t3aZMDg"
+# agent name
+name = "agent-001"
+# heartbeat interval in seconds
+interval = 60
+# maximum concurrent jobs
+maxConcurrentJobs = 5
+# job timeout in seconds
+jobTimeout = 3600
+# workspace directory
+workspaceDir = "/var/lib/arcade/workspace"
+# temporary directory
+tempDir = "/var/lib/arcade/temp"
+# log level: DEBUG INFO WARNING ERROR FATAL
+logLevel = "INFO"
+# denied commands
+deniedCommands = ["rm", "shutdown", "reboot"]
+# proxy URL
+proxyUrl = "http://proxy.example.com"
+# cache directory
+cacheDir = "/tmp/cache"
+# description
+description = "This is a default agent configuration"
+
+# labels for the agent
+[agent.labels]
+env = "production"
+team = "backend"
+region = "us-west-1"
+
+# resource limits
+[agent.resourceLimits]
+cpu = "2"
+memory = "4G"
+
+# environment variables
+[agent.envVars]
+ENV_VAR_1 = "value1"
+ENV_VAR_2 = "value2"
+
+# cleanup policy
+[agent.cleanupPolicy]
+max_size_gb = 10
+max_age_days = 30
+
+# sandbox configuration
+[agent.sandbox]
+# enable sandbox, false or true
+enable = true
+# sandbox mode: containerd, kubernetes
+mode = "containerd"
+
+# containerd configuration
+[agent.sandbox.containerd]
+# containerd network mode: bridge, host, none
+network = "bridge"
+# containerd unix socket
+unixSocket = "/run/containerd/containerd.sock"
+# containerd image
+image = "arcade-agent:latest"
+# containerd resources
+[agent.sandbox.containerd.resources]
+cpu = "1"
+memory = "1G"
+
+# kubernetes configuration
+[agent.sandbox.containerd.kubernetes]
+# kubernetes namespace
+namespace = "default"
+# kubernetes pod name
+podName = "arcade-agent"
+# kubernetes pod image
+image = "arcade-agent:latest"
+# kubernetes pod resources
+[agent.sandbox.containerd.kubernetes.resources]
+cpu = "1"
+memory = "1G"
+
+# metrics configuration
+[metrics]
+# enable metrics server, false or true
+enable = true
+# metrics server host
+host = "0.0.0.0"
+# metrics server port
+port = 8084
+# metrics server request path, default: "/metrics"
+path = "/metrics"
+
+# pprof configuration
+[pprof]
+# enable pprof server, false or true
+enable = true
+# pprof server host
+host = "0.0.0.0"
+# pprof server port
+port = 8085
+# pprof server request path prefix, default: "/debug/pprof"
+path = "/debug/pprof"
+
+# log configuration
+[log]
+# support stdout, file, kafka
+output = "stdout"
+# log level: DEBUG INFO WARNING ERROR FATAL
+level = "DEBUG"
+# log write directory
+path = "logs"
+# log file name
+filename = "agent.LOG"
+# rotate by time
+keepHours = 4
+# rotate by size
+rotateNum = 3
+# unit: MB
+rotateSize = 256
+
+# http configuration
+[http]
+# http server host
+host = "0.0.0.0"
+# http server port
+port = 8081
+# access log, false or true
+accessLog = true
+# use file assets, false or true
+useFileAssets = false
+# read timeout
+# unit: second
+readTimeout = 60
+# write timeout
+# unit: second
+writeTimeout = 60
+# idle timeout
+# unit: second
+idleTimeout = 60
+# shutdown timeout
+# unit: second
+shutdownTimeout = 10
+# request body size limit (bytes)
+# default: 104857600 (100MB) - for plugin uploads
+# unit: bytes
+bodyLimit = 104857600
+
+[redis]
+# support single, cluster, sentinel
+mode = "single"
+# address, ip:port or ip1:port,ip2:port for cluster and sentinel(SentinelAddrs)
+address = "127.0.0.1:6379"
+password = ""
+db = 0
+poolSize = 50
+#useTLS = false
+#tlsMinVersion = "1.0"
+#masterName = ""
+#sentinelUsername = ""
+#sentinelPassword = ""
+# dialTimeout
+# unit: second
+dialTimeout = 10
+# read timeout
+# unit: second
+readTimeout = 10
+# write timeout
+# unit: second
+writeTimeout = 10
+
+[taskQueue]
+# Task queue configuration
+# Concurrency: number of workers processing tasks concurrently
+concurrency = 10
+# StrictPriority: if true, process tasks in strict priority order
+strictPriority = true
+# LogLevel: log level (debug, info, warn, error)
+logLevel = "info"
+# ShutdownTimeout: shutdown timeout in seconds
+shutdownTimeout = 10
+# GroupGracePeriod: group grace period in seconds
+groupGracePeriod = 5
+# GroupMaxDelay: group max delay in seconds
+groupMaxDelay = 20
+# GroupMaxSize: group max size
+groupMaxSize = 100
+
+# Priority weight: queue name -> priority weight (higher weight = higher priority)
+# Critical queue has highest priority, low queue has lowest priority
+[taskQueue.priority]
+# Critical queue has highest priority, default queue has medium priority, low queue has lowest priority
+critical = 6
+# Default queue has medium priority
+default = 3
+# Low queue has lowest priority
+low = 1

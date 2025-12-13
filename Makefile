@@ -2,7 +2,7 @@ SHELL := /bin/sh
 .ONESHELL:
 .SHELLFLAGS := -eu -o pipefail -c
 
-.PHONY: help prebuild build plugins plugins-clean plugins-package proto proto-clean proto-install wire wire-install wire-clean
+.PHONY: help prebuild build plugins plugins-clean plugins-package proto proto-clean proto-install wire wire-install wire-clean staticcheck staticcheck-install staticcheck-check
 
 # git
 VERSION    = $(shell git describe --tags --always)
@@ -111,11 +111,17 @@ prebuild: ## download and embed the front-end file
 build: wire plugins buf ## build main program
 	go build -ldflags "${LDFLAGS}" -o arcade ./cmd/arcade/
 
+build-agent: wire buf ## build agent program
+	go build -ldflags "${LDFLAGS}" -o arcade-agent ./cmd/arcade-agent/
+
 build-cli: ## build CLI tool
 	go build -ldflags "${LDFLAGS}" -o arcade-cli ./cmd/cli/
 
 run: deps-sync wire buf
 	go run ./cmd/arcade/
+
+run-agent: deps-sync wire buf
+	go run ./cmd/arcade-agent/
 
 release: ## create release version
 	goreleaser --skip-validate --skip-publish --snapshot
@@ -166,9 +172,28 @@ wire-install: ## install wire tool
 wire: ## generate wire dependency injection code
 	@echo ">> generating wire code..."
 	@cd cmd/arcade && wire
+	@cd cmd/arcade-agent && wire
 	@echo ">> wire code generation done."
 
 wire-clean: ## clean wire generated code
 	@echo ">> cleaning wire generated files..."
 	@find . -name "wire_gen.go" -type f -delete
 	@echo ">> wire files cleaned."
+
+# staticcheck code analysis
+staticcheck-install: ## install staticcheck tool
+	@echo ">> installing staticcheck..."
+	@go install honnef.co/go/tools/cmd/staticcheck@latest
+	@echo ">> staticcheck installed: $$(which staticcheck)"
+
+staticcheck-check: ## check if staticcheck tool is installed
+	@command -v staticcheck >/dev/null 2>&1 || { \
+		echo "error: staticcheck is not installed, please run make staticcheck-install"; \
+		exit 1; \
+	}
+	@echo ">> staticcheck installed: $$(which staticcheck)"
+
+staticcheck: staticcheck-check ## run staticcheck code analysis
+	@echo ">> running staticcheck..."
+	@staticcheck ./...
+	@echo ">> staticcheck analysis done."

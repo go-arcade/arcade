@@ -3,8 +3,7 @@ package router
 import (
 	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/pkg/cache"
-	"github.com/go-arcade/arcade/pkg/ctx"
-	httpx "github.com/go-arcade/arcade/pkg/http"
+	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/google/wire"
 )
 
@@ -15,14 +14,12 @@ var ProviderSet = wire.NewSet(
 
 // ProvideRouter 提供路由实例
 func ProvideRouter(
-	httpConf *httpx.Http,
-	appCtx *ctx.Context,
+	httpConf *http.Http,
 	cache cache.ICache,
 	services *service.Services,
 ) *Router {
 	return NewRouter(
 		httpConf,
-		appCtx,
 		cache,
 		services,
 	)

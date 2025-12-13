@@ -1,3 +1,23 @@
+[metrics]
+# enable metrics server, false or true
+enable = true
+# metrics server host
+host = "0.0.0.0"
+# metrics server port
+port = 8082
+# metrics server request path, default: "/metrics"
+path = "/metrics"
+
+[pprof]
+# enable pprof server, false or true
+enable = true
+# pprof server host
+host = "0.0.0.0"
+# pprof server port
+port = 8083
+# pprof server request path prefix, default: "/debug/pprof"
+path = "/debug/pprof"
+
 [log]
 # support stdout, file, kafka
 output = "stdout"
@@ -13,38 +33,25 @@ keepHours = 4
 rotateNum = 3
 # unit: MB
 rotateSize = 256
-# kafka brokers
-#kafkaBrokers = [
-#    "127.0.0.1:9092",
-#    "127.0.0.1:9093",
-#    "127.0.0.1:9094"
-#]
-# kafka topic
-# kafkaTopic = ""
 
 [grpc]
+# grpc server host
 host = "0.0.0.0"
+# grpc server port
 port = 9090
+# max connections
 maxConnections = 1000
-maxQPS = 1000
+# read write timeout
 # unit: second
 readWriteTimeout = 5
 
 [http]
 host = "0.0.0.0"
 port = 8080
-# debug, release
-mode = "debug"
-# unit: second
-heartbeat = 60
-# enable pprof, false or true
-pprof = true
-# enable metrics, false or true
-exposeMetrics = true
 # access log, false or true
 accessLog = true
 # use file assets, false or true
-UseFileAssets = false
+useFileAssets = false
 # read timeout
 # unit: second
 readTimeout = 60
@@ -62,10 +69,6 @@ shutdownTimeout = 10
 # unit: bytes
 bodyLimit = 104857600
 
-[http.tls]
-certFile = ''
-keyFile = ''
-
 [http.auth]
 # jwt access token expire time
 # unit: minute
@@ -79,10 +82,14 @@ secretKey = "bf284d03-ba65-42d4-a9fe-0d2fbfe61060"
 [database]
 # support mysql
 type = "mysql"
+# mysql host
 host = "127.0.0.1"
+# mysql port
 port = "3306"
+# mysql user
 user = "root"
 password = "muP4woo9Aidiph2jeX8u"
+# mysql database
 db = "arcade"
 # sql print, false or true
 output = true
@@ -132,28 +139,29 @@ readTimeout = 10
 # unit: second
 writeTimeout = 10
 
-# 存储配置已移至数据库管理
-# 请使用 API 或管理界面配置存储
-# [storage]
-# Provider  = "minio"
-# AccessKey = ""
-# SecretKey = ""
-# Endpoint  = ""
-# Bucket    = ""
-# Region    = ""
-# UseTLS    = false
-# BasePath  = ""
+[taskQueue]
+# Task queue configuration
+# Concurrency: number of workers processing tasks concurrently
+concurrency = 10
+# StrictPriority: if true, process tasks in strict priority order
+strictPriority = true
+# LogLevel: log level (debug, info, warn, error)
+logLevel = "info"
+# ShutdownTimeout: shutdown timeout in seconds
+shutdownTimeout = 10
+# GroupGracePeriod: group grace period in seconds
+groupGracePeriod = 5
+# GroupMaxDelay: group max delay in seconds
+groupMaxDelay = 20
+# GroupMaxSize: group max size
+groupMaxSize = 100
 
-[job]
-# Job worker pool configuration
-# If maxWorkers is 0, it will be calculated based on CPU cores (CPU * 2)
-# If queueSize is 0, it will be calculated as maxWorkers * 10
-maxWorkers = 0
-queueSize = 0
-# unit: second
-workerTimeout = 1800
-
-[plugin]
-# Plugin cache directory for storing downloaded plugin files
-# Default: /var/lib/arcade/plugins
-cacheDir = "plugins"
+# Priority weight: queue name -> priority weight (higher weight = higher priority)
+# Critical queue has highest priority, low queue has lowest priority
+[taskQueue.priority]
+# Critical queue has highest priority, default queue has medium priority, low queue has lowest priority
+critical = 6
+# Default queue has medium priority
+default = 3
+# Low queue has lowest priority
+low = 1

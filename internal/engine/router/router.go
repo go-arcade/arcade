@@ -7,9 +7,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/go-arcade/arcade/pkg/log"
+
 	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/pkg/cache"
-	"github.com/go-arcade/arcade/pkg/ctx"
 	httpx "github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/go-arcade/arcade/pkg/version"
@@ -17,12 +18,10 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/fiber/v2/middleware/recover"
-	"go.uber.org/zap"
 )
 
 type Router struct {
 	Http     *httpx.Http
-	Ctx      *ctx.Context
 	Cache    cache.ICache
 	Services *service.Services
 }
@@ -37,19 +36,17 @@ var web embed.FS
 
 func NewRouter(
 	httpConf *httpx.Http,
-	ctx *ctx.Context,
 	cache cache.ICache,
 	services *service.Services,
 ) *Router {
 	return &Router{
 		Http:     httpConf,
-		Ctx:      ctx,
 		Cache:    cache,
 		Services: services,
 	}
 }
 
-func (rt *Router) Router(log *zap.Logger) *fiber.App {
+func (rt *Router) Router() *fiber.App {
 	// 设置默认的 BodyLimit（100MB）
 	bodyLimit := rt.Http.BodyLimit
 	if bodyLimit <= 0 {
@@ -65,9 +62,7 @@ func (rt *Router) Router(log *zap.Logger) *fiber.App {
 		BodyLimit:    bodyLimit, // 请求体大小限制，用于插件上传等
 	})
 
-	if rt.Http.AccessLog {
-		app.Use(httpx.AccessLogFormat(log))
-	}
+	app.Use(httpx.AccessLogFormat(rt.Http))
 
 	// 中间件
 	app.Use(
@@ -80,7 +75,7 @@ func (rt *Router) Router(log *zap.Logger) *fiber.App {
 	if rt.Http.UseFileAssets {
 		staticFS, err := fs.Sub(web, "static")
 		if err != nil {
-			log.Fatal("embed FS subdir error:", zap.Error(err))
+			log.Fatalw("embed FS subdir error", "error", err)
 		}
 
 		app.Use("/", filesystem.New(filesystem.Config{
@@ -100,12 +95,6 @@ func (rt *Router) Router(log *zap.Logger) *fiber.App {
 			stat, _ := file.Stat()
 			return c.Type("html").Status(fiber.StatusOK).SendStream(file, int(stat.Size()))
 		})
-	}
-
-	// pprof
-	if rt.Http.Pprof {
-		pprofGroup := app.Group("/debug/pprof")
-		rt.debugRouter(pprofGroup)
 	}
 
 	// 健康检查
@@ -152,8 +141,8 @@ func (rt *Router) routerGroup(r fiber.Router) {
 	rt.userRouter(r, auth)
 	rt.userExtensionRouter(r, auth)
 
-	// identity integration
-	rt.identityIntegrationRouter(r, auth)
+	// identity
+	rt.identityRouter(r, auth)
 
 	// role
 	rt.roleRouter(r, auth)

@@ -15,7 +15,7 @@ func ExceptionMiddleware(c *fiber.Ctx) error {
 	defer func() {
 		if err := recover(); err != nil {
 			_ = http.WithRepErr(c, http.InternalError.Code, errorToString(err), c.Path())
-			log.Errorf("panic: %v", err)
+			log.Errorw("panic", "error", err, "path", c.Path())
 		}
 	}()
 
@@ -34,7 +34,7 @@ func errorToString(err any) string {
 	case error:
 		// 一律返回服务器错误，避免返回堆栈错误给客户端，实际还可以针对系统错误做其他处理
 		debug.PrintStack()
-		log.Errorf("panic: %v\n%s", v, debug.Stack())
+		log.Errorw("panic", "error", v, "stack", string(debug.Stack()))
 		return http.InternalError.Msg
 	default:
 		if errMsg, ok := v.(string); ok {

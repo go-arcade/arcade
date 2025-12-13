@@ -1,0 +1,114 @@
+package cron
+
+import (
+	"errors"
+	"sync"
+
+	"github.com/go-arcade/arcade/pkg/log"
+)
+
+var (
+	// ErrNotInitialized is returned when trying to use global cron before initialization
+	ErrNotInitialized = errors.New("global cron instance is not initialized")
+)
+
+var (
+	globalCron *Cron
+	globalMu   sync.RWMutex
+	once       sync.Once
+)
+
+// InitGlobal initializes the global cron instance
+func Init(logger *log.Logger, opts ...OpOption) {
+	once.Do(func() {
+		globalMu.Lock()
+		defer globalMu.Unlock()
+
+		globalCron = New(opts...)
+		if logger != nil {
+			globalCron.ErrorLog = logger
+		}
+	})
+}
+
+// GetGlobal returns the global cron instance
+// Returns nil if not initialized
+func Get() *Cron {
+	globalMu.RLock()
+	defer globalMu.RUnlock()
+	return globalCron
+}
+
+// StartGlobal starts the global cron scheduler
+func Start() {
+	globalMu.RLock()
+	c := globalCron
+	globalMu.RUnlock()
+
+	if c != nil {
+		c.Start()
+	}
+}
+
+// Stop stops the global cron scheduler
+func Stop() {
+	globalMu.RLock()
+	c := globalCron
+	globalMu.RUnlock()
+
+	if c != nil {
+		c.Stop()
+	}
+}
+
+// AddFunc adds a func to the global cron instance
+func AddFunc(spec string, cmd func(), names ...string) error {
+	globalMu.RLock()
+	c := globalCron
+	globalMu.RUnlock()
+
+	if c == nil {
+		return ErrNotInitialized
+	}
+
+	return c.AddFunc(spec, cmd, names...)
+}
+
+// AddJob adds a job to the global cron instance
+func AddJob(spec string, cmd Job, names ...string) error {
+	globalMu.RLock()
+	c := globalCron
+	globalMu.RUnlock()
+
+	if c == nil {
+		return ErrNotInitialized
+	}
+
+	return c.AddJob(spec, cmd, names...)
+}
+
+// Remove removes a job from the global cron instance
+func Remove(name string) error {
+	globalMu.RLock()
+	c := globalCron
+	globalMu.RUnlock()
+
+	if c == nil {
+		return ErrNotInitialized
+	}
+
+	return c.Remove(name)
+}
+
+// Entries returns all entries from the global cron instance
+func Entries() []*Entry {
+	globalMu.RLock()
+	c := globalCron
+	globalMu.RUnlock()
+
+	if c == nil {
+		return nil
+	}
+
+	return c.Entries()
+}

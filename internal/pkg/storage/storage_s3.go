@@ -17,7 +17,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/log"
 )
 
@@ -43,9 +42,9 @@ func newS3(s *Storage) (*S3Storage, error) {
 	return &S3Storage{Client: client, s: s}, nil
 }
 
-func (s *S3Storage) GetObject(ctx *ctx.Context, objectName string) ([]byte, error) {
+func (s *S3Storage) GetObject(ctx context.Context, objectName string) ([]byte, error) {
 	fullPath := getFullPath(s.s.BasePath, objectName)
-	out, err := s.Client.GetObject(ctx.ContextIns(), &s3.GetObjectInput{
+	out, err := s.Client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(s.s.Bucket),
 		Key:    aws.String(fullPath),
 	})
@@ -58,7 +57,7 @@ func (s *S3Storage) GetObject(ctx *ctx.Context, objectName string) ([]byte, erro
 	return buf.Bytes(), nil
 }
 
-func (s *S3Storage) PutObject(ctx *ctx.Context, objectName string, file *multipart.FileHeader, contentType string) (string, error) {
+func (s *S3Storage) PutObject(ctx context.Context, objectName string, file *multipart.FileHeader, contentType string) (string, error) {
 	src, err := file.Open()
 	if err != nil {
 		return "", err
@@ -66,7 +65,7 @@ func (s *S3Storage) PutObject(ctx *ctx.Context, objectName string, file *multipa
 	defer src.Close()
 
 	fullPath := getFullPath(s.s.BasePath, objectName)
-	_, err = s.Client.PutObject(ctx.ContextIns(), &s3.PutObjectInput{
+	_, err = s.Client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(s.s.Bucket),
 		Key:         aws.String(fullPath),
 		Body:        src,
@@ -75,7 +74,7 @@ func (s *S3Storage) PutObject(ctx *ctx.Context, objectName string, file *multipa
 	return fullPath, err
 }
 
-func (s *S3Storage) Upload(ctx *ctx.Context, objectName string, file *multipart.FileHeader, contentType string) (string, error) {
+func (s *S3Storage) Upload(ctx context.Context, objectName string, file *multipart.FileHeader, contentType string) (string, error) {
 	src, err := file.Open()
 	if err != nil {
 		return "", err
@@ -87,14 +86,14 @@ func (s *S3Storage) Upload(ctx *ctx.Context, objectName string, file *multipart.
 
 	// 小文件直接PutObject
 	if fileSize <= defaultPartSize {
-		_, err = s.Client.PutObject(ctx.ContextIns(), &s3.PutObjectInput{
+		_, err = s.Client.PutObject(ctx, &s3.PutObjectInput{
 			Bucket:      aws.String(s.s.Bucket),
 			Key:         aws.String(fullPath),
 			Body:        src,
 			ContentType: aws.String(contentType),
 		})
 		if err == nil {
-			log.Debugf("S3 upload completed: %s - 100.00%% (%d bytes)", fullPath, fileSize)
+			log.Debugw("S3 upload completed", "fullPath", fullPath, "fileSize", fileSize)
 		}
 		return fullPath, err
 	}
@@ -109,7 +108,7 @@ func (s *S3Storage) Upload(ctx *ctx.Context, objectName string, file *multipart.
 	}
 
 	if checkpoint.UploadID == "" {
-		createResp, err := s.Client.CreateMultipartUpload(ctx.ContextIns(), &s3.CreateMultipartUploadInput{
+		createResp, err := s.Client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{
 			Bucket:      aws.String(s.s.Bucket),
 			Key:         aws.String(fullPath),
 			ContentType: aws.String(contentType),
@@ -143,7 +142,7 @@ func (s *S3Storage) Upload(ctx *ctx.Context, objectName string, file *multipart.
 			continue
 		}
 
-		partOutput, err := s.Client.UploadPart(ctx.ContextIns(), &s3.UploadPartInput{
+		partOutput, err := s.Client.UploadPart(ctx, &s3.UploadPartInput{
 			Bucket:     aws.String(s.s.Bucket),
 			Key:        aws.String(fullPath),
 			PartNumber: &partNumber,
@@ -167,8 +166,7 @@ func (s *S3Storage) Upload(ctx *ctx.Context, objectName string, file *multipart.
 		_ = os.WriteFile(checkpointPath, mustJSON(checkpoint), 0644)
 
 		// 记录上传进度日志
-		log.Debugf("S3 upload progress: %s - %.2f%% (%d/%d bytes)",
-			fullPath, checkpoint.UploadProgress, uploadedBytes, fileSize)
+		log.Debugw("S3 upload progress", "fullPath", fullPath, "progress", checkpoint.UploadProgress, "uploadedBytes", uploadedBytes, "fileSize", fileSize)
 
 		partNumber++
 		if readErr == io.EOF {
@@ -177,7 +175,7 @@ func (s *S3Storage) Upload(ctx *ctx.Context, objectName string, file *multipart.
 	}
 
 	// 完成分片上传
-	_, err = s.Client.CompleteMultipartUpload(ctx.ContextIns(), &s3.CompleteMultipartUploadInput{
+	_, err = s.Client.CompleteMultipartUpload(ctx, &s3.CompleteMultipartUploadInput{
 		Bucket:   aws.String(s.s.Bucket),
 		Key:      aws.String(fullPath),
 		UploadId: aws.String(checkpoint.UploadID),
@@ -186,15 +184,15 @@ func (s *S3Storage) Upload(ctx *ctx.Context, objectName string, file *multipart.
 		},
 	})
 	if err == nil {
-		// log.Debugf("S3 upload completed: %s - 100.00%% (%d bytes)", fullPath, fileSize)
+		// log.Debug("S3 upload completed: %s - 100.00%% (%d bytes)", fullPath, fileSize)
 		_ = os.Remove(checkpointPath) // 成功则删除断点文件
 	}
 	return fullPath, err
 }
 
-func (s *S3Storage) Download(ctx *ctx.Context, objectName string) ([]byte, error) {
+func (s *S3Storage) Download(ctx context.Context, objectName string) ([]byte, error) {
 	fullPath := getFullPath(s.s.BasePath, objectName)
-	out, err := s.Client.GetObject(ctx.ContextIns(), &s3.GetObjectInput{
+	out, err := s.Client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(s.s.Bucket),
 		Key:    aws.String(fullPath),
 	})
@@ -207,20 +205,20 @@ func (s *S3Storage) Download(ctx *ctx.Context, objectName string) ([]byte, error
 	return buf.Bytes(), nil
 }
 
-func (s *S3Storage) Delete(ctx *ctx.Context, objectName string) error {
+func (s *S3Storage) Delete(ctx context.Context, objectName string) error {
 	fullPath := getFullPath(s.s.BasePath, objectName)
-	_, err := s.Client.DeleteObject(ctx.ContextIns(), &s3.DeleteObjectInput{
+	_, err := s.Client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: aws.String(s.s.Bucket),
 		Key:    aws.String(fullPath),
 	})
 	return err
 }
 
-func (s *S3Storage) GetPresignedURL(ctx *ctx.Context, objectName string, expiry time.Duration) (string, error) {
+func (s *S3Storage) GetPresignedURL(ctx context.Context, objectName string, expiry time.Duration) (string, error) {
 	fullPath := getFullPath(s.s.BasePath, objectName)
 
 	presignClient := s3.NewPresignClient(s.Client)
-	presignResult, err := presignClient.PresignGetObject(ctx.ContextIns(), &s3.GetObjectInput{
+	presignResult, err := presignClient.PresignGetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(s.s.Bucket),
 		Key:    aws.String(fullPath),
 	}, s3.WithPresignExpires(expiry))

@@ -137,4 +137,3 @@ func (a *PluginDBAdapter) ListConfigs(ctx context.Context) (string, error) {
 
 	return string(configsJSON), nil
 }
-

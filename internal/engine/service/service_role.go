@@ -36,7 +36,7 @@ func (rs *RoleService) CreateRole(req *rolemodel.CreateRoleRequest) (*rolemodel.
 	// serialize permissions
 	permJson, err := json.Marshal(req.Permissions)
 	if err != nil {
-		log.Errorf("failed to serialize permissions: %v", err)
+		log.Errorw("failed to serialize permissions", "error", err)
 		return nil, errors.New("invalid permissions format")
 	}
 
@@ -55,11 +55,11 @@ func (rs *RoleService) CreateRole(req *rolemodel.CreateRoleRequest) (*rolemodel.
 	}
 
 	if err := rs.roleRepo.CreateRole(role); err != nil {
-		log.Errorf("failed to create role: %v", err)
+		log.Errorw("failed to create role", "error", err)
 		return nil, errors.New("failed to create role")
 	}
 
-	log.Infof("role created successfully: %s", role.RoleId)
+	log.Infow("role created successfully", "roleId", role.RoleId)
 	return role, nil
 }
 
@@ -68,7 +68,7 @@ func (rs *RoleService) UpdateRole(roleId string, req *rolemodel.UpdateRoleReques
 	// get existing role
 	role, err := rs.roleRepo.GetRole(roleId)
 	if err != nil {
-		log.Errorf("role not found: %s", roleId)
+		log.Errorw("role not found", "roleId", roleId, "error", err)
 		return errors.New("role not found")
 	}
 
@@ -90,18 +90,18 @@ func (rs *RoleService) UpdateRole(roleId string, req *rolemodel.UpdateRoleReques
 	if req.Permissions != nil {
 		permJson, err := json.Marshal(req.Permissions)
 		if err != nil {
-			log.Errorf("failed to serialize permissions: %v", err)
+			log.Errorw("failed to serialize permissions", "roleId", roleId, "error", err)
 			return errors.New("invalid permissions format")
 		}
 		role.Permissions = string(permJson)
 	}
 
 	if err := rs.roleRepo.UpdateRole(role); err != nil {
-		log.Errorf("failed to update role: %v", err)
+		log.Errorw("failed to update role", "roleId", roleId, "error", err)
 		return errors.New("failed to update role")
 	}
 
-	log.Infof("role updated successfully: %s", roleId)
+	log.Infow("role updated successfully", "roleId", roleId)
 	return nil
 }
 
@@ -110,7 +110,7 @@ func (rs *RoleService) DeleteRole(roleId string) error {
 	// get existing role
 	role, err := rs.roleRepo.GetRole(roleId)
 	if err != nil {
-		log.Errorf("role not found: %s", roleId)
+		log.Errorw("role not found", "roleId", roleId, "error", err)
 		return errors.New("role not found")
 	}
 
@@ -120,11 +120,11 @@ func (rs *RoleService) DeleteRole(roleId string) error {
 	}
 
 	if err := rs.roleRepo.DeleteRole(roleId); err != nil {
-		log.Errorf("failed to delete role: %v", err)
+		log.Errorw("failed to delete role", "roleId", roleId, "error", err)
 		return errors.New("failed to delete role")
 	}
 
-	log.Infof("role deleted successfully: %s", roleId)
+	log.Infow("role deleted successfully", "roleId", roleId)
 	return nil
 }
 
@@ -132,7 +132,7 @@ func (rs *RoleService) DeleteRole(roleId string) error {
 func (rs *RoleService) ToggleRole(roleId string) error {
 	role, err := rs.roleRepo.GetRole(roleId)
 	if err != nil {
-		log.Errorf("role not found: %s", roleId)
+		log.Errorw("role not found", "roleId", roleId, "error", err)
 		return errors.New("role not found")
 	}
 
@@ -142,11 +142,11 @@ func (rs *RoleService) ToggleRole(roleId string) error {
 	}
 
 	if err := rs.roleRepo.EnableRole(roleId, newStatus == rolemodel.RoleEnabled); err != nil {
-		log.Errorf("failed to toggle role status: %v", err)
+		log.Errorw("failed to toggle role status", "roleId", roleId, "error", err)
 		return errors.New("failed to toggle role status")
 	}
 
-	log.Infof("role status toggled successfully: %s, new status: %d", roleId, newStatus)
+	log.Infow("role status toggled successfully", "roleId", roleId, "newStatus", newStatus)
 	return nil
 }
 
@@ -154,7 +154,7 @@ func (rs *RoleService) ToggleRole(roleId string) error {
 func (rs *RoleService) GetRole(roleId string) (*rolemodel.Role, error) {
 	role, err := rs.roleRepo.GetRole(roleId)
 	if err != nil {
-		log.Errorf("role not found: %s", roleId)
+		log.Errorw("role not found", "roleId", roleId, "error", err)
 		return nil, errors.New("role not found")
 	}
 	return role, nil
@@ -175,7 +175,7 @@ func (rs *RoleService) ListRoles(req *rolemodel.ListRolesRequest) (*rolemodel.Li
 
 	roles, total, err := rs.roleRepo.ListRolesWithPagination(req)
 	if err != nil {
-		log.Errorf("failed to list roles: %v", err)
+		log.Errorw("failed to list roles", "error", err)
 		return nil, errors.New("failed to list roles")
 	}
 
@@ -197,7 +197,7 @@ func (rs *RoleService) GetRolePermissions(roleId string) ([]string, error) {
 	var permissions []string
 	if role.Permissions != "" {
 		if err := json.Unmarshal([]byte(role.Permissions), &permissions); err != nil {
-			log.Errorf("failed to parse permissions: %v", err)
+			log.Errorw("failed to parse permissions", "roleId", roleId, "error", err)
 			return nil, errors.New("invalid permissions format")
 		}
 	}
@@ -219,10 +219,10 @@ func (rs *RoleService) UpdateRolePermissions(roleId string, permissions []string
 	}
 
 	if err := rs.roleRepo.UpdateRolePermissions(roleId, permissions); err != nil {
-		log.Errorf("failed to update role permissions: %v", err)
+		log.Errorw("failed to update role permissions", "roleId", roleId, "error", err)
 		return errors.New("failed to update role permissions")
 	}
 
-	log.Infof("role permissions updated successfully: %s", roleId)
+	log.Infow("role permissions updated successfully", "roleId", roleId)
 	return nil
 }

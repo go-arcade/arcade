@@ -14,6 +14,20 @@ import (
 	"github.com/robfig/cron"
 )
 
+// MetricsRecorder is an interface for recording cron metrics
+type MetricsRecorder interface {
+	RecordJobRun(jobName string, duration time.Duration, err error)
+	UpdateNextRun(jobName string, nextRun time.Time)
+	UpdateJobsCount(count int)
+}
+
+var metricsRecorder MetricsRecorder
+
+// SetMetricsRecorder sets the global metrics recorder for cron jobs
+func SetMetricsRecorder(recorder MetricsRecorder) {
+	metricsRecorder = recorder
+}
+
 // Cron keeps track of any number of entries, invoking the associated func as
 // specified by the schedule. It may be started, stopped, and the entries may
 // be inspected while running.
@@ -190,6 +204,10 @@ func (c *Cron) Remove(name string) error {
 		}
 
 		c.entries = c.entries[:p+copy(c.entries[p:], c.entries[p+1:])]
+		// Update metrics
+		if metricsRecorder != nil {
+			metricsRecorder.UpdateJobsCount(len(c.entries))
+		}
 		return nil
 	}
 
@@ -231,6 +249,10 @@ func (c *Cron) Schedule(schedule Schedule, cmd Job, names ...string) {
 		}
 
 		c.entries = append(c.entries, entry)
+		// Update metrics
+		if metricsRecorder != nil {
+			metricsRecorder.UpdateJobsCount(len(c.entries))
+		}
 		return
 	}
 
@@ -271,12 +293,22 @@ func (c *Cron) Run() {
 }
 
 func (c *Cron) runWithRecovery(j Job, name string, t time.Time) {
+	startTime := time.Now()
+	var jobErr error
+
 	defer func() {
+		duration := time.Since(startTime)
 		if r := recover(); r != nil {
 			const size = 64 << 10
 			buf := make([]byte, size)
 			buf = buf[:runtime.Stack(buf, false)]
 			c.logf("cron: panic running job: %v\n%s", r, buf)
+			jobErr = fmt.Errorf("panic: %v", r)
+		}
+
+		// Record metrics if recorder is set
+		if metricsRecorder != nil {
+			metricsRecorder.RecordJobRun(name, duration, jobErr)
 		}
 	}()
 
@@ -288,6 +320,7 @@ func (c *Cron) runWithRecovery(j Job, name string, t time.Time) {
 		locked, err := c.redisClient.SetNX(ctx, key, "1", 5*time.Minute).Result()
 		if err != nil {
 			c.logf("cron: failed to acquire lock for job %s: %v", name, err)
+			jobErr = err
 			return
 		}
 		if !locked {
@@ -302,7 +335,7 @@ func (c *Cron) runWithRecovery(j Job, name string, t time.Time) {
 		}()
 	}
 
-	log.Infof("crond: triggered success! name: %s, time: %s", name, t.String())
+	log.Infow("[CROND] triggered success", "name", name, "tigger time", t.String())
 	j.Run()
 }
 
@@ -313,6 +346,14 @@ func (c *Cron) run() {
 	now := c.now()
 	for _, entry := range c.entries {
 		entry.Next = entry.Schedule.Next(now)
+		// Update metrics for initial next run times
+		if metricsRecorder != nil {
+			metricsRecorder.UpdateNextRun(entry.Name, entry.Next)
+		}
+	}
+	// Update jobs count
+	if metricsRecorder != nil {
+		metricsRecorder.UpdateJobsCount(len(c.entries))
 	}
 
 	for {
@@ -345,6 +386,10 @@ func (c *Cron) run() {
 					go c.runWithRecovery(e.Job, e.Name, e.Next)
 					e.Prev = e.Next
 					e.Next = e.Schedule.Next(now)
+					// Update metrics for next run time
+					if metricsRecorder != nil {
+						metricsRecorder.UpdateNextRun(e.Name, e.Next)
+					}
 				}
 
 			case newEntry := <-c.add:
@@ -352,6 +397,11 @@ func (c *Cron) run() {
 				now = c.now()
 				newEntry.Next = newEntry.Schedule.Next(now)
 				c.entries = append(c.entries, newEntry)
+				// Update metrics
+				if metricsRecorder != nil {
+					metricsRecorder.UpdateJobsCount(len(c.entries))
+					metricsRecorder.UpdateNextRun(newEntry.Name, newEntry.Next)
+				}
 
 			case name := <-c.remove:
 				p := c.pos(name)
@@ -360,6 +410,10 @@ func (c *Cron) run() {
 				}
 
 				c.entries = c.entries[:p+copy(c.entries[p:], c.entries[p+1:])]
+				// Update metrics
+				if metricsRecorder != nil {
+					metricsRecorder.UpdateJobsCount(len(c.entries))
+				}
 
 			case <-c.snapshot:
 				c.snapshot <- c.entrySnapshot()

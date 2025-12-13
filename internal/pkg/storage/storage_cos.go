@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/tencentyun/cos-go-sdk-v5"
 )
@@ -48,7 +47,7 @@ func newCOS(s *Storage) (*COSStorage, error) {
 	}, nil
 }
 
-func (c *COSStorage) GetObject(ctx *ctx.Context, objectName string) ([]byte, error) {
+func (c *COSStorage) GetObject(ctx context.Context, objectName string) ([]byte, error) {
 	fullPath := getFullPath(c.s.BasePath, objectName)
 	resp, err := c.Client.Object.Get(context.Background(), fullPath, nil)
 	if err != nil {
@@ -63,7 +62,7 @@ func (c *COSStorage) GetObject(ctx *ctx.Context, objectName string) ([]byte, err
 	return buf.Bytes(), nil
 }
 
-func (c *COSStorage) PutObject(ctx *ctx.Context, objectName string, file *multipart.FileHeader, contentType string) (string, error) {
+func (c *COSStorage) PutObject(ctx context.Context, objectName string, file *multipart.FileHeader, contentType string) (string, error) {
 	src, err := file.Open()
 	if err != nil {
 		return "", err
@@ -84,7 +83,7 @@ func (c *COSStorage) PutObject(ctx *ctx.Context, objectName string, file *multip
 	return fullPath, nil
 }
 
-func (c *COSStorage) Upload(ctx *ctx.Context, objectName string, file *multipart.FileHeader, contentType string) (string, error) {
+func (c *COSStorage) Upload(ctx context.Context, objectName string, file *multipart.FileHeader, contentType string) (string, error) {
 	src, err := file.Open()
 	if err != nil {
 		return "", err
@@ -103,7 +102,7 @@ func (c *COSStorage) Upload(ctx *ctx.Context, objectName string, file *multipart
 		}
 		_, err = c.Client.Object.Put(context.Background(), fullPath, src, opt)
 		if err == nil {
-			log.Debugf("COS upload completed: %s - 100.00%% (%d bytes)", fullPath, fileSize)
+			log.Debugw("COS upload completed", "fullPath", fullPath, "fileSize", fileSize)
 		}
 		return fullPath, err
 	}
@@ -186,7 +185,7 @@ func (c *COSStorage) Upload(ctx *ctx.Context, objectName string, file *multipart
 			_ = os.WriteFile(checkpointPath, mustJSON(checkpoint), 0644)
 
 			// 记录上传进度日志
-			// log.Debugf("COS upload progress: %s - %.2f%% (%d/%d bytes)",
+			// log.Debug("COS upload progress: %s - %.2f%% (%d/%d bytes)",
 			// 	fullPath, checkpoint.UploadProgress, uploadedBytes, fileSize)
 		}
 
@@ -207,13 +206,13 @@ func (c *COSStorage) Upload(ctx *ctx.Context, objectName string, file *multipart
 		opt,
 	)
 	if err == nil {
-		log.Debugf("COS upload completed: %s - 100.00%% (%d bytes)", fullPath, fileSize)
+		log.Debugw("COS upload completed", "fullPath", fullPath, "fileSize", fileSize)
 		_ = os.Remove(checkpointPath) // 成功则删除断点文件
 	}
 	return fullPath, err
 }
 
-func (c *COSStorage) Download(ctx *ctx.Context, objectName string) ([]byte, error) {
+func (c *COSStorage) Download(ctx context.Context, objectName string) ([]byte, error) {
 	fullPath := getFullPath(c.s.BasePath, objectName)
 	resp, err := c.Client.Object.Get(context.Background(), fullPath, nil)
 	if err != nil {
@@ -224,13 +223,13 @@ func (c *COSStorage) Download(ctx *ctx.Context, objectName string) ([]byte, erro
 	return io.ReadAll(resp.Body)
 }
 
-func (c *COSStorage) Delete(ctx *ctx.Context, objectName string) error {
+func (c *COSStorage) Delete(ctx context.Context, objectName string) error {
 	fullPath := getFullPath(c.s.BasePath, objectName)
 	_, err := c.Client.Object.Delete(context.Background(), fullPath)
 	return err
 }
 
-func (c *COSStorage) GetPresignedURL(ctx *ctx.Context, objectName string, expiry time.Duration) (string, error) {
+func (c *COSStorage) GetPresignedURL(ctx context.Context, objectName string, expiry time.Duration) (string, error) {
 	fullPath := getFullPath(c.s.BasePath, objectName)
 
 	presignedURL, err := c.Client.Object.GetPresignedURL(

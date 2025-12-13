@@ -10,9 +10,6 @@ import (
 	"github.com/google/wire"
 )
 
-// PluginCacheDir is the plugin cache directory path type
-type PluginCacheDir string
-
 // ProviderSet provides plugin layer related dependencies
 var ProviderSet = wire.NewSet(
 	ProvideDatabaseAccessor,
@@ -27,8 +24,9 @@ func ProvideDatabaseAccessor(db database.IDatabase) DB {
 
 // ProvidePluginManager provides plugin manager instance
 // dbAccessor is provided by ProvideDatabaseAccessor
+// Uses default plugin directory: /var/lib/arcade/plugins
 func ProvidePluginManager(dbAccessor DB) *Manager {
-	// 固定使用当前目录下的plugins目录
+	// Use default plugin directory
 	pluginDir := filepath.Join(runner.Pwd, "plugins")
 
 	// Create plugin manager configuration
@@ -48,25 +46,9 @@ func ProvidePluginManager(dbAccessor DB) *Manager {
 
 	// Autoload plugins from directory on startup
 	if err := m.LoadPluginsFromDir(); err != nil {
-		log.Warnf("failed to auto-load plugins: %v", err)
+		log.Warnw("failed to auto-load plugins", "error", err)
 	}
 
-	// Create and start plugin watcher
-	watcher, err := NewWatcher(m)
-	if err != nil {
-		log.Warnf("failed to create plugin watcher: %v", err)
-	} else {
-		// Add plugin directory to watch
-		if err := watcher.AddWatchDir(pluginDir); err != nil {
-			log.Warnf("failed to add watch dir %s: %v", pluginDir, err)
-		} else {
-			// Start watcher
-			watcher.Start()
-			m.watcher = watcher
-			log.Infof("plugin watcher started for directory: %s", pluginDir)
-		}
-	}
-
-	log.Infof("plugin manager initialized with directory: %s", pluginDir)
+	log.Infow("plugin manager initialized with directory", "directory", pluginDir)
 	return m
 }

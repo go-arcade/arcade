@@ -5,19 +5,16 @@ import (
 
 	"github.com/go-arcade/arcade/internal/engine/model"
 	generalrepo "github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/log"
 	"gorm.io/gorm"
 )
 
 type GeneralSettingsService struct {
-	ctx                 *ctx.Context
 	generalSettingsRepo generalrepo.IGeneralSettingsRepository
 }
 
-func NewGeneralSettingsService(ctx *ctx.Context, generalSettingsRepo generalrepo.IGeneralSettingsRepository) *GeneralSettingsService {
+func NewGeneralSettingsService(generalSettingsRepo generalrepo.IGeneralSettingsRepository) *GeneralSettingsService {
 	return &GeneralSettingsService{
-		ctx:                 ctx,
 		generalSettingsRepo: generalSettingsRepo,
 	}
 }
@@ -30,7 +27,7 @@ func (gss *GeneralSettingsService) UpdateGeneralSettings(id uint64, settings *mo
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New("general settings not found")
 		}
-		log.Errorf("failed to get general settings: %v", err)
+		log.Errorw("failed to get general settings", "id", id, "error", err)
 		return errors.New("failed to get general settings")
 	}
 
@@ -40,11 +37,11 @@ func (gss *GeneralSettingsService) UpdateGeneralSettings(id uint64, settings *mo
 	settings.Name = existing.Name
 
 	if err := gss.generalSettingsRepo.UpdateGeneralSettings(settings); err != nil {
-		log.Errorf("failed to update general settings: %v", err)
+		log.Errorw("failed to update general settings", "id", id, "error", err)
 		return errors.New("failed to update general settings")
 	}
 
-	log.Infof("general settings updated successfully: %d", id)
+	log.Infow("general settings updated successfully", "id", id)
 	return nil
 }
 
@@ -55,7 +52,7 @@ func (gss *GeneralSettingsService) GetGeneralSettingsByID(id uint64) (*model.Gen
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("general settings not found")
 		}
-		log.Errorf("failed to get general settings: %v", err)
+		log.Errorw("failed to get general settings", "id", id, "error", err)
 		return nil, errors.New("failed to get general settings")
 	}
 	return settings, nil
@@ -68,7 +65,7 @@ func (gss *GeneralSettingsService) GetGeneralSettingsByName(category, name strin
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("general settings not found")
 		}
-		log.Errorf("failed to get general settings: %v", err)
+		log.Errorw("failed to get general settings", "category", category, "name", name, "error", err)
 		return nil, errors.New("failed to get general settings")
 	}
 	return settings, nil
@@ -86,7 +83,7 @@ func (gss *GeneralSettingsService) GetGeneralSettingsList(pageNum, pageSize int,
 
 	settingsList, total, err := gss.generalSettingsRepo.GetGeneralSettingsList(pageNum, pageSize, category)
 	if err != nil {
-		log.Errorf("failed to get general settings list: %v", err)
+		log.Errorw("failed to get general settings list", "category", category, "error", err)
 		return nil, 0, errors.New("failed to get general settings list")
 	}
 
@@ -97,7 +94,7 @@ func (gss *GeneralSettingsService) GetGeneralSettingsList(pageNum, pageSize int,
 func (gss *GeneralSettingsService) GetCategories() ([]string, error) {
 	categories, err := gss.generalSettingsRepo.GetCategories()
 	if err != nil {
-		log.Errorf("failed to get categories: %v", err)
+		log.Errorw("failed to get categories", "error", err)
 		return nil, errors.New("failed to get categories")
 	}
 	return categories, nil

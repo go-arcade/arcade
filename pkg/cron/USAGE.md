@@ -72,7 +72,7 @@ c := cron.New()
 // ✅ 推荐：在任务内部处理错误
 c.AddFunc("0 * * * *", func() {
     if err := doSomething(); err != nil {
-        log.Errorf("Task failed: %v", err)
+        log.Error("Task failed: %v", err)
         return // 不要 panic
     }
 }, "my-task")
@@ -164,7 +164,7 @@ c.AddFunc("0 * * * *", func() {}, "my-task")
 
 // 移除任务
 if err := c.Remove("my-task"); err != nil {
-    log.Errorf("Failed to remove task: %v", err)
+    log.Error("Failed to remove task: %v", err)
 }
 ```
 

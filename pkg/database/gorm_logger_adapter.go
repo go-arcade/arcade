@@ -5,69 +5,67 @@ import (
 	"errors"
 	"time"
 
-	"go.uber.org/zap"
-	"gorm.io/gorm/logger"
+	"github.com/go-arcade/arcade/pkg/log"
+	gormLogger "gorm.io/gorm/logger"
 )
 
 type GormLoggerAdapter struct {
-	Config logger.Config
-	Level  logger.LogLevel
-	log    *zap.Logger
+	Config gormLogger.Config
+	Level  gormLogger.LogLevel
 }
 
-func NewGormLoggerAdapter(config logger.Config, logLevel logger.LogLevel, zapLogger *zap.Logger) *GormLoggerAdapter {
+func NewGormLoggerAdapter(config gormLogger.Config, logLevel gormLogger.LogLevel) *GormLoggerAdapter {
 	return &GormLoggerAdapter{
 		Config: config,
 		Level:  logLevel,
-		log:    zapLogger.WithOptions(zap.AddCallerSkip(2)), // skip 2 frames to get the caller
 	}
 }
 
-func (l *GormLoggerAdapter) LogMode(level logger.LogLevel) logger.Interface {
+func (l *GormLoggerAdapter) LogMode(level gormLogger.LogLevel) gormLogger.Interface {
 	l.Level = level
 	return l
 }
 
 func (l *GormLoggerAdapter) Info(ctx context.Context, msg string, data ...interface{}) {
-	if l.Level < logger.Info {
+	if l.Level < gormLogger.Info {
 		return
 	}
-	l.log.Sugar().Infof(msg, data...)
+	log.Infow(msg, data...)
 }
 
 func (l *GormLoggerAdapter) Warn(ctx context.Context, msg string, data ...interface{}) {
-	if l.Level < logger.Warn {
+	if l.Level < gormLogger.Warn {
 		return
 	}
-	l.log.Sugar().Warnf(msg, data...)
+	log.Warnw(msg, data...)
 }
 
 func (l *GormLoggerAdapter) Error(ctx context.Context, msg string, data ...interface{}) {
-	if l.Level < logger.Error {
+	if l.Level < gormLogger.Error {
 		return
 	}
-	l.log.Sugar().Errorf(msg, data...)
+	log.Errorw(msg, data...)
 }
 
 func (l *GormLoggerAdapter) Trace(ctx context.Context, begin time.Time, fc func() (string, int64), err error) {
-	if l.Level <= logger.Silent {
+	if l.Level <= gormLogger.Silent {
 		return
 	}
 
 	elapsed := time.Since(begin).Seconds() // convert to seconds
 	sql, rows := fc()
 
-	if err != nil && l.Config.LogLevel >= logger.Error && (!errors.Is(err, logger.ErrRecordNotFound) || !l.Config.IgnoreRecordNotFoundError) {
-		l.log.With().Sugar().Errorf("`%s` [rows: %d, elapsed: %.5f], err: %v", sql, rows, elapsed, err)
+	if err != nil && l.Config.LogLevel >= gormLogger.Error && (!errors.Is(err, gormLogger.ErrRecordNotFound) || !l.Config.IgnoreRecordNotFoundError) {
+		log.Errorw("SQL query failed", "sql", sql, "rows", rows, "elapsed", elapsed, "error", err)
 		return
 	}
 
-	if elapsed > l.Config.SlowThreshold.Seconds() && l.Config.SlowThreshold.Seconds() != 0 && l.Config.LogLevel >= logger.Warn {
-		l.log.With().Sugar().Warnf("`%s` [rows: %d, elapsed: %.5f]", sql, rows, elapsed)
+	if elapsed > l.Config.SlowThreshold.Seconds() && l.Config.SlowThreshold.Seconds() != 0 && l.Config.LogLevel >= gormLogger.Warn {
+		log.Warnw("Slow SQL query", "sql", sql, "rows", rows, "elapsed", elapsed)
 		return
 	}
 
-	if l.Config.LogLevel == logger.Info {
-		l.log.With().Sugar().Debugf("`%s` [rows: %d, elapsed: %.5f]", sql, rows, elapsed)
+	if l.Config.LogLevel == gormLogger.Info {
+		log.Debugw("SQL query", "sql", sql, "rows", rows, "elapsed", elapsed)
 	}
 }

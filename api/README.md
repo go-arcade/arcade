@@ -145,7 +145,6 @@ Real-time data streaming interface, providing bidirectional streaming communicat
 Plugin communication interface, providing unified plugin execution and management capabilities.
 
 **Main Features:**
-- **Health Check** (`Ping`) - Check plugin health status
 - **Plugin Information** (`GetInfo`) - Get plugin metadata (name, version, type, description)
 - **Plugin Metrics** (`GetMetrics`) - Get plugin runtime metrics (call count, error count, uptime)
 - **Plugin Initialization** (`Init`) - Initialize plugin with configuration

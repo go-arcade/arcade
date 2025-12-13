@@ -45,14 +45,6 @@ func (s *StreamServiceImpl) GetLogAggregator() *LogAggregator {
 	return s.logAggregator
 }
 
-// Ping ping方法
-func (s *StreamServiceImpl) Ping(ctx context.Context, req *streamv1.PingRequest) (*streamv1.PingResponse, error) {
-	return &streamv1.PingResponse{
-		Message:   "pong: " + req.Message,
-		Timestamp: 0,
-	}, nil
-}
-
 // UploadTaskLog Agent端流式上报日志给Server
 func (s *StreamServiceImpl) UploadTaskLog(stream grpc.ClientStreamingServer[streamv1.UploadTaskLogRequest, streamv1.UploadTaskLogResponse]) error {
 	var taskID, agentID string
@@ -62,7 +54,7 @@ func (s *StreamServiceImpl) UploadTaskLog(stream grpc.ClientStreamingServer[stre
 		req, err := stream.Recv()
 		if err == io.EOF {
 			// 客户端关闭流，返回响应
-			log.Infof("log upload stream closed for task %s from agent %s, received %d lines", taskID, agentID, receivedLines)
+			log.Infow("log upload stream closed", "taskId", taskID, "agentId", agentID, "receivedLines", receivedLines)
 			return stream.SendAndClose(&streamv1.UploadTaskLogResponse{
 				Success:       true,
 				Message:       "logs uploaded successfully",
@@ -70,7 +62,7 @@ func (s *StreamServiceImpl) UploadTaskLog(stream grpc.ClientStreamingServer[stre
 			})
 		}
 		if err != nil {
-			log.Errorf("failed to receive log upload: %v", err)
+			log.Errorw("failed to receive log upload", "error", err)
 			return err
 		}
 
@@ -78,7 +70,7 @@ func (s *StreamServiceImpl) UploadTaskLog(stream grpc.ClientStreamingServer[stre
 		if taskID == "" {
 			taskID = req.TaskId
 			agentID = req.AgentId
-			log.Infof("start receiving logs for task %s from agent %s", taskID, agentID)
+			log.Infow("start receiving logs for task", "taskId", taskID, "agentId", agentID)
 		}
 
 		// 转换日志条目并推送到聚合器
@@ -94,7 +86,7 @@ func (s *StreamServiceImpl) UploadTaskLog(stream grpc.ClientStreamingServer[stre
 			}
 
 			if err := s.logAggregator.PushLog(entry); err != nil {
-				log.Errorf("failed to push log to aggregator: %v", err)
+				log.Errorw("failed to push log to aggregator", "taskId", req.TaskId, "error", err)
 			}
 			receivedLines++
 
@@ -109,12 +101,12 @@ func (s *StreamServiceImpl) StreamTaskLog(req *streamv1.StreamTaskLogRequest, st
 	ctx := stream.Context()
 	taskID := req.JobId
 
-	log.Infof("client requesting log stream for task %s, from_line: %d, follow: %v", taskID, req.FromLine, req.Follow)
+	log.Infow("client requesting log stream", "taskId", taskID, "fromLine", req.FromLine, "follow", req.Follow)
 
 	// 先从MongoDB获取历史日志
 	historicalLogs, err := s.logAggregator.GetLogsByTaskID(taskID, req.FromLine, 1000)
 	if err != nil {
-		log.Errorf("failed to get historical logs: %v", err)
+		log.Errorw("failed to get historical logs", "taskId", taskID, "error", err)
 		return err
 	}
 
@@ -133,7 +125,7 @@ func (s *StreamServiceImpl) StreamTaskLog(req *streamv1.StreamTaskLogRequest, st
 			LogChunk:   logChunk,
 			IsComplete: false,
 		}); err != nil {
-			log.Errorf("failed to send log: %v", err)
+			log.Errorw("failed to send log", "taskId", taskID, "error", err)
 			return err
 		}
 	}
@@ -178,13 +170,13 @@ func (s *StreamServiceImpl) StreamTaskLog(req *streamv1.StreamTaskLogRequest, st
 
 	// 订阅实时日志channel
 	logChan := s.logAggregator.Subscribe(ctx2, taskID)
-	log.Infof("subscribed to real-time logs for task %s", taskID)
+	log.Infow("subscribed to real-time logs for task", "taskId", taskID)
 
 	// 持续发送日志直到上下文取消
 	for {
 		select {
 		case <-ctx.Done():
-			log.Infof("log stream cancelled for task %s", taskID)
+			log.Infow("log stream cancelled for task", "taskId", taskID)
 			return ctx.Err()
 		case entry, ok := <-logChan:
 			if !ok {
@@ -208,7 +200,7 @@ func (s *StreamServiceImpl) StreamTaskLog(req *streamv1.StreamTaskLogRequest, st
 				LogChunk:   logChunk,
 				IsComplete: false,
 			}); err != nil {
-				log.Errorf("failed to send real-time log: %v", err)
+				log.Errorw("failed to send real-time log", "taskId", taskID, "error", err)
 				return err
 			}
 		}
@@ -264,7 +256,7 @@ func (s *StreamServiceImpl) notifySubscribers(taskID string, logChunk *streamv1.
 				IsComplete: false,
 			})
 			if err != nil {
-				log.Errorf("failed to send log to subscriber: %v", err)
+				log.Errorw("failed to send log to subscriber", "taskId", taskID, "error", err)
 			}
 		}(sub)
 	}

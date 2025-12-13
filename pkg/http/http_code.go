@@ -1,6 +1,5 @@
 package http
 
-
 var (
 	StatusMovedPermanently = failed(301, "Moved Permanently")
 
@@ -21,6 +20,7 @@ var (
 
 	// BadRequest 400
 	BadRequest = failed(4000, "Bad request")
+	NotFound   = failed(4004, "Not found")
 
 	// Forbidden 403
 	Forbidden = failed(4030, "Forbidden")

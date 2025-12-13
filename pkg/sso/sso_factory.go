@@ -16,6 +16,7 @@ type ProviderConfig struct {
 	RedirectURL  string
 	Scopes       []string
 	Endpoint     oauth2.Endpoint
+	FieldMap     map[string]string // field mapping
 
 	// OIDC fields
 	Issuer     string

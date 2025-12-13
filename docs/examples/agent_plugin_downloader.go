@@ -14,7 +14,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/log"
 )
 
-
 // PluginDownloader Agent端插件下载管理器
 type PluginDownloader struct {
 	agentClient agentv1.AgentServiceClient
@@ -67,11 +66,11 @@ func (d *PluginDownloader) Init() error {
 
 	// 扫描已缓存的插件
 	if err := d.scanCachedPlugins(); err != nil {
-		log.Warnf("[PluginDownloader] failed to scan cached plugins: %v", err)
+		log.Warn("[PluginDownloader] failed to scan cached plugins: %v", err)
 		// 继续执行，不返回错误
 	}
 
-	log.Infof("[PluginDownloader] initialization completed, cached plugins: %d", len(d.cache))
+	log.Info("[PluginDownloader] initialization completed, cached plugins: %d", len(d.cache))
 	return nil
 }
 
@@ -79,12 +78,12 @@ func (d *PluginDownloader) Init() error {
 func (d *PluginDownloader) scanCachedPlugins() error {
 	// 扫描builtin目录
 	if err := d.scanDirectory(filepath.Join(d.pluginDir, "builtin"), "builtin"); err != nil {
-		log.Warnf("[PluginDownloader] failed to scan builtin plugins: %v", err)
+		log.Warn("[PluginDownloader] failed to scan builtin plugins: %v", err)
 	}
 
 	// 扫描downloaded目录
 	if err := d.scanDirectory(filepath.Join(d.pluginDir, "downloaded"), "downloaded"); err != nil {
-		log.Warnf("[PluginDownloader] failed to scan downloaded plugins: %v", err)
+		log.Warn("[PluginDownloader] failed to scan downloaded plugins: %v", err)
 	}
 
 	return nil
@@ -105,14 +104,14 @@ func (d *PluginDownloader) scanDirectory(dir string, source string) error {
 		pluginPath := filepath.Join(dir, entry.Name())
 		info, err := entry.Info()
 		if err != nil {
-			log.Warnf("[PluginDownloader] failed to get file info: %v", err)
+			log.Warn("[PluginDownloader] failed to get file info: %v", err)
 			continue
 		}
 
 		// 计算校验和
 		checksum, err := calculateChecksumFromFile(pluginPath)
 		if err != nil {
-			log.Warnf("[PluginDownloader] failed to calculate checksum for %s: %v", pluginPath, err)
+			log.Warn("[PluginDownloader] failed to calculate checksum for %s: %v", pluginPath, err)
 			continue
 		}
 
@@ -136,7 +135,7 @@ func (d *PluginDownloader) scanDirectory(dir string, source string) error {
 		d.cache[cacheKey] = cached
 		d.mu.Unlock()
 
-		log.Infof("[PluginDownloader] found cached plugin: %s (source=%s, checksum=%s...)",
+		log.Info("[PluginDownloader] found cached plugin: %s (source=%s, checksum=%s...)",
 			name, source, checksum[:8])
 	}
 
@@ -149,7 +148,7 @@ func (d *PluginDownloader) EnsurePlugins(ctx context.Context, plugins []*agentv1
 		return []string{}, nil
 	}
 
-	log.Infof("[PluginDownloader] ensuring %d plugins are ready", len(plugins))
+	log.Info("[PluginDownloader] ensuring %d plugins are ready", len(plugins))
 
 	pluginPaths := make([]string, 0, len(plugins))
 
@@ -161,7 +160,7 @@ func (d *PluginDownloader) EnsurePlugins(ctx context.Context, plugins []*agentv1
 		pluginPaths = append(pluginPaths, path)
 	}
 
-	log.Infof("[PluginDownloader] all %d plugins are ready", len(pluginPaths))
+	log.Info("[PluginDownloader] all %d plugins are ready", len(pluginPaths))
 	return pluginPaths, nil
 }
 
@@ -177,15 +176,15 @@ func (d *PluginDownloader) ensurePlugin(ctx context.Context, plugin *agentv1.Plu
 	if exists {
 		// 验证校验和
 		if cached.Checksum == plugin.Checksum {
-			log.Infof("[PluginDownloader] plugin %s already cached at %s", cacheKey, cached.Path)
+			log.Info("[PluginDownloader] plugin %s already cached at %s", cacheKey, cached.Path)
 			return cached.Path, nil
 		}
-		log.Warnf("[PluginDownloader] plugin %s checksum mismatch (cached=%s, expected=%s), re-downloading",
+		log.Warn("[PluginDownloader] plugin %s checksum mismatch (cached=%s, expected=%s), re-downloading",
 			cacheKey, cached.Checksum[:8], plugin.Checksum[:8])
 	}
 
 	// 下载插件（带重试）
-	log.Infof("[PluginDownloader] downloading plugin %s (v%s)", plugin.PluginId, plugin.Version)
+	log.Info("[PluginDownloader] downloading plugin %s (v%s)", plugin.PluginId, plugin.Version)
 	return d.downloadPluginWithRetry(ctx, plugin)
 }
 
@@ -195,7 +194,7 @@ func (d *PluginDownloader) downloadPluginWithRetry(ctx context.Context, plugin *
 
 	for i := 0; i < d.maxRetries; i++ {
 		if i > 0 {
-			log.Infof("[PluginDownloader] retry downloading plugin %s (attempt %d/%d)",
+			log.Info("[PluginDownloader] retry downloading plugin %s (attempt %d/%d)",
 				plugin.PluginId, i+1, d.maxRetries)
 			// 指数退避
 			time.Sleep(time.Second * time.Duration(1<<uint(i)))
@@ -207,7 +206,7 @@ func (d *PluginDownloader) downloadPluginWithRetry(ctx context.Context, plugin *
 		}
 
 		lastErr = err
-		log.Warnf("[PluginDownloader] download attempt %d failed: %v", i+1, err)
+		log.Warn("[PluginDownloader] download attempt %d failed: %v", i+1, err)
 	}
 
 	return "", fmt.Errorf("download failed after %d retries: %w", d.maxRetries, lastErr)
@@ -275,7 +274,7 @@ func (d *PluginDownloader) downloadPlugin(ctx context.Context, plugin *agentv1.P
 	}
 	d.mu.Unlock()
 
-	log.Infof("[PluginDownloader] plugin %s (v%s) downloaded successfully: %s (size=%d bytes)",
+	log.Info("[PluginDownloader] plugin %s (v%s) downloaded successfully: %s (size=%d bytes)",
 		plugin.PluginId, plugin.Version, pluginPath, resp.Size)
 
 	return pluginPath, nil
@@ -326,19 +325,19 @@ func (d *PluginDownloader) CleanCache(maxAge time.Duration) error {
 		if age > int64(maxAge.Seconds()) {
 			// 删除文件
 			if err := os.Remove(cached.Path); err != nil {
-				log.Warnf("[PluginDownloader] failed to remove old plugin %s: %v", key, err)
+				log.Warn("[PluginDownloader] failed to remove old plugin %s: %v", key, err)
 				continue
 			}
 
 			// 从缓存中删除
 			delete(d.cache, key)
 			cleaned++
-			log.Infof("[PluginDownloader] cleaned old plugin: %s (age=%d seconds)", key, age)
+			log.Info("[PluginDownloader] cleaned old plugin: %s (age=%d seconds)", key, age)
 		}
 	}
 
 	if cleaned > 0 {
-		log.Infof("[PluginDownloader] cache cleanup completed, removed %d plugins", cleaned)
+		log.Info("[PluginDownloader] cache cleanup completed, removed %d plugins", cleaned)
 	}
 
 	return nil

@@ -15,9 +15,8 @@ import (
 )
 
 type StorageRepo struct {
-	db           database.IDatabase
-	cache        cache.ICache
-	StorageModel model.StorageConfig
+	database.IDatabase
+	cache.ICache
 }
 
 const (
@@ -43,36 +42,35 @@ type IStorageRepository interface {
 
 func NewStorageRepo(db database.IDatabase, cache cache.ICache) IStorageRepository {
 	return &StorageRepo{
-		db:           db,
-		cache:        cache,
-		StorageModel: model.StorageConfig{},
+		IDatabase: db,
+		ICache:    cache,
 	}
 }
 
 // GetDB 返回数据库实例（供插件适配器使用）
 func (sr *StorageRepo) GetDB() database.IDatabase {
-	return sr.db
+	return sr.IDatabase
 }
 
 // GetDefaultStorageConfig 获取默认存储配置（带Redis缓存）
 func (sr *StorageRepo) GetDefaultStorageConfig() (*model.StorageConfig, error) {
 	// 1. 先从 Redis 查询
 	ctx := context.Background()
-	if sr.cache != nil {
-		cacheData, err := sr.cache.Get(ctx, storageDefaultConfigCacheKey).Result()
+	if sr.ICache != nil {
+		cacheData, err := sr.ICache.Get(ctx, storageDefaultConfigCacheKey).Result()
 		if err == nil && cacheData != "" {
 			var storageConfig model.StorageConfig
 			if err := json.Unmarshal([]byte(cacheData), &storageConfig); err == nil {
-				log.Debugf("[StorageRepo] cache hit for default storage config")
+				log.Debug("[StorageRepo] cache hit for default storage config")
 				return &storageConfig, nil
 			}
-			log.Warnf("[StorageRepo] failed to unmarshal cached default storage config: %v", err)
+			log.Warnw("[StorageRepo] failed to unmarshal cached default storage config", "error", err)
 		}
 	}
 
 	// 2. Redis 没有，从数据库查询
 	var storageConfig model.StorageConfig
-	err := sr.db.Database().Table(sr.StorageModel.TableName()).
+	err := sr.Database().Table(storageConfig.TableName()).
 		Where("is_default = ? AND is_enabled = ?", 1, 1).
 		First(&storageConfig).Error
 	if err != nil {
@@ -80,17 +78,17 @@ func (sr *StorageRepo) GetDefaultStorageConfig() (*model.StorageConfig, error) {
 	}
 
 	// 3. 缓存到 Redis
-	if sr.cache != nil {
+	if sr.ICache != nil {
 		cacheData, err := json.Marshal(storageConfig)
 		if err == nil {
-			err = sr.cache.Set(ctx,
+			err = sr.ICache.Set(ctx,
 				storageDefaultConfigCacheKey,
 				cacheData,
 				storageConfigCacheTTL).Err()
 			if err != nil {
-				log.Warnf("[StorageRepo] failed to cache default storage config: %v", err)
+				log.Warnw("[StorageRepo] failed to cache default storage config", "error", err)
 			} else {
-				log.Debugf("[StorageRepo] cached default storage config")
+				log.Debug("[StorageRepo] cached default storage config")
 			}
 		}
 	}
@@ -104,21 +102,21 @@ func (sr *StorageRepo) GetStorageConfigByID(storageID string) (*model.StorageCon
 
 	// 1. 先从 Redis 查询
 	ctx := context.Background()
-	if sr.cache != nil {
-		cacheData, err := sr.cache.Get(ctx, cacheKey).Result()
+	if sr.ICache != nil {
+		cacheData, err := sr.ICache.Get(ctx, cacheKey).Result()
 		if err == nil && cacheData != "" {
 			var storageConfig model.StorageConfig
 			if err := json.Unmarshal([]byte(cacheData), &storageConfig); err == nil {
-				log.Debugf("[StorageRepo] cache hit for storage config: %s", storageID)
+				log.Debugw("[StorageRepo] cache hit for storage config", "storageId", storageID)
 				return &storageConfig, nil
 			}
-			log.Warnf("[StorageRepo] failed to unmarshal cached storage config %s: %v", storageID, err)
+			log.Warnw("[StorageRepo] failed to unmarshal cached storage config", "storageId", storageID, "error", err)
 		}
 	}
 
 	// 2. Redis 没有，从数据库查询
 	var storageConfig model.StorageConfig
-	err := sr.db.Database().Table(sr.StorageModel.TableName()).
+	err := sr.Database().Table(storageConfig.TableName()).
 		Where("storage_id = ? AND is_enabled = ?", storageID, 1).
 		First(&storageConfig).Error
 	if err != nil {
@@ -126,17 +124,17 @@ func (sr *StorageRepo) GetStorageConfigByID(storageID string) (*model.StorageCon
 	}
 
 	// 3. 缓存到 Redis
-	if sr.cache != nil {
+	if sr.ICache != nil {
 		cacheData, err := json.Marshal(storageConfig)
 		if err == nil {
-			err = sr.cache.Set(ctx,
+			err = sr.ICache.Set(ctx,
 				cacheKey,
 				cacheData,
 				storageConfigCacheTTL).Err()
 			if err != nil {
-				log.Warnf("[StorageRepo] failed to cache storage config %s: %v", storageID, err)
+				log.Warnw("[StorageRepo] failed to cache storage config", "storageId", storageID, "error", err)
 			} else {
-				log.Debugf("[StorageRepo] cached storage config: %s", storageID)
+				log.Debugw("[StorageRepo] cached storage config", "storageId", storageID)
 			}
 		}
 	}
@@ -147,7 +145,8 @@ func (sr *StorageRepo) GetStorageConfigByID(storageID string) (*model.StorageCon
 // GetEnabledStorageConfigs 获取所有启用的存储配置
 func (sr *StorageRepo) GetEnabledStorageConfigs() ([]model.StorageConfig, error) {
 	var storageConfigs []model.StorageConfig
-	err := sr.db.Database().Table(sr.StorageModel.TableName()).
+	var storageConfig model.StorageConfig
+	err := sr.Database().Table(storageConfig.TableName()).
 		Select("storage_id", "name", "storage_type", "config", "description", "is_default", "is_enabled").
 		Where("is_enabled = ?", 1).
 		Order("is_default DESC, storage_id ASC").
@@ -161,7 +160,8 @@ func (sr *StorageRepo) GetEnabledStorageConfigs() ([]model.StorageConfig, error)
 // GetStorageConfigByType 根据存储类型获取配置
 func (sr *StorageRepo) GetStorageConfigByType(storageType string) ([]model.StorageConfig, error) {
 	var storageConfigs []model.StorageConfig
-	err := sr.db.Database().Table(sr.StorageModel.TableName()).
+	var storageConfig model.StorageConfig
+	err := sr.Database().Table(storageConfig.TableName()).
 		Select("storage_id", "name", "storage_type", "config", "description", "is_default", "is_enabled").
 		Where("storage_type = ? AND is_enabled = ?", storageType, 1).
 		Order("is_default DESC, storage_id ASC").
@@ -174,7 +174,7 @@ func (sr *StorageRepo) GetStorageConfigByType(storageType string) ([]model.Stora
 
 // CreateStorageConfig 创建存储配置
 func (sr *StorageRepo) CreateStorageConfig(storageConfig *model.StorageConfig) error {
-	err := sr.db.Database().Table(sr.StorageModel.TableName()).Create(storageConfig).Error
+	err := sr.Database().Table(storageConfig.TableName()).Create(storageConfig).Error
 	if err != nil {
 		return fmt.Errorf("failed to create storage config: %w", err)
 	}
@@ -183,7 +183,7 @@ func (sr *StorageRepo) CreateStorageConfig(storageConfig *model.StorageConfig) e
 
 // UpdateStorageConfig 更新存储配置
 func (sr *StorageRepo) UpdateStorageConfig(storageConfig *model.StorageConfig) error {
-	err := sr.db.Database().Table(sr.StorageModel.TableName()).
+	err := sr.Database().Table(storageConfig.TableName()).
 		Where("storage_id = ?", storageConfig.StorageId).
 		Updates(storageConfig).Error
 	if err != nil {
@@ -202,7 +202,8 @@ func (sr *StorageRepo) UpdateStorageConfig(storageConfig *model.StorageConfig) e
 
 // DeleteStorageConfig 删除存储配置
 func (sr *StorageRepo) DeleteStorageConfig(storageID string) error {
-	err := sr.db.Database().Table(sr.StorageModel.TableName()).
+	var storageConfig model.StorageConfig
+	err := sr.Database().Table(storageConfig.TableName()).
 		Where("storage_id = ?", storageID).
 		Delete(&model.StorageConfig{}).Error
 	if err != nil {
@@ -219,7 +220,8 @@ func (sr *StorageRepo) DeleteStorageConfig(storageID string) error {
 // SetDefaultStorageConfig 设置默认存储配置
 func (sr *StorageRepo) SetDefaultStorageConfig(storageID string) error {
 	// 先取消所有默认配置
-	err := sr.db.Database().Table(sr.StorageModel.TableName()).
+	var storageConfig model.StorageConfig
+	err := sr.Database().Table(storageConfig.TableName()).
 		Where("is_default = ?", 1).
 		Update("is_default", 0).Error
 	if err != nil {
@@ -227,7 +229,7 @@ func (sr *StorageRepo) SetDefaultStorageConfig(storageID string) error {
 	}
 
 	// 设置新的默认配置
-	err = sr.db.Database().Table(sr.StorageModel.TableName()).
+	err = sr.Database().Table(storageConfig.TableName()).
 		Where("storage_id = ?", storageID).
 		Update("is_default", 1).Error
 	if err != nil {
@@ -243,30 +245,30 @@ func (sr *StorageRepo) SetDefaultStorageConfig(storageID string) error {
 
 // clearStorageConfigCache 清除指定存储配置的缓存
 func (sr *StorageRepo) clearStorageConfigCache(storageID string) {
-	if sr.cache == nil {
+	if sr.ICache == nil {
 		return
 	}
 	ctx := context.Background()
 	cacheKey := storageConfigCacheKeyPrefix + storageID
-	err := sr.cache.Del(ctx, cacheKey).Err()
+	err := sr.ICache.Del(ctx, cacheKey).Err()
 	if err != nil {
-		log.Warnf("[StorageRepo] failed to clear cache for storage config %s: %v", storageID, err)
+		log.Warnw("[StorageRepo] failed to clear cache for storage config", "storageId", storageID, "error", err)
 	} else {
-		log.Debugf("[StorageRepo] cleared cache for storage config: %s", storageID)
+		log.Debugw("[StorageRepo] cleared cache for storage config", "storageId", storageID)
 	}
 }
 
 // clearDefaultStorageConfigCache 清除默认存储配置的缓存
 func (sr *StorageRepo) clearDefaultStorageConfigCache() {
-	if sr.cache == nil {
+	if sr.ICache == nil {
 		return
 	}
 	ctx := context.Background()
-	err := sr.cache.Del(ctx, storageDefaultConfigCacheKey).Err()
+	err := sr.ICache.Del(ctx, storageDefaultConfigCacheKey).Err()
 	if err != nil {
-		log.Warnf("[StorageRepo] failed to clear default storage config cache: %v", err)
+		log.Warnw("[StorageRepo] failed to clear default storage config cache", "error", err)
 	} else {
-		log.Debugf("[StorageRepo] cleared default storage config cache")
+		log.Debug("[StorageRepo] cleared default storage config cache")
 	}
 }
 

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"mime/multipart"
@@ -12,19 +13,16 @@ import (
 	storagemodel "github.com/go-arcade/arcade/internal/engine/model"
 	storagerepo "github.com/go-arcade/arcade/internal/engine/repo"
 	storagepkg "github.com/go-arcade/arcade/internal/pkg/storage"
-	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/id"
 	"github.com/go-arcade/arcade/pkg/log"
 )
 
 type UploadService struct {
-	ctx         *ctx.Context
 	storageRepo storagerepo.IStorageRepository
 }
 
-func NewUploadService(ctx *ctx.Context, storageRepo storagerepo.IStorageRepository) *UploadService {
+func NewUploadService(storageRepo storagerepo.IStorageRepository) *UploadService {
 	return &UploadService{
-		ctx:         ctx,
 		storageRepo: storageRepo,
 	}
 }
@@ -39,7 +37,7 @@ func (us *UploadService) buildCompleteURL(objectPath string, storageConfig *stor
 	// parse storage config
 	var configDetail storagemodel.StorageConfigDetail
 	if err := json.Unmarshal(storageConfig.Config, &configDetail); err != nil {
-		log.Warnf("failed to unmarshal storage config: %v", err)
+		log.Warnw("failed to unmarshal storage config", "error", err)
 		return objectPath
 	}
 
@@ -94,7 +92,7 @@ func (us *UploadService) getStorageProvider(storageId string) (*storagemodel.Sto
 	}
 
 	// create storage provider
-	storageProvider, err := storagepkg.NewStorageDBProvider(us.ctx, us.storageRepo)
+	storageProvider, err := storagepkg.NewStorageDBProvider(us.storageRepo)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create storage provider: %w", err)
 	}
@@ -131,13 +129,13 @@ func (us *UploadService) uploadToStorage(file *multipart.FileHeader, storageId, 
 	}
 
 	// upload file
-	uploadedPath, err := provider.PutObject(us.ctx, objectPath, file, contentType)
+	uploadedPath, err := provider.PutObject(context.Background(), objectPath, file, contentType)
 	if err != nil {
-		log.Errorf("failed to upload file: %v", err)
+		log.Errorw("failed to upload file", "objectPath", objectPath, "error", err)
 		return nil, fmt.Errorf("failed to upload file: %w", err)
 	}
 
-	log.Infof("file uploaded successfully: %s, size: %d", uploadedPath, file.Size)
+	log.Infow("file uploaded successfully", "uploadedPath", uploadedPath, "size", file.Size)
 
 	// build complete URL
 	fileURL := us.buildCompleteURL(uploadedPath, storageConfig)

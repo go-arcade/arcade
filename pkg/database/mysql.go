@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/go-arcade/arcade/pkg/log"
-	"go.uber.org/zap"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -60,7 +59,7 @@ var dbConnection *gorm.DB
 var mu sync.Mutex
 
 // NewDatabase initializes and returns a new Gorm database instance.
-func NewDatabase(cfg Database, zapLogger zap.Logger) (*gorm.DB, error) {
+func NewDatabase(cfg Database) (*gorm.DB, error) {
 
 	if cfg.Type != "mysql" {
 		return nil, fmt.Errorf("unsupported database type: %s", cfg.Type)
@@ -82,7 +81,7 @@ func NewDatabase(cfg Database, zapLogger zap.Logger) (*gorm.DB, error) {
 
 	if cfg.OutPut {
 		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
-			Logger: NewGormLoggerAdapter(logConfig, logger.Info, &zapLogger),
+			Logger: NewGormLoggerAdapter(logConfig, logger.Info),
 			NamingStrategy: schema.NamingStrategy{
 				TablePrefix:   defaultTablePrefix,
 				SingularTable: true,
@@ -115,7 +114,7 @@ func NewDatabase(cfg Database, zapLogger zap.Logger) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	log.Infof("database connected successfully")
+	log.Info("database connected successfully")
 
 	dbConnection = db
 	return db, nil

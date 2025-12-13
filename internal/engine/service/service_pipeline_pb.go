@@ -1,16 +1,9 @@
 package service
 
 import (
-	"context"
-	"time"
-
-	pipelineapi "github.com/go-arcade/arcade/api/pipeline/v1"
+	pipelinev1 "github.com/go-arcade/arcade/api/pipeline/v1"
 )
 
 type PipelineServiceImpl struct {
-	pipelineapi.UnimplementedPipelineServiceServer
-}
-
-func (a *PipelineServiceImpl) Ping(ctx context.Context, req *pipelineapi.PingRequest) (*pipelineapi.PingResponse, error) {
-	return &pipelineapi.PingResponse{Message: "pong", Timestamp: time.Now().Unix()}, nil
+	pipelinev1.UnimplementedPipelineServiceServer
 }

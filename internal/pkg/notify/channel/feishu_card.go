@@ -154,12 +154,12 @@ func (c *FeishuCardChannel) Send(ctx context.Context, message string) error {
 
 	resp, err := req.Post("https://open.feishu.cn/open-apis/im/v1/messages")
 	if err != nil {
-		log.Errorf("feishu card send request failed: %v", err)
+		log.Errorw("feishu card send request failed", "error", err)
 		return fmt.Errorf("failed to send request: %w", err)
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		log.Errorf("feishu card request failed with status %d: %s", resp.StatusCode(), resp.String())
+		log.Errorw("feishu card request failed", "statusCode", resp.StatusCode(), "response", resp.String())
 		return fmt.Errorf("feishu request failed with status %d", resp.StatusCode())
 	}
 

@@ -99,7 +99,7 @@ func (w *Watcher) AddWatchDir(dir string) error {
 	}
 
 	w.dirs = append(w.dirs, absDir)
-	log.Infof("start watch plugin dir: %s", absDir)
+	log.Infow("start watch plugin dir", "directory", absDir)
 	return nil
 }
 
@@ -143,7 +143,7 @@ func (w *Watcher) watchLoop() {
 			if !ok {
 				return
 			}
-			log.Errorf("file watch error: %v", err)
+			log.Errorw("file watch error", "error", err)
 		}
 	}
 }
@@ -155,13 +155,13 @@ func (w *Watcher) handleEvent(event fsnotify.Event) {
 		return
 	}
 
+	log.Debugw("detected file event", "operation", event.Op.String(), "file", event.Name)
+  
 	// Ignore CHMOD events (permission changes don't require reload)
 	if event.Op&fsnotify.Chmod == fsnotify.Chmod {
 		log.Debugf("ignoring CHMOD event for %s", event.Name)
 		return
 	}
-
-	log.Debugf("detected file event: %s %s", event.Op.String(), event.Name)
 
 	// Get or create file state
 	w.mu.Lock()
@@ -290,7 +290,7 @@ func (w *Watcher) processPendingOps() {
 func (w *Watcher) handlePluginChange(path string, op fsnotify.Op) {
 	pluginName := w.getPluginNameFromPath(path)
 	if pluginName == "" {
-		log.Warnf("cannot determine plugin name from path: [%s]", path)
+		log.Warnw("cannot determine plugin name from path", "path", path)
 		return
 	}
 
@@ -332,9 +332,9 @@ func (w *Watcher) reloadPlugin(pluginName, path string) {
 // unloadPlugin unloads a plugin
 func (w *Watcher) unloadPlugin(pluginName string) {
 	if err := w.manager.UnregisterPlugin(pluginName); err != nil {
-		log.Debugf("unload plugin [%s] failed (maybe not loaded): %v", pluginName, err)
+		log.Debugw("unload plugin failed (maybe not loaded)", "plugin", pluginName, "error", err)
 	} else {
-		log.Infof("plugin [%s] unloaded", pluginName)
+		log.Infow("plugin unloaded", "plugin", pluginName)
 	}
 }
 
@@ -347,24 +347,11 @@ func (w *Watcher) loadPlugin(pluginName, pluginPath string) {
 	}
 
 	if err := w.manager.RegisterPlugin(pluginName, pluginPath, config); err != nil {
-		log.Errorf("load plugin [%s] failed: %v", pluginName, err)
+		log.Errorw("load plugin failed", "plugin", pluginName, "error", err)
 		return
 	}
 
-	// Mark this plugin as recently loaded to ignore immediate file system events
-	w.mu.Lock()
-	state, exists := w.fileStates[pluginPath]
-	if !exists {
-		state = &PluginFileState{
-			Path: pluginPath,
-		}
-		w.fileStates[pluginPath] = state
-	}
-	state.RecentlyLoaded = true
-	state.LoadTime = time.Now()
-	w.mu.Unlock()
-
-	log.Infof("plugin [%s] loaded successfully from %s", pluginName, pluginPath)
+	log.Infow("plugin loaded successfully", "plugin", pluginName, "path", pluginPath)
 }
 
 // getPluginNameFromPath extracts the plugin name from file path

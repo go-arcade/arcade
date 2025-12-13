@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	pluginv1 "github.com/go-arcade/arcade/api/plugin/v1"
 	"google.golang.org/grpc"
@@ -40,7 +41,11 @@ func (c *Client) Ping() error {
 		return fmt.Errorf("gRPC client is not initialized")
 	}
 	ctx := context.Background()
-	_, err := c.client.Ping(ctx, &pluginv1.PingRequest{Message: "ping"})
+	_, err := c.client.HealthCheck(ctx, &pluginv1.HealthCheckRequest{
+		PluginId:  c.info.Name,
+		Message:   "ping",
+		Timestamp: time.Now().Unix(),
+	})
 	return err
 }
 

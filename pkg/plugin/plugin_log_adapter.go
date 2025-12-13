@@ -27,7 +27,7 @@ func NewLogAdapter(logger *log.Logger) hclog.Logger {
 	return &LogAdapter{
 		logger: logger,
 		name:   "PLUGIN",
-		level:  hclog.Level(log.GetLogger().Level()),
+		level:  hclog.Level(log.GetLevel()),
 		args:   nil,
 	}
 }
@@ -43,17 +43,17 @@ func (l *LogAdapter) Log(level hclog.Level, msg string, args ...any) {
 
 	switch level {
 	case hclog.Trace:
-		l.logger.Log.Debugw(formattedMsg, l.formatArgs(args...)...)
+		l.logger.Log.Debugw(formattedMsg)
 	case hclog.Debug:
-		l.logger.Log.Debugw(formattedMsg, l.formatArgs(args...)...)
+		l.logger.Log.Debugw(formattedMsg)
 	case hclog.Info:
-		l.logger.Log.Infow(formattedMsg, l.formatArgs(args...)...)
+		l.logger.Log.Infow(formattedMsg)
 	case hclog.Warn:
-		l.logger.Log.Warnw(formattedMsg, l.formatArgs(args...)...)
+		l.logger.Log.Warnw(formattedMsg)
 	case hclog.Error:
-		l.logger.Log.Errorw(formattedMsg, l.formatArgs(args...)...)
+		l.logger.Log.Errorw(formattedMsg)
 	default:
-		l.logger.Log.Infow(formattedMsg, l.formatArgs(args...)...)
+		l.logger.Log.Infow(formattedMsg)
 	}
 }
 
@@ -183,36 +183,35 @@ func (l *LogAdapter) StandardWriter(opts *hclog.StandardLoggerOptions) io.Writer
 	return &logWriterAdapter{logger: l, level: opts.ForceLevel}
 }
 
-// formatMessage formats the message with name prefix if present
+// formatMessage formats the message with name prefix and key-value pairs
 func (l *LogAdapter) formatMessage(msg string, args ...any) string {
+	// Add name prefix if present
 	if l.name != "" {
-		return fmt.Sprintf("[%s] %s", l.name, msg)
+		msg = fmt.Sprintf("[%s] %s", l.name, msg)
 	}
-	return msg
-}
 
-// formatArgs formats args as key-value pairs for zap
-func (l *LogAdapter) formatArgs(args ...any) []any {
 	// Combine implied args with provided args
 	allArgs := append(l.args, args...)
 
-	// Convert to zap format (key-value pairs)
-	formatted := make([]any, 0, len(allArgs))
-	for i := 0; i < len(allArgs); i += 2 {
-		if i+1 < len(allArgs) {
-			key, ok := allArgs[i].(string)
-			if ok {
-				formatted = append(formatted, key, allArgs[i+1])
+	// Format key-value pairs
+	if len(allArgs) > 0 {
+		var parts []string
+		for i := 0; i < len(allArgs); i += 2 {
+			if i+1 < len(allArgs) {
+				key := fmt.Sprintf("%v", allArgs[i])
+				value := allArgs[i+1]
+				parts = append(parts, fmt.Sprintf("%s=%v", key, value))
 			} else {
-				// If key is not a string, convert it
-				formatted = append(formatted, fmt.Sprintf("%v", allArgs[i]), allArgs[i+1])
+				// Odd number of args, append as is
+				parts = append(parts, fmt.Sprintf("%v", allArgs[i]))
 			}
-		} else {
-			// Odd number of args, append as is
-			formatted = append(formatted, allArgs[i])
+		}
+		if len(parts) > 0 {
+			msg += " " + strings.Join(parts, " ")
 		}
 	}
-	return formatted
+
+	return msg
 }
 
 // logWriterAdapter adapts hclog.Logger to io.Writer

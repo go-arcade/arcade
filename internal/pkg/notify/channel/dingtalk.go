@@ -133,12 +133,12 @@ func (c *DingTalkChannel) sendRequest(ctx context.Context, payload map[string]in
 
 	resp, err := req.Post(requestURL)
 	if err != nil {
-		log.Errorf("dingtalk send request failed: %v", err)
+		log.Errorw("dingtalk send request failed", "error", err)
 		return fmt.Errorf("failed to send request: %w", err)
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		log.Errorf("dingtalk request failed with status %d: %s", resp.StatusCode(), resp.String())
+		log.Errorw("dingtalk request failed", "statusCode", resp.StatusCode(), "response", resp.String())
 		return fmt.Errorf("dingtalk request failed with status %d", resp.StatusCode())
 	}
 

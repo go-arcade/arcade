@@ -10,13 +10,11 @@ import (
 	"github.com/go-arcade/arcade/internal/engine/model"
 	rolerepo "github.com/go-arcade/arcade/internal/engine/repo"
 	"github.com/go-arcade/arcade/pkg/cache"
-	"github.com/go-arcade/arcade/pkg/ctx"
 	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/go-arcade/arcade/pkg/id"
 )
 
 type PermissionService struct {
-	Ctx      *ctx.Context
 	db       database.IDatabase
 	cache    cache.ICache
 	PermRepo rolerepo.IPermissionRepository
@@ -24,9 +22,8 @@ type PermissionService struct {
 	UserRepo rolerepo.IUserRepository
 }
 
-func NewPermissionService(ctx *ctx.Context, db database.IDatabase, cache cache.ICache, permRepo rolerepo.IPermissionRepository, roleRepo rolerepo.IRoleRepository, userRepo rolerepo.IUserRepository) *PermissionService {
+func NewPermissionService(db database.IDatabase, cache cache.ICache, permRepo rolerepo.IPermissionRepository, roleRepo rolerepo.IRoleRepository, userRepo rolerepo.IUserRepository) *PermissionService {
 	return &PermissionService{
-		Ctx:      ctx,
 		db:       db,
 		cache:    cache,
 		PermRepo: permRepo,

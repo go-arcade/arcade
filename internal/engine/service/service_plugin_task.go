@@ -11,243 +11,243 @@ import (
 	"github.com/go-arcade/arcade/pkg/log"
 )
 
-// PluginTaskStatus 任务状态
-type PluginTaskStatus string
+// PluginDaemonTaskStatus 守护任务状态
+type PluginDaemonTaskStatus string
 
 const (
-	TaskStatusPending   PluginTaskStatus = "pending"   // 等待中
-	TaskStatusRunning   PluginTaskStatus = "running"   // 执行中
-	TaskStatusCompleted PluginTaskStatus = "completed" // 已完成
-	TaskStatusFailed    PluginTaskStatus = "failed"    // 失败
+	DaemonTaskStatusPending   PluginDaemonTaskStatus = "pending"   // 等待中
+	DaemonTaskStatusRunning   PluginDaemonTaskStatus = "running"   // 执行中
+	DaemonTaskStatusCompleted PluginDaemonTaskStatus = "completed" // 已完成
+	DaemonTaskStatusFailed    PluginDaemonTaskStatus = "failed"    // 失败
 )
 
-// PluginInstallTask 插件安装任务（内存中的结构）
-type PluginInstallTask struct {
-	TaskID        string           `json:"taskId"`        // 任务ID
-	PluginName    string           `json:"pluginName"`    // 插件名称
-	Version       string           `json:"version"`       // 版本
-	Status        PluginTaskStatus `json:"status"`        // 状态
-	Progress      int              `json:"progress"`      // 进度 0-100
-	Message       string           `json:"message"`       // 消息
-	Error         string           `json:"error"`         // 错误信息
-	PluginID      string           `json:"pluginId"`      // 安装成功后的插件ID
-	CreateTime    time.Time        `json:"createTime"`    // 创建时间
-	UpdateTime    time.Time        `json:"updateTime"`    // 更新时间
-	CompletedTime *time.Time       `json:"completedTime"` // 完成时间
-	Duration      int64            `json:"duration"`      // 安装耗时（秒）
+// PluginInstallDaemonTask 插件安装守护任务（内存中的结构）
+type PluginInstallDaemonTask struct {
+	TaskID        string                 `json:"taskId"`        // 任务ID
+	PluginName    string                 `json:"pluginName"`    // 插件名称
+	Version       string                 `json:"version"`       // 版本
+	Status        PluginDaemonTaskStatus `json:"status"`        // 状态
+	Progress      int                    `json:"progress"`      // 进度 0-100
+	Message       string                 `json:"message"`       // 消息
+	Error         string                 `json:"error"`         // 错误信息
+	PluginID      string                 `json:"pluginId"`      // 安装成功后的插件ID
+	CreateTime    time.Time              `json:"createTime"`    // 创建时间
+	UpdateTime    time.Time              `json:"updateTime"`    // 更新时间
+	CompletedTime *time.Time             `json:"completedTime"` // 完成时间
+	Duration      int64                  `json:"duration"`      // 安装耗时（秒）
 }
 
-// TaskManager 任务管理器（带MongoDB持久化）
-type TaskManager struct {
-	taskRepo pluginrepo.IPluginTaskRepository
+// DaemonTaskManager 守护任务管理器（带MongoDB持久化）
+type DaemonTaskManager struct {
+	daemonTaskRepo pluginrepo.IPluginTaskRepository
 }
 
 var (
-	taskManager *TaskManager
-	once        sync.Once
+	daemonTaskManager *DaemonTaskManager
+	once              sync.Once
 )
 
-// GetTaskManager 获取任务管理器单例
-func GetTaskManager() *TaskManager {
-	if taskManager == nil {
-		log.Warn("[TaskManager] not initialized, call InitTaskManager first")
+// GetDaemonTaskManager 获取守护任务管理器单例
+func GetDaemonTaskManager() *DaemonTaskManager {
+	if daemonTaskManager == nil {
+		log.Warn("[DaemonTaskManager] not initialized, call InitDaemonTaskManager first")
 	}
-	return taskManager
+	return daemonTaskManager
 }
 
-// InitTaskManager 初始化任务管理器（需要在应用启动时调用）
-func InitTaskManager(mongoDB database.MongoDB) *TaskManager {
+// InitDaemonTaskManager 初始化守护任务管理器（需要在应用启动时调用）
+func InitDaemonTaskManager(mongoDB database.MongoDB) *DaemonTaskManager {
 	once.Do(func() {
 		repo := pluginrepo.NewPluginTaskRepo(mongoDB)
 		if err := repo.CreateIndexes(); err != nil {
-			log.Warnf("[TaskManager] failed to create indexes: %v", err)
+			log.Warnw("[DaemonTaskManager] failed to create indexes", "error", err)
 		}
-		taskManager = &TaskManager{taskRepo: repo}
-		log.Info("[TaskManager] initialized with MongoDB persistence")
+		daemonTaskManager = &DaemonTaskManager{daemonTaskRepo: repo}
+		log.Info("[DaemonTaskManager] initialized with MongoDB persistence")
 	})
-	return taskManager
+	return daemonTaskManager
 }
 
-// CreateTask 创建任务
-func (tm *TaskManager) CreateTask(pluginName, version string) *PluginInstallTask {
-	if tm == nil || tm.taskRepo == nil {
-		log.Error("[TaskManager] not initialized")
+// CreateDaemonTask 创建守护任务
+func (tm *DaemonTaskManager) CreateDaemonTask(pluginName, version string) *PluginInstallDaemonTask {
+	if tm == nil || tm.daemonTaskRepo == nil {
+		log.Error("[DaemonTaskManager] not initialized")
 		return nil
 	}
 
-	taskModel := &model.PluginInstallRecords{
+	daemonTaskModel := &model.PluginInstallRecords{
 		TaskID:     id.GetUUID(),
 		PluginName: pluginName,
 		Version:    version,
-		Status:     string(TaskStatusPending),
+		Status:     string(DaemonTaskStatusPending),
 		Progress:   0,
-		Message:    "Task created, waiting for execution",
+		Message:    "DaemonTask created, waiting for execution",
 		Source:     "local",
 		CreateTime: time.Now(),
 		UpdateTime: time.Now(),
 	}
 
-	if err := tm.taskRepo.CreateTask(taskModel); err != nil {
-		log.Errorf("[TaskManager] failed to create task: %v", err)
+	if err := tm.daemonTaskRepo.CreateTask(daemonTaskModel); err != nil {
+		log.Errorw("[DaemonTaskManager] failed to create daemon task", "pluginName", pluginName, "version", version, "error", err)
 		return nil
 	}
 
-	log.Infof("[TaskManager] created task: %s for plugin %s v%s", taskModel.TaskID, pluginName, version)
+	log.Infow("[DaemonTaskManager] created daemon task", "taskId", daemonTaskModel.TaskID, "pluginName", pluginName, "version", version)
 
-	return tm.modelToTask(taskModel)
+	return tm.modelToDaemonTask(daemonTaskModel)
 }
 
-// GetTask 获取任务（从MongoDB读取）
-func (tm *TaskManager) GetTask(taskID string) *PluginInstallTask {
-	if tm == nil || tm.taskRepo == nil {
-		log.Error("[TaskManager] not initialized")
+// GetDaemonTask 获取守护任务（从MongoDB读取）
+func (tm *DaemonTaskManager) GetDaemonTask(daemonTaskID string) *PluginInstallDaemonTask {
+	if tm == nil || tm.daemonTaskRepo == nil {
+		log.Error("[DaemonTaskManager] not initialized")
 		return nil
 	}
 
-	taskModel, err := tm.taskRepo.GetTaskByID(taskID)
+	daemonTaskModel, err := tm.daemonTaskRepo.GetTaskByID(daemonTaskID)
 	if err != nil {
-		log.Debugf("[TaskManager] failed to get task %s: %v", taskID, err)
+		log.Debugw("[DaemonTaskManager] failed to get daemon task", "taskId", daemonTaskID, "error", err)
 		return nil
 	}
 
-	return tm.modelToTask(taskModel)
+	return tm.modelToDaemonTask(daemonTaskModel)
 }
 
-// UpdateTask 更新任务
-func (tm *TaskManager) UpdateTask(taskID string, status PluginTaskStatus, progress int, message string) {
-	if tm == nil || tm.taskRepo == nil {
-		log.Error("[TaskManager] not initialized")
+// UpdateDaemonTask 更新守护任务
+func (tm *DaemonTaskManager) UpdateDaemonTask(daemonTaskID string, status PluginDaemonTaskStatus, progress int, message string) {
+	if tm == nil || tm.daemonTaskRepo == nil {
+		log.Error("[DaemonTaskManager] not initialized")
 		return
 	}
 
-	// 先获取任务
-	taskModel, err := tm.taskRepo.GetTaskByID(taskID)
+	// 先获取守护任务
+	daemonTaskModel, err := tm.daemonTaskRepo.GetTaskByID(daemonTaskID)
 	if err != nil {
-		log.Errorf("[TaskManager] failed to get task %s for update: %v", taskID, err)
+		log.Errorw("[DaemonTaskManager] failed to get daemon task for update", "taskId", daemonTaskID, "error", err)
 		return
 	}
 
 	// 更新字段
-	taskModel.Status = string(status)
-	taskModel.Progress = progress
-	taskModel.Message = message
-	taskModel.UpdateTime = time.Now()
+	daemonTaskModel.Status = string(status)
+	daemonTaskModel.Progress = progress
+	daemonTaskModel.Message = message
+	daemonTaskModel.UpdateTime = time.Now()
 
-	if status == TaskStatusCompleted || status == TaskStatusFailed {
+	if status == DaemonTaskStatusCompleted || status == DaemonTaskStatusFailed {
 		now := time.Now()
-		taskModel.CompletedTime = &now
+		daemonTaskModel.CompletedTime = &now
 		// 计算耗时（秒）
-		taskModel.Duration = int64(now.Sub(taskModel.CreateTime).Seconds())
+		daemonTaskModel.Duration = int64(now.Sub(daemonTaskModel.CreateTime).Seconds())
 	}
 
 	// 保存到MongoDB
-	if err := tm.taskRepo.UpdateTask(taskModel); err != nil {
-		log.Errorf("[TaskManager] failed to update task %s: %v", taskID, err)
+	if err := tm.daemonTaskRepo.UpdateTask(daemonTaskModel); err != nil {
+		log.Errorw("[DaemonTaskManager] failed to update daemon task", "taskId", daemonTaskID, "error", err)
 	}
 }
 
-// UpdateTaskError 更新任务错误（持久化到MongoDB）
-func (tm *TaskManager) UpdateTaskError(taskID string, err error) {
-	if tm == nil || tm.taskRepo == nil {
-		log.Error("[TaskManager] not initialized")
+// UpdateDaemonTaskError 更新守护任务错误（持久化到MongoDB）
+func (tm *DaemonTaskManager) UpdateDaemonTaskError(daemonTaskID string, err error) {
+	if tm == nil || tm.daemonTaskRepo == nil {
+		log.Error("[DaemonTaskManager] not initialized")
 		return
 	}
 
-	taskModel, getErr := tm.taskRepo.GetTaskByID(taskID)
+	daemonTaskModel, getErr := tm.daemonTaskRepo.GetTaskByID(daemonTaskID)
 	if getErr != nil {
-		log.Errorf("[TaskManager] failed to get task %s for error update: %v", taskID, getErr)
+		log.Errorw("[DaemonTaskManager] failed to get daemon task for error update", "taskId", daemonTaskID, "error", getErr)
 		return
 	}
 
-	taskModel.Status = string(TaskStatusFailed)
-	taskModel.Error = err.Error()
-	taskModel.Message = "install failed"
-	taskModel.UpdateTime = time.Now()
+	daemonTaskModel.Status = string(DaemonTaskStatusFailed)
+	daemonTaskModel.Error = err.Error()
+	daemonTaskModel.Message = "install failed"
+	daemonTaskModel.UpdateTime = time.Now()
 	now := time.Now()
-	taskModel.CompletedTime = &now
+	daemonTaskModel.CompletedTime = &now
 	// 计算耗时（秒）
-	taskModel.Duration = int64(now.Sub(taskModel.CreateTime).Seconds())
+	daemonTaskModel.Duration = int64(now.Sub(daemonTaskModel.CreateTime).Seconds())
 
-	if updateErr := tm.taskRepo.UpdateTask(taskModel); updateErr != nil {
-		log.Errorf("[TaskManager] failed to update task error %s: %v", taskID, updateErr)
+	if updateErr := tm.daemonTaskRepo.UpdateTask(daemonTaskModel); updateErr != nil {
+		log.Errorw("[DaemonTaskManager] failed to update daemon task error", "taskId", daemonTaskID, "error", updateErr)
 	}
 }
 
-// UpdateTaskSuccess 更新任务成功
-func (tm *TaskManager) UpdateTaskSuccess(taskID string, pluginID string) {
-	if tm == nil || tm.taskRepo == nil {
-		log.Error("[TaskManager] not initialized")
+// UpdateDaemonTaskSuccess 更新守护任务成功
+func (tm *DaemonTaskManager) UpdateDaemonTaskSuccess(daemonTaskID string, pluginID string) {
+	if tm == nil || tm.daemonTaskRepo == nil {
+		log.Error("[DaemonTaskManager] not initialized")
 		return
 	}
 
-	taskModel, err := tm.taskRepo.GetTaskByID(taskID)
+	daemonTaskModel, err := tm.daemonTaskRepo.GetTaskByID(daemonTaskID)
 	if err != nil {
-		log.Errorf("[TaskManager] failed to get task %s for success update: %v", taskID, err)
+		log.Errorw("[DaemonTaskManager] failed to get daemon task for success update", "taskId", daemonTaskID, "error", err)
 		return
 	}
 
-	taskModel.Status = string(TaskStatusCompleted)
-	taskModel.Progress = 100
-	taskModel.PluginID = pluginID
-	taskModel.Message = "install success"
-	taskModel.UpdateTime = time.Now()
+	daemonTaskModel.Status = string(DaemonTaskStatusCompleted)
+	daemonTaskModel.Progress = 100
+	daemonTaskModel.PluginID = pluginID
+	daemonTaskModel.Message = "install success"
+	daemonTaskModel.UpdateTime = time.Now()
 	now := time.Now()
-	taskModel.CompletedTime = &now
+	daemonTaskModel.CompletedTime = &now
 	// 计算耗时（秒）
-	taskModel.Duration = int64(now.Sub(taskModel.CreateTime).Seconds())
+	daemonTaskModel.Duration = int64(now.Sub(daemonTaskModel.CreateTime).Seconds())
 
-	if err := tm.taskRepo.UpdateTask(taskModel); err != nil {
-		log.Errorf("[TaskManager] failed to update task success %s: %v", taskID, err)
+	if err := tm.daemonTaskRepo.UpdateTask(daemonTaskModel); err != nil {
+		log.Errorw("[DaemonTaskManager] failed to update daemon task success", "taskId", daemonTaskID, "error", err)
 	}
 }
 
-// ListTasks 列出所有任务
-func (tm *TaskManager) ListTasks() []*PluginInstallTask {
-	if tm == nil || tm.taskRepo == nil {
-		log.Error("[TaskManager] not initialized")
-		return []*PluginInstallTask{}
+// ListDaemonTasks 列出所有守护任务
+func (tm *DaemonTaskManager) ListDaemonTasks() []*PluginInstallDaemonTask {
+	if tm == nil || tm.daemonTaskRepo == nil {
+		log.Error("[DaemonTaskManager] not initialized")
+		return []*PluginInstallDaemonTask{}
 	}
 
-	taskModels, err := tm.taskRepo.ListAllTasks()
+	daemonTaskModels, err := tm.daemonTaskRepo.ListAllTasks()
 	if err != nil {
-		log.Errorf("[TaskManager] failed to list tasks: %v", err)
-		return []*PluginInstallTask{}
+		log.Errorw("[DaemonTaskManager] failed to list daemon tasks", "error", err)
+		return []*PluginInstallDaemonTask{}
 	}
 
-	tasks := make([]*PluginInstallTask, 0, len(taskModels))
-	for _, taskModel := range taskModels {
-		tasks = append(tasks, tm.modelToTask(taskModel))
+	daemonTasks := make([]*PluginInstallDaemonTask, 0, len(daemonTaskModels))
+	for _, daemonTaskModel := range daemonTaskModels {
+		daemonTasks = append(daemonTasks, tm.modelToDaemonTask(daemonTaskModel))
 	}
 
-	return tasks
+	return daemonTasks
 }
 
-// CleanupOldTasks 清理旧任务（保留最近24小时的任务）
-func (tm *TaskManager) CleanupOldTasks() {
-	if tm == nil || tm.taskRepo == nil {
-		log.Error("[TaskManager] not initialized")
+// CleanupOldDaemonTasks 清理旧守护任务（保留最近24小时的任务）
+func (tm *DaemonTaskManager) CleanupOldDaemonTasks() {
+	if tm == nil || tm.daemonTaskRepo == nil {
+		log.Error("[DaemonTaskManager] not initialized")
 		return
 	}
 
 	cutoff := time.Now().Add(-24 * time.Hour)
-	count, err := tm.taskRepo.DeleteOldTasks(cutoff)
+	count, err := tm.daemonTaskRepo.DeleteOldTasks(cutoff)
 	if err != nil {
-		log.Errorf("[TaskManager] failed to cleanup old tasks: %v", err)
+		log.Errorw("[DaemonTaskManager] failed to cleanup old daemon tasks", "error", err)
 		return
 	}
 
 	if count > 0 {
-		log.Infof("[TaskManager] cleaned up %d old tasks", count)
+		log.Infow("[DaemonTaskManager] cleaned up old daemon tasks", "count", count)
 	}
 }
 
-// modelToTask 将MongoDB模型转换为内存任务结构
-func (tm *TaskManager) modelToTask(m *model.PluginInstallRecords) *PluginInstallTask {
-	return &PluginInstallTask{
+// modelToDaemonTask 将MongoDB模型转换为内存守护任务结构
+func (tm *DaemonTaskManager) modelToDaemonTask(m *model.PluginInstallRecords) *PluginInstallDaemonTask {
+	return &PluginInstallDaemonTask{
 		TaskID:        m.TaskID,
 		PluginName:    m.PluginName,
 		Version:       m.Version,
-		Status:        PluginTaskStatus(m.Status),
+		Status:        PluginDaemonTaskStatus(m.Status),
 		Progress:      m.Progress,
 		Message:       m.Message,
 		Error:         m.Error,

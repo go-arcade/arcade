@@ -13,11 +13,16 @@ import (
 )
 
 // ProviderSet 提供缓存相关的依赖
-var ProviderSet = wire.NewSet(ProvideRedis)
+var ProviderSet = wire.NewSet(ProvideRedis, ProvideICache)
 
 // ProvideRedis 提供 Redis 实例
 func ProvideRedis(conf Redis) (*redis.Client, error) {
 	return NewRedis(conf)
+}
+
+// ProvideICache 提供 ICache 接口实例
+func ProvideICache(client *redis.Client) ICache {
+	return NewRedisCache(client)
 }
 
 type Redis struct {
@@ -71,13 +76,13 @@ func NewRedis(cfg Redis) (*redis.Client, error) {
 		}
 		redisClient = redis.NewFailoverClient(redisOptions)
 	default:
-		log.Errorf("failed to init redis, redis type is illegal: %s", cfg.Mode)
+		log.Errorw("failed to init redis, redis type is illegal", "mode", cfg.Mode)
 		os.Exit(1)
 	}
 
 	err := redisClient.Ping(context.Background()).Err()
 	if err != nil {
-		log.Errorf("failed to connect redis: %v", err)
+		log.Errorw("failed to connect redis", "error", err)
 		return nil, err
 	}
 

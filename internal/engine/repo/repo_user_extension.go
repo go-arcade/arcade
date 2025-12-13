@@ -19,21 +19,19 @@ type IUserExtensionRepository interface {
 }
 
 type UserExtensionRepo struct {
-	db                 database.IDatabase
-	userExtensionModel model.UserExtension
+	database.IDatabase
 }
 
 func NewUserExtensionRepo(db database.IDatabase) IUserExtensionRepository {
 	return &UserExtensionRepo{
-		db:                 db,
-		userExtensionModel: model.UserExtension{},
+		IDatabase: db,
 	}
 }
 
 // GetByUserId gets user extension by user ID
 func (uer *UserExtensionRepo) GetByUserId(userId string) (*model.UserExtension, error) {
 	var extension model.UserExtension
-	err := uer.db.Database().Table(uer.userExtensionModel.TableName()).
+	err := uer.Database().Table(extension.TableName()).
 		Where("user_id = ?", userId).
 		First(&extension).Error
 	return &extension, err
@@ -41,12 +39,12 @@ func (uer *UserExtensionRepo) GetByUserId(userId string) (*model.UserExtension, 
 
 // Create creates a user extension record
 func (uer *UserExtensionRepo) Create(extension *model.UserExtension) error {
-	return uer.db.Database().Table(uer.userExtensionModel.TableName()).Create(extension).Error
+	return uer.Database().Table(extension.TableName()).Create(extension).Error
 }
 
 // Update updates user extension information
 func (uer *UserExtensionRepo) Update(userId string, extension *model.UserExtension) error {
-	return uer.db.Database().Table(uer.userExtensionModel.TableName()).
+	return uer.Database().Table(extension.TableName()).
 		Where("user_id = ?", userId).
 		Updates(extension).Error
 }
@@ -54,14 +52,16 @@ func (uer *UserExtensionRepo) Update(userId string, extension *model.UserExtensi
 // UpdateLastLogin updates the last login timestamp
 func (uer *UserExtensionRepo) UpdateLastLogin(userId string) error {
 	now := time.Now()
-	return uer.db.Database().Table(uer.userExtensionModel.TableName()).
+	var extension model.UserExtension
+	return uer.Database().Table(extension.TableName()).
 		Where("user_id = ?", userId).
 		Update("last_login_at", now).Error
 }
 
 // UpdateTimezone updates user timezone
 func (uer *UserExtensionRepo) UpdateTimezone(userId, timezone string) error {
-	return uer.db.Database().Table(uer.userExtensionModel.TableName()).
+	var extension model.UserExtension
+	return uer.Database().Table(extension.TableName()).
 		Where("user_id = ?", userId).
 		Update("timezone", timezone).Error
 }
@@ -77,14 +77,16 @@ func (uer *UserExtensionRepo) UpdateInvitationStatus(userId, status string) erro
 		updates["accepted_at"] = time.Now()
 	}
 
-	return uer.db.Database().Table(uer.userExtensionModel.TableName()).
+	var extension model.UserExtension
+	return uer.Database().Table(extension.TableName()).
 		Where("user_id = ?", userId).
 		Updates(updates).Error
 }
 
 // Delete deletes user extension record
 func (uer *UserExtensionRepo) Delete(userId string) error {
-	return uer.db.Database().Table(uer.userExtensionModel.TableName()).
+	var extension model.UserExtension
+	return uer.Database().Table(extension.TableName()).
 		Where("user_id = ?", userId).
 		Delete(&model.UserExtension{}).Error
 }
@@ -92,7 +94,8 @@ func (uer *UserExtensionRepo) Delete(userId string) error {
 // Exists checks if user extension exists
 func (uer *UserExtensionRepo) Exists(userId string) (bool, error) {
 	var count int64
-	err := uer.db.Database().Table(uer.userExtensionModel.TableName()).
+	var extension model.UserExtension
+	err := uer.Database().Table(extension.TableName()).
 		Where("user_id = ?", userId).
 		Count(&count).Error
 	return count > 0, err
