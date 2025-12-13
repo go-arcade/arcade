@@ -156,10 +156,10 @@ func (w *Watcher) handleEvent(event fsnotify.Event) {
 	}
 
 	log.Debugw("detected file event", "operation", event.Op.String(), "file", event.Name)
-  
+
 	// Ignore CHMOD events (permission changes don't require reload)
 	if event.Op&fsnotify.Chmod == fsnotify.Chmod {
-		log.Debugf("ignoring CHMOD event for %s", event.Name)
+		log.Debugw("ignoring CHMOD event for %s", event.Name)
 		return
 	}
 
@@ -182,7 +182,7 @@ func (w *Watcher) handleEvent(event fsnotify.Event) {
 			// File was moved/deleted, find plugin and unload it
 			pluginName := w.getPluginNameFromPath(event.Name)
 			if pluginName != "" {
-				log.Infof("plugin file [%s] was moved/deleted (RENAME), unloading plugin [%s]", event.Name, pluginName)
+				log.Debugw("plugin file was moved/deleted (RENAME), unloading plugin", "file", event.Name, "plugin", pluginName)
 				w.unloadPlugin(pluginName)
 			}
 			// Clean up state
@@ -199,7 +199,7 @@ func (w *Watcher) handleEvent(event fsnotify.Event) {
 	w.mu.Lock()
 	if state.RecentlyLoaded {
 		if time.Since(state.LoadTime) < 2*time.Second {
-			log.Debugf("ignoring event for recently loaded plugin: %s", event.Name)
+			log.Debugw("ignoring event for recently loaded plugin", "file", event.Name)
 			w.mu.Unlock()
 			return
 		}
@@ -297,7 +297,7 @@ func (w *Watcher) handlePluginChange(path string, op fsnotify.Op) {
 	// Check if file exists
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		// File was deleted, just unload the plugin
-		log.Infof("plugin file [%s] was deleted (op: %s), unloading plugin [%s]", path, op.String(), pluginName)
+		log.Infow("plugin file was deleted (op: %s), unloading plugin", "file", path, "op", op.String(), "plugin", pluginName)
 		w.unloadPlugin(pluginName)
 		// Clean up state
 		w.mu.Lock()
@@ -307,7 +307,7 @@ func (w *Watcher) handlePluginChange(path string, op fsnotify.Op) {
 	}
 
 	// File exists or was modified, reload the plugin
-	log.Debugf("handling plugin change: path=[%s], op=%s, plugin=[%s]", path, op.String(), pluginName)
+	log.Debugw("handling plugin change", "path", path, "op", op.String(), "plugin", pluginName)
 	w.reloadPlugin(pluginName, path)
 }
 
@@ -321,7 +321,7 @@ func (w *Watcher) reloadPlugin(pluginName, path string) {
 
 	// Verify file still exists before loading
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		log.Warnf("plugin file [%s] no longer exists, skipping load", path)
+		log.Warnw("plugin file no longer exists, skipping load", "file", path)
 		return
 	}
 
