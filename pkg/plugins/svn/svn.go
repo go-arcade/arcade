@@ -604,12 +604,13 @@ func (p *SVNPluginHandler) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server)
 	typ, _ := p.pluginInstance.Type()
 
 	info := &pluginpkg.PluginInfo{
-		Name:        name,
-		Description: desc,
-		Version:     ver,
-		Type:        typ,
-		Author:      "Arcade Team",
-		Homepage:    "https://github.com/go-arcade/arcade",
+		Name:          name,
+		Description:   desc,
+		Version:       ver,
+		Type:          typ,
+		Author:        "Arcade Team",
+		Homepage:      "https://github.com/go-arcade/arcade",
+		ExecutionType: pluginv1.ExecutionType_EXECUTION_TYPE_SHELL,
 	}
 
 	server := pluginpkg.NewServer(info, p.pluginInstance, nil)

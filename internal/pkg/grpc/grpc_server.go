@@ -42,13 +42,13 @@ func NewGrpcServer(cfg Conf) *ServerWrapper {
 			// 注意顺序，先 tags，再 logging，再 auth，最后 recovery
 			grpcctxtags.StreamServerInterceptor(),
 			interceptor.LoggingStreamInterceptor(), // 使用自定义日志拦截器，可过滤心跳接口
-			//	interceptor.AuthStreamInterceptor(),       // 使用自定义认证拦截器，可跳过心跳接口
+			interceptor.AuthStreamInterceptor(),    // 使用自定义认证拦截器，可跳过心跳接口
 			grpcrecovery.StreamServerInterceptor(),
 		)),
 		grpc.UnaryInterceptor(grpcmiddleware.ChainUnaryServer(
 			grpcctxtags.UnaryServerInterceptor(),
 			interceptor.LoggingUnaryInterceptor(), // 使用自定义日志拦截器，可过滤心跳接口
-			//	interceptor.AuthUnaryInterceptor(),       // 使用自定义认证拦截器，可跳过心跳接口
+			interceptor.AuthUnaryInterceptor(),    // 使用自定义认证拦截器，可跳过心跳接口
 			grpcrecovery.UnaryServerInterceptor(),
 		)),
 	}

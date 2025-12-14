@@ -1,7 +1,10 @@
 package grpc
 
 import (
+	"github.com/go-arcade/arcade/internal/engine/repo"
 	"github.com/go-arcade/arcade/internal/engine/service"
+	"github.com/go-arcade/arcade/internal/pkg/grpc/interceptor"
+	"github.com/go-arcade/arcade/pkg/cache"
 	"github.com/google/wire"
 )
 
@@ -12,8 +15,13 @@ var ProviderSet = wire.NewSet(
 )
 
 // ProvideGrpcServer 提供 gRPC 服务器实例
-func ProvideGrpcServer(cfg *Conf, services *service.Services) *ServerWrapper {
+func ProvideGrpcServer(cfg *Conf, services *service.Services, repos *repo.Repositories, cache cache.ICache) *ServerWrapper {
 	server := NewGrpcServer(*cfg)
+
+	// Set up token verifier for agent authentication
+	tokenVerifier := interceptor.NewAgentTokenVerifier(services.Agent, repos.Agent, services.GeneralSettings, cache)
+	interceptor.SetTokenVerifier(tokenVerifier)
+
 	server.Register(services)
 	return server
 }

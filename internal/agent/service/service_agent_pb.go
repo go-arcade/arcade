@@ -1,6 +1,7 @@
 package service
 
 import (
+	"maps"
 	"context"
 	"time"
 
@@ -61,19 +62,6 @@ func (s *AgentService) Unregister(ctx context.Context, req *agentv1.UnregisterRe
 	}, nil
 }
 
-// FetchTask handles task fetching requests from agent
-func (s *AgentService) FetchTask(ctx context.Context, req *agentv1.FetchTaskRequest) (*agentv1.FetchTaskResponse, error) {
-	log.Debugw("FetchTask request received", "agent_id", req.AgentId, "max_jobs", req.MaxJobs)
-
-	// TODO: Implement task fetching logic
-	// For now, return empty task list
-	return &agentv1.FetchTaskResponse{
-		Success: true,
-		Message: "no tasks available",
-		Tasks:   []*agentv1.Task{},
-	}, nil
-}
-
 // ReportTaskStatus handles task status reporting requests
 func (s *AgentService) ReportTaskStatus(ctx context.Context, req *agentv1.ReportTaskStatusRequest) (*agentv1.ReportTaskStatusResponse, error) {
 	log.Debugw("ReportTaskStatus request received", "agent_id", req.AgentId, "task_id", req.TaskId, "status", req.Status.String())
@@ -117,13 +105,9 @@ func (s *AgentService) UpdateLabels(ctx context.Context, req *agentv1.UpdateLabe
 	updatedLabels := make(map[string]string)
 	if req.Merge {
 		// Merge with existing labels
-		for k, v := range s.agentConf.Agent.Labels {
-			updatedLabels[k] = v
-		}
+		maps.Copy(updatedLabels, s.agentConf.Agent.Labels)
 	}
-	for k, v := range req.Labels {
-		updatedLabels[k] = v
-	}
+	maps.Copy(updatedLabels, req.Labels)
 
 	return &agentv1.UpdateLabelsResponse{
 		Success: true,

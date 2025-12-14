@@ -1,12 +1,12 @@
 {
-  "name": "bash",
+  "name": "shell",
   "version": "1.0.0",
-  "description": "Bash 脚本执行插件，支持执行 bash 脚本、命令和脚本文件，适用于自动化任务和 CI/CD 流程",
+  "description": "Shell 脚本执行插件，支持执行 shell 脚本、命令和脚本文件，适用于自动化任务和 CI/CD 流程",
   "author": "Arcade Team <support@go-arcade.io>",
   "homepage": "https://github.com/go-arcade/arcade",
   "repository": "https://github.com/go-arcade/arcade",
   "pluginType": "custom",
-  "entryPoint": "bash",
+  "entryPoint": "shell",
   "dependencies": [],
   "configSchema": {
     "type": "object",
@@ -14,8 +14,8 @@
       "shell": {
         "type": "string",
         "description": "Shell 可执行文件的路径",
-        "default": "/bin/bash",
-        "examples": ["/bin/bash", "/bin/sh", "/bin/zsh"]
+        "default": "/bin/sh",
+        "examples": ["/bin/sh", "/bin/bash", "/bin/zsh"]
       },
       "work_dir": {
         "type": "string",
@@ -46,15 +46,15 @@
   },
   "actionsSchema": {
     "script": {
-      "description": "执行 bash 脚本字符串",
+      "description": "执行 shell 脚本字符串",
       "args": {
         "type": "object",
         "properties": {
           "script": {
             "type": "string",
-            "description": "要执行的 bash 脚本内容",
+            "description": "要执行的 shell 脚本内容",
             "examples": [
-              "#!/bin/bash\necho 'Hello, World!'\ndate\nls -la"
+              "#!/bin/sh\necho 'Hello, World!'\ndate\nls -la"
             ]
           },
           "args": {
@@ -107,7 +107,7 @@
       }
     },
     "command": {
-      "description": "执行单条 bash 命令",
+      "description": "执行单条 shell 命令",
       "args": {
         "type": "object",
         "properties": {
@@ -145,7 +145,7 @@
       }
     },
     "file": {
-      "description": "执行 bash 脚本文件",
+      "description": "执行 shell 脚本文件",
       "args": {
         "type": "object",
         "properties": {
@@ -190,8 +190,8 @@
       }
     }
   },
-  "icon": "https://cdn.example.com/icons/bash.png",
-  "tags": ["bash", "shell", "script", "automation", "custom", "executor"],
+  "icon": "https://cdn.example.com/icons/shell.png",
+  "tags": ["shell", "script", "automation", "custom", "executor"],
   "minVersion": "1.0.0",
   "resources": {
     "cpu": "100m",
@@ -216,7 +216,7 @@
       "config": {},
       "action": "script",
       "args": {
-        "script": "#!/bin/bash\\necho 'Hello, World!'\\ndate\\nuname -a"
+        "script": "#!/bin/sh\\necho 'Hello, World!'\\ndate\\nuname -a"
       }
     },
     {
@@ -243,7 +243,7 @@
       },
       "action": "script",
       "args": {
-        "script": "#!/bin/bash\\nset -e\\ngo mod download\\ngo build -o bin/app ./cmd/main.go\\necho 'Build completed'",
+        "script": "#!/bin/sh\\nset -e\\ngo mod download\\ngo build -o bin/app ./cmd/main.go\\necho 'Build completed'",
         "env": {
           "CGO_ENABLED": "0",
           "GOOS": "linux",
@@ -268,4 +268,3 @@
     ]
   }
 }
-

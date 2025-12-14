@@ -104,6 +104,18 @@ func (r *StepRunner) executeOnAgent(ctx context.Context) error {
 	pipelineID := r.ctx.Pipeline.Namespace // Use namespace as pipeline ID
 	buildID := ""                          // TODO: Get build ID from context
 
+	// Find step index in job
+	stepIndex := -1
+	for i := range r.job.Steps {
+		if r.job.Steps[i].Name == r.step.Name {
+			stepIndex = i
+			break
+		}
+	}
+	if stepIndex == -1 {
+		return fmt.Errorf("step %s not found in job %s", r.step.Name, r.job.Name)
+	}
+
 	// Resolve environment variables
 	env := r.ctx.ResolveStepEnv(r.job, r.step)
 
@@ -117,9 +129,11 @@ func (r *StepRunner) executeOnAgent(ctx context.Context) error {
 		JobName:    r.job.Name,
 		StepName:   r.step.Name,
 		Step:       r.step,
+		StepIndex:  stepIndex,
 		Workspace:  workspace,
 		Env:        env,
 		Selector:   r.step.AgentSelector,
+		Context:    r.ctx,
 	}
 
 	// Execute on agent

@@ -38,8 +38,6 @@ type GitConfig struct {
 	Depth int `json:"depth"`
 }
 
-// ========== Plugin Action Arguments ==========
-
 // CloneArgs contains arguments for cloning a repository
 type CloneArgs struct {
 	Repo    string            `json:"repo"`    // Repository URL
@@ -198,8 +196,6 @@ func (p *Git) registerActions() {
 	}
 }
 
-// ===== Implement RPC Interface =====
-
 // Name returns the plugin name
 func (p *Git) Name() (string, error) {
 	return p.name, nil
@@ -252,8 +248,6 @@ func (p *Git) Cleanup() error {
 func (p *Git) Execute(action string, params json.RawMessage, opts json.RawMessage) (json.RawMessage, error) {
 	return p.PluginBase.Execute(action, params, opts)
 }
-
-// ===== Action Handlers =====
 
 // clone clones a git repository
 func (p *Git) clone(params json.RawMessage, opts json.RawMessage) (json.RawMessage, error) {
@@ -687,12 +681,13 @@ func (p *GitPluginHandler) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server)
 	typ, _ := p.pluginInstance.Type()
 
 	info := &pluginpkg.PluginInfo{
-		Name:        name,
-		Description: desc,
-		Version:     ver,
-		Type:        typ,
-		Author:      "Arcade Team",
-		Homepage:    "https://github.com/go-arcade/arcade",
+		Name:          name,
+		Description:   desc,
+		Version:       ver,
+		Type:          typ,
+		Author:        "Arcade Team",
+		Homepage:      "https://github.com/go-arcade/arcade",
+		ExecutionType: pluginv1.ExecutionType_EXECUTION_TYPE_SHELL,
 	}
 
 	server := pluginpkg.NewServer(info, p.pluginInstance, nil)

@@ -49,7 +49,7 @@ func (al *AgentService) CreateAgent(createAgentReq *agentmodel.CreateAgentReq) (
 	}
 
 	// Generate token for agent communication based on agentId
-	token, err := al.generateAgentToken(agentId)
+	token, err := al.GenerateAgentToken(agentId)
 	if err != nil {
 		log.Errorw("generate agent token failed", "error", err)
 		return nil, err
@@ -69,9 +69,9 @@ type agentSecretConfig struct {
 	SecretKey string `json:"secret_key"`
 }
 
-// generateAgentToken generates a token based on agentId for agent communication
+// GenerateAgentToken generates a token based on agentId for agent communication
 // The token is generated using HMAC-SHA256 with secret key and salt from database
-func (al *AgentService) generateAgentToken(agentId string) (string, error) {
+func (al *AgentService) GenerateAgentToken(agentId string) (string, error) {
 	// Get agent secret key configuration from database
 	settings, err := al.generalSettingsService.GetGeneralSettingsByName("system", "agent_secret_key")
 	if err != nil {
@@ -97,12 +97,14 @@ func (al *AgentService) generateAgentToken(agentId string) (string, error) {
 	}
 
 	// Generate token using HMAC-SHA256
+	// Format: agentId:base64(signature)
 	h := hmac.New(sha256.New, []byte(config.SecretKey))
 	h.Write([]byte(agentId))
 	h.Write([]byte(config.Salt))
 	signature := h.Sum(nil)
 
-	token := base64.URLEncoding.EncodeToString(signature)
+	signatureStr := base64.URLEncoding.EncodeToString(signature)
+	token := fmt.Sprintf("%s:%s", agentId, signatureStr)
 	return token, nil
 }
 

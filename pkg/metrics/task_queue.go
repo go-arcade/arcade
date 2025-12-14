@@ -130,7 +130,7 @@ func (c *AsynqMetricsCollector) Collect(ch chan<- prometheus.Metric) {
 
 	// If no queues exist, still report zero metrics for default queues
 	if len(queues) == 0 {
-		log.Debug("No queues found, reporting zero metrics for default queues")
+		// log.Debug("No queues found, reporting zero metrics for default queues")
 		defaultQueues := []string{"critical", "default", "low"}
 		for _, queueName := range defaultQueues {
 			c.emitZeroMetrics(ch, queueName)

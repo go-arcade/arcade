@@ -13,62 +13,62 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewBashPlugin(t *testing.T) {
-	plugin := NewBash()
+func TestNewShellPlugin(t *testing.T) {
+	plugin := NewShell()
 
 	assert.NotNil(t, plugin)
-	assert.Equal(t, "bash", plugin.name)
-	assert.Equal(t, "A custom plugin that executes bash scripts and commands", plugin.description)
+	assert.Equal(t, "shell", plugin.name)
+	assert.Equal(t, "A custom plugin that executes shell scripts and commands", plugin.description)
 	assert.Equal(t, "1.0.0", plugin.version)
-	assert.Equal(t, "/bin/bash", plugin.cfg.Shell)
+	assert.Equal(t, "/bin/sh", plugin.cfg.Shell)
 	assert.Equal(t, "", plugin.cfg.WorkDir)
 	assert.Equal(t, 300, plugin.cfg.Timeout)
 	assert.False(t, plugin.cfg.AllowDangerous)
 }
 
-func TestBashPlugin_Name(t *testing.T) {
-	plugin := NewBash()
+func TestShellPlugin_Name(t *testing.T) {
+	plugin := NewShell()
 	name, err := plugin.Name()
 
 	assert.NoError(t, err)
-	assert.Equal(t, "bash", name)
+	assert.Equal(t, "shell", name)
 }
 
-func TestBashPlugin_Description(t *testing.T) {
-	plugin := NewBash()
+func TestShellPlugin_Description(t *testing.T) {
+	plugin := NewShell()
 	desc, err := plugin.Description()
 
 	assert.NoError(t, err)
-	assert.Equal(t, "A custom plugin that executes bash scripts and commands", desc)
+	assert.Equal(t, "A custom plugin that executes shell scripts and commands", desc)
 }
 
-func TestBashPlugin_Version(t *testing.T) {
-	plugin := NewBash()
+func TestShellPlugin_Version(t *testing.T) {
+	plugin := NewShell()
 	version, err := plugin.Version()
 
 	assert.NoError(t, err)
 	assert.Equal(t, "1.0.0", version)
 }
 
-func TestBashPlugin_Type(t *testing.T) {
-	plugin := NewBash()
+func TestShellPlugin_Type(t *testing.T) {
+	plugin := NewShell()
 	typ, err := plugin.Type()
 
 	assert.NoError(t, err)
 	assert.Equal(t, "custom", typ)
 }
 
-func TestBashPlugin_Init(t *testing.T) {
+func TestShellPlugin_Init(t *testing.T) {
 	tests := []struct {
 		name        string
-		config      BashConfig
+		config      ShellConfig
 		expectError bool
 		errorMsg    string
 	}{
 		{
 			name: "正常配置",
-			config: BashConfig{
-				Shell:   "/bin/bash",
+			config: ShellConfig{
+				Shell:   "/bin/sh",
 				WorkDir: "/tmp",
 				Timeout: 60,
 				Env: map[string]string{
@@ -79,14 +79,14 @@ func TestBashPlugin_Init(t *testing.T) {
 		},
 		{
 			name: "空Shell使用默认值",
-			config: BashConfig{
+			config: ShellConfig{
 				Shell: "",
 			},
 			expectError: false,
 		},
 		{
 			name: "不存在的Shell",
-			config: BashConfig{
+			config: ShellConfig{
 				Shell: "/nonexistent/shell",
 			},
 			expectError: true,
@@ -96,7 +96,7 @@ func TestBashPlugin_Init(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			plugin := NewBash()
+			plugin := NewShell()
 
 			configJSON, err := sonic.Marshal(tt.config)
 			require.NoError(t, err)
@@ -113,29 +113,29 @@ func TestBashPlugin_Init(t *testing.T) {
 				if tt.config.Shell != "" {
 					assert.Equal(t, tt.config.Shell, plugin.cfg.Shell)
 				} else {
-					assert.Equal(t, "/bin/bash", plugin.cfg.Shell)
+					assert.Equal(t, "/bin/sh", plugin.cfg.Shell)
 				}
 			}
 		})
 	}
 }
 
-func TestBashPlugin_InitWithEmptyConfig(t *testing.T) {
-	plugin := NewBash()
+func TestShellPlugin_InitWithEmptyConfig(t *testing.T) {
+	plugin := NewShell()
 	err := plugin.Init(json.RawMessage{})
 
 	assert.NoError(t, err)
-	assert.Equal(t, "/bin/bash", plugin.cfg.Shell)
+	assert.Equal(t, "/bin/sh", plugin.cfg.Shell)
 }
 
-func TestBashPlugin_Cleanup(t *testing.T) {
-	plugin := NewBash()
+func TestShellPlugin_Cleanup(t *testing.T) {
+	plugin := NewShell()
 	err := plugin.Cleanup()
 
 	assert.NoError(t, err)
 }
 
-func TestBashPlugin_ExecuteScript(t *testing.T) {
+func TestShellPlugin_ExecuteScript(t *testing.T) {
 	tests := []struct {
 		name        string
 		script      string
@@ -146,7 +146,7 @@ func TestBashPlugin_ExecuteScript(t *testing.T) {
 	}{
 		{
 			name:        "简单echo脚本",
-			script:      "#!/bin/bash\necho 'Hello, World!'",
+			script:      "#!/bin/sh\necho 'Hello, World!'",
 			expectError: false,
 			checkStdout: func(t *testing.T, stdout string) {
 				assert.Contains(t, stdout, "Hello, World!")
@@ -154,7 +154,7 @@ func TestBashPlugin_ExecuteScript(t *testing.T) {
 		},
 		{
 			name:        "带参数的脚本",
-			script:      "#!/bin/bash\necho $1 $2",
+			script:      "#!/bin/sh\necho $1 $2",
 			args:        []string{"arg1", "arg2"},
 			expectError: false,
 			checkStdout: func(t *testing.T, stdout string) {
@@ -163,7 +163,7 @@ func TestBashPlugin_ExecuteScript(t *testing.T) {
 		},
 		{
 			name:        "带环境变量的脚本",
-			script:      "#!/bin/bash\necho $TEST_VAR",
+			script:      "#!/bin/sh\necho $TEST_VAR",
 			env:         map[string]string{"TEST_VAR": "test_value"},
 			expectError: false,
 			checkStdout: func(t *testing.T, stdout string) {
@@ -177,14 +177,14 @@ func TestBashPlugin_ExecuteScript(t *testing.T) {
 		},
 		{
 			name:        "危险操作-不允许",
-			script:      "#!/bin/bash\nrm -rf /",
+			script:      "#!/bin/sh\nrm -rf /",
 			expectError: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			plugin := NewBash()
+			plugin := NewShell()
 			plugin.Init(json.RawMessage{})
 
 			params := map[string]any{
@@ -221,10 +221,10 @@ func TestBashPlugin_ExecuteScript(t *testing.T) {
 	}
 }
 
-func TestBashPlugin_ExecuteScriptWithDangerousAllowed(t *testing.T) {
-	plugin := NewBash()
-	config := BashConfig{
-		Shell:          "/bin/bash",
+func TestShellPlugin_ExecuteScriptWithDangerousAllowed(t *testing.T) {
+	plugin := NewShell()
+	config := ShellConfig{
+		Shell:          "/bin/sh",
 		AllowDangerous: true,
 	}
 	configJSON, _ := sonic.Marshal(config)
@@ -233,7 +233,7 @@ func TestBashPlugin_ExecuteScriptWithDangerousAllowed(t *testing.T) {
 	// 即使包含危险模式，如果允许危险操作，也应该能执行
 	// 但为了安全，我们只测试一个无害的命令
 	params := map[string]any{
-		"script": "#!/bin/bash\necho 'test'",
+		"script": "#!/bin/sh\necho 'test'",
 	}
 	paramsJSON, _ := sonic.Marshal(params)
 
@@ -242,7 +242,7 @@ func TestBashPlugin_ExecuteScriptWithDangerousAllowed(t *testing.T) {
 	assert.NotNil(t, result)
 }
 
-func TestBashPlugin_ExecuteCommand(t *testing.T) {
+func TestShellPlugin_ExecuteCommand(t *testing.T) {
 	tests := []struct {
 		name        string
 		command     string
@@ -289,7 +289,7 @@ func TestBashPlugin_ExecuteCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			plugin := NewBash()
+			plugin := NewShell()
 			plugin.Init(json.RawMessage{})
 
 			params := map[string]any{
@@ -323,12 +323,12 @@ func TestBashPlugin_ExecuteCommand(t *testing.T) {
 	}
 }
 
-func TestBashPlugin_ExecuteFile(t *testing.T) {
+func TestShellPlugin_ExecuteFile(t *testing.T) {
 	// 创建临时脚本文件
 	tmpDir := t.TempDir()
 	scriptPath := filepath.Join(tmpDir, "test_script.sh")
 
-	scriptContent := "#!/bin/bash\necho 'Hello from file'\necho $1"
+	scriptContent := "#!/bin/sh\necho 'Hello from file'\necho $1"
 	err := os.WriteFile(scriptPath, []byte(scriptContent), 0755)
 	require.NoError(t, err)
 
@@ -371,7 +371,7 @@ func TestBashPlugin_ExecuteFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			plugin := NewBash()
+			plugin := NewShell()
 			plugin.Init(json.RawMessage{})
 
 			params := map[string]any{
@@ -405,8 +405,8 @@ func TestBashPlugin_ExecuteFile(t *testing.T) {
 	}
 }
 
-func TestBashPlugin_ExecuteUnknownAction(t *testing.T) {
-	plugin := NewBash()
+func TestShellPlugin_ExecuteUnknownAction(t *testing.T) {
+	plugin := NewShell()
 	plugin.Init(json.RawMessage{})
 
 	_, err := plugin.Execute("unknown_action", nil, nil)
@@ -414,10 +414,10 @@ func TestBashPlugin_ExecuteUnknownAction(t *testing.T) {
 	assert.Contains(t, err.Error(), "unknown action")
 }
 
-func TestBashPlugin_ExecuteWithTimeout(t *testing.T) {
-	plugin := NewBash()
-	config := BashConfig{
-		Shell:   "/bin/bash",
+func TestShellPlugin_ExecuteWithTimeout(t *testing.T) {
+	plugin := NewShell()
+	config := ShellConfig{
+		Shell:   "/bin/sh",
 		Timeout: 1, // 1秒超时
 	}
 	configJSON, _ := sonic.Marshal(config)
@@ -450,8 +450,8 @@ func TestBashPlugin_ExecuteWithTimeout(t *testing.T) {
 	}
 }
 
-func TestBashPlugin_ExecuteWithInvalidJSON(t *testing.T) {
-	plugin := NewBash()
+func TestShellPlugin_ExecuteWithInvalidJSON(t *testing.T) {
+	plugin := NewShell()
 	plugin.Init(json.RawMessage{})
 
 	invalidJSON := json.RawMessage(`{"invalid": json`)
@@ -461,8 +461,8 @@ func TestBashPlugin_ExecuteWithInvalidJSON(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to parse")
 }
 
-func TestBashPlugin_SecurityCheck(t *testing.T) {
-	plugin := NewBash()
+func TestShellPlugin_SecurityCheck(t *testing.T) {
+	plugin := NewShell()
 	plugin.Init(json.RawMessage{})
 
 	dangerousPatterns := []string{
@@ -476,7 +476,7 @@ func TestBashPlugin_SecurityCheck(t *testing.T) {
 	for _, pattern := range dangerousPatterns {
 		t.Run("dangerous_pattern_"+pattern, func(t *testing.T) {
 			params := map[string]any{
-				"script": "#!/bin/bash\n" + pattern + " test",
+				"script": "#!/bin/sh\n" + pattern + " test",
 			}
 			paramsJSON, _ := sonic.Marshal(params)
 
@@ -487,8 +487,8 @@ func TestBashPlugin_SecurityCheck(t *testing.T) {
 	}
 }
 
-func TestBashPlugin_ResultStructure(t *testing.T) {
-	plugin := NewBash()
+func TestShellPlugin_ResultStructure(t *testing.T) {
+	plugin := NewShell()
 	plugin.Init(json.RawMessage{})
 
 	params := map[string]any{
@@ -519,12 +519,12 @@ func TestBashPlugin_ResultStructure(t *testing.T) {
 	assert.True(t, ok)
 }
 
-func TestBashPlugin_EnvironmentVariables(t *testing.T) {
-	plugin := NewBash()
+func TestShellPlugin_EnvironmentVariables(t *testing.T) {
+	plugin := NewShell()
 
 	// 配置插件级别的环境变量
-	config := BashConfig{
-		Shell: "/bin/bash",
+	config := ShellConfig{
+		Shell: "/bin/sh",
 		Env: map[string]string{
 			"PLUGIN_VAR": "plugin_value",
 		},
