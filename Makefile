@@ -178,5 +178,5 @@ addlicense-check: ## check if addlicense tool is installed
 
 addlicense: addlicense-check ## run addlicense code analysis
 	@echo ">> running addlicense..."
-	@addlicense -v -l apache -c "Arcade Team" $(find . -name "*.go")
+	@addlicense -v -l apache -c "Arcade Team" $(find . -name "*.go" -not -name "wire_gen.go" -not -name "*.pb.go" -not -name "*_grpc.pb.go")
 	@echo ">> addlicense analysis done."
