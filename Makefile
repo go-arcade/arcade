@@ -56,47 +56,13 @@ all: deps-sync prebuild plugins build ## full build (frontend+plugins+main progr
 JOBS ?= $(shell getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)
 
 plugins: ## build all RPC plugins (executable files)
-	@echo ">> building RPC plugins from $(PLUGINS_SRC_DIR) into $(PLUGINS_OUT_DIR)"
-	@mkdir -p "$(PLUGINS_OUT_DIR)"
-	@go list -f '{{if eq .Name "main"}}{{.Dir}} {{range .GoFiles}}{{.}} {{end}}{{end}}' ./$(PLUGINS_SRC_DIR)/... \
-	| sed -e '/^[[:space:]]*$$/d' \
-	| awk '\
-	function basename(p){sub(".*/","",p); return p} \
-	{ \
-	  dir=$$1; outbase=""; \
-	  for(i=2;i<=NF;i++){ if($$i=="main.go"){ outbase="main"; break } } \
-	  if(outbase==""){ for(i=2;i<=NF;i++){ f=$$i; sub(/\.go$$/,"",f); if(f ~ /^main.*/){ outbase=f; break } } } \
-	  if(outbase==""){ outbase=basename(dir) } \
-	  printf "%s %s/%s\n", dir, "$(PLUGINS_OUT_DIR)", outbase; \
-	}' \
-	| xargs -P $(JOBS) -n 2 sh -c '\
-		dir="$$1"; out="$$2"; \
-		echo "   -> $$dir  ==>  $$out"; \
-		cd "$$(git rev-parse --show-toplevel)" && \
-		go build -o "$$out" "$$dir" \
-	' sh
-	@echo ">> RPC plugins build done."
-	@echo ">> built plugins:"
-	@ls -lh $(PLUGINS_OUT_DIR)/ | grep -v "^total" | grep -v "^d" || true
+	@./scripts/plugins.sh build $(JOBS)
 
 plugins-package: plugins ## package plugins to zip files
-	@echo ">> packaging plugins..."
-	@for plugin_path in $(PLUGINS_OUT_DIR)/*; do \
-		if [ -f "$$plugin_path" ] && [ -x "$$plugin_path" ] && [ "$${plugin_path%.zip}" = "$$plugin_path" ]; then \
-			plugin_name=$$(basename $$plugin_path); \
-			plugin_base=$$plugin_name; \
-			src_dir=$$(find $(PLUGINS_SRC_DIR) -type d -name $$plugin_base | head -1); \
-			if [ -n "$$src_dir" ] && [ -f "$$src_dir/manifest.json" ]; then \
-				zip_file=$(PLUGINS_OUT_DIR)/$${plugin_base}.zip; \
-				echo "   -> packaging $$plugin_name to $$zip_file"; \
-				cd $$(git rev-parse --show-toplevel) && \
-				zip -j $$zip_file $$plugin_path $$src_dir/manifest.json; \
-			else \
-				echo "   !! manifest.json not found for $$plugin_name, skipping"; \
-			fi; \
-		fi; \
-	done
-	@echo ">> plugin packaging done."
+	@./scripts/plugins.sh package
+
+plugins-all: ## build and package all plugins
+	@./scripts/plugins.sh all $(JOBS)
 
 plugins-clean: ## clean plugin build artifacts
 	@echo ">> cleaning $(PLUGINS_OUT_DIR)/*"
@@ -197,3 +163,20 @@ staticcheck: staticcheck-check ## run staticcheck code analysis
 	@echo ">> running staticcheck..."
 	@staticcheck ./...
 	@echo ">> staticcheck analysis done."
+
+addlicense-install: ## install addlicense tool
+	@echo ">> installing addlicense..."
+	@go install github.com/onexstack/addlicense@latest
+	@echo ">> addlicense installed: $$(which addlicense)"
+
+addlicense-check: ## check if addlicense tool is installed
+	@command -v addlicense >/dev/null 2>&1 || { \
+		echo "error: addlicense is not installed, please run make addlicense-install"; \
+		exit 1; \
+	}
+	@echo ">> addlicense installed: $$(which addlicense)"
+
+addlicense: addlicense-check ## run addlicense code analysis
+	@echo ">> running addlicense..."
+	@addlicense -v -l apache -c "Arcade Team" $(find . -name "*.go")
+	@echo ">> addlicense analysis done."

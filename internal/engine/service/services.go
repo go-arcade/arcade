@@ -1,3 +1,17 @@
+// Copyright 2025 Arcade Team
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package service
 
 import (
@@ -14,15 +28,13 @@ type Services struct {
 	User            *UserService
 	Agent           *AgentService
 	Identity        *IdentityService
-	Role            *RoleService
 	Team            *TeamService
 	Storage         *StorageService
 	Upload          *UploadService
 	Secret          *SecretService
 	GeneralSettings *GeneralSettingsService
 	UserExtension   *UserExtensionService
-	Permission      *PermissionService
-	UserPermissions *UserPermissionsService
+	Menu            *MenuService
 	Plugin          *PluginService
 }
 
@@ -35,20 +47,16 @@ func NewServices(
 	storageProvider storagepkg.StorageProvider,
 ) *Services {
 	// 基础服务
-	userService := NewUserService(cache, repos.User)
+	menuService := NewMenuService(repos.Menu)
+	userService := NewUserService(cache, repos.User, repos.UserRoleBinding, repos.RoleMenuBinding, repos.Menu, repos.Role, menuService)
 	generalSettingsService := NewGeneralSettingsService(repos.GeneralSettings)
 	agentService := NewAgentService(repos.Agent, generalSettingsService)
 	identityService := NewIdentityService(repos.Identity, repos.User)
-	roleService := NewRoleService(repos.Role)
 	teamService := NewTeamService(repos.Team)
 	storageService := NewStorageService(repos.Storage)
 	uploadService := NewUploadService(repos.Storage)
 	secretService := NewSecretService(repos.Secret)
 	userExtensionService := NewUserExtensionService(repos.UserExtension)
-	permissionService := NewPermissionService(db, cache, repos.Permission, repos.Role, repos.User)
-
-	// UserPermissionsService 依赖 PermissionService
-	userPermissionsService := NewUserPermissionsService(db, permissionService, repos.RouterPermission)
 	// PluginService 需要 pluginManager 和 storageProvider
 	var pluginService *PluginService
 	if pluginManager != nil && storageProvider != nil {
@@ -59,15 +67,13 @@ func NewServices(
 		User:            userService,
 		Agent:           agentService,
 		Identity:        identityService,
-		Role:            roleService,
 		Team:            teamService,
 		Storage:         storageService,
 		Upload:          uploadService,
 		Secret:          secretService,
 		GeneralSettings: generalSettingsService,
 		UserExtension:   userExtensionService,
-		Permission:      permissionService,
-		UserPermissions: userPermissionsService,
+		Menu:            menuService,
 		Plugin:          pluginService,
 	}
 }

@@ -1,3 +1,17 @@
+// Copyright 2025 Arcade Team
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package service
 
 import (
@@ -11,17 +25,17 @@ import (
 )
 
 type UserExtensionService struct {
-	userExtRepo userrepo.IUserExtensionRepository
+	userExtRepo userrepo.IUserExtRepository
 }
 
-func NewUserExtensionService(userExtRepo userrepo.IUserExtensionRepository) *UserExtensionService {
+func NewUserExtensionService(userExtRepo userrepo.IUserExtRepository) *UserExtensionService {
 	return &UserExtensionService{
 		userExtRepo: userExtRepo,
 	}
 }
 
 // GetUserExtension gets user extension information
-func (ues *UserExtensionService) GetUserExtension(userId string) (*model.UserExtension, error) {
+func (ues *UserExtensionService) GetUserExtension(userId string) (*model.UserExt, error) {
 	extension, err := ues.userExtRepo.GetByUserId(userId)
 	if err != nil {
 		log.Errorw("failed to get user extension", "userId", userId, "error", err)
@@ -31,7 +45,7 @@ func (ues *UserExtensionService) GetUserExtension(userId string) (*model.UserExt
 }
 
 // CreateUserExtension creates user extension record
-func (ues *UserExtensionService) CreateUserExtension(extension *model.UserExtension) error {
+func (ues *UserExtensionService) CreateUserExtension(extension *model.UserExt) error {
 	// check if already exists
 	exists, err := ues.userExtRepo.Exists(extension.UserId)
 	if err != nil {
@@ -51,7 +65,7 @@ func (ues *UserExtensionService) CreateUserExtension(extension *model.UserExtens
 }
 
 // UpdateUserExtension updates user extension information
-func (ues *UserExtensionService) UpdateUserExtension(userId string, extension *model.UserExtension) error {
+func (ues *UserExtensionService) UpdateUserExtension(userId string, extension *model.UserExt) error {
 	// check if exists
 	exists, err := ues.userExtRepo.Exists(userId)
 	if err != nil {
@@ -82,7 +96,7 @@ func (ues *UserExtensionService) UpdateLastLogin(userId string) error {
 	if !exists {
 		// auto-create extension record with default values
 		now := time.Now()
-		extension := &model.UserExtension{
+		extension := &model.UserExt{
 			UserId:           userId,
 			Timezone:         "UTC",
 			LastLoginAt:      &now,

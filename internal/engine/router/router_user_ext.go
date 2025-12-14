@@ -1,3 +1,17 @@
+// Copyright 2025 Arcade Team
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package router
 
 import (
@@ -7,18 +21,18 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func (rt *Router) userExtensionRouter(r fiber.Router, auth fiber.Handler) {
-	userExtGroup := r.Group("/users/:userId/extension", auth)
+func (rt *Router) userExtRouter(r fiber.Router, auth fiber.Handler) {
+	userExtGroup := r.Group("/users/:userId/ext", auth)
 	{
-		userExtGroup.Get("/", rt.getUserExtension)                 // GET /users/:userId/extension - get user extension info
-		userExtGroup.Put("/", rt.updateUserExtension)              // PUT /users/:userId/extension - update user extension info
-		userExtGroup.Put("/timezone", rt.updateTimezone)           // PUT /users/:userId/extension/timezone - update timezone
-		userExtGroup.Put("/invitation", rt.updateInvitationStatus) // PUT /users/:userId/extension/invitation - update invitation status
+		userExtGroup.Get("/", rt.getUserExt)                       // GET /users/:userId/ext - get user extension info
+		userExtGroup.Put("/", rt.updateUserExt)                    // PUT /users/:userId/ext - update user extension info
+		userExtGroup.Put("/timezone", rt.updateTimezone)           // PUT /users/:userId/ext/timezone - update timezone
+		userExtGroup.Put("/invitation", rt.updateInvitationStatus) // PUT /users/:userId/ext/invitation - update invitation status
 	}
 }
 
 // getUserExtension gets user extension information
-func (rt *Router) getUserExtension(c *fiber.Ctx) error {
+func (rt *Router) getUserExt(c *fiber.Ctx) error {
 	userId := c.Params("userId")
 	if userId == "" {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "user id is required", c.Path())
@@ -36,13 +50,13 @@ func (rt *Router) getUserExtension(c *fiber.Ctx) error {
 }
 
 // updateUserExtension updates user extension information
-func (rt *Router) updateUserExtension(c *fiber.Ctx) error {
+func (rt *Router) updateUserExt(c *fiber.Ctx) error {
 	userId := c.Params("userId")
 	if userId == "" {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "user id is required", c.Path())
 	}
 
-	var extension userextnmodel.UserExtension
+	var extension userextnmodel.UserExt
 	if err := c.BodyParser(&extension); err != nil {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid request parameters", c.Path())
 	}

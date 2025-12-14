@@ -81,8 +81,9 @@ image = "arcade-agent:latest"
 cpu = "1"
 memory = "1G"
 
+
 # kubernetes configuration
-[agent.sandbox.containerd.kubernetes]
+[agent.sandbox.kubernetes]
 # kubernetes namespace
 namespace = "default"
 # kubernetes pod name
@@ -90,7 +91,7 @@ podName = "arcade-agent"
 # kubernetes pod image
 image = "arcade-agent:latest"
 # kubernetes pod resources
-[agent.sandbox.containerd.kubernetes.resources]
+[agent.sandbox.kubernetes.resources]
 cpu = "1"
 memory = "1G"
 
