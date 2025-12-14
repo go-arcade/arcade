@@ -1,3 +1,17 @@
+// Copyright 2025 Arcade Team
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package service
 
 import (
@@ -23,14 +37,32 @@ type LoginService interface {
 }
 
 type UserService struct {
-	cache    cache.ICache
-	userRepo userrepo.IUserRepository
+	cache               cache.ICache
+	userRepo            userrepo.IUserRepository
+	userRoleBindingRepo userrepo.IUserRoleBindingRepository
+	roleMenuBindingRepo userrepo.IRoleMenuBindingRepository
+	menuRepo            userrepo.IMenuRepository
+	roleRepo            userrepo.IRoleRepository
+	menuService         *MenuService
 }
 
-func NewUserService(cache cache.ICache, userRepo userrepo.IUserRepository) *UserService {
+func NewUserService(
+	cache cache.ICache,
+	userRepo userrepo.IUserRepository,
+	userRoleBindingRepo userrepo.IUserRoleBindingRepository,
+	roleMenuBindingRepo userrepo.IRoleMenuBindingRepository,
+	menuRepo userrepo.IMenuRepository,
+	roleRepo userrepo.IRoleRepository,
+	menuService *MenuService,
+) *UserService {
 	return &UserService{
-		cache:    cache,
-		userRepo: userRepo,
+		cache:               cache,
+		userRepo:            userRepo,
+		userRoleBindingRepo: userRoleBindingRepo,
+		roleMenuBindingRepo: roleMenuBindingRepo,
+		menuRepo:            menuRepo,
+		roleRepo:            roleRepo,
+		menuService:         menuService,
 	}
 }
 
@@ -67,6 +99,15 @@ func (ul *UserService) Login(login *usermodel.Login, auth http.Auth) (*usermodel
 	createAt := now.Unix()
 	expireAt := now.Add(auth.AccessExpire * time.Minute).Unix()
 
+	// 获取用户的角色信息和路由信息
+	roles, routes, err := ul.GetUserRolesAndRoutes(userInfo.UserId, "")
+	if err != nil {
+		log.Warnw("failed to get user roles and routes", "userId", userInfo.UserId, "error", err)
+		// 如果获取失败，返回空数组，不影响登录流程
+		roles = []usermodel.RoleDTO{}
+		routes = []string{}
+	}
+
 	resp := &usermodel.LoginResp{
 		UserInfo: usermodel.UserInfo{
 			UserId:    userInfo.UserId,
@@ -83,7 +124,8 @@ func (ul *UserService) Login(login *usermodel.Login, auth http.Auth) (*usermodel
 			"expireAt":     fmt.Sprintf("%d", expireAt),
 			"createAt":     fmt.Sprintf("%d", createAt),
 		},
-		Role:     map[string]string{},
+		Role:     roles,
+		Routes:   routes,
 		ExpireAt: expireAt,
 		CreateAt: createAt,
 	}
@@ -283,4 +325,232 @@ func (ul *UserService) UpdateAvatar(userId, avatarUrl string) error {
 
 	log.Infow("user avatar updated successfully", "userId", userId, "avatarUrl", avatarUrl)
 	return nil
+}
+
+// GetUserRoles 获取用户的角色信息
+func (ul *UserService) GetUserRoles(userId string) ([]usermodel.RoleDTO, error) {
+	// 获取用户的所有角色绑定
+	roleBindings, err := ul.userRoleBindingRepo.GetUserRoleBindings(userId)
+	if err != nil {
+		log.Errorw("failed to get user role bindings", "userId", userId, "error", err)
+		return nil, err
+	}
+
+	if len(roleBindings) == 0 {
+		return []usermodel.RoleDTO{}, nil
+	}
+
+	// 提取角色ID列表
+	roleIds := make([]string, 0, len(roleBindings))
+	for _, binding := range roleBindings {
+		roleIds = append(roleIds, binding.RoleId)
+	}
+
+	// 获取角色详情
+	roles, err := ul.roleRepo.GetRolesByRoleIds(roleIds)
+	if err != nil {
+		log.Errorw("failed to get roles", "roleIds", roleIds, "error", err)
+		return nil, err
+	}
+
+	// 构建角色列表
+	roleList := make([]usermodel.RoleDTO, 0, len(roles))
+	for _, role := range roles {
+		roleList = append(roleList, usermodel.RoleDTO{
+			RoleId:      role.RoleId,
+			Name:        role.Name,
+			DisplayName: role.DisplayName,
+			Description: role.Description,
+		})
+	}
+
+	return roleList, nil
+}
+
+// GetUserRoutes 获取用户可访问的路由列表
+func (ul *UserService) GetUserRoutes(userId string, resourceId string) ([]string, error) {
+	// 获取用户的所有角色绑定
+	roleBindings, err := ul.userRoleBindingRepo.GetUserRoleBindings(userId)
+	if err != nil {
+		log.Errorw("failed to get user role bindings", "userId", userId, "error", err)
+		return nil, err
+	}
+
+	if len(roleBindings) == 0 {
+		return []string{}, nil
+	}
+
+	// 提取角色ID列表
+	roleIds := make([]string, 0, len(roleBindings))
+	for _, binding := range roleBindings {
+		roleIds = append(roleIds, binding.RoleId)
+	}
+
+	// 获取这些角色在指定资源下的菜单绑定
+	menuBindings, err := ul.roleMenuBindingRepo.GetMenuBindingsByRoles(roleIds, resourceId)
+	if err != nil {
+		log.Errorw("failed to get menu bindings", "userId", userId, "roleIds", roleIds, "error", err)
+		return nil, err
+	}
+
+	if len(menuBindings) == 0 {
+		return []string{}, nil
+	}
+
+	// 提取菜单ID列表（去重）
+	menuIdSet := make(map[string]bool)
+	for _, binding := range menuBindings {
+		if binding.IsVisible == usermodel.MenuVisible && binding.IsAccessible == usermodel.RoleMenuAccessible {
+			menuIdSet[binding.MenuId] = true
+		}
+	}
+
+	menuIds := make([]string, 0, len(menuIdSet))
+	for menuId := range menuIdSet {
+		menuIds = append(menuIds, menuId)
+	}
+
+	// 获取菜单详情（只需要path字段）
+	menus, err := ul.menuRepo.GetMenusByMenuIds(menuIds)
+	if err != nil {
+		log.Errorw("failed to get menus", "menuIds", menuIds, "error", err)
+		return nil, err
+	}
+
+	// 提取所有路由路径
+	routes := make([]string, 0)
+	for _, menu := range menus {
+		if menu.Path != "" {
+			routes = append(routes, menu.Path)
+		}
+	}
+
+	return routes, nil
+}
+
+// GetUserMenus 获取用户可访问的菜单列表（树形结构）
+func (ul *UserService) GetUserMenus(userId string, resourceId string) ([]usermodel.MenuDTO, []string, error) {
+	roleBindings, err := ul.userRoleBindingRepo.GetUserRoleBindings(userId)
+	if err != nil {
+		log.Errorw("failed to get user role bindings", "userId", userId, "error", err)
+		return nil, nil, err
+	}
+
+	if len(roleBindings) == 0 {
+		return []usermodel.MenuDTO{}, []string{}, nil
+	}
+
+	roleIds := make([]string, 0, len(roleBindings))
+	for _, binding := range roleBindings {
+		roleIds = append(roleIds, binding.RoleId)
+	}
+
+	menuBindings, err := ul.roleMenuBindingRepo.GetMenuBindingsByRoles(roleIds, resourceId)
+	if err != nil {
+		log.Errorw("failed to get menu bindings", "userId", userId, "roleIds", roleIds, "error", err)
+		return nil, nil, err
+	}
+
+	if len(menuBindings) == 0 {
+		return []usermodel.MenuDTO{}, []string{}, nil
+	}
+
+	menuIdSet := make(map[string]bool)
+	for _, binding := range menuBindings {
+		if binding.IsVisible == usermodel.MenuVisible && binding.IsAccessible == usermodel.RoleMenuAccessible {
+			menuIdSet[binding.MenuId] = true
+		}
+	}
+
+	menuIds := make([]string, 0, len(menuIdSet))
+	for menuId := range menuIdSet {
+		menuIds = append(menuIds, menuId)
+	}
+
+	menus, err := ul.menuRepo.GetMenusByMenuIds(menuIds)
+	if err != nil {
+		log.Errorw("failed to get menus", "menuIds", menuIds, "error", err)
+		return nil, nil, err
+	}
+
+	menuTree := ul.menuService.BuildMenuTree(menus)
+	routes := ul.menuService.ExtractRoutes(menuTree)
+
+	return menuTree, routes, nil
+}
+
+// GetUserRolesAndRoutes 获取用户的角色信息和路由信息
+func (ul *UserService) GetUserRolesAndRoutes(userId string, resourceId string) ([]usermodel.RoleDTO, []string, error) {
+	roleBindings, err := ul.userRoleBindingRepo.GetUserRoleBindings(userId)
+	if err != nil {
+		log.Errorw("failed to get user role bindings", "userId", userId, "error", err)
+		return nil, nil, err
+	}
+
+	if len(roleBindings) == 0 {
+		return []usermodel.RoleDTO{}, []string{}, nil
+	}
+
+	// 提取角色ID列表
+	roleIds := make([]string, 0, len(roleBindings))
+	for _, binding := range roleBindings {
+		roleIds = append(roleIds, binding.RoleId)
+	}
+
+	var roles []usermodel.Role
+	var menuBindings []usermodel.RoleMenuBinding
+	var roleErr, menuErr error
+
+	roles, roleErr = ul.roleRepo.GetRolesByRoleIds(roleIds)
+	if roleErr != nil {
+		log.Errorw("failed to get roles", "roleIds", roleIds, "error", roleErr)
+		return nil, nil, roleErr
+	}
+
+	menuBindings, menuErr = ul.roleMenuBindingRepo.GetMenuBindingsByRoles(roleIds, resourceId)
+	if menuErr != nil {
+		log.Errorw("failed to get menu bindings", "userId", userId, "roleIds", roleIds, "error", menuErr)
+		return nil, nil, menuErr
+	}
+
+	roleList := make([]usermodel.RoleDTO, 0, len(roles))
+	for _, role := range roles {
+		roleList = append(roleList, usermodel.RoleDTO{
+			RoleId:      role.RoleId,
+			Name:        role.Name,
+			DisplayName: role.DisplayName,
+			Description: role.Description,
+		})
+	}
+
+	if len(menuBindings) == 0 {
+		return roleList, []string{}, nil
+	}
+
+	menuIdSet := make(map[string]bool)
+	for _, binding := range menuBindings {
+		if binding.IsVisible == usermodel.MenuVisible && binding.IsAccessible == usermodel.RoleMenuAccessible {
+			menuIdSet[binding.MenuId] = true
+		}
+	}
+
+	menuIds := make([]string, 0, len(menuIdSet))
+	for menuId := range menuIdSet {
+		menuIds = append(menuIds, menuId)
+	}
+
+	menus, err := ul.menuRepo.GetMenusByMenuIds(menuIds)
+	if err != nil {
+		log.Errorw("failed to get menus", "menuIds", menuIds, "error", err)
+		return nil, nil, err
+	}
+
+	routes := make([]string, 0)
+	for _, menu := range menus {
+		if menu.Path != "" {
+			routes = append(routes, menu.Path)
+		}
+	}
+
+	return roleList, routes, nil
 }

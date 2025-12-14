@@ -1,3 +1,17 @@
+// Copyright 2025 Arcade Team
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package model
 
 import (
@@ -42,9 +56,33 @@ type Login struct {
 type LoginResp struct {
 	UserInfo UserInfo          `json:"userInfo"`
 	Token    map[string]string `json:"token"`
-	Role     map[string]string `json:"role"`
+	Role     []RoleDTO         `json:"role"`   // 用户角色信息列表
+	Routes   []string          `json:"routes"` // 用户可访问的路由列表
 	ExpireAt int64             `json:"-"`
 	CreateAt int64             `json:"-"`
+}
+
+// RoleDTO 角色数据传输对象
+type RoleDTO struct {
+	RoleId      string `json:"roleId"`      // 角色ID
+	Name        string `json:"name"`        // 角色名称
+	DisplayName string `json:"displayName"` // 显示名称
+	Description string `json:"description"` // 角色描述
+}
+
+// MenuDTO 菜单数据传输对象
+type MenuDTO struct {
+	MenuId      string    `json:"menuId"`
+	ParentId    string    `json:"parentId"`
+	Name        string    `json:"name"`
+	Path        string    `json:"path"`
+	Component   string    `json:"component"`
+	Icon        string    `json:"icon"`
+	Order       int       `json:"order"`
+	IsVisible   bool      `json:"isVisible"`
+	IsEnabled   bool      `json:"isEnabled"`
+	Description string    `json:"description"`
+	Children    []MenuDTO `json:"children,omitempty"` // 子菜单列表
 }
 
 type UserInfo struct {

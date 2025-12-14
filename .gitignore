@@ -10,4 +10,5 @@ docs/*.md
 *.so
 /api/*/*/*.pb.go
 /cmd/arcade/wire_gen.go
+/cmd/arcade-agent/wire_gen.go
 .DS_Store

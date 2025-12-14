@@ -1,3 +1,17 @@
+// Copyright 2025 Arcade Team
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package repo
 
 import (
@@ -12,7 +26,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/cache"
 	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/go-arcade/arcade/pkg/http"
-	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/go-arcade/arcade/pkg/log"
 	"gorm.io/gorm"
 )
@@ -183,7 +196,7 @@ func (ur *UserRepo) SetToken(userId, aToken string, auth http.Auth) (string, err
 
 	// 构建 TokenInfo 结构
 	now := time.Now()
-	tokenInfo := middleware.TokenInfo{
+	tokenInfo := http.TokenInfo{
 		AccessToken:  aToken,
 		RefreshToken: "", // refresh token 在这个方法中不需要更新
 		ExpireAt:     now.Add(auth.AccessExpire * time.Second).Unix(),
@@ -211,7 +224,7 @@ func (ur *UserRepo) SetLoginRespInfo(accessExpire time.Duration, loginResp *mode
 
 	pipe := ur.ICache.Pipeline()
 
-	tokenInfo := middleware.TokenInfo{
+	tokenInfo := http.TokenInfo{
 		AccessToken:  loginResp.Token["accessToken"],
 		RefreshToken: loginResp.Token["refreshToken"],
 		ExpireAt:     loginResp.ExpireAt,

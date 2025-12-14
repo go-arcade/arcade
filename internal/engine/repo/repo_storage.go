@@ -1,3 +1,17 @@
+// Copyright 2025 Arcade Team
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package repo
 
 import (
@@ -71,6 +85,7 @@ func (sr *StorageRepo) GetDefaultStorageConfig() (*model.StorageConfig, error) {
 	// 2. Redis 没有，从数据库查询
 	var storageConfig model.StorageConfig
 	err := sr.Database().Table(storageConfig.TableName()).
+		Select("id", "storage_id", "name", "storage_type", "config", "description", "is_default", "is_enabled", "created_at", "updated_at").
 		Where("is_default = ? AND is_enabled = ?", 1, 1).
 		First(&storageConfig).Error
 	if err != nil {
@@ -117,6 +132,7 @@ func (sr *StorageRepo) GetStorageConfigByID(storageID string) (*model.StorageCon
 	// 2. Redis 没有，从数据库查询
 	var storageConfig model.StorageConfig
 	err := sr.Database().Table(storageConfig.TableName()).
+		Select("id", "storage_id", "name", "storage_type", "config", "description", "is_default", "is_enabled", "created_at", "updated_at").
 		Where("storage_id = ? AND is_enabled = ?", storageID, 1).
 		First(&storageConfig).Error
 	if err != nil {

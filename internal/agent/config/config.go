@@ -1,3 +1,17 @@
+// Copyright 2025 Arcade Team
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package config
 
 import (
@@ -77,15 +91,15 @@ type SandboxConfig struct {
 	Enable     bool             `mapstructure:"enable"`     // Enable sandbox, false or true
 	Runtime    string           `mapstructure:"runtime"`    // Sandbox runtime: containerd, kubernetes
 	Containerd ContainerdConfig `mapstructure:"containerd"` // Containerd configuration
+	Kubernetes KubernetesConfig `mapstructure:"kubernetes"` // Kubernetes configuration
 }
 
 // ContainerdConfig containerd configuration
 type ContainerdConfig struct {
-	Network    string           `mapstructure:"network"`    // Containerd network mode: bridge, host, none
-	UnixSocket string           `mapstructure:"unixSocket"` // Containerd unix socket
-	Image      string           `mapstructure:"image"`      // Containerd image
-	Resources  ResourceConfig   `mapstructure:"resources"`  // Containerd resources
-	Kubernetes KubernetesConfig `mapstructure:"kubernetes"` // Kubernetes configuration
+	Network    string         `mapstructure:"network"`    // Containerd network mode: bridge, host, none
+	UnixSocket string         `mapstructure:"unixSocket"` // Containerd unix socket
+	Image      string         `mapstructure:"image"`      // Containerd image
+	Resources  ResourceConfig `mapstructure:"resources"`  // Containerd resources
 }
 
 // ResourceConfig resource configuration
@@ -103,7 +117,7 @@ type KubernetesConfig struct {
 }
 
 var (
-	cfg  AgentConfig
+	ac   AgentConfig
 	mu   sync.RWMutex // 保护配置的读写
 	once sync.Once
 )
@@ -111,7 +125,7 @@ var (
 func NewConf(confDir string) *AgentConfig {
 	once.Do(func() {
 		var err error
-		cfg, err = loadConfigFile(confDir)
+		ac, err = loadConfigFile(confDir)
 		if err != nil {
 			panic(fmt.Sprintf("load config file error: %s", err))
 		}
@@ -119,7 +133,7 @@ func NewConf(confDir string) *AgentConfig {
 	// 返回指向全局配置的指针（通过读锁保护）
 	mu.RLock()
 	defer mu.RUnlock()
-	return &cfg
+	return &ac
 }
 
 // LoadConfigFile load config file
@@ -131,7 +145,7 @@ func loadConfigFile(confDir string) (AgentConfig, error) {
 	config.AutomaticEnv()
 
 	if err := config.ReadInConfig(); err != nil {
-		return cfg, fmt.Errorf("failed to read configuration file: %v", err)
+		return ac, fmt.Errorf("failed to read configuration file: %v", err)
 	}
 
 	config.WatchConfig()
@@ -143,12 +157,12 @@ func loadConfigFile(confDir string) (AgentConfig, error) {
 		}
 		// 使用写锁保护配置更新
 		mu.Lock()
-		if err := config.Unmarshal(&cfg); err != nil {
+		if err := config.Unmarshal(&ac); err != nil {
 			mu.Unlock()
 			log.Errorw("failed to unmarshal configuration file", "error", err, "file", e.Name)
 			return
 		}
-		if err := cfg.parseServerAddr(); err != nil {
+		if err := ac.parseServerAddr(); err != nil {
 			mu.Unlock()
 			log.Errorw("failed to parse server address after config reload", "error", err, "file", e.Name)
 			return
@@ -156,21 +170,21 @@ func loadConfigFile(confDir string) (AgentConfig, error) {
 		mu.Unlock()
 		log.Infow("configuration reloaded successfully", "file", e.Name)
 	})
-	if err := config.Unmarshal(&cfg); err != nil {
-		return cfg, fmt.Errorf("failed to unmarshal configuration file: %v", err)
+	if err := config.Unmarshal(&ac); err != nil {
+		return ac, fmt.Errorf("failed to unmarshal configuration file: %v", err)
 	}
 
 	// parse ServerAddr to gRPC client config
-	if err := cfg.parseServerAddr(); err != nil {
-		return cfg, fmt.Errorf("failed to parse server address: %v", err)
+	if err := ac.parseServerAddr(); err != nil {
+		return ac, fmt.Errorf("failed to parse server address: %v", err)
 	}
 
 	log.Infow("config file loaded",
 		"path", confDir,
-		"grpc.serverAddr", cfg.Grpc.ServerAddr,
+		"grpc.serverAddr", ac.Grpc.ServerAddr,
 	)
 
-	return cfg, nil
+	return ac, nil
 }
 
 // parseServerAddr parses ServerAddr and sets gRPC client config

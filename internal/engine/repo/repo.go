@@ -1,3 +1,17 @@
+// Copyright 2025 Arcade Team
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package repo
 
 import (
@@ -12,18 +26,19 @@ type Repositories struct {
 	Agent             IAgentRepository
 	Plugin            IPluginRepository
 	PluginTask        IPluginTaskRepository
-	Permission        IPermissionRepository
-	Role              IRoleRepository
 	Storage           IStorageRepository
 	Team              ITeamRepository
 	Identity          IIdentityRepository
 	GeneralSettings   IGeneralSettingsRepository
-	RouterPermission  IRouterPermissionRepository
 	ProjectMember     IProjectMemberRepository
 	ProjectTeamAccess IProjectTeamAccessRepository
 	TeamMember        ITeamMemberRepository
-	UserExtension     IUserExtensionRepository
+	UserExtension     IUserExtRepository
 	Secret            ISecretRepository
+	UserRoleBinding   IUserRoleBindingRepository
+	RoleMenuBinding   IRoleMenuBindingRepository
+	Menu              IMenuRepository
+	Role              IRoleRepository
 }
 
 // NewRepositories 初始化所有 repository
@@ -33,18 +48,19 @@ func NewRepositories(db database.IDatabase, mongo database.MongoDB, cache cache.
 		Agent:             NewAgentRepo(db, cache),
 		Plugin:            NewPluginRepo(db),
 		PluginTask:        NewPluginTaskRepo(mongo),
-		Permission:        NewPermissionRepo(db, cache),
-		Role:              NewRoleRepo(db),
 		Storage:           NewStorageRepo(db, cache),
 		Team:              NewTeamRepo(db),
 		Identity:          NewIdentityRepo(db),
 		GeneralSettings:   NewGeneralSettingsRepo(db),
-		RouterPermission:  NewRouterPermissionRepo(db),
 		ProjectMember:     NewProjectMemberRepo(db),
 		ProjectTeamAccess: NewProjectTeamAccessRepo(db),
 		TeamMember:        NewTeamMemberRepo(db),
-		UserExtension:     NewUserExtensionRepo(db),
+		UserExtension:     NewUserExtRepo(db),
 		Secret:            NewSecretRepo(db),
+		UserRoleBinding:   NewUserRoleBindingRepo(db),
+		RoleMenuBinding:   NewRoleMenuBindingRepo(db),
+		Menu:              NewMenuRepo(db),
+		Role:              NewRoleRepo(db),
 	}
 }
 
