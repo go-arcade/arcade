@@ -519,7 +519,7 @@ func TestGitPlugin_Pull(t *testing.T) {
 	paramsJSON, err := sonic.Marshal(params)
 	require.NoError(t, err)
 
-	result, err := plugin.Execute("pull", paramsJSON, nil)
+	result, _ := plugin.Execute("pull", paramsJSON, nil)
 
 	// pull 可能会失败（没有远程），但我们检查它返回了结果
 	assert.NotNil(t, result)

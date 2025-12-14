@@ -17,9 +17,6 @@ service AgentService {
     // Unregister - Agent unregisters from Server on shutdown
     rpc Unregister(UnregisterRequest) returns (UnregisterResponse) {}
 
-    // Fetch task - Agent actively pulls tasks to execute
-    rpc FetchTask(FetchTaskRequest) returns (FetchTaskResponse) {}
-
     // Report task status - Agent reports status changes during task execution
     rpc ReportTaskStatus(ReportTaskStatusRequest) returns (ReportTaskStatusResponse) {}
 
@@ -95,20 +92,6 @@ message UnregisterRequest {
 message UnregisterResponse {
   bool success = 1;
   string message = 2;
-}
-
-// Fetch task request
-message FetchTaskRequest {
-  string agent_id = 1;
-  int32 max_jobs = 2;                 // Maximum number of tasks to fetch
-  map<string, string> labels = 3;     // Agent labels (for task matching)
-}
-
-// Fetch task response
-message FetchTaskResponse {
-  bool success = 1;
-  string message = 2;
-  repeated Task tasks = 3;              // List of tasks to execute
 }
 
 // Task definition

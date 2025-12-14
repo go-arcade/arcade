@@ -70,6 +70,7 @@ message PluginInfo {
     string description = 4;
     string author = 5;
     string homepage = 6;
+    ExecutionType execution_type = 8;  // Execution type (SHELL or HTTP, must be declared by plugin)
 }
 
 // PluginConfig represents the plugin runtime configuration
@@ -129,6 +130,29 @@ message ExecuteRequest {
     string action = 1;        // Action name (e.g., "clone", "build", "send.template")
     bytes params = 2;         // Action-specific parameters (JSON)
     bytes opts = 3;           // Optional overrides (JSON, e.g., timeout, workdir, env)
+    // Shell execution configuration (required when plugin execution_type is SHELL)
+    ShellConfig shell = 4;
+    // HTTP execution configuration (required when plugin execution_type is HTTP)
+    HTTPConfig http = 5;
+}
+
+// Shell execution configuration
+message ShellConfig {
+    string command = 1;       // Shell command to execute
+    string shell = 2;        // Shell path (default: /bin/sh)
+    map<string, string> env = 3;  // Additional environment variables
+}
+
+// HTTP execution configuration
+message HTTPConfig {
+    string method = 1;        // HTTP method (GET, POST, PUT, DELETE, PATCH, etc.)
+    string url = 2;           // Request URL
+    map<string, string> headers = 3;  // Request headers
+    string body = 4;          // Request body (for POST, PUT, PATCH)
+    map<string, string> query = 5;    // Query parameters
+    repeated int32 expected_status = 6;  // Expected status codes (default: 200-299)
+    bool follow_redirects = 7;  // Follow redirects (default: true)
+    int32 timeout = 8;        // Request timeout in seconds (default: 30)
 }
 
 // Execute response

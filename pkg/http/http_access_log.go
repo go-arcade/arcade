@@ -1,13 +1,27 @@
 package http
 
 import (
+	"sync"
 	"time"
 
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/gofiber/fiber/v2"
+	"go.uber.org/zap"
 )
 
-// AccessLogFormat 创建访问日志中间件（动态检查配置）
+var (
+	accessLogger     *zap.SugaredLogger
+	accessLoggerOnce sync.Once
+)
+
+func logger() *zap.SugaredLogger {
+	accessLoggerOnce.Do(func() {
+		baseLogger := log.GetLogger().Desugar()
+		accessLogger = baseLogger.WithOptions(zap.AddCallerSkip(5)).Sugar()
+	})
+	return accessLogger
+}
+
 func AccessLogFormat(httpConfig *Http) fiber.Handler {
 	// exclude api path
 	// tips: 这里的路径是不需要记录日志的路径，url为端口后的全部路径
@@ -41,8 +55,7 @@ func AccessLogFormat(httpConfig *Http) fiber.Handler {
 			queryStr = "?" + query
 		}
 
-		// 使用 sugar logger 记录访问日志
-		log.Infow("HTTP request",
+		logger().Infow("HTTP request",
 			"method", c.Method(),
 			"path", c.Path(),
 			"query", queryStr,

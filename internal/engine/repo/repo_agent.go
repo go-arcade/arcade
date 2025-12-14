@@ -59,12 +59,45 @@ func (ar *AgentRepo) GetAgentById(id uint64) (*model.Agent, error) {
 }
 
 func (ar *AgentRepo) GetAgentByAgentId(agentId string) (*model.Agent, error) {
+	ctx := context.Background()
+	cacheKey := consts.AgentDetailKey + agentId
+
+	// Try to get from cache first
+	if ar.ICache != nil {
+		cachedData, err := ar.ICache.Get(ctx, cacheKey).Result()
+		if err == nil && cachedData != "" {
+			var detail model.AgentDetail
+			if err := sonic.UnmarshalString(cachedData, &detail); err == nil {
+				// Return Agent from cached detail
+				return &detail.Agent, nil
+			}
+			log.Warnw("failed to unmarshal agent from cache", "agentId", agentId, "error", err)
+		}
+	}
+
+	// Query from database
 	var agent model.Agent
 	if err := ar.Database().Table(agent.TableName()).
 		Select("id", "agent_id", "agent_name", "address", "port", "os", "arch", "version", "status", "labels", "metrics", "is_enabled", "created_at", "updated_at").
 		Where("agent_id = ?", agentId).First(&agent).Error; err != nil {
 		return nil, err
 	}
+
+	// Cache the result (reuse getAgentDetailByAgentId logic to ensure consistency)
+	detail := &model.AgentDetail{
+		Agent: agent,
+	}
+	if ar.ICache != nil {
+		detailJson, err := sonic.MarshalString(detail)
+		if err != nil {
+			log.Warnw("failed to marshal agent for caching", "agentId", agentId, "error", err)
+		} else {
+			if err := ar.ICache.Set(ctx, cacheKey, detailJson, 5*time.Minute).Err(); err != nil {
+				log.Warnw("failed to cache agent", "agentId", agentId, "cacheKey", cacheKey, "error", err)
+			}
+		}
+	}
+
 	return &agent, nil
 }
 
@@ -208,7 +241,7 @@ func (ar *AgentRepo) ListAgent(pageNum, pageSize int) ([]model.Agent, int64, err
 		return nil, 0, err
 	}
 
-	if err := ar.Database().Select("id, agent_id, agent_name, address, port, os, arch, version, status, labels, metrics, last_heartbeat, is_enabled").
+	if err := ar.Database().Select("id, agent_id, agent_name, address, port, os, arch, version, status, labels, metrics, is_enabled").
 		Table(agent.TableName()).
 		Offset(offset).Limit(pageSize).Find(&agents).Error; err != nil {
 		return nil, 0, err

@@ -1,0 +1,129 @@
+package executor
+
+import (
+	"context"
+
+	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/plugin"
+)
+
+// PipelineAdapter 将 pipeline 的 step 和 job 适配为执行器格式
+type PipelineAdapter struct {
+	executorManager *ExecutorManager
+	logger          log.Logger
+}
+
+// NewPipelineAdapter 创建 pipeline 适配器
+func NewPipelineAdapter(executorManager *ExecutorManager, logger log.Logger) *PipelineAdapter {
+	return &PipelineAdapter{
+		executorManager: executorManager,
+		logger:          logger,
+	}
+}
+
+// ExecuteStep 执行 pipeline step
+func (a *PipelineAdapter) ExecuteStep(
+	ctx context.Context,
+	pipeline *PipelineInfo,
+	job *JobInfo,
+	step *StepInfo,
+	workspace string,
+	env map[string]string,
+	options *ExecutionOptions,
+) (*ExecutionResult, error) {
+	req := &ExecutionRequest{
+		Step:      step,
+		Job:       job,
+		Pipeline:  pipeline,
+		Workspace: workspace,
+		Env:       env,
+		Options:   options,
+	}
+
+	if options == nil {
+		req.Options = &ExecutionOptions{
+			Extra: make(map[string]any),
+		}
+	}
+
+	return a.executorManager.Execute(ctx, req)
+}
+
+// ConvertPipelineInfo 转换 pipeline 信息
+func ConvertPipelineInfo(namespace string, version string, variables map[string]string) *PipelineInfo {
+	return &PipelineInfo{
+		Namespace: namespace,
+		Version:   version,
+		Variables: variables,
+	}
+}
+
+// ConvertJobInfo 转换 job 信息
+func ConvertJobInfo(
+	name string,
+	description string,
+	env map[string]string,
+	maxAttempts int,
+	retryDelay string,
+) *JobInfo {
+	job := &JobInfo{
+		Name:        name,
+		Description: description,
+		Env:         env,
+	}
+
+	if maxAttempts > 0 {
+		job.Retry = &RetryInfo{
+			MaxAttempts: maxAttempts,
+			Delay:       retryDelay,
+		}
+	}
+
+	return job
+}
+
+// ConvertStepInfo 转换 step 信息
+func ConvertStepInfo(
+	name string,
+	uses string,
+	action string,
+	args map[string]any,
+	env map[string]string,
+	timeout string,
+	runOnAgent bool,
+	agentSelector *AgentSelector,
+) *StepInfo {
+	return &StepInfo{
+		Name:          name,
+		Uses:          uses,
+		Action:        action,
+		Args:          args,
+		Env:           env,
+		Timeout:       timeout,
+		RunOnAgent:    runOnAgent,
+		AgentSelector: agentSelector,
+	}
+}
+
+// NewExecutorManagerWithDefaults 创建带默认执行器的执行器管理器
+func NewExecutorManagerWithDefaults(
+	pluginManager *plugin.Manager,
+	agentManager AgentManager,
+	logger log.Logger,
+) *ExecutorManager {
+	manager := NewExecutorManager()
+
+	// 注册插件执行器（根据 ExecutionType 自动选择执行方式）
+	if pluginManager != nil {
+		pluginExec := NewPluginExecutor(pluginManager, logger)
+		manager.Register(pluginExec)
+	}
+
+	// 注册 agent 执行器
+	if agentManager != nil {
+		agentExec := NewAgentExecutor(agentManager, logger)
+		manager.Register(agentExec)
+	}
+
+	return manager
+}

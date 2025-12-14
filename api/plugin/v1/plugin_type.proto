@@ -19,3 +19,11 @@ enum PluginType {
     PLUGIN_TYPE_INTEGRATION = 10; // Integration plugin
     PLUGIN_TYPE_CUSTOM = 11;      // Custom plugin
 }
+
+// ExecutionType is the execution type enumeration
+// Plugins must declare their execution type when implemented
+enum ExecutionType {
+    EXECUTION_TYPE_UNSPECIFIED = 0;
+    EXECUTION_TYPE_SHELL = 1;   // Shell command execution
+    EXECUTION_TYPE_HTTP = 2;     // HTTP request execution
+}

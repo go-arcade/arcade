@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/bytedance/sonic"
@@ -47,60 +48,46 @@ func (a *AgentServiceImpl) Register(ctx context.Context, req *agentv1.RegisterRe
 	var existingAgent *agentmodel.Agent
 	var err error
 
-	// Extract agentId from request (if provided)
+	// Extract agentId from token (token format: agentId:signature)
+	// If request provides agentId, use it for validation; otherwise extract from token
+	tokenParts := strings.SplitN(req.Token, ":", 2)
+	if len(tokenParts) != 2 {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid token format: expected agentId:signature")
+	}
+	tokenAgentId := tokenParts[0]
+
+	// Use agentId from request if provided, otherwise use agentId from token
 	if req.AgentId != "" {
 		agentId = req.AgentId
-		// Verify token by regenerating it and comparing
-		expectedToken, err := a.agentService.generateAgentToken(agentId)
-		if err != nil {
-			log.Errorw("failed to generate token for verification", "agentId", agentId, "error", err)
-			return nil, status.Errorf(codes.Internal, "failed to verify token")
-		}
-
-		if req.Token != expectedToken {
-			log.Warnw("token verification failed", "agentId", agentId)
-			return nil, status.Errorf(codes.Unauthenticated, "invalid token")
-		}
-
-		// Check if agent exists
-		existingAgent, err = agentRepo.GetAgentByAgentId(agentId)
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return nil, status.Errorf(codes.NotFound, "agent not found: %s", agentId)
-			}
-			log.Errorw("failed to get agent", "agentId", agentId, "error", err)
-			return nil, status.Errorf(codes.Internal, "failed to get agent")
+		// Validate that request agentId matches token agentId
+		if agentId != tokenAgentId {
+			log.Warnw("agentId mismatch", "requestAgentId", agentId, "tokenAgentId", tokenAgentId)
+			return nil, status.Errorf(codes.InvalidArgument, "agentId mismatch: request agentId does not match token")
 		}
 	} else {
-		// If agentId is not provided, try to find agent by verifying token against all agents
-		// This is less efficient but allows registration with only token
-		agents, _, err := agentRepo.ListAgent(1, 1000) // Get up to 1000 agents
-		if err != nil {
-			log.Errorw("failed to list agents for token verification", "error", err)
-			return nil, status.Errorf(codes.Internal, "failed to verify token")
-		}
+		agentId = tokenAgentId
+	}
 
-		// Try to find matching agent by verifying token
-		found := false
-		for _, agent := range agents {
-			expectedToken, err := a.agentService.generateAgentToken(agent.AgentId)
-			if err != nil {
-				log.Debugw("failed to generate token for agent", "agentId", agent.AgentId, "error", err)
-				continue
-			}
+	// Verify token by regenerating it and comparing
+	expectedToken, err := a.agentService.GenerateAgentToken(agentId)
+	if err != nil {
+		log.Errorw("failed to generate token for verification", "agentId", agentId, "error", err)
+		return nil, status.Errorf(codes.Internal, "failed to verify token")
+	}
 
-			if req.Token == expectedToken {
-				agentId = agent.AgentId
-				existingAgent = &agent
-				found = true
-				break
-			}
-		}
+	if req.Token != expectedToken {
+		log.Warnw("token verification failed", "agentId", agentId)
+		return nil, status.Errorf(codes.Unauthenticated, "invalid token")
+	}
 
-		if !found {
-			log.Warnw("token verification failed: no matching agent found")
-			return nil, status.Errorf(codes.Unauthenticated, "invalid token")
+	// Check if agent exists
+	existingAgent, err = agentRepo.GetAgentByAgentId(agentId)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, status.Errorf(codes.NotFound, "agent not found: %s", agentId)
 		}
+		log.Errorw("failed to get agent", "agentId", agentId, "error", err)
+		return nil, status.Errorf(codes.Internal, "failed to get agent")
 	}
 
 	// Update agent information from registration request

@@ -2,7 +2,10 @@ package pipeline
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -38,9 +41,11 @@ type StepExecutionRequest struct {
 	JobName    string
 	StepName   string
 	Step       *Step
+	StepIndex  int // Index of step in job (0-based), used for stage calculation
 	Workspace  string
 	Env        map[string]string
 	Selector   *AgentSelector
+	Context    *ExecutionContext // Execution context for variable resolution
 }
 
 // StepExecutionResult represents the result of step execution
@@ -100,25 +105,197 @@ func (am *AgentManager) ExecuteStepOnAgent(ctx context.Context, req *StepExecuti
 
 // SelectAgent selects an available agent based on the selector criteria
 func (am *AgentManager) SelectAgent(ctx context.Context, selector *AgentSelector) (string, error) {
-	if selector == nil {
-		// No selector specified, use any available agent
-		// TODO: Implement agent selection logic
-		return "", fmt.Errorf("agent selection not implemented")
+	// Get all available agents from cache
+	am.statusCacheMu.RLock()
+	availableAgents := make([]*AgentStatus, 0, len(am.agentStatusCache))
+	for _, status := range am.agentStatusCache {
+		// Filter out offline agents and agents with stale heartbeats
+		if time.Since(status.LastHeartbeat) > 5*time.Minute {
+			continue
+		}
+		// Only consider online or idle agents
+		if status.Status == "online" || status.Status == "idle" {
+			availableAgents = append(availableAgents, status)
+		}
+	}
+	am.statusCacheMu.RUnlock()
+
+	if len(availableAgents) == 0 {
+		return "", fmt.Errorf("no available agents found")
 	}
 
-	// TODO: Implement agent selection based on:
-	// 1. Agent status (online, idle)
-	// 2. Label matching (matchLabels and matchExpressions)
-	// 3. Resource availability
-	// 4. Load balancing
+	// If no selector specified, return the first available agent
+	if selector == nil {
+		return availableAgents[0].AgentID, nil
+	}
 
-	return "", fmt.Errorf("agent selection not implemented")
+	// Filter agents by label selector
+	matchedAgents := make([]*AgentStatus, 0)
+	for _, agent := range availableAgents {
+		if am.matchAgentLabels(agent, selector) {
+			matchedAgents = append(matchedAgents, agent)
+		}
+	}
+
+	if len(matchedAgents) == 0 {
+		return "", fmt.Errorf("no agents match the selector criteria")
+	}
+
+	// Select agent with least running jobs (load balancing)
+	selectedAgent := matchedAgents[0]
+	for _, agent := range matchedAgents[1:] {
+		if agent.RunningJobsCount < selectedAgent.RunningJobsCount {
+			selectedAgent = agent
+		}
+	}
+
+	return selectedAgent.AgentID, nil
+}
+
+// matchAgentLabels checks if an agent matches the label selector criteria
+func (am *AgentManager) matchAgentLabels(agent *AgentStatus, selector *AgentSelector) bool {
+	agentLabels := agent.Labels
+
+	// If selector requires labels but agent has no labels, it doesn't match
+	// Note: Agent labels should be loaded from database or provided during registration
+	// For now, if agent.Labels is nil/empty and selector requires labels, skip this agent
+	if len(selector.MatchLabels) > 0 || len(selector.MatchExpressions) > 0 {
+		if len(agentLabels) == 0 {
+			// Agent labels not available in cache, cannot match
+			// TODO: Query agent labels from database if needed
+			if am.logger.Log != nil {
+				am.logger.Log.Debugw("agent has no labels in cache, skipping label match",
+					"agent", agent.AgentID)
+			}
+			return false
+		}
+	}
+
+	// Check matchLabels (all must match)
+	if len(selector.MatchLabels) > 0 {
+		for key, value := range selector.MatchLabels {
+			if agentValue, ok := agentLabels[key]; !ok || agentValue != value {
+				return false
+			}
+		}
+	}
+
+	// Check matchExpressions (all must match)
+	if len(selector.MatchExpressions) > 0 {
+		for _, expr := range selector.MatchExpressions {
+			if !am.matchExpression(agentLabels, expr) {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
+// matchExpression checks if agent labels match a single expression
+func (am *AgentManager) matchExpression(agentLabels map[string]string, expr LabelExpression) bool {
+	agentValue, exists := agentLabels[expr.Key]
+
+	switch expr.Operator {
+	case "In":
+		if !exists {
+			return false
+		}
+		return slices.Contains(expr.Values, agentValue)
+
+	case "NotIn":
+		if !exists {
+			return true
+		}
+		return !slices.Contains(expr.Values, agentValue)
+
+	case "Exists":
+		return exists
+
+	case "NotExists":
+		return !exists
+
+	case "Gt":
+		if !exists {
+			return false
+		}
+		// Simple numeric comparison (can be enhanced)
+		if len(expr.Values) > 0 {
+			// TODO: Implement proper numeric comparison
+			// For now, just check if value exists
+			return true
+		}
+		return false
+
+	case "Lt":
+		if !exists {
+			return false
+		}
+		// Simple numeric comparison (can be enhanced)
+		if len(expr.Values) > 0 {
+			// TODO: Implement proper numeric comparison
+			// For now, just check if value exists
+			return true
+		}
+		return false
+
+	default:
+		return false
+	}
 }
 
 // convertStepToTask converts a pipeline step to an agent task
 func (am *AgentManager) convertStepToTask(req *StepExecutionRequest) (*agentv1.Task, error) {
-	// Build commands from step action and params
-	commands := am.buildCommands(req.Step)
+	// Resolve variables in step args if context is provided
+	var resolvedArgs map[string]any
+	if req.Context != nil && len(req.Step.Args) > 0 {
+		resolvedArgs = req.Context.ResolveVariables(req.Step.Args)
+	} else {
+		resolvedArgs = req.Step.Args
+	}
+
+	// Serialize args to JSON for passing via environment variable
+	var argsJSON []byte
+	var err error
+	if len(resolvedArgs) > 0 {
+		argsJSON, err = json.Marshal(resolvedArgs)
+		if err != nil {
+			return nil, fmt.Errorf("marshal step args: %w", err)
+		}
+	}
+
+	// Build commands from step action
+	var commands []string
+	if req.Context != nil {
+		commands, err = am.buildCommands(req.Step, req.Context)
+		if err != nil {
+			return nil, fmt.Errorf("build commands: %w", err)
+		}
+	} else {
+		// Fallback if context is not provided
+		action := req.Step.Action
+		if action == "" {
+			action = "Execute"
+		}
+		commands = []string{fmt.Sprintf("plugin execute --plugin %s --action %s", req.Step.Uses, action)}
+	}
+
+	// Prepare environment variables (include plugin params)
+	env := make(map[string]string)
+	for k, v := range req.Env {
+		env[k] = v
+	}
+	// Add plugin params as environment variable for agent to use
+	if len(argsJSON) > 0 {
+		env["PLUGIN_PARAMS"] = string(argsJSON)
+	}
+	// Add plugin action and name for agent reference
+	env["PLUGIN_NAME"] = req.Step.Uses
+	if req.Step.Action != "" {
+		env["PLUGIN_ACTION"] = req.Step.Action
+	} else {
+		env["PLUGIN_ACTION"] = "Execute"
+	}
 
 	// Build label selector
 	labelSelector := am.buildLabelSelector(req.Selector)
@@ -140,13 +317,16 @@ func (am *AgentManager) convertStepToTask(req *StepExecutionRequest) (*agentv1.T
 		}
 	}
 
+	// Calculate stage number from step index
+	stage := int32(req.StepIndex)
+
 	task := &agentv1.Task{
 		JobId:         fmt.Sprintf("%s-%s-%s", req.PipelineID, req.JobName, req.StepName),
 		Name:          req.StepName,
 		PipelineId:    req.PipelineID,
-		Stage:         0, // Stage number would be determined by step order
+		Stage:         stage,
 		Commands:      commands,
-		Env:           req.Env,
+		Env:           env,
 		Workspace:     req.Workspace,
 		Timeout:       timeout,
 		LabelSelector: labelSelector,
@@ -157,23 +337,143 @@ func (am *AgentManager) convertStepToTask(req *StepExecutionRequest) (*agentv1.T
 }
 
 // buildCommands builds command list from step action and params
-func (am *AgentManager) buildCommands(step *Step) []string {
-	commands := []string{}
-
-	// If step uses a plugin, the command would be plugin-specific
-	// For now, we'll create a generic command structure
-	if step.Action != "" {
-		// Build command from action and params
-		// This is a simplified version - actual implementation would depend on plugin type
-		command := fmt.Sprintf("plugin execute --plugin %s --action %s", step.Uses, step.Action)
-		commands = append(commands, command)
-	} else {
-		// Default action
-		command := fmt.Sprintf("plugin execute --plugin %s", step.Uses)
-		commands = append(commands, command)
+// This method calls plugin to resolve step into concrete commands before sending to agent
+func (am *AgentManager) buildCommands(step *Step, ctx *ExecutionContext) ([]string, error) {
+	if ctx == nil || ctx.PluginManager == nil {
+		return nil, fmt.Errorf("execution context or plugin manager is not available")
 	}
 
-	return commands
+	// Get plugin client
+	pluginClient, err := ctx.PluginManager.GetPlugin(step.Uses)
+	if err != nil {
+		return nil, fmt.Errorf("plugin not found: %s: %w", step.Uses, err)
+	}
+
+	// Determine action (default to "Execute" if not specified)
+	action := step.Action
+	if action == "" {
+		action = "Execute"
+	}
+
+	// Resolve params with variable substitution
+	resolvedParams := ctx.ResolveVariables(step.Args)
+
+	// Prepare params JSON
+	paramsJSON, err := json.Marshal(resolvedParams)
+	if err != nil {
+		return nil, fmt.Errorf("marshal params: %w", err)
+	}
+
+	// Prepare opts JSON with dry-run flag to get commands instead of executing
+	opts := map[string]any{
+		"workspace":       ctx.StepWorkspace("", step.Name), // Will be set properly when task is created
+		"dry_run":         true,                             // Request plugin to return commands instead of executing
+		"build_for_agent": true,                             // Indicate this is for agent execution
+	}
+	optsJSON, err := json.Marshal(opts)
+	if err != nil {
+		return nil, fmt.Errorf("marshal opts: %w", err)
+	}
+
+	// Try to call plugin's BuildCommands action first (if supported)
+	// This allows plugins to return command list without executing
+	commandsJSON, err := pluginClient.CallMethod("BuildCommands", paramsJSON, optsJSON)
+	if err == nil {
+		// Plugin supports BuildCommands, parse the returned commands
+		var commands []string
+		if err := json.Unmarshal(commandsJSON, &commands); err != nil {
+			return nil, fmt.Errorf("unmarshal commands from plugin: %w", err)
+		}
+		if len(commands) > 0 {
+			return commands, nil
+		}
+	}
+
+	// Fallback: For plugins that don't support BuildCommands, build commands based on plugin type
+	// This is a compatibility layer for existing plugins
+	pluginInfo, err := pluginClient.GetInfo()
+	if err != nil {
+		// If we can't get plugin info, fall back to generic plugin command
+		return am.buildGenericPluginCommand(step, action), nil
+	}
+
+	// Handle specific plugin types
+	switch pluginInfo.Name {
+	case "shell":
+		return am.buildShellCommands(step, resolvedParams, ctx)
+	default:
+		// For other plugins, try to build command based on common patterns
+		return am.buildGenericPluginCommand(step, action), nil
+	}
+}
+
+// buildShellCommands builds shell commands from step params
+func (am *AgentManager) buildShellCommands(step *Step, params map[string]any, ctx *ExecutionContext) ([]string, error) {
+	commands := []string{}
+
+	// Determine shell action
+	action := step.Action
+	if action == "" {
+		action = "command" // Default to command for shell plugin
+	}
+
+	// Build command based on action type
+	switch action {
+	case "script":
+		// For script action, create a script file and execute it
+		if script, ok := params["script"].(string); ok && script != "" {
+			// Create a command that writes script to file and executes it
+			scriptFile := "/tmp/script.sh"
+			commands = append(commands, fmt.Sprintf("cat > %s << 'SCRIPT_EOF'\n%s\nSCRIPT_EOF", scriptFile, script))
+			commands = append(commands, fmt.Sprintf("chmod +x %s", scriptFile))
+
+			// Add script arguments if provided
+			scriptArgs := ""
+			if args, ok := params["args"].([]any); ok && len(args) > 0 {
+				argStrs := make([]string, len(args))
+				for i, arg := range args {
+					argStrs[i] = fmt.Sprintf("%v", arg)
+				}
+				scriptArgs = " " + strings.Join(argStrs, " ")
+			}
+
+			commands = append(commands, fmt.Sprintf("sh %s%s", scriptFile, scriptArgs))
+			commands = append(commands, fmt.Sprintf("rm -f %s", scriptFile))
+		} else {
+			return nil, fmt.Errorf("script parameter is required for shell script action")
+		}
+
+	case "command":
+		// For command action, execute directly
+		if command, ok := params["command"].(string); ok && command != "" {
+			// Add command arguments if provided
+			if args, ok := params["args"].([]any); ok && len(args) > 0 {
+				argStrs := make([]string, len(args))
+				for i, arg := range args {
+					argStrs[i] = fmt.Sprintf("%v", arg)
+				}
+				commands = append(commands, fmt.Sprintf("%s %s", command, strings.Join(argStrs, " ")))
+			} else {
+				commands = append(commands, command)
+			}
+		} else {
+			return nil, fmt.Errorf("command parameter is required for shell command action")
+		}
+
+	default:
+		return nil, fmt.Errorf("unsupported shell action: %s", action)
+	}
+
+	return commands, nil
+}
+
+// buildGenericPluginCommand builds a generic plugin command as fallback
+func (am *AgentManager) buildGenericPluginCommand(step *Step, action string) []string {
+	// This is a fallback for plugins that don't support BuildCommands
+	// In this case, we still send plugin command to agent
+	// Agent will need to have plugin runtime to execute it
+	// TODO: This should be improved to fully resolve commands in main program
+	return []string{fmt.Sprintf("plugin execute --plugin %s --action %s", step.Uses, action)}
 }
 
 // buildLabelSelector builds agent label selector from step selector
@@ -598,6 +898,6 @@ type AgentStatus struct {
 	RunningJobsCount  int32
 	MaxConcurrentJobs int32
 	Metrics           map[string]string
-	Labels            map[string]string
+	Labels            map[string]string // Agent labels for matching
 	LastHeartbeat     time.Time
 }

@@ -75,7 +75,7 @@ type AgentInfo struct {
 // SandboxConfig sandbox configuration
 type SandboxConfig struct {
 	Enable     bool             `mapstructure:"enable"`     // Enable sandbox, false or true
-	Mode       string           `mapstructure:"mode"`       // Sandbox mode: containerd, kubernetes
+	Runtime    string           `mapstructure:"runtime"`    // Sandbox runtime: containerd, kubernetes
 	Containerd ContainerdConfig `mapstructure:"containerd"` // Containerd configuration
 }
 
