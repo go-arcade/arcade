@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/go-arcade/arcade/pkg/log"
+	tracecontext "github.com/go-arcade/arcade/pkg/trace/context"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -41,7 +42,16 @@ func AccessLogFormat(httpConfig *Http) fiber.Handler {
 			queryStr = "?" + query
 		}
 
-		// 使用 sugar logger 记录访问日志
+		// 确保 trace context 设置到 goroutine context，以便日志能获取到 trace 信息
+		// trace middleware 应该已经设置了 context，但这里再次确保
+		// 从 fiber context 中获取 trace context，并设置到 goroutine context
+		if ctx := c.UserContext(); ctx != nil {
+			// 确保 context 中包含有效的 span
+			tracecontext.SetContext(ctx)
+		}
+		// 在记录日志后清除 context
+		defer tracecontext.ClearContext()
+
 		log.Infow("HTTP request",
 			"method", c.Method(),
 			"path", c.Path(),

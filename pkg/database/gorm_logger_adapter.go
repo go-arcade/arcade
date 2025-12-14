@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/go-arcade/arcade/pkg/log"
+	tracecontext "github.com/go-arcade/arcade/pkg/trace/context"
+	"github.com/go-arcade/arcade/pkg/trace/inject"
 	gormLogger "gorm.io/gorm/logger"
 )
 
@@ -54,6 +56,21 @@ func (l *GormLoggerAdapter) Trace(ctx context.Context, begin time.Time, fc func(
 
 	elapsed := time.Since(begin).Seconds() // convert to seconds
 	sql, rows := fc()
+
+	// 将 context 设置到 goroutine context，以便日志能获取到 trace 信息
+	tracecontext.SetContext(ctx)
+
+	// 添加数据库查询埋点（会创建新的 span 并更新 goroutine context）
+	// DatabaseQuery 会设置包含新 span 的 context 到 goroutine context
+	_, _ = inject.DatabaseQueryWithSQL(ctx, "mysql", sql, func(ctx context.Context) (int64, error) {
+		// 这里只是用于埋点，实际的查询已经在 GORM 中执行完成
+		// 返回影响的行数和错误
+		return rows, err
+	})
+
+	// 记录日志时，DatabaseQuery 创建的 span context 应该还在 goroutine context 中
+	// 在记录完所有日志后再清除 context
+	defer tracecontext.ClearContext()
 
 	if err != nil && l.Config.LogLevel >= gormLogger.Error && (!errors.Is(err, gormLogger.ErrRecordNotFound) || !l.Config.IgnoreRecordNotFoundError) {
 		log.Errorw("SQL query failed", "sql", sql, "rows", rows, "elapsed", elapsed, "error", err)

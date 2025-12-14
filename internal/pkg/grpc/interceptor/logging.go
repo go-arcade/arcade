@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/trace"
+	"github.com/go-arcade/arcade/pkg/trace/inject"
 	"google.golang.org/grpc"
 )
 
@@ -92,10 +94,18 @@ func LoggingUnaryClientInterceptor() grpc.UnaryClientInterceptor {
 		invoker grpc.UnaryInvoker,
 		opts ...grpc.CallOption,
 	) error {
+		// 添加链路追踪埋点
+		ctx = trace.ContextWithSpan(ctx)
+
 		start := time.Now()
-		err := invoker(ctx, method, req, reply, cc, opts...)
+		_, err := inject.GRPCUnaryCall(ctx, method, func(ctx context.Context) (any, error) {
+			// 执行实际的 gRPC 调用
+			callErr := invoker(ctx, method, req, reply, cc, opts...)
+			return reply, callErr
+		})
 		duration := time.Since(start)
 
+		// 记录日志
 		logClientCall("unary", method, duration, err)
 
 		return err
@@ -113,10 +123,17 @@ func LoggingStreamClientInterceptor() grpc.StreamClientInterceptor {
 		streamer grpc.Streamer,
 		opts ...grpc.CallOption,
 	) (grpc.ClientStream, error) {
+		// 添加链路追踪埋点
+		ctx = trace.ContextWithSpan(ctx)
+
 		start := time.Now()
-		stream, err := streamer(ctx, desc, cc, method, opts...)
+		stream, err := inject.GRPCStreamCall(ctx, method, func(ctx context.Context) (grpc.ClientStream, error) {
+			// 执行实际的 gRPC 流式调用
+			return streamer(ctx, desc, cc, method, opts...)
+		})
 		duration := time.Since(start)
 
+		// 记录日志
 		logClientCall("stream", method, duration, err)
 
 		return stream, err

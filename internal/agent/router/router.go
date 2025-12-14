@@ -45,6 +45,7 @@ func (rt *Router) Router() *fiber.App {
 	app.Use(
 		fiberrecover.New(),
 		cors.New(),
+		middleware.TraceMiddleware(), // 链路追踪中间件
 		middleware.UnifiedResponseMiddleware(),
 	)
 

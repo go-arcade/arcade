@@ -8,6 +8,7 @@ import (
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/metrics"
 	"github.com/go-arcade/arcade/pkg/pprof"
+	"github.com/go-arcade/arcade/pkg/trace"
 	"github.com/google/wire"
 )
 
@@ -21,6 +22,7 @@ var ProviderSet = wire.NewSet(
 	ProvideRedisConfig,
 	ProvideMetricsConfig,
 	ProvidePprofConfig,
+	ProvideTraceConfig,
 )
 
 // ProvideConf 提供应用配置
@@ -67,4 +69,11 @@ func ProvidePprofConfig(appConf *AppConfig) pprof.PprofConfig {
 	pprofConfig := appConf.Pprof
 	pprofConfig.SetDefaults()
 	return pprofConfig
+}
+
+// ProvideTraceConfig 提供 Trace 配置
+func ProvideTraceConfig(appConf *AppConfig) trace.Conf {
+	traceConfig := appConf.Trace
+	traceConfig.SetDefaults()
+	return traceConfig
 }

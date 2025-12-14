@@ -14,6 +14,7 @@ import (
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/metrics"
 	"github.com/go-arcade/arcade/pkg/pprof"
+	"github.com/go-arcade/arcade/pkg/trace"
 )
 
 // TaskPoolConfig Task 池配置
@@ -47,6 +48,7 @@ type AppConfig struct {
 	Plugin    PluginConfig
 	Metrics   metrics.MetricsConfig
 	Pprof     pprof.PprofConfig
+	Trace     trace.Conf
 }
 
 var (

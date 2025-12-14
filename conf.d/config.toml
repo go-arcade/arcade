@@ -18,6 +18,31 @@ port = 8083
 # pprof server request path prefix, default: "/debug/pprof"
 path = "/debug/pprof"
 
+[trace]
+# enable trace, false or true
+enabled = true
+# OTLP endpoint address
+# For gRPC: "localhost:4317" or "otel-collector:4317"
+# For HTTP: "http://localhost:4318" or "http://otel-collector:4318"
+endpoint = "localhost:4317"
+# protocol: grpc or http
+protocol = "grpc"
+# service name
+serviceName = "arcade"
+# service version
+serviceVersion = "1.0.0"
+# use insecure connection (no TLS)
+insecure = true
+# batch timeout in seconds
+batchTimeout = 5
+# export timeout in seconds
+exportTimeout = 30
+# max export batch size
+maxExportBatchSize = 512
+# HTTP headers (only for HTTP protocol)
+# [trace.headers]
+# Authorization = "Bearer token"
+
 [log]
 # support stdout, file, kafka
 output = "stdout"

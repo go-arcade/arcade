@@ -20,9 +20,12 @@ func ensureLogger() {
 			if err := Init(SetDefaults()); err != nil {
 				// 如果初始化失败，创建一个基本的 stdout logger
 				zapLogger, _ := zap.NewProduction()
+				// 包装 core 以自动添加 trace 信息
+				core := wrapCoreWithTrace(zapLogger.Core())
+				wrappedLogger := zap.New(core, zap.AddCallerSkip(1), zap.AddCaller())
 				mu.Lock()
-				logger = zapLogger
-				sugar = zapLogger.Sugar()
+				logger = wrappedLogger
+				sugar = wrappedLogger.Sugar()
 				mu.Unlock()
 			}
 		})

@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/go-arcade/arcade/pkg/trace/inject"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -19,17 +20,36 @@ func NewRedisCache(client *redis.Client) ICache {
 
 // Get 获取缓存值
 func (r *RedisCache) Get(ctx context.Context, key string) *redis.StringCmd {
-	return r.client.Get(ctx, key)
+	var cmd *redis.StringCmd
+	_, _ = inject.CacheGet(ctx, key, func(ctx context.Context) (bool, error) {
+		cmd = r.client.Get(ctx, key)
+		err := cmd.Err()
+		if err == redis.Nil {
+			return false, nil
+		}
+		return err == nil, err
+	})
+	return cmd
 }
 
 // Set 设置缓存值
 func (r *RedisCache) Set(ctx context.Context, key string, value any, expiration time.Duration) *redis.StatusCmd {
-	return r.client.Set(ctx, key, value, expiration)
+	var cmd *redis.StatusCmd
+	_ = inject.CacheSet(ctx, key, expiration, func(ctx context.Context) error {
+		cmd = r.client.Set(ctx, key, value, expiration)
+		return cmd.Err()
+	})
+	return cmd
 }
 
 // Del 删除缓存
 func (r *RedisCache) Del(ctx context.Context, keys ...string) *redis.IntCmd {
-	return r.client.Del(ctx, keys...)
+	var cmd *redis.IntCmd
+	_, _ = inject.CacheDel(ctx, keys, func(ctx context.Context) (int64, error) {
+		cmd = r.client.Del(ctx, keys...)
+		return cmd.Val(), cmd.Err()
+	})
+	return cmd
 }
 
 // Pipeline 创建管道

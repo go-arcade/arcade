@@ -111,6 +111,9 @@ func NewLog(conf *Conf) (*zap.Logger, error) {
 
 	core = zapcore.NewCore(encoder, writeSyncer, parseLogLevel(conf.Level))
 
+	// 包装 core 以自动添加 trace 信息
+	core = wrapCoreWithTrace(core)
+
 	newLogger := zap.New(core, zap.AddCallerSkip(1), zap.AddCaller())
 
 	mu.Lock()

@@ -19,6 +19,7 @@ import (
 	"github.com/go-arcade/arcade/pkg/metrics"
 	"github.com/go-arcade/arcade/pkg/plugin"
 	"github.com/go-arcade/arcade/pkg/pprof"
+	"github.com/go-arcade/arcade/pkg/trace"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 )
@@ -127,7 +128,47 @@ func Bootstrap(configFile string, initApp InitAppFunc) (*App, func(), *config.Ap
 	// 获取配置（从 app 中获取）
 	appConf := app.AppConf
 
-	return app, cleanup, appConf, nil
+	// 初始化 OpenTelemetry TracerProvider（根据配置决定是否启用）
+	var traceCleanup func()
+	if appConf.Trace.Enabled {
+		var err error
+		traceCleanup, err = initTracerProvider(appConf)
+		if err != nil {
+			log.Errorw("Failed to initialize TracerProvider", zap.Error(err))
+			// 不阻止应用启动，但记录错误
+		} else {
+			log.Infow("OpenTelemetry TracerProvider initialized",
+				"endpoint", appConf.Trace.Endpoint,
+				"protocol", appConf.Trace.Protocol,
+				"serviceName", appConf.Trace.ServiceName,
+			)
+		}
+	} else {
+		log.Info("OpenTelemetry trace is disabled in configuration")
+	}
+
+	// 包装 cleanup 函数，包含 trace cleanup
+	enhancedCleanup := func() {
+		if traceCleanup != nil {
+			traceCleanup()
+		}
+		cleanup()
+	}
+
+	return app, enhancedCleanup, appConf, nil
+}
+
+// initTracerProvider 初始化 OpenTelemetry TracerProvider
+func initTracerProvider(appConf *config.AppConfig) (func(), error) {
+	ctx := context.Background()
+	tp, cleanup, err := trace.InitTracerProvider(ctx, appConf.Trace)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize TracerProvider: %w", err)
+	}
+	if tp == nil {
+		return nil, nil
+	}
+	return cleanup, nil
 }
 
 // Run start app and wait for exit signal, then gracefully shutdown
