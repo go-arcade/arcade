@@ -48,9 +48,7 @@ func NewExecutionContext(
 ) *ExecutionContext {
 	env := make(map[string]string)
 	if p != nil && p.Variables != nil {
-		for k, v := range p.Variables {
-			env[k] = v
-		}
+		maps.Copy(env, p.Variables)
 	}
 
 	return &ExecutionContext{
@@ -180,9 +178,7 @@ func (c *ExecutionContext) ResolveStepEnv(job *Job, step *Step) map[string]strin
 	env := make(map[string]string)
 
 	// Start with pipeline variables
-	for k, v := range c.Env {
-		env[k] = v
-	}
+	maps.Copy(env, c.Env)
 
 	// Override with job env
 	if job != nil && job.Env != nil {

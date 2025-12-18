@@ -21,17 +21,18 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-arcade/arcade/pkg/log"
-
 	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/pkg/cache"
 	httpx "github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
+	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/version"
+	fiberi18n "github.com/gofiber/contrib/fiberi18n/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"golang.org/x/text/language"
 )
 
 type Router struct {
@@ -47,6 +48,9 @@ const (
 
 //go:embed all:static
 var web embed.FS
+
+//go:embed localize/*
+var localizeFS embed.FS
 
 func NewRouter(
 	httpConf *httpx.Http,
@@ -84,6 +88,18 @@ func (rt *Router) Router() *fiber.App {
 		cors.New(),
 		middleware.UnifiedResponseMiddleware(),
 	)
+
+	// Configure i18n middleware with embedded filesystem
+	app.Use(fiberi18n.New(&fiberi18n.Config{
+		RootPath:         "localize",
+		FormatBundleFile: "yaml",
+		AcceptLanguages: []language.Tag{
+			language.English,
+			language.Chinese,
+		},
+		DefaultLanguage: language.English,
+		Loader:          &fiberi18n.EmbedLoader{FS: localizeFS},
+	}))
 
 	// 静态文件
 	if rt.Http.UseFileAssets {
