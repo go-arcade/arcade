@@ -1,0 +1,14 @@
+# 中文翻译
+user:
+  not_found: "用户未找到"
+  created_success: "用户 {{.UserName}} (ID: {{.UserId}}) 创建成功"
+  welcome: "欢迎, {{.Name}}!"
+
+error:
+  invalid_request: "无效的请求"
+  login_failed: "登录失败，用户: {{.Email}}"
+  internal_error: "服务器内部错误"
+
+message:
+  success: "操作成功"
+  failed: "操作失败"

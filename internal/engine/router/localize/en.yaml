@@ -1,0 +1,14 @@
+# English translations
+user:
+  not_found: "User not found"
+  created_success: "User {{.UserName}} (ID: {{.UserId}}) created successfully"
+  welcome: "Welcome, {{.Name}}!"
+
+error:
+  invalid_request: "Invalid request"
+  login_failed: "Login failed for {{.Email}}"
+  internal_error: "Internal server error"
+
+message:
+  success: "Operation successful"
+  failed: "Operation failed"
