@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package svn
 
 import (
 	"bytes"
@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/rpc"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -28,31 +27,27 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
-	pluginv1 "github.com/go-arcade/arcade/api/plugin/v1"
-	pluginpkg "github.com/go-arcade/arcade/pkg/plugin"
-	"github.com/hashicorp/go-plugin"
-	"google.golang.org/grpc"
+	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/plugin"
 )
 
 // SVNConfig is the plugin's configuration structure
 type SVNConfig struct {
 	// SVN executable path (default: svn)
-	SVNPath string `json:"svn_path"`
+	SVNPath string `json:"svnPath"`
 	// Default timeout in seconds (0 means no timeout)
 	Timeout int `json:"timeout"`
 	// Default working directory
-	WorkDir string `json:"work_dir"`
+	WorkDir string `json:"workDir"`
 	// Default username for authentication
 	Username string `json:"username"`
 	// Default password for authentication
 	Password string `json:"password"`
 	// Whether to trust server certificates
-	TrustServerCert bool `json:"trust_server_cert"`
+	TrustServerCert bool `json:"trustServerCert"`
 	// Non-interactive mode
-	NonInteractive bool `json:"non_interactive"`
+	NonInteractive bool `json:"nonInteractive"`
 }
-
-// ========== Plugin Action Arguments ==========
 
 // CheckoutArgs contains arguments for checking out a repository
 type CheckoutArgs struct {
@@ -110,7 +105,7 @@ type ListArgs struct {
 
 // SVN implements the svn plugin
 type SVN struct {
-	*pluginpkg.PluginBase
+	*plugin.PluginBase
 	name        string
 	description string
 	version     string
@@ -132,7 +127,7 @@ var (
 // NewSVN creates a new svn plugin instance
 func NewSVN() *SVN {
 	p := &SVN{
-		PluginBase:  pluginpkg.NewPluginBase(),
+		PluginBase:  plugin.NewPluginBase(),
 		name:        "svn",
 		description: "SVN version control plugin for repository operations",
 		version:     "1.0.0",
@@ -194,26 +189,24 @@ func (p *SVN) registerActions() {
 	}
 }
 
-// ===== Implement RPC Interface =====
-
 // Name returns the plugin name
-func (p *SVN) Name() (string, error) {
-	return p.name, nil
+func (p *SVN) Name() string {
+	return p.name
 }
 
 // Description returns the plugin description
-func (p *SVN) Description() (string, error) {
-	return p.description, nil
+func (p *SVN) Description() string {
+	return p.description
 }
 
 // Version returns the plugin version
-func (p *SVN) Version() (string, error) {
-	return p.version, nil
+func (p *SVN) Version() string {
+	return p.version
 }
 
 // Type returns the plugin type
-func (p *SVN) Type() (string, error) {
-	return pluginpkg.PluginTypeToString(pluginpkg.TypeSource), nil
+func (p *SVN) Type() plugin.PluginType {
+	return plugin.TypeSource
 }
 
 // Init initializes the plugin
@@ -234,13 +227,13 @@ func (p *SVN) Init(config json.RawMessage) error {
 		return fmt.Errorf("svn not found: %s", p.cfg.SVNPath)
 	}
 
-	fmt.Printf("[svn-plugin] initialized with svn_path: %s, timeout: %d\n", p.cfg.SVNPath, p.cfg.Timeout)
+	log.Infow("svn plugin initialized", "plugin", "svn", "svn_path", p.cfg.SVNPath, "timeout", p.cfg.Timeout)
 	return nil
 }
 
 // Cleanup cleans up the plugin
 func (p *SVN) Cleanup() error {
-	fmt.Println("[svn-plugin] cleanup completed")
+	log.Infow("svn plugin cleanup completed", "plugin", "svn")
 	return nil
 }
 
@@ -584,6 +577,9 @@ func (p *SVN) runSVNCommand(args []string, auth map[string]string, env map[strin
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
 			result["exit_code"] = exitErr.ExitCode()
+		} else {
+			// For non-exit errors (e.g., path errors), set exit_code to -1
+			result["exit_code"] = -1
 		}
 	} else {
 		result["exit_code"] = 0
@@ -592,61 +588,7 @@ func (p *SVN) runSVNCommand(args []string, auth map[string]string, env map[strin
 	return result, nil
 }
 
-// ===== gRPC Plugin Handler =====
-
-// SVNPluginHandler is the gRPC plugin handler
-type SVNPluginHandler struct {
-	plugin.Plugin
-	pluginInstance *SVN
-}
-
-// Server returns the RPC server (required by plugin.Plugin interface, not used for gRPC)
-func (p *SVNPluginHandler) Server(*plugin.MuxBroker) (any, error) {
-	return nil, fmt.Errorf("RPC protocol not supported, use gRPC protocol instead")
-}
-
-// Client returns the RPC client (required by plugin.Plugin interface, not used for gRPC)
-func (p *SVNPluginHandler) Client(*plugin.MuxBroker, *rpc.Client) (any, error) {
-	return nil, fmt.Errorf("RPC protocol not supported, use gRPC protocol instead")
-}
-
-// GRPCServer returns the gRPC server
-func (p *SVNPluginHandler) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
-	name, _ := p.pluginInstance.Name()
-	desc, _ := p.pluginInstance.Description()
-	ver, _ := p.pluginInstance.Version()
-	typ, _ := p.pluginInstance.Type()
-
-	info := &pluginpkg.PluginInfo{
-		Name:          name,
-		Description:   desc,
-		Version:       ver,
-		Type:          typ,
-		Author:        "Arcade Team",
-		Homepage:      "https://github.com/go-arcade/arcade",
-		ExecutionType: pluginv1.ExecutionType_EXECUTION_TYPE_SHELL,
-	}
-
-	server := pluginpkg.NewServer(info, p.pluginInstance, nil)
-	pluginv1.RegisterPluginServiceServer(s, server)
-	return nil
-}
-
-// GRPCClient returns the gRPC client (not used in plugin side)
-func (p *SVNPluginHandler) GRPCClient(context.Context, *plugin.GRPCBroker, *grpc.ClientConn) (any, error) {
-	return nil, nil
-}
-
-// ===== Main Entry Point =====
-
-func main() {
-	plugin.Serve(&plugin.ServeConfig{
-		HandshakeConfig: pluginpkg.PluginHandshake,
-		Plugins: map[string]plugin.Plugin{
-			"plugin": &SVNPluginHandler{pluginInstance: NewSVN()},
-		},
-		GRPCServer: func(opts []grpc.ServerOption) *grpc.Server {
-			return grpc.NewServer(opts...)
-		},
-	})
+// init registers the plugin
+func init() {
+	plugin.MustRegister(NewSVN())
 }

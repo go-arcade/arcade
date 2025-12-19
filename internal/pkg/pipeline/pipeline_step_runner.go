@@ -199,7 +199,7 @@ func (r *StepRunner) executeLocally(ctx context.Context) error {
 	}
 
 	// Call plugin method
-	_, err = pluginClient.CallMethod(action, paramsJSON, optsJSON)
+	_, err = pluginClient.Execute(action, paramsJSON, optsJSON)
 	if err != nil {
 		return fmt.Errorf("plugin execution failed: %w", err)
 	}

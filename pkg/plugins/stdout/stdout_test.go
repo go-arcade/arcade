@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package stdout
 
 import (
 	"bytes"
@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/bytedance/sonic"
+	"github.com/go-arcade/arcade/pkg/plugin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -32,40 +33,36 @@ func TestNewStdoutNotify(t *testing.T) {
 
 	assert.NotNil(t, plugin)
 	assert.Equal(t, "stdout", plugin.name)
-	assert.Equal(t, "A simple notify plugin that prints messages to stdout", plugin.description)
+	assert.Equal(t, "A simple plugin that prints messages to stdout", plugin.description)
 	assert.Equal(t, "1.0.0", plugin.version)
 }
 
 func TestStdoutNotify_Name(t *testing.T) {
 	plugin := NewStdout()
-	name, err := plugin.Name()
+	name := plugin.Name()
 
-	assert.NoError(t, err)
 	assert.Equal(t, "stdout", name)
 }
 
 func TestStdoutNotify_Description(t *testing.T) {
 	plugin := NewStdout()
-	desc, err := plugin.Description()
+	desc := plugin.Description()
 
-	assert.NoError(t, err)
-	assert.Equal(t, "A simple notify plugin that prints messages to stdout", desc)
+	assert.Equal(t, "A simple plugin that prints messages to stdout", desc)
 }
 
 func TestStdoutNotify_Version(t *testing.T) {
 	plugin := NewStdout()
-	version, err := plugin.Version()
+	version := plugin.Version()
 
-	assert.NoError(t, err)
 	assert.Equal(t, "1.0.0", version)
 }
 
 func TestStdoutNotify_Type(t *testing.T) {
-	plugin := NewStdout()
-	typ, err := plugin.Type()
+	p := NewStdout()
+	typ := p.Type()
 
-	assert.NoError(t, err)
-	assert.Equal(t, "custom", typ)
+	assert.Equal(t, plugin.TypeNotify, typ)
 }
 
 func TestStdoutNotify_Init(t *testing.T) {
@@ -324,7 +321,7 @@ func TestStdoutNotify_Execute(t *testing.T) {
 		},
 		{
 			name:   "执行template动作",
-			action: "template",
+			action: "send.template",
 			params: map[string]any{
 				"template": "Test {{.Value}}",
 				"data": map[string]any{
@@ -349,7 +346,7 @@ func TestStdoutNotify_Execute(t *testing.T) {
 		},
 		{
 			name:   "template动作带空数据",
-			action: "template",
+			action: "send.template",
 			params: map[string]any{
 				"template": "Test static message",
 				"data":     map[string]any{},

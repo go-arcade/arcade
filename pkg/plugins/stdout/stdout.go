@@ -12,22 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package stdout
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"net/rpc"
 	"os"
 	"text/template"
 	"time"
 
 	"github.com/bytedance/sonic"
-	pluginv1 "github.com/go-arcade/arcade/api/plugin/v1"
-	pluginpkg "github.com/go-arcade/arcade/pkg/plugin"
-	"github.com/hashicorp/go-plugin"
-	"google.golang.org/grpc"
+	"github.com/go-arcade/arcade/pkg/plugin"
 )
 
 // StdoutConfig is the plugin's configuration structure (can be passed from host via Init)
@@ -61,7 +56,7 @@ type SendBatchArgs struct {
 
 // Stdout implements the plugin
 type Stdout struct {
-	*pluginpkg.PluginBase
+	*plugin.PluginBase
 	name        string
 	description string
 	version     string
@@ -80,7 +75,7 @@ var (
 // NewStdout creates a new stdout plugin instance
 func NewStdout() *Stdout {
 	p := &Stdout{
-		PluginBase:  pluginpkg.NewPluginBase(),
+		PluginBase:  plugin.NewPluginBase(),
 		name:        "stdout",
 		description: "A simple plugin that prints messages to stdout",
 		version:     "1.0.0",
@@ -139,26 +134,24 @@ func (p *Stdout) registerActions() {
 	}
 }
 
-// ===== Implement RPC Interface =====
-
 // Name returns the plugin name
-func (p *Stdout) Name() (string, error) {
-	return p.name, nil
+func (p *Stdout) Name() string {
+	return p.name
 }
 
 // Description returns the plugin description
-func (p *Stdout) Description() (string, error) {
-	return p.description, nil
+func (p *Stdout) Description() string {
+	return p.description
 }
 
 // Version returns the plugin version
-func (p *Stdout) Version() (string, error) {
-	return p.version, nil
+func (p *Stdout) Version() string {
+	return p.version
 }
 
 // Type returns the plugin type
-func (p *Stdout) Type() (string, error) {
-	return string(pluginpkg.TypeCustom), nil
+func (p *Stdout) Type() plugin.PluginType {
+	return plugin.TypeNotify
 }
 
 // Init initializes the plugin
@@ -214,16 +207,16 @@ func (p *Stdout) Send(message json.RawMessage, opts json.RawMessage) error {
 // SendTemplate sends a notification using a template
 func (p *Stdout) SendTemplate(tpl string, data json.RawMessage, opts json.RawMessage) error {
 	// Parse template
-	t, err := template.New("stdout_notify").Parse(tpl)
+	t, err := template.New("stdout").Parse(tpl)
 	if err != nil {
-		return fmt.Errorf("stdout-notify parse template: %w", err)
+		return fmt.Errorf("stdout parse template: %w", err)
 	}
 
 	// Unmarshal data
 	var templateData any
 	if len(data) > 0 {
 		if err := sonic.Unmarshal(data, &templateData); err != nil {
-			return fmt.Errorf("stdout-notify unmarshal data: %w", err)
+			return fmt.Errorf("stdout unmarshal data: %w", err)
 		}
 	}
 
@@ -234,66 +227,13 @@ func (p *Stdout) SendTemplate(tpl string, data json.RawMessage, opts json.RawMes
 	_, _ = fmt.Fprintf(os.Stdout, "%s%s | ", prefix, time.Now().Format(time.RFC3339))
 
 	if err := t.Execute(os.Stdout, templateData); err != nil {
-		return fmt.Errorf("stdout-notify execute template: %w", err)
+		return fmt.Errorf("stdout execute template: %w", err)
 	}
 	_, _ = fmt.Fprintln(os.Stdout) // Newline
 	return nil
 }
 
-// ===== gRPC Plugin Handler =====
-
-// StdoutNotifyPlugin is the gRPC plugin handler
-type StdoutNotifyPlugin struct {
-	plugin.Plugin
-	pluginInstance *Stdout
-}
-
-// Server returns the RPC server (required by plugin.Plugin interface, not used for gRPC)
-func (p *StdoutNotifyPlugin) Server(*plugin.MuxBroker) (any, error) {
-	return nil, fmt.Errorf("RPC protocol not supported, use gRPC protocol instead")
-}
-
-// Client returns the RPC client (required by plugin.Plugin interface, not used for gRPC)
-func (p *StdoutNotifyPlugin) Client(*plugin.MuxBroker, *rpc.Client) (any, error) {
-	return nil, fmt.Errorf("RPC protocol not supported, use gRPC protocol instead")
-}
-
-// GRPCServer returns the gRPC server
-func (p *StdoutNotifyPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
-	name, _ := p.pluginInstance.Name()
-	desc, _ := p.pluginInstance.Description()
-	ver, _ := p.pluginInstance.Version()
-	typ, _ := p.pluginInstance.Type()
-
-	info := &pluginpkg.PluginInfo{
-		Name:        name,
-		Description: desc,
-		Version:     ver,
-		Type:        typ,
-		Author:      "Arcade Team",
-		Homepage:    "https://github.com/go-arcade/arcade",
-	}
-
-	server := pluginpkg.NewServer(info, p.pluginInstance, nil)
-	pluginv1.RegisterPluginServiceServer(s, server)
-	return nil
-}
-
-// GRPCClient returns the gRPC client (not used in plugin side)
-func (p *StdoutNotifyPlugin) GRPCClient(context.Context, *plugin.GRPCBroker, *grpc.ClientConn) (any, error) {
-	return nil, nil
-}
-
-// ===== Main Entry Point =====
-
-func main() {
-	plugin.Serve(&plugin.ServeConfig{
-		HandshakeConfig: pluginpkg.PluginHandshake,
-		Plugins: map[string]plugin.Plugin{
-			"plugin": &StdoutNotifyPlugin{pluginInstance: NewStdout()},
-		},
-		GRPCServer: func(opts []grpc.ServerOption) *grpc.Server {
-			return grpc.NewServer(opts...)
-		},
-	})
+// init registers the plugin
+func init() {
+	plugin.MustRegister(NewStdout())
 }

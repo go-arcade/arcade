@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	pluginv1 "github.com/go-arcade/arcade/api/plugin/v1"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/plugin"
 )
@@ -66,8 +65,8 @@ func (e *PluginExecutor) Execute(ctx context.Context, req *ExecutionRequest) (*E
 		return result, err
 	}
 
-	// 获取 plugin 信息
-	pluginClient, err := e.pluginManager.GetPlugin(req.Step.Uses)
+	// 获取 plugin
+	pluginInstance, err := e.pluginManager.GetPlugin(req.Step.Uses)
 	if err != nil {
 		result := NewExecutionResult(e.Name())
 		err = fmt.Errorf("plugin not found: %s: %w", req.Step.Uses, err)
@@ -75,32 +74,12 @@ func (e *PluginExecutor) Execute(ctx context.Context, req *ExecutionRequest) (*E
 		return result, err
 	}
 
-	// 获取 plugin 信息以确定 ExecutionType
-	pluginInfo, err := pluginClient.GetInfo()
-	if err != nil {
-		result := NewExecutionResult(e.Name())
-		err = fmt.Errorf("failed to get plugin info: %w", err)
-		result.Complete(false, -1, err)
-		return result, err
-	}
-
-	// 根据 ExecutionType 选择执行方式
-	switch pluginInfo.ExecutionType {
-	case pluginv1.ExecutionType_EXECUTION_TYPE_HTTP:
-		// 使用 HTTP 执行器
-		return e.executeHTTP(ctx, req)
-	case pluginv1.ExecutionType_EXECUTION_TYPE_SHELL:
-		fallthrough
-	case pluginv1.ExecutionType_EXECUTION_TYPE_UNSPECIFIED:
-		fallthrough
-	default:
-		// 默认使用 plugin 调用方式（SHELL 类型）
-		return e.executePlugin(ctx, req, pluginClient)
-	}
+	// 默认使用 plugin 调用方式
+	return e.executePlugin(ctx, req, pluginInstance)
 }
 
-// executePlugin 通过 plugin 调用执行（SHELL 类型）
-func (e *PluginExecutor) executePlugin(ctx context.Context, req *ExecutionRequest, pluginClient *plugin.Client) (*ExecutionResult, error) {
+// executePlugin 通过 plugin 调用执行
+func (e *PluginExecutor) executePlugin(ctx context.Context, req *ExecutionRequest, pluginInstance plugin.Plugin) (*ExecutionResult, error) {
 	result := NewExecutionResult(e.Name())
 
 	// 确定 action（默认为 "Execute"）
@@ -141,7 +120,7 @@ func (e *PluginExecutor) executePlugin(ctx context.Context, req *ExecutionReques
 	}
 
 	// 调用 plugin 方法
-	pluginResult, err := pluginClient.CallMethod(action, paramsJSON, optsJSON)
+	pluginResult, err := pluginInstance.Execute(action, paramsJSON, optsJSON)
 	if err != nil {
 		err = fmt.Errorf("plugin execution failed: %w", err)
 		result.Complete(false, -1, err)

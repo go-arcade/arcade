@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package svn
 
 import (
 	"encoding/json"
@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/bytedance/sonic"
+	"github.com/go-arcade/arcade/pkg/plugin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -39,34 +40,30 @@ func TestNewSVNPlugin(t *testing.T) {
 
 func TestSVNPlugin_Name(t *testing.T) {
 	plugin := NewSVN()
-	name, err := plugin.Name()
+	name := plugin.Name()
 
-	assert.NoError(t, err)
 	assert.Equal(t, "svn", name)
 }
 
 func TestSVNPlugin_Description(t *testing.T) {
 	plugin := NewSVN()
-	desc, err := plugin.Description()
+	desc := plugin.Description()
 
-	assert.NoError(t, err)
 	assert.Equal(t, "SVN version control plugin for repository operations", desc)
 }
 
 func TestSVNPlugin_Version(t *testing.T) {
 	plugin := NewSVN()
-	version, err := plugin.Version()
+	version := plugin.Version()
 
-	assert.NoError(t, err)
 	assert.Equal(t, "1.0.0", version)
 }
 
 func TestSVNPlugin_Type(t *testing.T) {
-	plugin := NewSVN()
-	typ, err := plugin.Type()
+	p := NewSVN()
+	typ := p.Type()
 
-	assert.NoError(t, err)
-	assert.Equal(t, "source", typ)
+	assert.Equal(t, plugin.TypeSource, typ)
 }
 
 func TestSVNPlugin_Init(t *testing.T) {

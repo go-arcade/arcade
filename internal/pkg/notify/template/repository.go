@@ -17,6 +17,10 @@ package template
 import (
 	"context"
 	"fmt"
+
+	"github.com/bytedance/sonic"
+	"github.com/go-arcade/arcade/internal/engine/model"
+	"github.com/go-arcade/arcade/internal/engine/repo"
 )
 
 // ITemplateRepository defines the interface for template storage
@@ -55,113 +59,185 @@ type TemplateFilter struct {
 	Offset  int
 }
 
-// InMemoryTemplateRepository implements ITemplateRepository using in-memory storage
-// This is for testing and development. Use a database implementation in production.
-type InMemoryTemplateRepository struct {
-	templates map[string]*Template
+// DatabaseTemplateRepository implements ITemplateRepository using database storage
+type DatabaseTemplateRepository struct {
+	repo repo.INotificationTemplateRepository
 }
 
-// NewInMemoryTemplateRepository creates a new in-memory template repository
-func NewInMemoryTemplateRepository() *InMemoryTemplateRepository {
-	return &InMemoryTemplateRepository{
-		templates: make(map[string]*Template),
+// NewDatabaseTemplateRepository creates a new database template repository
+func NewDatabaseTemplateRepository(repo repo.INotificationTemplateRepository) *DatabaseTemplateRepository {
+	return &DatabaseTemplateRepository{
+		repo: repo,
 	}
+}
+
+// modelToTemplate converts model.NotificationTemplate to template.Template
+func modelToTemplate(m *model.NotificationTemplate) (*Template, error) {
+	var variables []string
+	if m.Variables != "" {
+		if err := sonic.UnmarshalString(m.Variables, &variables); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal variables: %w", err)
+		}
+	}
+
+	var metadata map[string]interface{}
+	if m.Metadata != "" {
+		if err := sonic.UnmarshalString(m.Metadata, &metadata); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal metadata: %w", err)
+		}
+	}
+
+	return &Template{
+		ID:          m.TemplateID,
+		Name:        m.Name,
+		Type:        TemplateType(m.Type),
+		Channel:     m.Channel,
+		Title:       m.Title,
+		Content:     m.Content,
+		Variables:   variables,
+		Format:      m.Format,
+		Metadata:    metadata,
+		Description: m.Description,
+	}, nil
+}
+
+// templateToModel converts template.Template to model.NotificationTemplate
+func templateToModel(t *Template) (*model.NotificationTemplate, error) {
+	variablesJSON, err := sonic.MarshalString(t.Variables)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal variables: %w", err)
+	}
+
+	metadataJSON := ""
+	if len(t.Metadata) > 0 {
+		metadataJSON, err = sonic.MarshalString(t.Metadata)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal metadata: %w", err)
+		}
+	}
+
+	return &model.NotificationTemplate{
+		TemplateID:  t.ID,
+		Name:        t.Name,
+		Type:        string(t.Type),
+		Channel:     t.Channel,
+		Title:       t.Title,
+		Content:     t.Content,
+		Variables:   variablesJSON,
+		Format:      t.Format,
+		Metadata:    metadataJSON,
+		Description: t.Description,
+		IsActive:    true,
+	}, nil
 }
 
 // Create creates a new template
-func (r *InMemoryTemplateRepository) Create(ctx context.Context, template *Template) error {
-	if template.ID == "" {
-		return fmt.Errorf("template ID is required")
+func (r *DatabaseTemplateRepository) Create(ctx context.Context, template *Template) error {
+	model, err := templateToModel(template)
+	if err != nil {
+		return err
 	}
-
-	if _, exists := r.templates[template.ID]; exists {
-		return fmt.Errorf("template with ID %s already exists", template.ID)
-	}
-
-	r.templates[template.ID] = template
-	return nil
+	return r.repo.CreateTemplate(ctx, model)
 }
 
 // Get retrieves a template by ID
-func (r *InMemoryTemplateRepository) Get(ctx context.Context, id string) (*Template, error) {
-	template, exists := r.templates[id]
-	if !exists {
-		return nil, fmt.Errorf("template with ID %s not found", id)
+func (r *DatabaseTemplateRepository) Get(ctx context.Context, id string) (*Template, error) {
+	model, err := r.repo.GetTemplateByID(ctx, id)
+	if err != nil {
+		return nil, err
 	}
-	return template, nil
+	return modelToTemplate(model)
 }
 
 // GetByNameAndType retrieves a template by name and type
-func (r *InMemoryTemplateRepository) GetByNameAndType(ctx context.Context, name string, templateType TemplateType) (*Template, error) {
-	for _, tmpl := range r.templates {
-		if tmpl.Name == name && tmpl.Type == templateType {
-			return tmpl, nil
-		}
+func (r *DatabaseTemplateRepository) GetByNameAndType(ctx context.Context, name string, templateType TemplateType) (*Template, error) {
+	model, err := r.repo.GetTemplateByNameAndType(ctx, name, string(templateType))
+	if err != nil {
+		return nil, err
 	}
-	return nil, fmt.Errorf("template with name %s and type %s not found", name, templateType)
+	return modelToTemplate(model)
 }
 
 // List lists all templates with optional filtering
-func (r *InMemoryTemplateRepository) List(ctx context.Context, filter *TemplateFilter) ([]*Template, error) {
-	var result []*Template
-
-	for _, tmpl := range r.templates {
-		if filter != nil {
-			if filter.Type != "" && tmpl.Type != filter.Type {
-				continue
-			}
-			if filter.Channel != "" && tmpl.Channel != filter.Channel {
-				continue
-			}
-			if filter.Name != "" && tmpl.Name != filter.Name {
-				continue
-			}
-		}
-		result = append(result, tmpl)
+func (r *DatabaseTemplateRepository) List(ctx context.Context, filter *TemplateFilter) ([]*Template, error) {
+	// 将 template.TemplateFilter 转换为 repo.NotificationTemplateFilter
+	repoFilter := convertTemplateFilter(filter)
+	models, err := r.repo.ListTemplates(ctx, repoFilter)
+	if err != nil {
+		return nil, err
 	}
 
-	// Apply pagination
-	if filter != nil && filter.Limit > 0 {
-		start := filter.Offset
-		end := start + filter.Limit
-		if start >= len(result) {
-			return []*Template{}, nil
+	templates := make([]*Template, 0, len(models))
+	for _, m := range models {
+		t, err := modelToTemplate(m)
+		if err != nil {
+			return nil, err
 		}
-		if end > len(result) {
-			end = len(result)
-		}
-		result = result[start:end]
+		templates = append(templates, t)
 	}
+	return templates, nil
+}
 
-	return result, nil
+// convertTemplateFilter 将 template.TemplateFilter 转换为 repo.NotificationTemplateFilter
+func convertTemplateFilter(filter *TemplateFilter) *repo.NotificationTemplateFilter {
+	if filter == nil {
+		return nil
+	}
+	return &repo.NotificationTemplateFilter{
+		Type:    string(filter.Type),
+		Channel: filter.Channel,
+		Name:    filter.Name,
+		Limit:   filter.Limit,
+		Offset:  filter.Offset,
+	}
 }
 
 // Update updates an existing template
-func (r *InMemoryTemplateRepository) Update(ctx context.Context, template *Template) error {
-	if _, exists := r.templates[template.ID]; !exists {
-		return fmt.Errorf("template with ID %s not found", template.ID)
+func (r *DatabaseTemplateRepository) Update(ctx context.Context, template *Template) error {
+	model, err := templateToModel(template)
+	if err != nil {
+		return err
 	}
-
-	r.templates[template.ID] = template
-	return nil
+	return r.repo.UpdateTemplate(ctx, model)
 }
 
 // Delete deletes a template by ID
-func (r *InMemoryTemplateRepository) Delete(ctx context.Context, id string) error {
-	if _, exists := r.templates[id]; !exists {
-		return fmt.Errorf("template with ID %s not found", id)
-	}
-
-	delete(r.templates, id)
-	return nil
+func (r *DatabaseTemplateRepository) Delete(ctx context.Context, id string) error {
+	return r.repo.DeleteTemplate(ctx, id)
 }
 
 // ListByType lists templates by type
-func (r *InMemoryTemplateRepository) ListByType(ctx context.Context, templateType TemplateType) ([]*Template, error) {
-	return r.List(ctx, &TemplateFilter{Type: templateType})
+func (r *DatabaseTemplateRepository) ListByType(ctx context.Context, templateType TemplateType) ([]*Template, error) {
+	models, err := r.repo.ListTemplatesByType(ctx, string(templateType))
+	if err != nil {
+		return nil, err
+	}
+
+	templates := make([]*Template, 0, len(models))
+	for _, m := range models {
+		t, err := modelToTemplate(m)
+		if err != nil {
+			return nil, err
+		}
+		templates = append(templates, t)
+	}
+	return templates, nil
 }
 
 // ListByChannel lists templates by channel
-func (r *InMemoryTemplateRepository) ListByChannel(ctx context.Context, channel string) ([]*Template, error) {
-	return r.List(ctx, &TemplateFilter{Channel: channel})
+func (r *DatabaseTemplateRepository) ListByChannel(ctx context.Context, channel string) ([]*Template, error) {
+	models, err := r.repo.ListTemplatesByChannel(ctx, channel)
+	if err != nil {
+		return nil, err
+	}
+
+	templates := make([]*Template, 0, len(models))
+	for _, m := range models {
+		t, err := modelToTemplate(m)
+		if err != nil {
+			return nil, err
+		}
+		templates = append(templates, t)
+	}
+	return templates, nil
 }

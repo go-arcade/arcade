@@ -21,36 +21,88 @@ import (
 
 	"github.com/go-arcade/arcade/internal/pkg/notify/auth"
 	"github.com/go-arcade/arcade/internal/pkg/notify/channel"
-)
-
-// ChannelType represents the notification channel type
-type ChannelType string
-
-const (
-	ChannelTypeFeishuApp  ChannelType = "feishu_app"
-	ChannelTypeFeishuCard ChannelType = "feishu_card"
-	ChannelTypeLarkApp    ChannelType = "lark_app"
-	ChannelTypeLarkCard   ChannelType = "lark_card"
-	ChannelTypeDingTalk   ChannelType = "dingtalk"
-	ChannelTypeWeCom      ChannelType = "wecom"
-	ChannelTypeWebhook    ChannelType = "webhook"
-	ChannelTypeEmail      ChannelType = "email"
-	ChannelTypeSlack      ChannelType = "slack"
-	ChannelTypeTelegram   ChannelType = "telegram"
-	ChannelTypeDiscord    ChannelType = "discord"
+	"github.com/go-arcade/arcade/pkg/log"
 )
 
 // NotifyManager manages multiple notification channels
 type NotifyManager struct {
-	channels map[string]*channel.NotifyChannel
-	mu       sync.RWMutex
+	channels    map[string]*channel.NotifyChannel
+	mu          sync.RWMutex
+	factory     *ChannelFactory
+	channelRepo ChannelRepository // 通知配置仓库接口
+}
+
+// ChannelRepository 定义通知配置仓库接口
+// 此接口应在 repo 层实现，但返回 model.NotificationChannel，由 notify 层转换
+type ChannelRepository interface {
+	ListActiveChannels(ctx context.Context) ([]*ChannelConfig, error)
 }
 
 // NewNotifyManager creates a new notification manager
 func NewNotifyManager() *NotifyManager {
 	return &NotifyManager{
 		channels: make(map[string]*channel.NotifyChannel),
+		factory:  &ChannelFactory{},
 	}
+}
+
+// SetChannelRepository 设置通知配置仓库
+func (nm *NotifyManager) SetChannelRepository(repo ChannelRepository) {
+	nm.mu.Lock()
+	defer nm.mu.Unlock()
+	nm.channelRepo = repo
+}
+
+// LoadChannelsFromDatabase 从数据库加载所有活跃的通知配置
+func (nm *NotifyManager) LoadChannelsFromDatabase(ctx context.Context) error {
+	if nm.channelRepo == nil {
+		return fmt.Errorf("channel repository is not set")
+	}
+
+	configs, err := nm.channelRepo.ListActiveChannels(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to load channels from database: %w", err)
+	}
+
+	var errors []error
+	for _, cfg := range configs {
+		// 创建 channel 实例
+		ch, err := nm.factory.CreateChannel(cfg.Type, cfg.Config)
+		if err != nil {
+			log.Warnw("failed to create channel", "channel", cfg.Name, "error", err)
+			errors = append(errors, fmt.Errorf("channel %s: %w", cfg.Name, err))
+			continue
+		}
+
+		// 设置认证（如果有）
+		if len(cfg.AuthConfig) > 0 {
+			authType, _ := cfg.AuthConfig["type"].(string)
+			if authType != "" {
+				authProvider, err := nm.factory.CreateAuthProvider(auth.AuthType(authType), cfg.AuthConfig)
+				if err == nil {
+					ch.SetAuth(authProvider)
+				} else {
+					log.Warnw("failed to create auth provider", "channel", cfg.Name, "error", err)
+				}
+			}
+		}
+
+		// 注册 channel
+		notifyChannel := channel.NewNotifyChannel(ch)
+		if err := nm.RegisterChannel(cfg.Name, notifyChannel); err != nil {
+			log.Warnw("failed to register channel", "channel", cfg.Name, "error", err)
+			errors = append(errors, fmt.Errorf("channel %s: %w", cfg.Name, err))
+			continue
+		}
+
+		log.Infow("notification channel loaded from database", "channel", cfg.Name, "type", cfg.Type)
+	}
+
+	if len(errors) > 0 {
+		return fmt.Errorf("failed to load %d channel(s): %v", len(errors), errors)
+	}
+
+	return nil
 }
 
 // RegisterChannel registers a notification channel

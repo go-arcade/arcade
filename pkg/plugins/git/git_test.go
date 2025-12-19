@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package git
 
 import (
 	"encoding/json"
@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/bytedance/sonic"
+	"github.com/go-arcade/arcade/pkg/plugin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -40,34 +41,30 @@ func TestNewGitPlugin(t *testing.T) {
 
 func TestGitPlugin_Name(t *testing.T) {
 	plugin := NewGit()
-	name, err := plugin.Name()
+	name := plugin.Name()
 
-	assert.NoError(t, err)
 	assert.Equal(t, "git", name)
 }
 
 func TestGitPlugin_Description(t *testing.T) {
 	plugin := NewGit()
-	desc, err := plugin.Description()
+	desc := plugin.Description()
 
-	assert.NoError(t, err)
 	assert.Equal(t, "Git version control plugin for repository operations", desc)
 }
 
 func TestGitPlugin_Version(t *testing.T) {
 	plugin := NewGit()
-	version, err := plugin.Version()
+	version := plugin.Version()
 
-	assert.NoError(t, err)
 	assert.Equal(t, "1.0.0", version)
 }
 
 func TestGitPlugin_Type(t *testing.T) {
-	plugin := NewGit()
-	typ, err := plugin.Type()
+	p := NewGit()
+	typ := p.Type()
 
-	assert.NoError(t, err)
-	assert.Equal(t, "source", typ)
+	assert.Equal(t, plugin.TypeSource, typ)
 }
 
 func TestGitPlugin_Init(t *testing.T) {

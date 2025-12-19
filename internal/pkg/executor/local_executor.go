@@ -64,7 +64,7 @@ func (e *LocalExecutor) Execute(ctx context.Context, req *ExecutionRequest) (*Ex
 	}
 
 	// 获取 plugin
-	pluginClient, err := e.pluginManager.GetPlugin(req.Step.Uses)
+	pluginInstance, err := e.pluginManager.GetPlugin(req.Step.Uses)
 	if err != nil {
 		err = fmt.Errorf("plugin not found: %s: %w", req.Step.Uses, err)
 		result.Complete(false, -1, err)
@@ -111,7 +111,7 @@ func (e *LocalExecutor) Execute(ctx context.Context, req *ExecutionRequest) (*Ex
 
 	// 调用 plugin 方法
 	// 注意：超时已通过 opts 传递给 plugin，plugin 内部会处理超时
-	pluginResult, err := pluginClient.CallMethod(action, paramsJSON, optsJSON)
+	pluginResult, err := pluginInstance.Execute(action, paramsJSON, optsJSON)
 	if err != nil {
 		err = fmt.Errorf("plugin execution failed: %w", err)
 		result.Complete(false, -1, err)

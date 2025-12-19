@@ -280,6 +280,6 @@ func (am *ApprovalManager) createApprovalInPlugin(ctx context.Context, request *
 		return fmt.Errorf("marshal approval metadata: %w", err)
 	}
 
-	_, err = pluginClient.CallMethod("approval.create", paramsJSON, metadataJSON)
+	_, err = pluginClient.Execute("approval.create", paramsJSON, metadataJSON)
 	return err
 }

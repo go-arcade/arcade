@@ -19,6 +19,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-arcade/arcade/internal/engine/bootstrap"
 	"github.com/go-arcade/arcade/internal/engine/config"
@@ -42,8 +43,19 @@ func ProvideContext() context.Context {
 	return context.Background()
 }
 
+// ProvidePluginConfig 提供插件配置，直接从 conf.d/plugins.toml 读取
+func ProvidePluginConfig() map[string]any {
+	configs, err := plugin.LoadPluginConfig("conf.d/plugins.toml")
+	if err != nil {
+		panic(fmt.Sprintf("failed to load plugin config: %v", err))
+	}
+	return configs
+}
+
 func initApp(configPath string) (*bootstrap.App, func(), error) {
 	panic(wire.Build(
+		// 提供插件配置
+		ProvidePluginConfig,
 		// 配置层
 		config.ProviderSet,
 		// 上下文层

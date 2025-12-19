@@ -276,6 +276,6 @@ func (c *ExecutionContext) SendNotification(ctx context.Context, item *NotifyIte
 		action = "Send"
 	}
 
-	_, err = pluginClient.CallMethod(action, paramsJSON, nil)
+	_, err = pluginClient.Execute(action, paramsJSON, nil)
 	return err
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package shell
 
 import (
 	"bytes"
@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/rpc"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -28,11 +27,9 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
-	pluginv1 "github.com/go-arcade/arcade/api/plugin/v1"
-	pluginpkg "github.com/go-arcade/arcade/pkg/plugin"
+	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/plugin"
 	"github.com/google/uuid"
-	"github.com/hashicorp/go-plugin"
-	"google.golang.org/grpc"
 )
 
 // ShellConfig is the plugin's configuration structure
@@ -40,13 +37,13 @@ type ShellConfig struct {
 	// Shell path (default: /bin/sh)
 	Shell string `json:"shell"`
 	// Working directory for script execution
-	WorkDir string `json:"work_dir"`
+	WorkDir string `json:"workDir"`
 	// Default timeout in seconds (0 means no timeout)
 	Timeout int `json:"timeout"`
 	// Environment variables to set
 	Env map[string]string `json:"env"`
 	// Whether to allow dangerous operations
-	AllowDangerous bool `json:"allow_dangerous"`
+	AllowDangerous bool `json:"allowDangerous"`
 }
 
 // ShellScriptArgs contains arguments for executing a shell script
@@ -65,7 +62,7 @@ type ShellCommandArgs struct {
 
 // Shell implements the custom plugin
 type Shell struct {
-	*pluginpkg.PluginBase
+	*plugin.PluginBase
 	name        string
 	description string
 	version     string
@@ -83,7 +80,7 @@ var (
 // NewShell creates a new shell plugin instance
 func NewShell() *Shell {
 	p := &Shell{
-		PluginBase:  pluginpkg.NewPluginBase(),
+		PluginBase:  plugin.NewPluginBase(),
 		name:        "shell",
 		description: "A custom plugin that executes shell scripts and commands",
 		version:     "1.0.0",
@@ -118,23 +115,23 @@ func (p *Shell) registerActions() {
 }
 
 // Name returns the plugin name
-func (p *Shell) Name() (string, error) {
-	return p.name, nil
+func (p *Shell) Name() string {
+	return p.name
 }
 
 // Description returns the plugin description
-func (p *Shell) Description() (string, error) {
-	return p.description, nil
+func (p *Shell) Description() string {
+	return p.description
 }
 
 // Version returns the plugin version
-func (p *Shell) Version() (string, error) {
-	return p.version, nil
+func (p *Shell) Version() string {
+	return p.version
 }
 
 // Type returns the plugin type
-func (p *Shell) Type() (string, error) {
-	return string(pluginpkg.TypeCustom), nil
+func (p *Shell) Type() plugin.PluginType {
+	return plugin.TypeCustom
 }
 
 // Init initializes the plugin
@@ -148,7 +145,7 @@ func (p *Shell) Init(config json.RawMessage) error {
 	// Validate shell path
 	if p.cfg.Shell == "" {
 		p.cfg.Shell = "/bin/sh"
-		fmt.Fprintf(os.Stderr, "[shell-plugin] WARNING: Using default shell interpreter /bin/sh. Some bash-specific features may not work. Consider using /bin/bash for better compatibility.\n")
+		log.Warnw("Using default shell interpreter /bin/sh. Some bash-specific features may not work. Consider using /bin/bash for better compatibility.", "plugin", "shell")
 	}
 
 	// Check if shell exists
@@ -158,7 +155,7 @@ func (p *Shell) Init(config json.RawMessage) error {
 
 	// Warn if shell is /bin/sh
 	if p.cfg.Shell == "/bin/sh" {
-		fmt.Fprintf(os.Stderr, "[shell-plugin] WARNING: Using /bin/sh as shell interpreter. Some bash-specific features may not work. Consider using /bin/bash for better compatibility.\n")
+		log.Warnw("Using /bin/sh as shell interpreter. Some bash-specific features may not work. Consider using /bin/bash for better compatibility.", "plugin", "shell")
 	}
 
 	// Set default working directory if not specified
@@ -166,13 +163,13 @@ func (p *Shell) Init(config json.RawMessage) error {
 		p.cfg.WorkDir, _ = os.Getwd()
 	}
 
-	fmt.Printf("[shell-plugin] initialized with shell: %s, work_dir: %s\n", p.cfg.Shell, p.cfg.WorkDir)
+	log.Infow("shell plugin initialized", "plugin", "shell", "shell", p.cfg.Shell, "work_dir", p.cfg.WorkDir)
 	return nil
 }
 
 // Cleanup cleans up the plugin
 func (p *Shell) Cleanup() error {
-	fmt.Println("[shell-plugin] cleanup completed")
+	log.Infow("shell plugin cleanup completed", "plugin", "shell")
 	return nil
 }
 
@@ -232,8 +229,7 @@ func (p *Shell) executeScript(params json.RawMessage, opts json.RawMessage) (jso
 	}
 	defer func() {
 		if err := os.Remove(tmpFileName); err != nil {
-			// Log cleanup error to stderr (plugin process may not have logger initialized)
-			fmt.Fprintf(os.Stderr, "[shell-plugin] WARNING: failed to remove temp file %s: %v\n", tmpFileName, err)
+			log.Warnw("failed to remove temp file", "plugin", "shell", "file", tmpFileName, "error", err)
 		}
 	}()
 
@@ -375,6 +371,9 @@ func (p *Shell) runCommandWithOpts(command string, args []string, env map[string
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
 			result["exit_code"] = exitErr.ExitCode()
+		} else {
+			// For non-exit errors (e.g., path errors), set exit_code to -1
+			result["exit_code"] = -1
 		}
 	} else {
 		result["exit_code"] = 0
@@ -383,60 +382,7 @@ func (p *Shell) runCommandWithOpts(command string, args []string, env map[string
 	return sonic.Marshal(result)
 }
 
-// ===== gRPC Plugin Handler =====
-
-// ShellPluginHandler is the gRPC plugin handler
-type ShellPluginHandler struct {
-	plugin.Plugin
-	pluginInstance *Shell
-}
-
-// Server returns the RPC server (required by plugin.Plugin interface, not used for gRPC)
-func (p *ShellPluginHandler) Server(*plugin.MuxBroker) (any, error) {
-	return nil, fmt.Errorf("RPC protocol not supported, use gRPC protocol instead")
-}
-
-// Client returns the RPC client (required by plugin.Plugin interface, not used for gRPC)
-func (p *ShellPluginHandler) Client(*plugin.MuxBroker, *rpc.Client) (any, error) {
-	return nil, fmt.Errorf("RPC protocol not supported, use gRPC protocol instead")
-}
-
-// GRPCServer returns the gRPC server
-func (p *ShellPluginHandler) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
-	name, _ := p.pluginInstance.Name()
-	desc, _ := p.pluginInstance.Description()
-	ver, _ := p.pluginInstance.Version()
-	typ, _ := p.pluginInstance.Type()
-
-	info := &pluginpkg.PluginInfo{
-		Name:        name,
-		Description: desc,
-		Version:     ver,
-		Type:        typ,
-		Author:      "Arcade Team",
-		Homepage:    "https://github.com/go-arcade/arcade",
-	}
-
-	server := pluginpkg.NewServer(info, p.pluginInstance, nil)
-	pluginv1.RegisterPluginServiceServer(s, server)
-	return nil
-}
-
-// GRPCClient returns the gRPC client (not used in plugin side)
-func (p *ShellPluginHandler) GRPCClient(context.Context, *plugin.GRPCBroker, *grpc.ClientConn) (any, error) {
-	return nil, nil
-}
-
-// ===== Main Entry Point =====
-
-func main() {
-	plugin.Serve(&plugin.ServeConfig{
-		HandshakeConfig: pluginpkg.PluginHandshake,
-		Plugins: map[string]plugin.Plugin{
-			"plugin": &ShellPluginHandler{pluginInstance: NewShell()},
-		},
-		GRPCServer: func(opts []grpc.ServerOption) *grpc.Server {
-			return grpc.NewServer(opts...)
-		},
-	})
+// init registers the plugin
+func init() {
+	plugin.MustRegister(NewShell())
 }

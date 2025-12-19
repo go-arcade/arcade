@@ -183,9 +183,6 @@ func (rt *Router) routerGroup(r fiber.Router) {
 	// storag
 	rt.storageRouter(r, auth)
 
-	// plugin
-	rt.pluginRouter(r, auth)
-
 	// general settings
 	rt.generalSettingsRouter(r, auth)
 

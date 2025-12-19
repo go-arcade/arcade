@@ -21,17 +21,36 @@ import (
 	"time"
 )
 
+// PipelineBasicValidator defines the interface for basic pipeline validation
+// This interface allows Validator to be decoupled from specific parser implementations
+type PipelineBasicValidator interface {
+	// ValidateBasic performs basic validation on a pipeline
+	// This includes checking required fields, basic structure, etc.
+	ValidateBasic(pipeline *Pipeline) error
+}
+
+// IPipelineValidator defines the interface for pipeline validation
+type IPipelineValidator interface {
+	// Validate performs comprehensive validation on a pipeline
+	Validate(pipeline *Pipeline) error
+	// ValidateWithContext validates pipeline with execution context
+	ValidateWithContext(pipeline *Pipeline, ctx *ExecutionContext) error
+}
+
 // Validator provides advanced validation for Pipeline DSL
 type Validator struct {
-	parser *DSLParser
+	basicValidator PipelineBasicValidator
 }
 
 // NewValidator creates a new validator
-func NewValidator(parser *DSLParser) *Validator {
+func NewValidator(basicValidator PipelineBasicValidator) *Validator {
 	return &Validator{
-		parser: parser,
+		basicValidator: basicValidator,
 	}
 }
+
+// Ensure Validator implements IPipelineValidator interface
+var _ IPipelineValidator = (*Validator)(nil)
 
 // Validate performs comprehensive validation on a pipeline
 func (v *Validator) Validate(pipeline *Pipeline) error {
@@ -40,8 +59,10 @@ func (v *Validator) Validate(pipeline *Pipeline) error {
 	}
 
 	// Basic validation (already done by parser, but double-check)
-	if err := v.parser.validate(pipeline); err != nil {
-		return err
+	if v.basicValidator != nil {
+		if err := v.basicValidator.ValidateBasic(pipeline); err != nil {
+			return err
+		}
 	}
 
 	// Advanced validations

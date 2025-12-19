@@ -24,7 +24,6 @@ import (
 
 	"github.com/go-arcade/arcade/internal/engine/config"
 	"github.com/go-arcade/arcade/internal/engine/router"
-	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/internal/pkg/grpc"
 	"github.com/go-arcade/arcade/internal/pkg/queue"
 	"github.com/go-arcade/arcade/internal/pkg/storage"
@@ -66,9 +65,6 @@ func NewApp(
 	db database.IDatabase,
 ) (*App, func(), error) {
 	httpApp := rt.Router()
-
-	// init plugin task manager
-	service.InitDaemonTaskManager(mongoDB)
 
 	// 主程序作为 queue server，只发布任务，不执行任务
 	// 不需要注册任务处理器
@@ -181,16 +177,12 @@ func Run(app *App, cleanup func()) {
 		}()
 	}
 
-	// 主程序作为 queue server，只发布任务，不执行任务
-	// 不需要启动 task queue server
-
 	// set signal listener (graceful shutdown)
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	// start HTTP server (async)
 	go func() {
-		// glog := app.Logger.Log.Desugar().WithOptions(zap.AddCallerSkip(-1)).Sugar()
 		addr := appConf.Http.Host + ":" + fmt.Sprintf("%d", appConf.Http.Port)
 		log.Infow("HTTP listener started",
 			"address", addr,

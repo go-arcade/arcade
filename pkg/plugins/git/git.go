@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package git
 
 import (
 	"bytes"
@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/rpc"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -28,24 +27,22 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
-	pluginv1 "github.com/go-arcade/arcade/api/plugin/v1"
-	pluginpkg "github.com/go-arcade/arcade/pkg/plugin"
-	"github.com/hashicorp/go-plugin"
-	"google.golang.org/grpc"
+	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/plugin"
 )
 
 // GitConfig is the plugin's configuration structure
 type GitConfig struct {
 	// Git executable path (default: git)
-	GitPath string `json:"git_path"`
+	GitPath string `json:"gitPath"`
 	// Default timeout in seconds (0 means no timeout)
 	Timeout int `json:"timeout"`
 	// Default working directory
-	WorkDir string `json:"work_dir"`
+	WorkDir string `json:"workDir"`
 	// Default user name for commits
-	UserName string `json:"user_name"`
+	UserName string `json:"userName"`
 	// Default user email for commits
-	UserEmail string `json:"user_email"`
+	UserEmail string `json:"userEmail"`
 	// Whether to use shallow clone by default
 	Shallow bool `json:"shallow"`
 	// Depth for shallow clone
@@ -118,7 +115,7 @@ type TagArgs struct {
 
 // Git implements the git plugin
 type Git struct {
-	*pluginpkg.PluginBase
+	*plugin.PluginBase
 	name        string
 	description string
 	version     string
@@ -141,7 +138,7 @@ var (
 // NewGit creates a new git plugin instance
 func NewGit() *Git {
 	p := &Git{
-		PluginBase:  pluginpkg.NewPluginBase(),
+		PluginBase:  plugin.NewPluginBase(),
 		name:        "git",
 		description: "Git version control plugin for repository operations",
 		version:     "1.0.0",
@@ -211,23 +208,23 @@ func (p *Git) registerActions() {
 }
 
 // Name returns the plugin name
-func (p *Git) Name() (string, error) {
-	return p.name, nil
+func (p *Git) Name() string {
+	return p.name
 }
 
 // Description returns the plugin description
-func (p *Git) Description() (string, error) {
-	return p.description, nil
+func (p *Git) Description() string {
+	return p.description
 }
 
 // Version returns the plugin version
-func (p *Git) Version() (string, error) {
-	return p.version, nil
+func (p *Git) Version() string {
+	return p.version
 }
 
 // Type returns the plugin type
-func (p *Git) Type() (string, error) {
-	return pluginpkg.PluginTypeToString(pluginpkg.TypeSource), nil
+func (p *Git) Type() plugin.PluginType {
+	return plugin.TypeSource
 }
 
 // Init initializes the plugin
@@ -248,13 +245,13 @@ func (p *Git) Init(config json.RawMessage) error {
 		return fmt.Errorf("git not found: %s", p.cfg.GitPath)
 	}
 
-	fmt.Printf("[git-plugin] initialized with git_path: %s, timeout: %d\n", p.cfg.GitPath, p.cfg.Timeout)
+	log.Infow("git plugin initialized", "plugin", "git", "git_path", p.cfg.GitPath, "timeout", p.cfg.Timeout)
 	return nil
 }
 
 // Cleanup cleans up the plugin
 func (p *Git) Cleanup() error {
-	fmt.Println("[git-plugin] cleanup completed")
+	log.Infow("git plugin cleanup completed", "plugin", "git")
 	return nil
 }
 
@@ -661,6 +658,9 @@ func (p *Git) runGitCommand(args []string, auth map[string]string, env map[strin
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
 			result["exit_code"] = exitErr.ExitCode()
+		} else {
+			// For non-exit errors (e.g., path errors), set exit_code to -1
+			result["exit_code"] = -1
 		}
 	} else {
 		result["exit_code"] = 0
@@ -669,61 +669,7 @@ func (p *Git) runGitCommand(args []string, auth map[string]string, env map[strin
 	return result, nil
 }
 
-// ===== gRPC Plugin Handler =====
-
-// GitPluginHandler is the gRPC plugin handler
-type GitPluginHandler struct {
-	plugin.Plugin
-	pluginInstance *Git
-}
-
-// Server returns the RPC server (required by plugin.Plugin interface, not used for gRPC)
-func (p *GitPluginHandler) Server(*plugin.MuxBroker) (any, error) {
-	return nil, fmt.Errorf("RPC protocol not supported, use gRPC protocol instead")
-}
-
-// Client returns the RPC client (required by plugin.Plugin interface, not used for gRPC)
-func (p *GitPluginHandler) Client(*plugin.MuxBroker, *rpc.Client) (any, error) {
-	return nil, fmt.Errorf("RPC protocol not supported, use gRPC protocol instead")
-}
-
-// GRPCServer returns the gRPC server
-func (p *GitPluginHandler) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
-	name, _ := p.pluginInstance.Name()
-	desc, _ := p.pluginInstance.Description()
-	ver, _ := p.pluginInstance.Version()
-	typ, _ := p.pluginInstance.Type()
-
-	info := &pluginpkg.PluginInfo{
-		Name:          name,
-		Description:   desc,
-		Version:       ver,
-		Type:          typ,
-		Author:        "Arcade Team",
-		Homepage:      "https://github.com/go-arcade/arcade",
-		ExecutionType: pluginv1.ExecutionType_EXECUTION_TYPE_SHELL,
-	}
-
-	server := pluginpkg.NewServer(info, p.pluginInstance, nil)
-	pluginv1.RegisterPluginServiceServer(s, server)
-	return nil
-}
-
-// GRPCClient returns the gRPC client (not used in plugin side)
-func (p *GitPluginHandler) GRPCClient(context.Context, *plugin.GRPCBroker, *grpc.ClientConn) (any, error) {
-	return nil, nil
-}
-
-// ===== Main Entry Point =====
-
-func main() {
-	plugin.Serve(&plugin.ServeConfig{
-		HandshakeConfig: pluginpkg.PluginHandshake,
-		Plugins: map[string]plugin.Plugin{
-			"plugin": &GitPluginHandler{pluginInstance: NewGit()},
-		},
-		GRPCServer: func(opts []grpc.ServerOption) *grpc.Server {
-			return grpc.NewServer(opts...)
-		},
-	})
+// init registers the plugin
+func init() {
+	plugin.MustRegister(NewGit())
 }
