@@ -48,9 +48,6 @@ type TaskQueueConfig struct {
 	GroupMaxSize     int            `mapstructure:"groupMaxSize"`     // 组最大大小
 }
 
-type PluginConfig struct {
-}
-
 type AppConfig struct {
 	Log       log.Conf
 	Grpc      grpc.Conf
@@ -58,7 +55,6 @@ type AppConfig struct {
 	Database  database.Database
 	Redis     cache.Redis
 	TaskQueue TaskQueueConfig
-	Plugin    PluginConfig
 	Metrics   metrics.MetricsConfig
 	Pprof     pprof.PprofConfig
 }
@@ -77,7 +73,6 @@ func NewConf(confDir string) *AppConfig {
 			panic(fmt.Sprintf("load config file error: %s", err))
 		}
 	})
-	// 返回指向全局配置的指针（通过读锁保护）
 	mu.RLock()
 	defer mu.RUnlock()
 	return &cfg

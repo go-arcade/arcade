@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipeline
+package dsl
 
 // This file contains usage examples for Pipeline DSL Parser
 // It demonstrates how to use the parser, validator, and processor
@@ -119,7 +119,8 @@ Example 2: Processing DSL with Variable Resolution
 Example 3: Validation Only
 
 	parser := NewDSLParser(logger)
-	validator := NewValidator(parser)
+	basicValidator := NewPipelineBasicValidatorAdapter(parser)
+	validator := pipeline.NewValidator(basicValidator)
 
 	pipeline, err := parser.Parse(dslJSON)
 	if err != nil {

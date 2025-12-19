@@ -22,45 +22,45 @@ import (
 
 // Repositories 统一管理所有 repository
 type Repositories struct {
-	User              IUserRepository
-	Agent             IAgentRepository
-	Plugin            IPluginRepository
-	PluginTask        IPluginTaskRepository
-	Storage           IStorageRepository
-	Team              ITeamRepository
-	Identity          IIdentityRepository
-	GeneralSettings   IGeneralSettingsRepository
-	ProjectMember     IProjectMemberRepository
-	ProjectTeamAccess IProjectTeamAccessRepository
-	TeamMember        ITeamMemberRepository
-	UserExtension     IUserExtRepository
-	Secret            ISecretRepository
-	UserRoleBinding   IUserRoleBindingRepository
-	RoleMenuBinding   IRoleMenuBindingRepository
-	Menu              IMenuRepository
-	Role              IRoleRepository
+	User                 IUserRepository
+	Agent                IAgentRepository
+	Storage              IStorageRepository
+	Team                 ITeamRepository
+	Identity             IIdentityRepository
+	GeneralSettings      IGeneralSettingsRepository
+	ProjectMember        IProjectMemberRepository
+	ProjectTeamAccess    IProjectTeamAccessRepository
+	TeamMember           ITeamMemberRepository
+	UserExtension        IUserExtRepository
+	Secret               ISecretRepository
+	UserRoleBinding      IUserRoleBindingRepository
+	RoleMenuBinding      IRoleMenuBindingRepository
+	Menu                 IMenuRepository
+	Role                 IRoleRepository
+	NotificationTemplate INotificationTemplateRepository
+	NotificationChannel  INotificationChannelRepository
 }
 
 // NewRepositories 初始化所有 repository
 func NewRepositories(db database.IDatabase, mongo database.MongoDB, cache cache.ICache) *Repositories {
 	return &Repositories{
-		User:              NewUserRepo(db, cache),
-		Agent:             NewAgentRepo(db, cache),
-		Plugin:            NewPluginRepo(db),
-		PluginTask:        NewPluginTaskRepo(mongo),
-		Storage:           NewStorageRepo(db, cache),
-		Team:              NewTeamRepo(db),
-		Identity:          NewIdentityRepo(db),
-		GeneralSettings:   NewGeneralSettingsRepo(db),
-		ProjectMember:     NewProjectMemberRepo(db),
-		ProjectTeamAccess: NewProjectTeamAccessRepo(db),
-		TeamMember:        NewTeamMemberRepo(db),
-		UserExtension:     NewUserExtRepo(db),
-		Secret:            NewSecretRepo(db),
-		UserRoleBinding:   NewUserRoleBindingRepo(db),
-		RoleMenuBinding:   NewRoleMenuBindingRepo(db),
-		Menu:              NewMenuRepo(db),
-		Role:              NewRoleRepo(db),
+		User:                 NewUserRepo(db, cache),
+		Agent:                NewAgentRepo(db, cache),
+		Storage:              NewStorageRepo(db, cache),
+		Team:                 NewTeamRepo(db),
+		Identity:             NewIdentityRepo(db),
+		GeneralSettings:      NewGeneralSettingsRepo(db),
+		ProjectMember:        NewProjectMemberRepo(db),
+		ProjectTeamAccess:    NewProjectTeamAccessRepo(db),
+		TeamMember:           NewTeamMemberRepo(db),
+		UserExtension:        NewUserExtRepo(db),
+		Secret:               NewSecretRepo(db),
+		UserRoleBinding:      NewUserRoleBindingRepo(db),
+		RoleMenuBinding:      NewRoleMenuBindingRepo(db),
+		Menu:                 NewMenuRepo(db),
+		Role:                 NewRoleRepo(db),
+		NotificationTemplate: NewNotificationTemplateRepo(db),
+		NotificationChannel:  NewNotificationChannelRepo(db),
 	}
 }
 

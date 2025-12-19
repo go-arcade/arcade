@@ -12,24 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package notify
+package service
 
 import (
 	"context"
 	"fmt"
 
+	"github.com/go-arcade/arcade/internal/pkg/notify"
 	"github.com/go-arcade/arcade/internal/pkg/notify/channel"
 	"github.com/go-arcade/arcade/internal/pkg/notify/template"
 )
 
 // NotificationService provides high-level notification functionality with template support
 type NotificationService struct {
-	manager         *NotifyManager
+	manager         *notify.NotifyManager
 	templateService *template.TemplateService
 }
 
 // NewNotificationService creates a new notification service
-func NewNotificationService(manager *NotifyManager, templateService *template.TemplateService) *NotificationService {
+func NewNotificationService(manager *notify.NotifyManager, templateService *template.TemplateService) *NotificationService {
 	return &NotificationService{
 		manager:         manager,
 		templateService: templateService,
@@ -121,14 +122,4 @@ func (s *NotificationService) BroadcastApprovalNotification(ctx context.Context,
 // RegisterChannel registers a notification channel
 func (s *NotificationService) RegisterChannel(name string, ch *channel.NotifyChannel) error {
 	return s.manager.RegisterChannel(name, ch)
-}
-
-// GetTemplateService returns the template service
-func (s *NotificationService) GetTemplateService() *template.TemplateService {
-	return s.templateService
-}
-
-// GetManager returns the notification manager
-func (s *NotificationService) GetManager() *NotifyManager {
-	return s.manager
 }

@@ -1,0 +1,35 @@
+# Plugin configuration file
+# Each plugin's configuration will be passed to the corresponding plugin's Init method
+
+# Shell plugin configuration
+[plugins.shell]
+# shell = "/bin/bash"
+shell = "/bin/zsh"
+workDir = "" # default working directory
+timeout = 300 # default timeout
+allowDangerous = false # whether to allow dangerous commands
+
+# Git plugin configuration
+[plugins.git]
+gitPath = "git"
+timeout = 300
+workDir = ""
+userName = "" # default user name
+userEmail = "" # default user email
+shallow = false
+depth = 1 # default depth
+
+# SVN plugin configuration
+[plugins.svn]
+svnPath = "svn"
+timeout = 300
+workDir = "" # default working directory
+username = "" # default username
+password = "" # default password
+trustServerCert = false # whether to trust server certificates
+nonInteractive = true # whether to use non-interactive mode
+
+# Stdout plugin configuration
+[plugins.stdout]
+prefix = "" # prefix for stdout
+json = false

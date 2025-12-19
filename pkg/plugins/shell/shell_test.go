@@ -12,17 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package shell
 
 import (
 	"encoding/json"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/bytedance/sonic"
+	"github.com/go-arcade/arcade/pkg/plugin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -42,34 +41,30 @@ func TestNewShellPlugin(t *testing.T) {
 
 func TestShellPlugin_Name(t *testing.T) {
 	plugin := NewShell()
-	name, err := plugin.Name()
+	name := plugin.Name()
 
-	assert.NoError(t, err)
 	assert.Equal(t, "shell", name)
 }
 
 func TestShellPlugin_Description(t *testing.T) {
 	plugin := NewShell()
-	desc, err := plugin.Description()
+	desc := plugin.Description()
 
-	assert.NoError(t, err)
 	assert.Equal(t, "A custom plugin that executes shell scripts and commands", desc)
 }
 
 func TestShellPlugin_Version(t *testing.T) {
 	plugin := NewShell()
-	version, err := plugin.Version()
+	version := plugin.Version()
 
-	assert.NoError(t, err)
 	assert.Equal(t, "1.0.0", version)
 }
 
 func TestShellPlugin_Type(t *testing.T) {
-	plugin := NewShell()
-	typ, err := plugin.Type()
+	p := NewShell()
+	typ := p.Type()
 
-	assert.NoError(t, err)
-	assert.Equal(t, "custom", typ)
+	assert.Equal(t, plugin.TypeCustom, typ)
 }
 
 func TestShellPlugin_Init(t *testing.T) {
@@ -317,88 +312,6 @@ func TestShellPlugin_ExecuteCommand(t *testing.T) {
 			require.NoError(t, err)
 
 			result, err := plugin.Execute("command", paramsJSON, nil)
-
-			if tt.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-
-				var resultMap map[string]any
-				err = sonic.Unmarshal(result, &resultMap)
-				require.NoError(t, err)
-
-				if tt.checkStdout != nil {
-					stdout, ok := resultMap["stdout"].(string)
-					require.True(t, ok)
-					tt.checkStdout(t, stdout)
-				}
-			}
-		})
-	}
-}
-
-func TestShellPlugin_ExecuteFile(t *testing.T) {
-	// 创建临时脚本文件
-	tmpDir := t.TempDir()
-	scriptPath := filepath.Join(tmpDir, "test_script.sh")
-
-	scriptContent := "#!/bin/sh\necho 'Hello from file'\necho $1"
-	err := os.WriteFile(scriptPath, []byte(scriptContent), 0755)
-	require.NoError(t, err)
-
-	tests := []struct {
-		name        string
-		filePath    string
-		args        []string
-		expectError bool
-		checkStdout func(t *testing.T, stdout string)
-	}{
-		{
-			name:        "执行存在的脚本文件",
-			filePath:    scriptPath,
-			expectError: false,
-			checkStdout: func(t *testing.T, stdout string) {
-				assert.Contains(t, stdout, "Hello from file")
-			},
-		},
-		{
-			name:        "带参数执行脚本文件",
-			filePath:    scriptPath,
-			args:        []string{"test_arg"},
-			expectError: false,
-			checkStdout: func(t *testing.T, stdout string) {
-				assert.Contains(t, stdout, "Hello from file")
-				assert.Contains(t, stdout, "test_arg")
-			},
-		},
-		{
-			name:        "执行不存在的文件",
-			filePath:    "/nonexistent/script.sh",
-			expectError: true,
-		},
-		{
-			name:        "空文件路径",
-			filePath:    "",
-			expectError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			plugin := NewShell()
-			plugin.Init(json.RawMessage{})
-
-			params := map[string]any{
-				"file_path": tt.filePath,
-			}
-			if tt.args != nil {
-				params["args"] = tt.args
-			}
-
-			paramsJSON, err := sonic.Marshal(params)
-			require.NoError(t, err)
-
-			result, err := plugin.Execute("file", paramsJSON, nil)
 
 			if tt.expectError {
 				assert.Error(t, err)

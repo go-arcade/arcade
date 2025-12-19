@@ -357,8 +357,8 @@ func (am *AgentManager) buildCommands(step *Step, ctx *ExecutionContext) ([]stri
 		return nil, fmt.Errorf("execution context or plugin manager is not available")
 	}
 
-	// Get plugin client
-	pluginClient, err := ctx.PluginManager.GetPlugin(step.Uses)
+	// Get plugin instance
+	pluginInstance, err := ctx.PluginManager.GetPlugin(step.Uses)
 	if err != nil {
 		return nil, fmt.Errorf("plugin not found: %s: %w", step.Uses, err)
 	}
@@ -391,7 +391,7 @@ func (am *AgentManager) buildCommands(step *Step, ctx *ExecutionContext) ([]stri
 
 	// Try to call plugin's BuildCommands action first (if supported)
 	// This allows plugins to return command list without executing
-	commandsJSON, err := pluginClient.CallMethod("BuildCommands", paramsJSON, optsJSON)
+	commandsJSON, err := pluginInstance.Execute("BuildCommands", paramsJSON, optsJSON)
 	if err == nil {
 		// Plugin supports BuildCommands, parse the returned commands
 		var commands []string
@@ -405,14 +405,8 @@ func (am *AgentManager) buildCommands(step *Step, ctx *ExecutionContext) ([]stri
 
 	// Fallback: For plugins that don't support BuildCommands, build commands based on plugin type
 	// This is a compatibility layer for existing plugins
-	pluginInfo, err := pluginClient.GetInfo()
-	if err != nil {
-		// If we can't get plugin info, fall back to generic plugin command
-		return am.buildGenericPluginCommand(step, action), nil
-	}
-
-	// Handle specific plugin types
-	switch pluginInfo.Name {
+	pluginName := pluginInstance.Name()
+	switch pluginName {
 	case "shell":
 		return am.buildShellCommands(step, resolvedParams, ctx)
 	default:

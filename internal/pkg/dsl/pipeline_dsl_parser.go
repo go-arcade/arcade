@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipeline
+package dsl
 
 import (
 	"encoding/json"
 	"fmt"
 
 	"github.com/bytedance/sonic"
+	"github.com/go-arcade/arcade/internal/pkg/pipeline"
 	"github.com/go-arcade/arcade/pkg/log"
 )
 
@@ -35,12 +36,12 @@ func NewDSLParser(logger log.Logger) *DSLParser {
 }
 
 // Parse parses DSL JSON string into Pipeline structure
-func (p *DSLParser) Parse(dslJSON string) (*Pipeline, error) {
+func (p *DSLParser) Parse(dslJSON string) (*pipeline.Pipeline, error) {
 	if dslJSON == "" {
 		return nil, fmt.Errorf("dsl config is empty")
 	}
 
-	var pipeline Pipeline
+	var pipeline pipeline.Pipeline
 
 	// Use sonic for better performance (as per project requirements)
 	if err := sonic.UnmarshalString(dslJSON, &pipeline); err != nil {
@@ -64,12 +65,12 @@ func (p *DSLParser) Parse(dslJSON string) (*Pipeline, error) {
 }
 
 // ParseFromBytes parses DSL from byte array
-func (p *DSLParser) ParseFromBytes(data []byte) (*Pipeline, error) {
+func (p *DSLParser) ParseFromBytes(data []byte) (*pipeline.Pipeline, error) {
 	if len(data) == 0 {
 		return nil, fmt.Errorf("dsl config is empty")
 	}
 
-	var pipeline Pipeline
+	var pipeline pipeline.Pipeline
 
 	if err := sonic.Unmarshal(data, &pipeline); err != nil {
 		return nil, fmt.Errorf("unmarshal DSL JSON: %w", err)
@@ -84,7 +85,7 @@ func (p *DSLParser) ParseFromBytes(data []byte) (*Pipeline, error) {
 }
 
 // ParseFromMap parses DSL from map structure (useful for testing or dynamic config)
-func (p *DSLParser) ParseFromMap(data map[string]any) (*Pipeline, error) {
+func (p *DSLParser) ParseFromMap(data map[string]any) (*pipeline.Pipeline, error) {
 	if data == nil {
 		return nil, fmt.Errorf("dsl config is nil")
 	}
@@ -99,7 +100,7 @@ func (p *DSLParser) ParseFromMap(data map[string]any) (*Pipeline, error) {
 }
 
 // validate performs basic validation on parsed pipeline
-func (p *DSLParser) validate(pipeline *Pipeline) error {
+func (p *DSLParser) validate(pipeline *pipeline.Pipeline) error {
 	// Validate namespace (required)
 	if pipeline.Namespace == "" {
 		return fmt.Errorf("pipeline namespace is required")
@@ -121,7 +122,7 @@ func (p *DSLParser) validate(pipeline *Pipeline) error {
 }
 
 // validateJob validates a single job
-func (p *DSLParser) validateJob(job *Job, index int) error {
+func (p *DSLParser) validateJob(job *pipeline.Job, index int) error {
 	// Job name is required
 	if job.Name == "" {
 		return fmt.Errorf("job name is required")
@@ -171,7 +172,7 @@ func (p *DSLParser) validateJob(job *Job, index int) error {
 }
 
 // validateStep validates a single step
-func (p *DSLParser) validateStep(step *Step, index int) error {
+func (p *DSLParser) validateStep(step *pipeline.Step, index int) error {
 	// Step name is required
 	if step.Name == "" {
 		return fmt.Errorf("step name is required")
@@ -186,7 +187,7 @@ func (p *DSLParser) validateStep(step *Step, index int) error {
 }
 
 // validateSource validates source configuration
-func (p *DSLParser) validateSource(source *Source) error {
+func (p *DSLParser) validateSource(source *pipeline.Source) error {
 	if source.Type == "" {
 		return fmt.Errorf("source type is required")
 	}
@@ -211,7 +212,7 @@ func (p *DSLParser) validateSource(source *Source) error {
 }
 
 // validateApproval validates approval configuration
-func (p *DSLParser) validateApproval(approval *Approval) error {
+func (p *DSLParser) validateApproval(approval *pipeline.Approval) error {
 	if approval.Required && approval.Plugin == "" {
 		return fmt.Errorf("approval plugin is required when approval is required")
 	}
@@ -230,7 +231,7 @@ func (p *DSLParser) validateApproval(approval *Approval) error {
 }
 
 // validateTarget validates target configuration
-func (p *DSLParser) validateTarget(target *Target) error {
+func (p *DSLParser) validateTarget(target *pipeline.Target) error {
 	if target.Type == "" {
 		return fmt.Errorf("target type is required")
 	}
@@ -250,7 +251,7 @@ func (p *DSLParser) validateTarget(target *Target) error {
 }
 
 // validateNotify validates notify configuration
-func (p *DSLParser) validateNotify(notify *Notify) error {
+func (p *DSLParser) validateNotify(notify *pipeline.Notify) error {
 	if notify.OnSuccess != nil {
 		if err := p.validateNotifyItem(notify.OnSuccess, "on_success"); err != nil {
 			return err
@@ -267,7 +268,7 @@ func (p *DSLParser) validateNotify(notify *Notify) error {
 }
 
 // validateNotifyItem validates a notify item
-func (p *DSLParser) validateNotifyItem(item *NotifyItem, context string) error {
+func (p *DSLParser) validateNotifyItem(item *pipeline.NotifyItem, context string) error {
 	if item.Plugin == "" {
 		return fmt.Errorf("%s plugin is required", context)
 	}
@@ -280,7 +281,7 @@ func (p *DSLParser) validateNotifyItem(item *NotifyItem, context string) error {
 }
 
 // ToJSON converts Pipeline structure back to JSON string
-func (p *DSLParser) ToJSON(pipeline *Pipeline) (string, error) {
+func (p *DSLParser) ToJSON(pipeline *pipeline.Pipeline) (string, error) {
 	if pipeline == nil {
 		return "", fmt.Errorf("pipeline is nil")
 	}
@@ -294,7 +295,7 @@ func (p *DSLParser) ToJSON(pipeline *Pipeline) (string, error) {
 }
 
 // ToJSONBytes converts Pipeline structure to JSON bytes
-func (p *DSLParser) ToJSONBytes(pipeline *Pipeline) ([]byte, error) {
+func (p *DSLParser) ToJSONBytes(pipeline *pipeline.Pipeline) ([]byte, error) {
 	if pipeline == nil {
 		return nil, fmt.Errorf("pipeline is nil")
 	}

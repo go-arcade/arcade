@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipeline
+package dsl
 
 import (
 	"testing"
 
+	"github.com/go-arcade/arcade/internal/pkg/pipeline"
 	"github.com/go-arcade/arcade/pkg/log"
 )
 
@@ -112,13 +113,13 @@ func TestDSLParser_ToJSON(t *testing.T) {
 	logger := log.Logger{Log: log.GetLogger()}
 	parser := NewDSLParser(logger)
 
-	pipeline := &Pipeline{
+	pipeline := &pipeline.Pipeline{
 		Namespace: "test",
 		Version:   "1.0.0",
-		Jobs: []Job{
+		Jobs: []pipeline.Job{
 			{
 				Name: "build",
-				Steps: []Step{
+				Steps: []pipeline.Step{
 					{
 						Name: "checkout",
 						Uses: "git@1.0.0",
@@ -151,22 +152,23 @@ func TestDSLParser_ToJSON(t *testing.T) {
 func TestValidator_Validate(t *testing.T) {
 	logger := log.Logger{Log: log.GetLogger()}
 	parser := NewDSLParser(logger)
-	validator := NewValidator(parser)
+	basicValidator := NewPipelineBasicValidatorAdapter(parser)
+	validator := pipeline.NewValidator(basicValidator)
 
 	tests := []struct {
 		name     string
-		pipeline *Pipeline
+		pipeline *pipeline.Pipeline
 		wantErr  bool
 	}{
 		{
 			name: "valid pipeline",
-			pipeline: &Pipeline{
+			pipeline: &pipeline.Pipeline{
 				Namespace: "test",
 				Version:   "1.0.0",
-				Jobs: []Job{
+				Jobs: []pipeline.Job{
 					{
 						Name: "build-job",
-						Steps: []Step{
+						Steps: []pipeline.Step{
 							{
 								Name: "checkout",
 								Uses: "git@1.0.0",
@@ -179,12 +181,12 @@ func TestValidator_Validate(t *testing.T) {
 		},
 		{
 			name: "invalid namespace",
-			pipeline: &Pipeline{
+			pipeline: &pipeline.Pipeline{
 				Namespace: "test@invalid",
-				Jobs: []Job{
+				Jobs: []pipeline.Job{
 					{
 						Name: "build",
-						Steps: []Step{
+						Steps: []pipeline.Step{
 							{
 								Name: "checkout",
 								Uses: "git",
@@ -197,12 +199,12 @@ func TestValidator_Validate(t *testing.T) {
 		},
 		{
 			name: "duplicate job names",
-			pipeline: &Pipeline{
+			pipeline: &pipeline.Pipeline{
 				Namespace: "test",
-				Jobs: []Job{
+				Jobs: []pipeline.Job{
 					{
 						Name: "build",
-						Steps: []Step{
+						Steps: []pipeline.Step{
 							{
 								Name: "checkout",
 								Uses: "git",
@@ -211,7 +213,7 @@ func TestValidator_Validate(t *testing.T) {
 					},
 					{
 						Name: "build",
-						Steps: []Step{
+						Steps: []pipeline.Step{
 							{
 								Name: "checkout",
 								Uses: "git",
@@ -224,13 +226,13 @@ func TestValidator_Validate(t *testing.T) {
 		},
 		{
 			name: "invalid timeout format",
-			pipeline: &Pipeline{
+			pipeline: &pipeline.Pipeline{
 				Namespace: "test",
-				Jobs: []Job{
+				Jobs: []pipeline.Job{
 					{
 						Name:    "build",
 						Timeout: "invalid",
-						Steps: []Step{
+						Steps: []pipeline.Step{
 							{
 								Name: "checkout",
 								Uses: "git",

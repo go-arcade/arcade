@@ -138,7 +138,7 @@ func (r *JobRunner) handleSource(ctx context.Context) error {
 	}
 
 	// Call clone action
-	_, err = pluginClient.CallMethod("clone", paramsJSON, optsJSON)
+	_, err = pluginClient.Execute("clone", paramsJSON, optsJSON)
 	return err
 }
 
@@ -159,7 +159,7 @@ func (r *JobRunner) handleApproval(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("marshal approval params: %w", err)
 	}
-	_, err = pluginClient.CallMethod("approval.create", paramsJSON, nil)
+	_, err = pluginClient.Execute("approval.create", paramsJSON, nil)
 	if err != nil {
 		return err
 	}
@@ -191,6 +191,6 @@ func (r *JobRunner) handleTarget(ctx context.Context) error {
 		return fmt.Errorf("marshal target opts: %w", err)
 	}
 
-	_, err = pluginClient.CallMethod("deploy", paramsJSON, optsJSON)
+	_, err = pluginClient.Execute("deploy", paramsJSON, optsJSON)
 	return err
 }

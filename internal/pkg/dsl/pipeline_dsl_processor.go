@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipeline
+package dsl
 
 import (
 	"context"
 	"fmt"
 
+	"github.com/go-arcade/arcade/internal/pkg/pipeline"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/plugin"
 )
@@ -25,14 +26,15 @@ import (
 // DSLProcessor processes Pipeline DSL with variable resolution and validation
 type DSLProcessor struct {
 	parser    *DSLParser
-	validator *Validator
+	validator *pipeline.Validator
 	logger    log.Logger
 }
 
 // NewDSLProcessor creates a new DSL processor
 func NewDSLProcessor(logger log.Logger) *DSLProcessor {
 	parser := NewDSLParser(logger)
-	validator := NewValidator(parser)
+	basicValidator := NewPipelineBasicValidatorAdapter(parser)
+	validator := pipeline.NewValidator(basicValidator)
 
 	return &DSLProcessor{
 		parser:    parser,
@@ -49,59 +51,54 @@ func (p *DSLProcessor) ProcessConfig(
 	pluginMgr *plugin.Manager,
 	workspace string,
 	additionalEnv map[string]string,
-) (*Pipeline, *ExecutionContext, error) {
-	// Step 1: Parse DSL JSON
-	pipeline, err := p.parser.Parse(dslConfig)
+) (*pipeline.Pipeline, *pipeline.ExecutionContext, error) {
+	pl, err := p.parser.Parse(dslConfig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("parse DSL config: %w", err)
 	}
 
-	// Step 2: Create execution context
-	execCtx := NewExecutionContext(pipeline, pluginMgr, workspace, p.logger)
+	execCtx := pipeline.NewExecutionContext(pl, pluginMgr, workspace, p.logger)
 
-	// Step 3: Merge additional environment variables
 	for k, v := range additionalEnv {
 		execCtx.Env[k] = v
 	}
 
-	// Step 4: Resolve variables in pipeline
-	if err := p.resolvePipelineVariables(pipeline, execCtx); err != nil {
+	if err := p.resolvePipelineVariables(pl, execCtx); err != nil {
 		return nil, nil, fmt.Errorf("resolve variables: %w", err)
 	}
 
-	// Step 5: Validate pipeline with context
-	if err := p.validator.ValidateWithContext(pipeline, execCtx); err != nil {
+	if err := p.validator.ValidateWithContext(pl, execCtx); err != nil {
 		return nil, nil, fmt.Errorf("validate pipeline: %w", err)
 	}
 
 	if p.logger.Log != nil {
 		p.logger.Log.Infow("processed pipeline DSL",
-			"namespace", pipeline.Namespace,
-			"version", pipeline.Version,
-			"jobs_count", len(pipeline.Jobs),
+			"namespace", pl.Namespace,
+			"version", pl.Version,
+			"jobs_count", len(pl.Jobs),
 		)
 	}
 
-	return pipeline, execCtx, nil
+	return pl, execCtx, nil
 }
 
 // resolvePipelineVariables resolves all variables in pipeline structure
-func (p *DSLProcessor) resolvePipelineVariables(pipeline *Pipeline, ctx *ExecutionContext) error {
+func (p *DSLProcessor) resolvePipelineVariables(pl *pipeline.Pipeline, ctx *pipeline.ExecutionContext) error {
 	// Create variable interpreter
-	interpreter := NewVariableInterpreter(ctx.Env)
+	interpreter := pipeline.NewVariableInterpreter(ctx.Env)
 
 	// Resolve pipeline-level variables
-	if pipeline.Variables != nil {
-		resolvedVars, err := interpreter.ResolveMap(convertStringMapToAnyMap(pipeline.Variables))
+	if pl.Variables != nil {
+		resolvedVars, err := interpreter.ResolveMap(convertStringMapToAnyMap(pl.Variables))
 		if err != nil {
 			return fmt.Errorf("resolve pipeline variables: %w", err)
 		}
-		pipeline.Variables = convertAnyMapToStringMap(resolvedVars)
+		pl.Variables = convertAnyMapToStringMap(resolvedVars)
 	}
 
 	// Resolve variables in each job
-	for i := range pipeline.Jobs {
-		job := &pipeline.Jobs[i]
+	for i := range pl.Jobs {
+		job := &pl.Jobs[i]
 
 		// Resolve job-level variables
 		if job.Env != nil {
@@ -208,7 +205,7 @@ func (p *DSLProcessor) resolvePipelineVariables(pipeline *Pipeline, ctx *Executi
 }
 
 // resolveSource resolves variables in source configuration
-func (p *DSLProcessor) resolveSource(source *Source, interpreter *VariableInterpreter) error {
+func (p *DSLProcessor) resolveSource(source *pipeline.Source, interpreter *pipeline.VariableInterpreter) error {
 	if source.Repo != "" {
 		resolved, err := interpreter.Resolve(source.Repo)
 		if err != nil {
@@ -255,7 +252,7 @@ func (p *DSLProcessor) resolveSource(source *Source, interpreter *VariableInterp
 }
 
 // resolveNotify resolves variables in notify configuration
-func (p *DSLProcessor) resolveNotify(notify *Notify, interpreter *VariableInterpreter) error {
+func (p *DSLProcessor) resolveNotify(notify *pipeline.Notify, interpreter *pipeline.VariableInterpreter) error {
 	if notify.OnSuccess != nil && notify.OnSuccess.Params != nil {
 		resolvedParams, err := interpreter.ResolveMap(notify.OnSuccess.Params)
 		if err != nil {

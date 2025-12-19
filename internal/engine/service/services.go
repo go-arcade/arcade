@@ -35,7 +35,6 @@ type Services struct {
 	GeneralSettings *GeneralSettingsService
 	UserExtension   *UserExtensionService
 	Menu            *MenuService
-	Plugin          *PluginService
 }
 
 // NewServices 初始化所有 service
@@ -57,11 +56,6 @@ func NewServices(
 	uploadService := NewUploadService(repos.Storage)
 	secretService := NewSecretService(repos.Secret)
 	userExtensionService := NewUserExtensionService(repos.UserExtension)
-	// PluginService 需要 pluginManager 和 storageProvider
-	var pluginService *PluginService
-	if pluginManager != nil && storageProvider != nil {
-		pluginService = NewPluginService(repos.Plugin, pluginManager, storageProvider)
-	}
 
 	return &Services{
 		User:            userService,
@@ -74,7 +68,6 @@ func NewServices(
 		GeneralSettings: generalSettingsService,
 		UserExtension:   userExtensionService,
 		Menu:            menuService,
-		Plugin:          pluginService,
 	}
 }
 
