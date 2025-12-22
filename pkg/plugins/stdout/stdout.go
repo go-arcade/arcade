@@ -154,6 +154,16 @@ func (p *Stdout) Type() plugin.PluginType {
 	return plugin.TypeNotify
 }
 
+// Author returns the plugin author
+func (p *Stdout) Author() string {
+	return "Arcade Team"
+}
+
+// Repository returns the plugin repository
+func (p *Stdout) Repository() string {
+	return "https://github.com/go-arcade/arcade"
+}
+
 // Init initializes the plugin
 func (p *Stdout) Init(config json.RawMessage) error {
 	if len(config) > 0 {

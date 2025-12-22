@@ -31,6 +31,14 @@ type ICache interface {
 	Del(ctx context.Context, keys ...string) *redis.IntCmd
 	// Pipeline 创建管道
 	Pipeline() redis.Pipeliner
+	// HSet 设置 Hash 字段
+	HSet(ctx context.Context, key string, values ...any) *redis.IntCmd
+	// HGetAll 获取 Hash 所有字段
+	HGetAll(ctx context.Context, key string) *redis.MapStringStringCmd
+	// HDel 删除 Hash 字段
+	HDel(ctx context.Context, key string, fields ...string) *redis.IntCmd
+	// Expire 设置过期时间
+	Expire(ctx context.Context, key string, expiration time.Duration) *redis.BoolCmd
 }
 
 // RedisClientGetter 获取 Redis 客户端的接口（用于需要直接访问 redis.Client 的场景）

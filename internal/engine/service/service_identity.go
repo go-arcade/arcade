@@ -119,7 +119,7 @@ func (iis *IdentityService) Callback(providerName, state, code string) (*identit
 }
 
 // splitName splits a full name into first and last name
-func splitName(name, nickname string) (firstName, lastName string) {
+func splitName(name, nickname string) string {
 	// use name first, fallback to nickname
 	fullName := name
 	if fullName == "" {
@@ -127,21 +127,16 @@ func splitName(name, nickname string) (firstName, lastName string) {
 	}
 
 	if fullName == "" {
-		return "", ""
+		return ""
 	}
 
 	// split by space
 	parts := strings.Fields(fullName)
 	if len(parts) == 0 {
-		return "", ""
+		return ""
 	}
 
-	firstName = parts[0]
-	if len(parts) > 1 {
-		lastName = strings.Join(parts[1:], " ")
-	}
-
-	return firstName, lastName
+	return strings.Join(parts, " ")
 }
 
 // convertToProviderConfig converts database config to sso.ProviderConfig
@@ -315,15 +310,14 @@ func (iis *IdentityService) LDAPLogin(providerName, username, password string) (
 // registerOrLoginUser common user registration or login logic
 func (iis *IdentityService) registerOrLoginUser(providerName string, userInfo *sso.UserInfoAdapter) (*identitymodel.Register, error) {
 	// split name into first and last name
-	firstName, lastName := splitName(userInfo.Name, userInfo.Nickname)
+	fullName := splitName(userInfo.Name, userInfo.Nickname)
 
 	registerUserInfo := &identitymodel.Register{
-		UserId:    id.GetUUIDWithoutDashes(),
-		Username:  userInfo.Username,
-		FirstName: firstName,
-		LastName:  lastName,
-		Avatar:    userInfo.AvatarURL,
-		Email:     userInfo.Email,
+		UserId:   id.GetUUIDWithoutDashes(),
+		Username: userInfo.Username,
+		FullName: fullName,
+		Avatar:   userInfo.AvatarURL,
+		Email:    userInfo.Email,
 	}
 
 	// if no email, generate default email
@@ -332,8 +326,8 @@ func (iis *IdentityService) registerOrLoginUser(providerName string, userInfo *s
 	}
 
 	// if no first name, use username as first name
-	if registerUserInfo.FirstName == "" {
-		registerUserInfo.FirstName = userInfo.Username
+	if registerUserInfo.FullName == "" {
+		registerUserInfo.FullName = userInfo.Username
 	}
 
 	registerUserInfo.CreateTime = time.Now()

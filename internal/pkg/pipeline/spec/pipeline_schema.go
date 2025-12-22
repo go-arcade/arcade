@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipeline
+package spec
 
 // Pipeline represents the top-level pipeline configuration
 type Pipeline struct {
@@ -47,13 +47,13 @@ type Runtime struct {
 // Resources represents resource limits and requests
 type Resources struct {
 	// CPU request (e.g., "100m", "1")
-	CPURequest string `json:"cpu_request,omitempty"`
+	CPURequest string `json:"cpuRequest,omitempty"`
 	// CPU limit (e.g., "200m", "2")
-	CPULimit string `json:"cpu_limit,omitempty"`
+	CPULimit string `json:"cpuLimit,omitempty"`
 	// Memory request (e.g., "128Mi", "1Gi")
-	MemoryRequest string `json:"memory_request,omitempty"`
+	MemoryRequest string `json:"memoryRequest,omitempty"`
 	// Memory limit (e.g., "256Mi", "2Gi")
-	MemoryLimit string `json:"memory_limit,omitempty"`
+	MemoryLimit string `json:"memoryLimit,omitempty"`
 }
 
 // Job represents a pipeline job (formerly task)
@@ -65,7 +65,7 @@ type Job struct {
 	// Job environment variables
 	Env map[string]string `json:"env,omitempty"`
 	// Job concurrency
-	Concurrency string `json:"concurrency,omitempty"`
+	Concurrency string `json:"concurrency,omitempty"` // enum: serial, parallel
 	// Job timeout
 	Timeout string `json:"timeout,omitempty"`
 	// Job retry
@@ -84,12 +84,14 @@ type Job struct {
 	Notify *Notify `json:"notify,omitempty"`
 	// Job triggers
 	Triggers []Trigger `json:"triggers,omitempty"`
+	// Job dependencies (names of jobs that must complete before this job runs)
+	DependsOn []string `json:"dependsOn,omitempty"`
 }
 
 // Retry configuration for job retry logic
 type Retry struct {
 	// Retry max attempts
-	MaxAttempts int `json:"max_attempts"`
+	MaxAttempts int `json:"maxAttempts"`
 	// Retry delay
 	Delay string `json:"delay,omitempty"`
 }
@@ -107,15 +109,15 @@ type Step struct {
 	// Step environment variables
 	Env map[string]string `json:"env,omitempty"`
 	// Step continue on error
-	ContinueOnError bool `json:"continue_on_error,omitempty"`
+	ContinueOnError bool `json:"continueOnError,omitempty"`
 	// Step timeout
 	Timeout string `json:"timeout,omitempty"`
 	// Step when
 	When string `json:"when,omitempty"`
 	// Agent selector for step execution
-	AgentSelector *AgentSelector `json:"agent_selector,omitempty"`
+	AgentSelector *AgentSelector `json:"agentSelector,omitempty"`
 	// Run on agent (if true, step runs on agent; if false, runs locally)
-	RunOnAgent bool `json:"run_on_agent,omitempty"`
+	RunOnAgent bool `json:"runOnAgent,omitempty"`
 }
 
 // Source represents the source configuration (Git / Artifact / S3 / Custom)
@@ -163,9 +165,9 @@ type Target struct {
 // Notify represents notification configuration
 type Notify struct {
 	// Notify on success
-	OnSuccess *NotifyItem `json:"on_success,omitempty"`
+	OnSuccess *NotifyItem `json:"onSuccess,omitempty"`
 	// Notify on failure
-	OnFailure *NotifyItem `json:"on_failure,omitempty"`
+	OnFailure *NotifyItem `json:"onFailure,omitempty"`
 }
 
 // NotifyItem represents a notification item
@@ -188,9 +190,9 @@ type Trigger struct {
 // AgentSelector defines criteria for selecting an agent
 type AgentSelector struct {
 	// MatchLabels requires all specified labels to match (AND logic)
-	MatchLabels map[string]string `json:"match_labels,omitempty"`
+	MatchLabels map[string]string `json:"matchLabels,omitempty"`
 	// MatchExpressions provides more complex matching rules
-	MatchExpressions []LabelExpression `json:"match_expressions,omitempty"`
+	MatchExpressions []LabelExpression `json:"matchExpressions,omitempty"`
 }
 
 // LabelExpression defines a label matching expression

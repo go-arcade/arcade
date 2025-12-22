@@ -134,6 +134,16 @@ func (p *Shell) Type() plugin.PluginType {
 	return plugin.TypeCustom
 }
 
+// Author returns the plugin author
+func (p *Shell) Author() string {
+	return "Arcade Team"
+}
+
+// Repository returns the plugin repository
+func (p *Shell) Repository() string {
+	return "https://github.com/go-arcade/arcade"
+}
+
 // Init initializes the plugin
 func (p *Shell) Init(config json.RawMessage) error {
 	if len(config) > 0 {

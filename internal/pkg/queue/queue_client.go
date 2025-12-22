@@ -168,15 +168,23 @@ func (c *Client) RegisterHandlerFunc(taskType string, handlerFunc TaskHandlerFun
 }
 
 // Start 启动任务队列客户端
+// 注意：Start() 方法会立即返回，不会阻塞。如果需要阻塞等待，请使用 Run() 方法。
 func (c *Client) Start() error {
 	log.Info("starting queue client")
+	return c.server.Start(c.mux)
+}
+
+// Run 启动任务队列客户端并阻塞等待信号
+// 此方法会阻塞直到收到退出信号，然后自动关闭服务器
+func (c *Client) Run() error {
+	log.Info("running queue client")
 	return c.server.Run(c.mux)
 }
 
 // Shutdown 关闭任务队列客户端
 func (c *Client) Shutdown() {
-	log.Info("shutting down queue client")
 	c.server.Shutdown()
+	log.Info("asynq server shut down successfully")
 }
 
 // GetServer 获取 asynq 服务器

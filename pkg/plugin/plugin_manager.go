@@ -20,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/bytedance/sonic"
 	"github.com/go-arcade/arcade/pkg/log"
 )
 
@@ -129,20 +130,20 @@ func (m *Manager) RegisterPluginsFromRegistry(pluginConfigs map[string]any) erro
 		if pluginConfigs != nil {
 			if pluginConfig, exists := pluginConfigs[name]; exists {
 				// 将配置对象转换为 JSON
-				configBytes, err := json.Marshal(pluginConfig)
+				configBytes, err := sonic.Marshal(pluginConfig)
 				if err != nil {
 					log.Warnw("failed to marshal plugin config", "plugin", name, "error", err)
-					configJSON = json.RawMessage("{}")
+					configJSON = []byte("{}")
 				} else {
-					configJSON = json.RawMessage(configBytes)
+					configJSON = configBytes
 				}
 			} else {
 				// 配置文件中没有该插件的配置，使用空配置
-				configJSON = json.RawMessage("{}")
+				configJSON = []byte("{}")
 			}
 		} else {
 			// 没有提供配置文件，使用空配置
-			configJSON = json.RawMessage("{}")
+			configJSON = []byte("{}")
 		}
 
 		// 创建运行时配置

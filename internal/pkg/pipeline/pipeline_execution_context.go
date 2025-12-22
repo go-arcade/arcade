@@ -25,13 +25,14 @@ import (
 	"strings"
 
 	"github.com/expr-lang/expr"
+	"github.com/go-arcade/arcade/internal/pkg/pipeline/spec"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/plugin"
 )
 
 // ExecutionContext provides execution context for pipeline
 type ExecutionContext struct {
-	Pipeline      *Pipeline
+	Pipeline      *spec.Pipeline
 	WorkspaceRoot string
 	PluginManager *plugin.Manager
 	AgentManager  *AgentManager
@@ -41,7 +42,7 @@ type ExecutionContext struct {
 
 // NewExecutionContext creates a new execution context
 func NewExecutionContext(
-	p *Pipeline,
+	p *spec.Pipeline,
 	pluginMgr *plugin.Manager,
 	workspace string,
 	logger log.Logger,
@@ -174,7 +175,7 @@ func (c *ExecutionContext) EvalConditionWithContext(conditionExpr string, contex
 
 // ResolveStepEnv resolves environment variables for step
 // Priority: step.Env > job.Env > pipeline.Variables
-func (c *ExecutionContext) ResolveStepEnv(job *Job, step *Step) map[string]string {
+func (c *ExecutionContext) ResolveStepEnv(job *spec.Job, step *spec.Step) map[string]string {
 	env := make(map[string]string)
 
 	// Start with pipeline variables
@@ -249,7 +250,7 @@ func (c *ExecutionContext) MarshalParams(params map[string]any) (json.RawMessage
 }
 
 // SendNotification sends notification using notify plugin
-func (c *ExecutionContext) SendNotification(ctx context.Context, item *NotifyItem, success bool) error {
+func (c *ExecutionContext) SendNotification(ctx context.Context, item *spec.NotifyItem, success bool) error {
 	if item == nil || item.Plugin == "" {
 		return nil
 	}

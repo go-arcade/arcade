@@ -1,4 +1,4 @@
-// Copyright 2025 Arcade Team
+// Copyright 2025 Infraflows Team
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tool
+package auth
 
 import (
 	"errors"
@@ -22,7 +22,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/http/jwt"
 	"github.com/gofiber/fiber/v2"
 )
-
 
 // ParseAuthorizationToken 解析 Authorization 头中的 Bearer token
 func ParseAuthorizationToken(f *fiber.Ctx, secretKey string) (*jwt.AuthClaims, error) {

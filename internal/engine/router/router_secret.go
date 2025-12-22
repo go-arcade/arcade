@@ -18,7 +18,7 @@ import (
 	"strconv"
 
 	secretmodel "github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/internal/engine/tool"
+	"github.com/go-arcade/arcade/pkg/auth"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/gofiber/fiber/v2"
@@ -44,7 +44,7 @@ func (rt *Router) createSecret(c *fiber.Ctx) error {
 	secretService := rt.Services.Secret
 
 	// get user ID from token
-	claims, err := tool.ParseAuthorizationToken(c, rt.Http.Auth.SecretKey)
+	claims, err := auth.ParseAuthorizationToken(c, rt.Http.Auth.SecretKey)
 	if err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
 	}

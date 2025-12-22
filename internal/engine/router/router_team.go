@@ -18,7 +18,7 @@ import (
 	"strconv"
 
 	teammodel "github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/internal/engine/tool"
+	"github.com/go-arcade/arcade/pkg/auth"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/go-arcade/arcade/pkg/log"
@@ -70,7 +70,7 @@ func (rt *Router) createTeam(c *fiber.Ctx) error {
 	}
 
 	// 获取当前用户ID
-	claims, err := tool.ParseAuthorizationToken(c, rt.Http.Auth.SecretKey)
+	claims, err := auth.ParseAuthorizationToken(c, rt.Http.Auth.SecretKey)
 	if err != nil {
 		log.Errorw("authentication failed", "error", err)
 		return http.WithRepErrMsg(c, http.AuthenticationFailed.Code, http.AuthenticationFailed.Msg, c.Path())
@@ -235,7 +235,7 @@ func (rt *Router) getSubTeams(c *fiber.Ctx) error {
 // getUserTeams 获取用户所属团队
 func (rt *Router) getUserTeams(c *fiber.Ctx) error {
 	// 获取当前用户ID
-	claims, err := tool.ParseAuthorizationToken(c, rt.Http.Auth.SecretKey)
+	claims, err := auth.ParseAuthorizationToken(c, rt.Http.Auth.SecretKey)
 	if err != nil {
 		log.Errorw("authentication failed", "error", err)
 		return http.WithRepErrMsg(c, http.AuthenticationFailed.Code, http.AuthenticationFailed.Msg, c.Path())

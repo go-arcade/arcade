@@ -2,10 +2,26 @@ SHELL := /bin/sh
 .ONESHELL:
 .SHELLFLAGS := -eu -o pipefail -c
 
-.PHONY: help prebuild build plugins plugins-clean plugins-package proto proto-clean proto-install wire wire-install wire-clean staticcheck staticcheck-install staticcheck-check
+.PHONY: help prebuild build plugins plugins-clean plugins-package proto proto-clean proto-install wire wire-install wire-clean staticcheck staticcheck-install staticcheck-check version version-check version-tag
 
 # git
-VERSION    = $(shell git describe --tags --always)
+# Version format: YY.Major.Minor.Patch (e.g., 25.1.2.3, where 25 represents 2025)
+# Priority: 1. VERSION env var, 2. VERSION file, 3. git tag, 4. default (current 2-digit year.0.0.0)
+CURRENT_YEAR := $(shell date +%y)
+VERSION_FILE := $(shell if [ -f VERSION ]; then cat VERSION | tr -d '[:space:]\n\r'; fi)
+GIT_TAG := $(shell git describe --tags --exact-match 2>/dev/null || echo "")
+ifeq ($(VERSION),)
+  ifneq ($(VERSION_FILE),)
+    # Read from VERSION file
+    VERSION := $(VERSION_FILE)
+  else ifneq ($(GIT_TAG),)
+    # Remove 'v' prefix if present
+    VERSION := $(shell echo $(GIT_TAG) | sed 's/^v//')
+  else
+    # Default to current 2-digit year.0.0.0 if no tag found
+    VERSION := $(CURRENT_YEAR).0.0.0
+  endif
+endif
 GIT_BRANCH = $(shell git rev-parse --abbrev-ref HEAD)
 #GIT_COMMIT = $(shell git rev-parse --short=7 HEAD)
 GIT_COMMIT = $(shell git rev-parse HEAD)
@@ -84,7 +100,7 @@ build-cli: ## build CLI tool
 	go build -ldflags "${LDFLAGS}" -o arcade-cli ./cmd/cli/
 
 run: deps-sync wire buf
-	go run ./cmd/arcade/
+	go run -ldflags "${LDFLAGS}" ./cmd/arcade/
 
 run-agent: deps-sync wire buf
 	go run ./cmd/arcade-agent/
@@ -180,3 +196,31 @@ addlicense: addlicense-check ## run addlicense code analysis
 	@echo ">> running addlicense..."
 	@addlicense -v -l apache -c "Arcade Team" $(find . -name "*.go" -not -name "wire_gen.go" -not -name "*.pb.go" -not -name "*_grpc.pb.go")
 	@echo ">> addlicense analysis done."
+
+# version management
+version: ## show current version information
+	@echo "Current Version: $(VERSION)"
+	@if [ -f VERSION ]; then \
+		echo "VERSION file: $$(cat VERSION | tr -d '[:space:]')"; \
+	else \
+		echo "VERSION file: not found"; \
+	fi
+	@echo "Git Tag: $(GIT_TAG)"
+	@echo "Git Branch: $(GIT_BRANCH)"
+	@echo "Git Commit: $(GIT_COMMIT)"
+	@echo "Build Time: $(BUILD_TIME)"
+
+version-check: ## validate version format (YY.Major.Minor.Patch)
+	@echo ">> validating version format: $(VERSION)"
+	@if ! echo "$(VERSION)" | grep -qE '^[0-9]{2}\.[0-9]+\.[0-9]+\.[0-9]+$$'; then \
+		echo "error: invalid version format: $(VERSION)"; \
+		echo "expected format: YY.Major.Minor.Patch (e.g., 25.1.2.3, where 25 represents 2025)"; \
+		exit 1; \
+	fi
+	@echo ">> version format is valid: $(VERSION)"
+
+version-tag: version-check ## create git tag with current version
+	@echo ">> creating git tag: v$(VERSION)"
+	@git tag -a "v$(VERSION)" -m "Release version $(VERSION)"
+	@echo ">> git tag created: v$(VERSION)"
+	@echo ">> to push tag, run: git push origin v$(VERSION)"

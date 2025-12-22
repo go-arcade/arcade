@@ -16,6 +16,7 @@ package service
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"time"
@@ -23,12 +24,12 @@ import (
 	"github.com/go-arcade/arcade/internal/engine/consts"
 	usermodel "github.com/go-arcade/arcade/internal/engine/model"
 	userrepo "github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/internal/engine/tool"
 	"github.com/go-arcade/arcade/pkg/cache"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/jwt"
 	"github.com/go-arcade/arcade/pkg/id"
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/util"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -67,7 +68,7 @@ func NewUserService(
 }
 
 func (ul *UserService) Login(login *usermodel.Login, auth http.Auth) (*usermodel.LoginResp, error) {
-	pwd, err := tool.DecodeBase64(login.Password)
+	pwd, err := base64.StdEncoding.DecodeString(login.Password)
 	if err != nil {
 		log.Errorw("failed to decode password", "error", err)
 		return nil, errors.New(http.UserIncorrectPassword.Msg)
@@ -75,7 +76,7 @@ func (ul *UserService) Login(login *usermodel.Login, auth http.Auth) (*usermodel
 
 	userInfo, err := ul.userRepo.Login(login)
 	if err != nil {
-		log.Errorw("login failed", "username", login.Username, "error", err)
+		log.Errorw("login failed", "username", login.Username, "email", login.Email, "error", err)
 		return nil, err
 	}
 	if userInfo == nil || userInfo.Username == "" || userInfo.Username != login.Username {
@@ -110,13 +111,12 @@ func (ul *UserService) Login(login *usermodel.Login, auth http.Auth) (*usermodel
 
 	resp := &usermodel.LoginResp{
 		UserInfo: usermodel.UserInfo{
-			UserId:    userInfo.UserId,
-			Username:  userInfo.Username,
-			FirstName: userInfo.FirstName,
-			LastName:  userInfo.LastName,
-			Avatar:    userInfo.Avatar,
-			Email:     userInfo.Email,
-			Phone:     userInfo.Phone,
+			UserId:   userInfo.UserId,
+			Username: userInfo.Username,
+			FullName: userInfo.FullName,
+			Avatar:   userInfo.Avatar,
+			Email:    userInfo.Email,
+			Phone:    userInfo.Phone,
 		},
 		Token: map[string]string{
 			"accessToken":  aToken,
@@ -170,8 +170,8 @@ func (ul *UserService) Register(register *usermodel.Register) error {
 	var err error
 	register.UserId = id.GetUUIDWithoutDashes()
 	// set default values if not provided
-	if register.FirstName == "" {
-		register.FirstName = register.Username
+	if register.FullName == "" {
+		register.FullName = register.Username
 	}
 	register.CreateTime = time.Now()
 	password, err := getPassword(register.Password)
@@ -216,10 +216,22 @@ func (ul *UserService) AddUser(addUserReq usermodel.AddUserReq) error {
 	return err
 }
 
-func (ul *UserService) UpdateUser(userId string, userEntity *usermodel.User) error {
-	var err error
-	if err = ul.userRepo.UpdateUser(userId, userEntity); err != nil {
+func (ul *UserService) UpdateUser(userId string, updateReq *usermodel.UpdateUserReq) error {
+	// Check if user exists
+	_, err := ul.userRepo.GetUserByUserId(userId)
+	if err != nil {
+		log.Errorw("get user by userId failed", "userId", userId, "error", err)
 		return err
+	}
+
+	// Build and update User fields
+	updates := buildUserUpdateMap(updateReq)
+	if len(updates) > 0 {
+		updates["updated_at"] = time.Now()
+		if err := ul.userRepo.UpdateUser(userId, updates); err != nil {
+			log.Errorw("update user failed", "userId", userId, "error", err)
+			return err
+		}
 	}
 
 	// clear user info cache after update
@@ -228,7 +240,18 @@ func (ul *UserService) UpdateUser(userId string, userEntity *usermodel.User) err
 		log.Warnw("failed to clear user info cache", "userId", userId, "error", err)
 	}
 
-	return err
+	return nil
+}
+
+// buildUserUpdateMap builds update map for User fields
+func buildUserUpdateMap(req *usermodel.UpdateUserReq) map[string]any {
+	updates := make(map[string]any)
+	util.SetIfNotNil(updates, "full_name", req.FullName)
+	util.SetIfNotNil(updates, "avatar", req.Avatar)
+	util.SetIfNotNil(updates, "email", req.Email)
+	util.SetIfNotNil(updates, "phone", req.Phone)
+	util.SetIfNotNil(updates, "is_enabled", req.IsEnabled)
+	return updates
 }
 
 func (ul *UserService) FetchUserInfo(userId string) (*usermodel.UserInfo, error) {
@@ -259,6 +282,25 @@ func (ul *UserService) GetUserList(pageNum, pageSize int) ([]userrepo.UserWithEx
 	return users, count, err
 }
 
+func (ul *UserService) GetUsersByRole(roleId, roleName string, pageNum, pageSize int) ([]userrepo.UserWithExtension, int64, error) {
+	// set default values
+	if pageNum <= 0 {
+		pageNum = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 10
+	}
+
+	offset := (pageNum - 1) * pageSize
+	users, count, err := ul.userRepo.GetUsersByRole(roleId, roleName, offset, pageSize)
+	if err != nil {
+		log.Errorw("get users by role failed", "roleId", roleId, "roleName", roleName, "error", err)
+		return nil, 0, err
+	}
+
+	return users, count, err
+}
+
 func comparePassword(oldPassword, newPassword string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(oldPassword), []byte(newPassword))
 	if err != nil {
@@ -271,7 +313,7 @@ func comparePassword(oldPassword, newPassword string) bool {
 // ResetPassword resets user password (for forgot password scenario, no old password required)
 func (ul *UserService) ResetPassword(userId string, req *usermodel.ResetPasswordReq) error {
 	// decode new password from base64
-	newPwd, err := tool.DecodeBase64(req.NewPassword)
+	newPwd, err := base64.StdEncoding.DecodeString(req.NewPassword)
 	if err != nil {
 		log.Errorw("failed to decode new password", "userId", userId, "error", err)
 		return errors.New("invalid new password format")

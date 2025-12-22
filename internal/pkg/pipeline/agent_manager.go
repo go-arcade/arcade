@@ -25,6 +25,7 @@ import (
 
 	agentv1 "github.com/go-arcade/arcade/api/agent/v1"
 	taskv1 "github.com/go-arcade/arcade/api/task/v1"
+	"github.com/go-arcade/arcade/internal/pkg/pipeline/spec"
 	"github.com/go-arcade/arcade/pkg/log"
 )
 
@@ -54,11 +55,11 @@ type StepExecutionRequest struct {
 	BuildID    string
 	JobName    string
 	StepName   string
-	Step       *Step
+	Step       *spec.Step
 	StepIndex  int // Index of step in job (0-based), used for stage calculation
 	Workspace  string
 	Env        map[string]string
-	Selector   *AgentSelector
+	Selector   *spec.AgentSelector
 	Context    *ExecutionContext // Execution context for variable resolution
 }
 
@@ -118,7 +119,7 @@ func (am *AgentManager) ExecuteStepOnAgent(ctx context.Context, req *StepExecuti
 }
 
 // SelectAgent selects an available agent based on the selector criteria
-func (am *AgentManager) SelectAgent(ctx context.Context, selector *AgentSelector) (string, error) {
+func (am *AgentManager) SelectAgent(ctx context.Context, selector *spec.AgentSelector) (string, error) {
 	// Get all available agents from cache
 	am.statusCacheMu.RLock()
 	availableAgents := make([]*AgentStatus, 0, len(am.agentStatusCache))
@@ -167,7 +168,7 @@ func (am *AgentManager) SelectAgent(ctx context.Context, selector *AgentSelector
 }
 
 // matchAgentLabels checks if an agent matches the label selector criteria
-func (am *AgentManager) matchAgentLabels(agent *AgentStatus, selector *AgentSelector) bool {
+func (am *AgentManager) matchAgentLabels(agent *AgentStatus, selector *spec.AgentSelector) bool {
 	agentLabels := agent.Labels
 
 	// If selector requires labels but agent has no labels, it doesn't match
@@ -207,7 +208,7 @@ func (am *AgentManager) matchAgentLabels(agent *AgentStatus, selector *AgentSele
 }
 
 // matchExpression checks if agent labels match a single expression
-func (am *AgentManager) matchExpression(agentLabels map[string]string, expr LabelExpression) bool {
+func (am *AgentManager) matchExpression(agentLabels map[string]string, expr spec.LabelExpression) bool {
 	agentValue, exists := agentLabels[expr.Key]
 
 	switch expr.Operator {
@@ -352,7 +353,7 @@ func (am *AgentManager) convertStepToTask(req *StepExecutionRequest) (*agentv1.T
 
 // buildCommands builds command list from step action and params
 // This method calls plugin to resolve step into concrete commands before sending to agent
-func (am *AgentManager) buildCommands(step *Step, ctx *ExecutionContext) ([]string, error) {
+func (am *AgentManager) buildCommands(step *spec.Step, ctx *ExecutionContext) ([]string, error) {
 	if ctx == nil || ctx.PluginManager == nil {
 		return nil, fmt.Errorf("execution context or plugin manager is not available")
 	}
@@ -416,7 +417,7 @@ func (am *AgentManager) buildCommands(step *Step, ctx *ExecutionContext) ([]stri
 }
 
 // buildShellCommands builds shell commands from step params
-func (am *AgentManager) buildShellCommands(step *Step, params map[string]any, ctx *ExecutionContext) ([]string, error) {
+func (am *AgentManager) buildShellCommands(step *spec.Step, params map[string]any, ctx *ExecutionContext) ([]string, error) {
 	commands := []string{}
 
 	// Determine shell action
@@ -476,7 +477,7 @@ func (am *AgentManager) buildShellCommands(step *Step, params map[string]any, ct
 }
 
 // buildGenericPluginCommand builds a generic plugin command as fallback
-func (am *AgentManager) buildGenericPluginCommand(step *Step, action string) []string {
+func (am *AgentManager) buildGenericPluginCommand(step *spec.Step, action string) []string {
 	// This is a fallback for plugins that don't support BuildCommands
 	// In this case, we still send plugin command to agent
 	// Agent will need to have plugin runtime to execute it
@@ -485,7 +486,7 @@ func (am *AgentManager) buildGenericPluginCommand(step *Step, action string) []s
 }
 
 // buildLabelSelector builds agent label selector from step selector
-func (am *AgentManager) buildLabelSelector(selector *AgentSelector) *agentv1.LabelSelector {
+func (am *AgentManager) buildLabelSelector(selector *spec.AgentSelector) *agentv1.LabelSelector {
 	if selector == nil {
 		return nil
 	}

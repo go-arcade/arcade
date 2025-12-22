@@ -390,18 +390,31 @@ func (q *TaskQueue) EnqueueDelayed(payload *TaskPayload, delay time.Duration, qu
 }
 
 // Start 启动任务队列服务器
+// 注意：Start() 方法会立即返回，不会阻塞。如果需要阻塞等待，请使用 Run() 方法。
 func (q *TaskQueue) Start() error {
 	log.Info("starting task queue server")
+	return q.server.Start(q.mux)
+}
+
+// Run 启动任务队列服务器并阻塞等待信号
+// 此方法会阻塞直到收到退出信号，然后自动关闭服务器
+func (q *TaskQueue) Run() error {
+	log.Info("running task queue server")
 	return q.server.Run(q.mux)
 }
 
 // Shutdown 关闭任务队列服务器
 func (q *TaskQueue) Shutdown() {
 	log.Info("shutting down task queue server")
+
 	q.server.Shutdown()
-	err := q.client.Close()
-	if err != nil {
-		return
+	log.Info("asynq server shut down successfully")
+
+	// 关闭客户端
+	if err := q.client.Close(); err != nil {
+		log.Warnw("error closing asynq client", "error", err)
+	} else {
+		log.Info("asynq client closed successfully")
 	}
 }
 

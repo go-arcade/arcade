@@ -15,7 +15,8 @@
 package dsl
 
 import (
-	"github.com/go-arcade/arcade/internal/pkg/pipeline"
+	"github.com/go-arcade/arcade/internal/pkg/pipeline/spec"
+	"github.com/go-arcade/arcade/internal/pkg/pipeline/validation"
 )
 
 // PipelineBasicValidatorAdapter adapts DSLParser to implement PipelineBasicValidator interface
@@ -33,9 +34,9 @@ func NewPipelineBasicValidatorAdapter(parser *DSLParser) *PipelineBasicValidator
 
 // ValidateBasic performs basic validation on a pipeline
 // This delegates to the parser's validate method
-func (a *PipelineBasicValidatorAdapter) ValidateBasic(p *pipeline.Pipeline) error {
+func (a *PipelineBasicValidatorAdapter) ValidateBasic(p *spec.Pipeline) error {
 	return a.parser.validate(p)
 }
 
 // Ensure PipelineBasicValidatorAdapter implements PipelineBasicValidator interface
-var _ pipeline.PipelineBasicValidator = (*PipelineBasicValidatorAdapter)(nil)
+var _ validation.PipelineBasicValidator = (*PipelineBasicValidatorAdapter)(nil)

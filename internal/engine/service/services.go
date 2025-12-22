@@ -25,16 +25,20 @@ import (
 
 // Services 统一管理所有 service
 type Services struct {
-	User            *UserService
-	Agent           *AgentService
-	Identity        *IdentityService
-	Team            *TeamService
-	Storage         *StorageService
-	Upload          *UploadService
-	Secret          *SecretService
-	GeneralSettings *GeneralSettingsService
-	UserExtension   *UserExtensionService
-	Menu            *MenuService
+	User              *UserService
+	Agent             *AgentService
+	Identity          *IdentityService
+	Team              *TeamService
+	Storage           *StorageService
+	Upload            *UploadService
+	Secret            *SecretService
+	GeneralSettings   *GeneralSettingsService
+	Project           *ProjectService
+	UserExtension     *UserExtensionService
+	Menu              *MenuService
+	Role              *RoleService
+	Plugin            *PluginService
+	ProjectMemberRepo repo.IProjectMemberRepository
 }
 
 // NewServices 初始化所有 service
@@ -55,19 +59,26 @@ func NewServices(
 	storageService := NewStorageService(repos.Storage)
 	uploadService := NewUploadService(repos.Storage)
 	secretService := NewSecretService(repos.Secret)
+	projectService := NewProjectService(repos.Project)
 	userExtensionService := NewUserExtensionService(repos.UserExtension)
+	roleService := NewRoleService(repos.Role)
+	pluginService := NewPluginService(repos.Plugin)
 
 	return &Services{
-		User:            userService,
-		Agent:           agentService,
-		Identity:        identityService,
-		Team:            teamService,
-		Storage:         storageService,
-		Upload:          uploadService,
-		Secret:          secretService,
-		GeneralSettings: generalSettingsService,
-		UserExtension:   userExtensionService,
-		Menu:            menuService,
+		User:              userService,
+		Agent:             agentService,
+		Identity:          identityService,
+		Team:              teamService,
+		Storage:           storageService,
+		Upload:            uploadService,
+		Secret:            secretService,
+		GeneralSettings:   generalSettingsService,
+		Project:           projectService,
+		UserExtension:     userExtensionService,
+		Menu:              menuService,
+		Role:              roleService,
+		Plugin:            pluginService,
+		ProjectMemberRepo: repos.ProjectMember,
 	}
 }
 

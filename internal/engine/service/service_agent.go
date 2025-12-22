@@ -26,6 +26,7 @@ import (
 	agentrepo "github.com/go-arcade/arcade/internal/engine/repo"
 	"github.com/go-arcade/arcade/pkg/id"
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/util"
 )
 
 type AgentService struct {
@@ -50,7 +51,7 @@ func (al *AgentService) CreateAgent(createAgentReq *agentmodel.CreateAgentReq) (
 		OS:        "Linux",
 		Arch:      "amd64",
 		Version:   "0.0.0",
-		Status:    createAgentReq.Status,
+		Status:    0,
 		Labels:    createAgentReq.Labels,
 		IsEnabled: 1,
 		Metrics:   "/metrics",
@@ -131,6 +132,15 @@ func (al *AgentService) GetAgentById(id uint64) (*agentmodel.AgentDetail, error)
 	return detail, nil
 }
 
+func (al *AgentService) GetAgentByAgentId(agentId string) (*agentmodel.AgentDetail, error) {
+	detail, err := al.agentRepo.GetAgentDetailByAgentId(agentId)
+	if err != nil {
+		log.Errorw("get agent detail by agentId failed", "agentId", agentId, "error", err)
+		return nil, err
+	}
+	return detail, nil
+}
+
 func (al *AgentService) UpdateAgent(id uint64, updateReq *agentmodel.UpdateAgentReq) error {
 	// Check if agent exists
 	_, err := al.agentRepo.GetAgentById(id)
@@ -152,31 +162,36 @@ func (al *AgentService) UpdateAgent(id uint64, updateReq *agentmodel.UpdateAgent
 	return nil
 }
 
+func (al *AgentService) UpdateAgentByAgentId(agentId string, updateReq *agentmodel.UpdateAgentReq) error {
+	// Check if agent exists
+	_, err := al.agentRepo.GetAgentByAgentId(agentId)
+	if err != nil {
+		log.Errorw("get agent by agentId failed", "agentId", agentId, "error", err)
+		return err
+	}
+
+	// Build and update Agent fields
+	updates := buildAgentUpdateMap(updateReq)
+	if len(updates) > 0 {
+		updates["updated_at"] = time.Now()
+		if err := al.agentRepo.UpdateAgentByAgentId(agentId, updates); err != nil {
+			log.Errorw("update agent failed", "agentId", agentId, "error", err)
+			return err
+		}
+	}
+
+	return nil
+}
+
 // buildAgentUpdateMap builds update map for Agent fields
+// Only allows updating agent_name and labels
 func buildAgentUpdateMap(req *agentmodel.UpdateAgentReq) map[string]any {
 	updates := make(map[string]any)
-	setIfNotNil(updates, "agent_name", req.AgentName)
-	setIfNotNil(updates, "address", req.Address)
-	setIfNotNil(updates, "port", req.Port)
-	setIfNotNil(updates, "os", req.OS)
-	setIfNotNil(updates, "arch", req.Arch)
-	setIfNotNil(updates, "version", req.Version)
-	setIfNotNil(updates, "status", req.Status)
-	setIfNotNil(updates, "is_enabled", req.IsEnabled)
+	util.SetIfNotNil(updates, "agent_name", req.AgentName)
 	if req.Labels != nil {
 		updates["labels"] = req.Labels
 	}
-	if req.Metrics != nil {
-		updates["metrics"] = req.Metrics
-	}
 	return updates
-}
-
-// setIfNotNil sets the value in the map if the pointer is not nil
-func setIfNotNil[T any](m map[string]any, key string, ptr *T) {
-	if ptr != nil {
-		m[key] = *ptr
-	}
 }
 
 func (al *AgentService) DeleteAgent(id uint64) error {
@@ -187,13 +202,29 @@ func (al *AgentService) DeleteAgent(id uint64) error {
 	return nil
 }
 
+func (al *AgentService) DeleteAgentByAgentId(agentId string) error {
+	if err := al.agentRepo.DeleteAgentByAgentId(agentId); err != nil {
+		log.Errorw("delete agent failed", "agentId", agentId, "error", err)
+		return err
+	}
+	return nil
+}
+
 func (al *AgentService) ListAgent(pageNum, pageSize int) ([]agentmodel.Agent, int64, error) {
-	offset := (pageNum - 1) * pageSize
-	agents, count, err := al.agentRepo.ListAgent(offset, pageSize)
+	agents, count, err := al.agentRepo.ListAgent(pageNum, pageSize)
 
 	if err != nil {
 		log.Errorw("list agent failed", "error", err)
 		return nil, 0, err
 	}
 	return agents, count, err
+}
+
+func (al *AgentService) GetAgentStatistics() (int64, int64, int64, error) {
+	total, online, offline, err := al.agentRepo.GetAgentStatistics()
+	if err != nil {
+		log.Errorw("get agent statistics failed", "error", err)
+		return 0, 0, 0, err
+	}
+	return total, online, offline, nil
 }

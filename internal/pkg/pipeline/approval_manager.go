@@ -107,7 +107,7 @@ func (am *ApprovalManager) CreateApproval(ctx context.Context, jobName, stepName
 	am.mu.Unlock()
 
 	// Call approval plugin to create approval
-	if err := am.createApprovalInPlugin(ctx, request); err != nil {
+	if err := am.createApprovalInPlugin(request); err != nil {
 		am.mu.Lock()
 		delete(am.requests, requestID)
 		am.mu.Unlock()
@@ -256,7 +256,7 @@ func (am *ApprovalManager) CleanupExpiredApprovals() int {
 }
 
 // createApprovalInPlugin creates approval request in the plugin
-func (am *ApprovalManager) createApprovalInPlugin(ctx context.Context, request *ApprovalRequest) error {
+func (am *ApprovalManager) createApprovalInPlugin(request *ApprovalRequest) error {
 	pluginClient, err := am.pluginMgr.GetPlugin(request.Plugin)
 	if err != nil {
 		return fmt.Errorf("approval plugin not found: %s: %w", request.Plugin, err)
