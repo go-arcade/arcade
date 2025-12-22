@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: arcade-agent
+  labels:
+    app: arcade-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: arcade-agent
+  template:
+    metadata:
+      labels:
+        app: arcade-agent
+    spec:
+      containers:
+      - name: arcade-agent
+        image: go-arcade/arcade-agent:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8081
+          name: http
+        - containerPort: 8084
+          name: metrics
+        - containerPort: 8085
+          name: pprof
+        - containerPort: 8086
+          name: grpc
+        volumeMounts:
+        - name: config
+          mountPath: /conf.d
+          readOnly: true
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8081
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8081
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: arcade-agent-config
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: arcade-agent
+  labels:
+    app: arcade-agent
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8081
+    targetPort: 8081
+    protocol: TCP
+    name: http
+  - port: 8084
+    targetPort: 8084
+    protocol: TCP
+    name: metrics
+  - port: 8086
+    targetPort: 8086
+    protocol: TCP
+    name: grpc
+  selector:
+    app: arcade-agent
+

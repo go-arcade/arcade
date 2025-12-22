@@ -21,54 +21,77 @@ import (
 	"time"
 )
 
-// TransitionHook Triggered when the state changes
-type TransitionHook[T comparable] func(from, to T) error
+// Event represents an event that triggers a state transition in the FSM.
+// Events are optional - state transitions can also be triggered directly.
+type Event string
 
-// StateHook Triggered when entering or exiting a state
+// TransitionHook is triggered when a state transition occurs.
+type TransitionHook[T comparable] func(from, to T, event Event) error
+
+// StateHook is triggered when entering or exiting a state.
 type StateHook[T comparable] func(state T) error
 
-// TransitionValidator 状态转移验证器
-type TransitionValidator[T comparable] func(from, to T) error
+// TransitionValidator validates whether a state transition is allowed.
+type TransitionValidator[T comparable] func(from, to T, event Event) error
 
-// TransitionRecord 状态转移记录
+// TransitionRecord records a state transition in the FSM history.
 type TransitionRecord[T comparable] struct {
 	From      T
 	To        T
+	Event     Event
 	Timestamp time.Time
 	Error     error
 }
 
-// StateMachine 泛型状态机（支持 OnEnter / OnExit / OnTransition）
+// StateMachine is a generic Finite State Machine implementation.
+// It supports:
+//   - State transitions with optional events
+//   - Hooks (OnEnter, OnExit, OnTransition)
+//   - Validators for transition validation
+//   - Transition history tracking
+//   - Graphviz DOT export for visualization
+//
+// The StateMachine is thread-safe and can be used concurrently.
 type StateMachine[T comparable] struct {
 	mu sync.RWMutex
 
-	currentState     T
-	initialState     T
+	currentState T
+	initialState T
+
+	// Transition definitions: from state -> list of valid next states
 	validTransitions map[T][]T
-	history          []TransitionRecord[T]
-	maxHistorySize   int
+	// Event-based transitions: (from state, event) -> target state
+	eventTransitions map[transitionKey[T]]T
+
+	history        []TransitionRecord[T]
+	maxHistorySize int
 
 	onTransition []TransitionHook[T]
 	onEnter      map[T][]StateHook[T]
 	onExit       map[T][]StateHook[T]
 	validators   []TransitionValidator[T]
 
-	// 错误处理
-	onError func(from, to T, err error)
+	onError func(from, to T, event Event, err error)
 }
 
-// New 创建新的状态机
+type transitionKey[T comparable] struct {
+	From  T
+	Event Event
+}
+
+// New creates a new StateMachine instance.
 func New[T comparable]() *StateMachine[T] {
 	return &StateMachine[T]{
 		validTransitions: make(map[T][]T),
+		eventTransitions: make(map[transitionKey[T]]T),
 		onEnter:          make(map[T][]StateHook[T]),
 		onExit:           make(map[T][]StateHook[T]),
 		history:          make([]TransitionRecord[T], 0),
-		maxHistorySize:   100, // 默认保留最近100条记录
+		maxHistorySize:   100,
 	}
 }
 
-// NewWithState 创建带初始状态的状态机
+// NewWithState creates a new StateMachine with an initial state.
 func NewWithState[T comparable](initialState T) *StateMachine[T] {
 	sm := New[T]()
 	sm.currentState = initialState
@@ -76,29 +99,79 @@ func NewWithState[T comparable](initialState T) *StateMachine[T] {
 	return sm
 }
 
-// Allow 注册合法的状态转移
+// Allow registers valid state transitions (compatibility method).
+// This is equivalent to AddTransitions.
 func (sm *StateMachine[T]) Allow(from T, to ...T) *StateMachine[T] {
+	return sm.AddTransitions(from, to...)
+}
+
+// AddTransition adds a valid state transition.
+// This is the basic way to define transitions without events.
+func (sm *StateMachine[T]) AddTransition(from T, to T) *StateMachine[T] {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
-	sm.validTransitions[from] = append(sm.validTransitions[from], to...)
+	if !slices.Contains(sm.validTransitions[from], to) {
+		sm.validTransitions[from] = append(sm.validTransitions[from], to)
+	}
 	return sm
 }
 
-// CanTransit 判断是否可以状态转移
+// AddTransitions adds multiple valid state transitions from a source state.
+func (sm *StateMachine[T]) AddTransitions(from T, to ...T) *StateMachine[T] {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	for _, target := range to {
+		if !slices.Contains(sm.validTransitions[from], target) {
+			sm.validTransitions[from] = append(sm.validTransitions[from], target)
+		}
+	}
+	return sm
+}
+
+// AddEventTransition adds an event-driven state transition.
+// When the specified event occurs in the from state, the FSM transitions to the to state.
+func (sm *StateMachine[T]) AddEventTransition(from T, event Event, to T) *StateMachine[T] {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	key := transitionKey[T]{From: from, Event: event}
+	sm.eventTransitions[key] = to
+	// Also add to valid transitions
+	if !slices.Contains(sm.validTransitions[from], to) {
+		sm.validTransitions[from] = append(sm.validTransitions[from], to)
+	}
+	return sm
+}
+
+// CanTransit checks if a transition from one state to another is valid (compatibility method).
 func (sm *StateMachine[T]) CanTransit(from, to T) bool {
+	return sm.CanTransition(from, to)
+}
+
+// CanTransition checks if a transition from one state to another is valid.
+func (sm *StateMachine[T]) CanTransition(from, to T) bool {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 	return slices.Contains(sm.validTransitions[from], to)
 }
 
-// Current 获取当前状态
+// CanTransitionWithEvent checks if a transition is valid for the given event.
+func (sm *StateMachine[T]) CanTransitionWithEvent(from T, event Event) bool {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+	key := transitionKey[T]{From: from, Event: event}
+	_, exists := sm.eventTransitions[key]
+	return exists
+}
+
+// Current returns the current state of the StateMachine.
 func (sm *StateMachine[T]) Current() T {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 	return sm.currentState
 }
 
-// SetCurrent 设置当前状态（不触发钩子，仅用于初始化）
+// SetCurrent sets the current state without triggering hooks.
+// This is useful for initialization or recovery scenarios.
 func (sm *StateMachine[T]) SetCurrent(state T) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
@@ -108,14 +181,14 @@ func (sm *StateMachine[T]) SetCurrent(state T) {
 	}
 }
 
-// Initial 获取初始状态
+// Initial returns the initial state of the StateMachine.
 func (sm *StateMachine[T]) Initial() T {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 	return sm.initialState
 }
 
-// Reset 重置到初始状态
+// Reset resets the StateMachine to its initial state and clears history.
 func (sm *StateMachine[T]) Reset() {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
@@ -123,12 +196,11 @@ func (sm *StateMachine[T]) Reset() {
 	sm.history = make([]TransitionRecord[T], 0)
 }
 
-// GetValidNextStates 获取当前状态可以转移到的所有状态
+// GetValidNextStates returns all valid next states from the given state.
 func (sm *StateMachine[T]) GetValidNextStates(from T) []T {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 	if states, ok := sm.validTransitions[from]; ok {
-		// 返回副本，避免外部修改
 		result := make([]T, len(states))
 		copy(result, states)
 		return result
@@ -136,7 +208,7 @@ func (sm *StateMachine[T]) GetValidNextStates(from T) []T {
 	return []T{}
 }
 
-// GetAllStates 获取状态机中的所有状态
+// GetAllStates returns all states defined in the StateMachine.
 func (sm *StateMachine[T]) GetAllStates() []T {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
@@ -154,17 +226,16 @@ func (sm *StateMachine[T]) GetAllStates() []T {
 	return states
 }
 
-// History 获取状态转移历史
+// History returns the transition history.
 func (sm *StateMachine[T]) History() []TransitionRecord[T] {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
-	// 返回副本
 	result := make([]TransitionRecord[T], len(sm.history))
 	copy(result, sm.history)
 	return result
 }
 
-// SetMaxHistorySize 设置最大历史记录数
+// SetMaxHistorySize sets the maximum number of history records to keep.
 func (sm *StateMachine[T]) SetMaxHistorySize(size int) *StateMachine[T] {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
@@ -175,7 +246,7 @@ func (sm *StateMachine[T]) SetMaxHistorySize(size int) *StateMachine[T] {
 	return sm
 }
 
-// OnTransition 注册状态转移钩子
+// OnTransition registers a hook that is called during any state transition.
 func (sm *StateMachine[T]) OnTransition(h TransitionHook[T]) *StateMachine[T] {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
@@ -183,7 +254,7 @@ func (sm *StateMachine[T]) OnTransition(h TransitionHook[T]) *StateMachine[T] {
 	return sm
 }
 
-// OnEnter 注册进入某状态的钩子
+// OnEnter registers a hook that is called when entering a specific state.
 func (sm *StateMachine[T]) OnEnter(state T, h StateHook[T]) *StateMachine[T] {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
@@ -191,7 +262,7 @@ func (sm *StateMachine[T]) OnEnter(state T, h StateHook[T]) *StateMachine[T] {
 	return sm
 }
 
-// OnExit 注册离开某状态的钩子
+// OnExit registers a hook that is called when exiting a specific state.
 func (sm *StateMachine[T]) OnExit(state T, h StateHook[T]) *StateMachine[T] {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
@@ -199,7 +270,7 @@ func (sm *StateMachine[T]) OnExit(state T, h StateHook[T]) *StateMachine[T] {
 	return sm
 }
 
-// AddValidator 添加状态转移验证器
+// AddValidator adds a validator that checks if a transition is allowed.
 func (sm *StateMachine[T]) AddValidator(v TransitionValidator[T]) *StateMachine[T] {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
@@ -207,59 +278,62 @@ func (sm *StateMachine[T]) AddValidator(v TransitionValidator[T]) *StateMachine[
 	return sm
 }
 
-// OnError 注册错误处理器
-func (sm *StateMachine[T]) OnError(handler func(from, to T, err error)) *StateMachine[T] {
+// OnError registers an error handler that is called when a transition fails.
+func (sm *StateMachine[T]) OnError(handler func(from, to T, event Event, err error)) *StateMachine[T] {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 	sm.onError = handler
 	return sm
 }
 
-// Transit 执行状态转移（自动触发钩子）
+// Transit performs a state transition from one state to another (compatibility method).
 func (sm *StateMachine[T]) Transit(from, to T) error {
+	return sm.Transition(from, to, "")
+}
+
+// Transition performs a state transition from one state to another.
+// It validates the transition, runs validators, triggers hooks, and records history.
+func (sm *StateMachine[T]) Transition(from, to T, event Event) error {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
-	// 记录开始时间
 	startTime := time.Now()
 	var transitionErr error
 
 	defer func() {
-		// 记录状态转移历史
 		record := TransitionRecord[T]{
 			From:      from,
 			To:        to,
+			Event:     event,
 			Timestamp: startTime,
 			Error:     transitionErr,
 		}
 		sm.history = append(sm.history, record)
 
-		// 限制历史记录大小
 		if len(sm.history) > sm.maxHistorySize {
 			sm.history = sm.history[len(sm.history)-sm.maxHistorySize:]
 		}
 
-		// 如果有错误，调用错误处理器
 		if transitionErr != nil && sm.onError != nil {
-			sm.onError(from, to, transitionErr)
+			sm.onError(from, to, event, transitionErr)
 		}
 	}()
 
-	// 验证转移合法性
+	// Validate transition
 	if !slices.Contains(sm.validTransitions[from], to) {
 		transitionErr = fmt.Errorf("invalid transition: %v → %v", from, to)
 		return transitionErr
 	}
 
-	// 运行验证器
+	// Run validators
 	for _, validator := range sm.validators {
-		if err := validator(from, to); err != nil {
+		if err := validator(from, to, event); err != nil {
 			transitionErr = fmt.Errorf("validation failed: %w", err)
 			return transitionErr
 		}
 	}
 
-	// 触发 OnExit 钩子
+	// Trigger OnExit hooks
 	if hooks := sm.onExit[from]; len(hooks) > 0 {
 		for _, h := range hooks {
 			if err := h(from); err != nil {
@@ -269,18 +343,18 @@ func (sm *StateMachine[T]) Transit(from, to T) error {
 		}
 	}
 
-	// 触发 OnTransition 钩子
+	// Trigger OnTransition hooks
 	for _, h := range sm.onTransition {
-		if err := h(from, to); err != nil {
+		if err := h(from, to, event); err != nil {
 			transitionErr = fmt.Errorf("transition hook failed: %w", err)
 			return transitionErr
 		}
 	}
 
-	// 更新当前状态
+	// Update current state
 	sm.currentState = to
 
-	// 触发 OnEnter 钩子
+	// Trigger OnEnter hooks
 	if hooks := sm.onEnter[to]; len(hooks) > 0 {
 		for _, h := range hooks {
 			if err := h(to); err != nil {
@@ -293,43 +367,88 @@ func (sm *StateMachine[T]) Transit(from, to T) error {
 	return nil
 }
 
-// TransitTo 从当前状态转移到目标状态
+// TransitTo performs a transition from the current state to the target state.
 func (sm *StateMachine[T]) TransitTo(to T) error {
-	from := sm.Current()
-	return sm.Transit(from, to)
+	return sm.TransitionTo(to)
 }
 
-// MustTransit 强制状态转移（panic 版）
+// TransitionTo performs a transition from the current state to the target state.
+func (sm *StateMachine[T]) TransitionTo(to T) error {
+	return sm.Transition(sm.Current(), to, "")
+}
+
+// TriggerEvent triggers a state transition based on an event.
+// It looks up the event transition table to find the target state.
+func (sm *StateMachine[T]) TriggerEvent(event Event) error {
+	sm.mu.RLock()
+	current := sm.currentState
+	sm.mu.RUnlock()
+
+	sm.mu.RLock()
+	key := transitionKey[T]{From: current, Event: event}
+	to, exists := sm.eventTransitions[key]
+	sm.mu.RUnlock()
+
+	if !exists {
+		return fmt.Errorf("no transition defined for event %v in state %v", event, current)
+	}
+
+	return sm.Transition(current, to, event)
+}
+
+// MustTransit performs a transition and panics on error (compatibility method).
 func (sm *StateMachine[T]) MustTransit(from, to T) {
-	if err := sm.Transit(from, to); err != nil {
+	sm.MustTransition(from, to, "")
+}
+
+// MustTransition performs a transition and panics on error.
+func (sm *StateMachine[T]) MustTransition(from, to T, event Event) {
+	if err := sm.Transition(from, to, event); err != nil {
 		panic(err)
 	}
 }
 
-// MustTransitTo 从当前状态强制转移到目标状态（panic 版）
+// MustTransitTo performs a transition from current state and panics on error (compatibility method).
 func (sm *StateMachine[T]) MustTransitTo(to T) {
-	if err := sm.TransitTo(to); err != nil {
+	sm.MustTransitionTo(to)
+}
+
+// MustTransitionTo performs a transition from current state and panics on error.
+func (sm *StateMachine[T]) MustTransitionTo(to T) {
+	if err := sm.TransitionTo(to); err != nil {
 		panic(err)
 	}
 }
 
-// Is 检查当前状态是否为指定状态
+// MustTriggerEvent triggers an event and panics on error.
+func (sm *StateMachine[T]) MustTriggerEvent(event Event) {
+	if err := sm.TriggerEvent(event); err != nil {
+		panic(err)
+	}
+}
+
+// Is checks if the current state matches the given state.
 func (sm *StateMachine[T]) Is(state T) bool {
 	return sm.Current() == state
 }
 
-// IsOneOf 检查当前状态是否为指定状态之一
+// IsOneOf checks if the current state is one of the given states.
 func (sm *StateMachine[T]) IsOneOf(states ...T) bool {
 	current := sm.Current()
 	return slices.Contains(states, current)
 }
 
-// CanTransitTo 检查是否可以从当前状态转移到目标状态
+// CanTransitTo checks if a transition to the target state is valid from the current state (compatibility method).
 func (sm *StateMachine[T]) CanTransitTo(to T) bool {
-	return sm.CanTransit(sm.Current(), to)
+	return sm.CanTransitionTo(to)
 }
 
-// ToDot 导出状态机为 Graphviz DOT 格式
+// CanTransitionTo checks if a transition to the target state is valid from the current state.
+func (sm *StateMachine[T]) CanTransitionTo(to T) bool {
+	return sm.CanTransition(sm.Current(), to)
+}
+
+// ToDot exports the StateMachine as a Graphviz DOT format string.
 func (sm *StateMachine[T]) ToDot(name string) string {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
@@ -338,21 +457,32 @@ func (sm *StateMachine[T]) ToDot(name string) string {
 	dot += "  rankdir=LR;\n"
 	dot += "  node [shape=circle];\n"
 
-	// 标记初始状态
 	if sm.initialState != *new(T) {
 		dot += "  start [shape=point];\n"
 		dot += fmt.Sprintf("  start -> \"%v\";\n", sm.initialState)
 	}
 
-	// 标记当前状态
 	if sm.currentState != *new(T) {
 		dot += fmt.Sprintf("  \"%v\" [style=filled, fillcolor=lightblue];\n", sm.currentState)
 	}
 
-	// 添加转移边
 	for from, tos := range sm.validTransitions {
 		for _, to := range tos {
-			dot += fmt.Sprintf("  \"%v\" -> \"%v\";\n", from, to)
+			label := ""
+			// Check if there's an event for this transition
+			for key, target := range sm.eventTransitions {
+				if key.From == from && target == to {
+					if label != "" {
+						label += ", "
+					}
+					label += string(key.Event)
+				}
+			}
+			if label != "" {
+				dot += fmt.Sprintf("  \"%v\" -> \"%v\" [label=\"%s\"];\n", from, to, label)
+			} else {
+				dot += fmt.Sprintf("  \"%v\" -> \"%v\";\n", from, to)
+			}
 		}
 	}
 

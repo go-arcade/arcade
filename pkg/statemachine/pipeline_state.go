@@ -25,21 +25,25 @@ const (
 	PipelinePaused   PipelineStatus = "PAUSED"
 )
 
+// Deprecated: Use FSM instead.
 // IsTerminal 判断是否为终止状态
 func (ps PipelineStatus) IsTerminal() bool {
 	return ps == PipelineSuccess || ps == PipelineFailed || ps == PipelineCanceled
 }
 
+// Deprecated: Use FSM instead.
 // IsRunning 判断是否正在运行
 func (ps PipelineStatus) IsRunning() bool {
 	return ps == PipelineRunning
 }
 
+// Deprecated: Use FSM instead.
 // CanResume 判断是否可以恢复
 func (ps PipelineStatus) CanResume() bool {
 	return ps == PipelinePaused || ps == PipelineFailed
 }
 
+// Deprecated: Use FSM instead.
 // NewPipelineStateMachine 创建流水线状态机
 func NewPipelineStateMachine() *StateMachine[PipelineStatus] {
 	sm := NewWithState(PipelinePending)
@@ -53,6 +57,7 @@ func NewPipelineStateMachine() *StateMachine[PipelineStatus] {
 	return sm
 }
 
+// Deprecated: Use FSM instead.
 // NewPipelineStateMachineWithHooks 创建带钩子的流水线状态机
 func NewPipelineStateMachineWithHooks(
 	onStart func() error,

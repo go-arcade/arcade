@@ -89,7 +89,7 @@ func TestStateMachine_Hooks(t *testing.T) {
 		return nil
 	})
 
-	sm.OnTransition(func(from, to OrderStatus) error {
+	sm.OnTransition(func(from, to OrderStatus, event Event) error {
 		executionOrder = append(executionOrder, "transition")
 		return nil
 	})
@@ -143,7 +143,7 @@ func TestStateMachine_Validators(t *testing.T) {
 	sm.Allow(OrderCreated, OrderPaid)
 
 	// 添加验证器
-	sm.AddValidator(func(from, to OrderStatus) error {
+	sm.AddValidator(func(from, to OrderStatus, event Event) error {
 		if to == OrderPaid {
 			return errors.New("payment not allowed")
 		}
@@ -270,7 +270,7 @@ func TestStateMachine_OnError(t *testing.T) {
 	sm.Allow(OrderCreated, OrderPaid)
 
 	var errorCaught bool
-	sm.OnError(func(from, to OrderStatus, err error) {
+	sm.OnError(func(from, to OrderStatus, event Event, err error) {
 		errorCaught = true
 	})
 
