@@ -18,7 +18,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/bytedance/sonic"
 	"github.com/go-arcade/arcade/internal/engine/consts"
 	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/pkg/cache"
@@ -36,7 +35,9 @@ type IAgentRepository interface {
 	UpdateAgentById(id uint64, updates map[string]any) error
 	UpdateAgentByAgentId(agentId string, updates map[string]any) error
 	DeleteAgent(id uint64) error
+	DeleteAgentByAgentId(agentId string) error
 	ListAgent(pageNum, pageSize int) ([]model.Agent, int64, error)
+	GetAgentStatistics() (int64, int64, int64, error) // total, online, offline
 }
 
 type AgentRepo struct {
@@ -74,45 +75,34 @@ func (ar *AgentRepo) GetAgentById(id uint64) (*model.Agent, error) {
 
 func (ar *AgentRepo) GetAgentByAgentId(agentId string) (*model.Agent, error) {
 	ctx := context.Background()
-	cacheKey := consts.AgentDetailKey + agentId
 
-	// Try to get from cache first
-	if ar.ICache != nil {
-		cachedData, err := ar.ICache.Get(ctx, cacheKey).Result()
-		if err == nil && cachedData != "" {
-			var detail model.AgentDetail
-			if err := sonic.UnmarshalString(cachedData, &detail); err == nil {
-				// Return Agent from cached detail
-				return &detail.Agent, nil
-			}
-			log.Warnw("failed to unmarshal agent from cache", "agentId", agentId, "error", err)
-		}
+	keyFunc := func(params ...any) string {
+		return consts.AgentDetailKey + params[0].(string)
 	}
 
-	// Query from database
-	var agent model.Agent
-	if err := ar.Database().Table(agent.TableName()).
-		Select("id", "agent_id", "agent_name", "address", "port", "os", "arch", "version", "status", "labels", "metrics", "is_enabled", "created_at", "updated_at").
-		Where("agent_id = ?", agentId).First(&agent).Error; err != nil {
+	queryFunc := func(ctx context.Context) (*model.AgentDetail, error) {
+		var agent model.Agent
+		if err := ar.Database().Table(agent.TableName()).
+			Select("id", "agent_id", "agent_name", "address", "port", "os", "arch", "version", "status", "labels", "metrics", "is_enabled", "created_at", "updated_at").
+			Where("agent_id = ?", agentId).First(&agent).Error; err != nil {
+			return nil, err
+		}
+		return &model.AgentDetail{Agent: agent}, nil
+	}
+
+	cq := cache.NewCachedQuery(
+		ar.ICache,
+		keyFunc,
+		queryFunc,
+		cache.WithTTL[*model.AgentDetail](5*time.Minute),
+		cache.WithLogPrefix[*model.AgentDetail]("[AgentRepo]"),
+	)
+
+	detail, err := cq.Get(ctx, agentId)
+	if err != nil {
 		return nil, err
 	}
-
-	// Cache the result (reuse getAgentDetailByAgentId logic to ensure consistency)
-	detail := &model.AgentDetail{
-		Agent: agent,
-	}
-	if ar.ICache != nil {
-		detailJson, err := sonic.MarshalString(detail)
-		if err != nil {
-			log.Warnw("failed to marshal agent for caching", "agentId", agentId, "error", err)
-		} else {
-			if err := ar.ICache.Set(ctx, cacheKey, detailJson, 5*time.Minute).Err(); err != nil {
-				log.Warnw("failed to cache agent", "agentId", agentId, "cacheKey", cacheKey, "error", err)
-			}
-		}
-	}
-
-	return &agent, nil
+	return &detail.Agent, nil
 }
 
 func (ar *AgentRepo) GetAgentDetailById(id uint64) (*model.AgentDetail, error) {
@@ -129,47 +119,30 @@ func (ar *AgentRepo) GetAgentDetailById(id uint64) (*model.AgentDetail, error) {
 
 func (ar *AgentRepo) getAgentDetailByAgentId(agentId string) (*model.AgentDetail, error) {
 	ctx := context.Background()
-	cacheKey := consts.AgentDetailKey + agentId
 
-	// Try to get from cache first
-	if ar.ICache != nil {
-		cachedData, err := ar.ICache.Get(ctx, cacheKey).Result()
-		if err == nil && cachedData != "" {
-			var detail model.AgentDetail
-			if err := sonic.UnmarshalString(cachedData, &detail); err == nil {
-				return &detail, nil
-			}
-			log.Warnw("failed to unmarshal agent detail from cache", "agentId", agentId, "error", err)
+	keyFunc := func(params ...any) string {
+		return consts.AgentDetailKey + params[0].(string)
+	}
+
+	queryFunc := func(ctx context.Context) (*model.AgentDetail, error) {
+		var agent model.Agent
+		if err := ar.Database().Table(agent.TableName()).
+			Select("id", "agent_id", "agent_name", "address", "port", "os", "arch", "version", "status", "labels", "metrics", "is_enabled", "created_at", "updated_at").
+			Where("agent_id = ?", agentId).First(&agent).Error; err != nil {
+			return nil, err
 		}
-	} else {
-		log.Debugw("cache is nil, skipping cache lookup", "agentId", agentId)
+		return &model.AgentDetail{Agent: agent}, nil
 	}
 
-	// Query from database
-	var agent model.Agent
-	if err := ar.Database().Table(agent.TableName()).
-		Select("id", "agent_id", "agent_name", "address", "port", "os", "arch", "version", "status", "labels", "metrics", "is_enabled", "created_at", "updated_at").
-		Where("agent_id = ?", agentId).First(&agent).Error; err != nil {
-		return nil, err
-	}
+	cq := cache.NewCachedQuery(
+		ar.ICache,
+		keyFunc,
+		queryFunc,
+		cache.WithTTL[*model.AgentDetail](5*time.Minute),
+		cache.WithLogPrefix[*model.AgentDetail]("[AgentRepo]"),
+	)
 
-	detail := &model.AgentDetail{
-		Agent: agent,
-	}
-
-	// Cache the result
-	if ar.ICache != nil {
-		detailJson, err := sonic.MarshalString(detail)
-		if err != nil {
-			log.Warnw("failed to marshal agent detail for caching", "agentId", agentId, "error", err)
-		} else {
-			if err := ar.ICache.Set(ctx, cacheKey, detailJson, 5*time.Minute).Err(); err != nil {
-				log.Warnw("failed to cache agent detail", "agentId", agentId, "cacheKey", cacheKey, "error", err)
-			}
-		}
-	}
-
-	return detail, nil
+	return cq.Get(ctx, agentId)
 }
 
 func (ar *AgentRepo) GetAgentDetailByAgentId(agentId string) (*model.AgentDetail, error) {
@@ -246,6 +219,17 @@ func (ar *AgentRepo) DeleteAgent(id uint64) error {
 	return nil
 }
 
+func (ar *AgentRepo) DeleteAgentByAgentId(agentId string) error {
+	if err := ar.Database().Table((&model.Agent{}).TableName()).
+		Where("agent_id = ?", agentId).Delete(&model.Agent{}).Error; err != nil {
+		return err
+	}
+
+	// Invalidate cache
+	ar.invalidateAgentCache(agentId)
+	return nil
+}
+
 func (ar *AgentRepo) ListAgent(pageNum, pageSize int) ([]model.Agent, int64, error) {
 	var agents []model.Agent
 	var agent model.Agent
@@ -264,19 +248,37 @@ func (ar *AgentRepo) ListAgent(pageNum, pageSize int) ([]model.Agent, int64, err
 	return agents, count, nil
 }
 
+// GetAgentStatistics 获取 agent 统计信息：总数、在线数、离线数
+func (ar *AgentRepo) GetAgentStatistics() (int64, int64, int64, error) {
+	var agent model.Agent
+	var total, online, offline int64
+
+	// 获取总数
+	if err := ar.Database().Table(agent.TableName()).Count(&total).Error; err != nil {
+		return 0, 0, 0, err
+	}
+
+	// 获取在线数（status = 1）
+	if err := ar.Database().Table(agent.TableName()).Where("status = ?", 1).Count(&online).Error; err != nil {
+		return 0, 0, 0, err
+	}
+
+	// 获取离线数（status = 2）
+	if err := ar.Database().Table(agent.TableName()).Where("status = ?", 2).Count(&offline).Error; err != nil {
+		return 0, 0, 0, err
+	}
+
+	return total, online, offline, nil
+}
+
 // invalidateAgentCache 清除 agent 缓存
 func (ar *AgentRepo) invalidateAgentCache(agentId string) {
-	if ar.ICache == nil {
-		log.Debugw("cache is nil, cannot invalidate", "agentId", agentId)
-		return
-	}
 	ctx := context.Background()
-	cacheKey := consts.AgentDetailKey + agentId
-	if err := ar.ICache.Del(ctx, cacheKey).Err(); err != nil {
-		log.Warnw("failed to invalidate agent cache", "agentId", agentId, "cacheKey", cacheKey, "error", err)
-	} else {
-		log.Debugw("agent cache invalidated successfully", "agentId", agentId, "cacheKey", cacheKey)
+	keyFunc := func(params ...any) string {
+		return consts.AgentDetailKey + params[0].(string)
 	}
+	cq := cache.NewCachedQuery[*model.AgentDetail](ar.ICache, keyFunc, nil)
+	_ = cq.Invalidate(ctx, agentId)
 }
 
 // refreshAgentCache 刷新 agent 缓存（重新加载并缓存，用于心跳等频繁更新场景）

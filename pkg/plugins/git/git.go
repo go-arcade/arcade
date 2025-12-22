@@ -227,6 +227,16 @@ func (p *Git) Type() plugin.PluginType {
 	return plugin.TypeSource
 }
 
+// Author returns the plugin author
+func (p *Git) Author() string {
+	return "Arcade Team"
+}
+
+// Repository returns the plugin repository
+func (p *Git) Repository() string {
+	return "https://github.com/go-arcade/arcade"
+}
+
 // Init initializes the plugin
 func (p *Git) Init(config json.RawMessage) error {
 	if len(config) > 0 {

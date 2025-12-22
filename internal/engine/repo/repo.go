@@ -28,6 +28,7 @@ type Repositories struct {
 	Team                 ITeamRepository
 	Identity             IIdentityRepository
 	GeneralSettings      IGeneralSettingsRepository
+	Project              IProjectRepository
 	ProjectMember        IProjectMemberRepository
 	ProjectTeamAccess    IProjectTeamAccessRepository
 	TeamMember           ITeamMemberRepository
@@ -39,6 +40,7 @@ type Repositories struct {
 	Role                 IRoleRepository
 	NotificationTemplate INotificationTemplateRepository
 	NotificationChannel  INotificationChannelRepository
+	Plugin               IPluginRepository
 }
 
 // NewRepositories 初始化所有 repository
@@ -49,7 +51,8 @@ func NewRepositories(db database.IDatabase, mongo database.MongoDB, cache cache.
 		Storage:              NewStorageRepo(db, cache),
 		Team:                 NewTeamRepo(db),
 		Identity:             NewIdentityRepo(db),
-		GeneralSettings:      NewGeneralSettingsRepo(db),
+		GeneralSettings:      NewGeneralSettingsRepo(db, cache),
+		Project:              NewProjectRepo(db),
 		ProjectMember:        NewProjectMemberRepo(db),
 		ProjectTeamAccess:    NewProjectTeamAccessRepo(db),
 		TeamMember:           NewTeamMemberRepo(db),
@@ -61,6 +64,7 @@ func NewRepositories(db database.IDatabase, mongo database.MongoDB, cache cache.
 		Role:                 NewRoleRepo(db),
 		NotificationTemplate: NewNotificationTemplateRepo(db),
 		NotificationChannel:  NewNotificationChannelRepo(db),
+		Plugin:               NewPluginRepo(db),
 	}
 }
 

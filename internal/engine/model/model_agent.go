@@ -40,7 +40,6 @@ func (a *Agent) TableName() string {
 // CreateAgentReq request for creating agent
 type CreateAgentReq struct {
 	AgentName string         `json:"agentName"`
-	Status    int            `json:"status"`
 	Labels    datatypes.JSON `json:"labels"`
 }
 

@@ -63,6 +63,12 @@ type Plugin interface {
 	// Type 返回插件类型
 	Type() PluginType
 
+	// Author 返回插件作者
+	Author() string
+
+	// Repository 返回插件仓库地址
+	Repository() string
+
 	// Init 初始化插件，config 是插件的配置信息（JSON格式）
 	Init(config json.RawMessage) error
 

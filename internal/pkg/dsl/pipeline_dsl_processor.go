@@ -19,6 +19,8 @@ import (
 	"fmt"
 
 	"github.com/go-arcade/arcade/internal/pkg/pipeline"
+	"github.com/go-arcade/arcade/internal/pkg/pipeline/spec"
+	"github.com/go-arcade/arcade/internal/pkg/pipeline/validation"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/plugin"
 )
@@ -26,7 +28,7 @@ import (
 // DSLProcessor processes Pipeline DSL with variable resolution and validation
 type DSLProcessor struct {
 	parser    *DSLParser
-	validator *pipeline.Validator
+	validator *validation.Validator
 	logger    log.Logger
 }
 
@@ -34,7 +36,7 @@ type DSLProcessor struct {
 func NewDSLProcessor(logger log.Logger) *DSLProcessor {
 	parser := NewDSLParser(logger)
 	basicValidator := NewPipelineBasicValidatorAdapter(parser)
-	validator := pipeline.NewValidator(basicValidator)
+	validator := validation.NewValidator(basicValidator)
 
 	return &DSLProcessor{
 		parser:    parser,
@@ -51,7 +53,7 @@ func (p *DSLProcessor) ProcessConfig(
 	pluginMgr *plugin.Manager,
 	workspace string,
 	additionalEnv map[string]string,
-) (*pipeline.Pipeline, *pipeline.ExecutionContext, error) {
+) (*spec.Pipeline, *pipeline.ExecutionContext, error) {
 	pl, err := p.parser.Parse(dslConfig)
 	if err != nil {
 		return nil, nil, fmt.Errorf("parse DSL config: %w", err)
@@ -83,7 +85,7 @@ func (p *DSLProcessor) ProcessConfig(
 }
 
 // resolvePipelineVariables resolves all variables in pipeline structure
-func (p *DSLProcessor) resolvePipelineVariables(pl *pipeline.Pipeline, ctx *pipeline.ExecutionContext) error {
+func (p *DSLProcessor) resolvePipelineVariables(pl *spec.Pipeline, ctx *pipeline.ExecutionContext) error {
 	// Create variable interpreter
 	interpreter := pipeline.NewVariableInterpreter(ctx.Env)
 
@@ -205,7 +207,7 @@ func (p *DSLProcessor) resolvePipelineVariables(pl *pipeline.Pipeline, ctx *pipe
 }
 
 // resolveSource resolves variables in source configuration
-func (p *DSLProcessor) resolveSource(source *pipeline.Source, interpreter *pipeline.VariableInterpreter) error {
+func (p *DSLProcessor) resolveSource(source *spec.Source, interpreter *pipeline.VariableInterpreter) error {
 	if source.Repo != "" {
 		resolved, err := interpreter.Resolve(source.Repo)
 		if err != nil {
@@ -252,7 +254,7 @@ func (p *DSLProcessor) resolveSource(source *pipeline.Source, interpreter *pipel
 }
 
 // resolveNotify resolves variables in notify configuration
-func (p *DSLProcessor) resolveNotify(notify *pipeline.Notify, interpreter *pipeline.VariableInterpreter) error {
+func (p *DSLProcessor) resolveNotify(notify *spec.Notify, interpreter *pipeline.VariableInterpreter) error {
 	if notify.OnSuccess != nil && notify.OnSuccess.Params != nil {
 		resolvedParams, err := interpreter.ResolveMap(notify.OnSuccess.Params)
 		if err != nil {

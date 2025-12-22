@@ -19,17 +19,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/go-arcade/arcade/internal/pkg/pipeline/spec"
 )
 
 // StepRunner runs a single step
 type StepRunner struct {
 	ctx  *ExecutionContext
-	job  *Job
-	step *Step
+	job  *spec.Job
+	step *spec.Step
 }
 
 // NewStepRunner creates a new step runner
-func NewStepRunner(ctx *ExecutionContext, job *Job, step *Step) *StepRunner {
+func NewStepRunner(ctx *ExecutionContext, job *spec.Job, step *spec.Step) *StepRunner {
 	return &StepRunner{ctx: ctx, job: job, step: step}
 }
 

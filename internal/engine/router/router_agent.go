@@ -15,25 +15,22 @@
 package router
 
 import (
-	"errors"
-	"strconv"
-
 	agentmodel "github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/gofiber/fiber/v2"
-	"gorm.io/gorm"
 )
 
 func (rt *Router) agentRouter(r fiber.Router, auth fiber.Handler) {
 	agentGroup := r.Group("/agent", auth)
 	{
 		// RESTful API
-		agentGroup.Post("", rt.createAgent)       // POST /agent - create agent
-		agentGroup.Get("", rt.listAgent)          // GET /agent - list agents
-		agentGroup.Get("/:id", rt.getAgent)       // GET /agent/:id - get agent by id
-		agentGroup.Put("/:id", rt.updateAgent)    // PUT /agent/:id - update agent
-		agentGroup.Delete("/:id", rt.deleteAgent) // DELETE /agent/:id - delete agent
+		agentGroup.Post("", rt.createAgent)                  // POST /agent - create agent
+		agentGroup.Get("", rt.listAgent)                     // GET /agent - list agents
+		agentGroup.Get("/statistics", rt.getAgentStatistics) // GET /agent/statistics - get agent statistics
+		agentGroup.Get("/:agentId", rt.getAgent)             // GET /agent/:agentId - get agent by agentId
+		agentGroup.Put("/:agentId", rt.updateAgent)          // PUT /agent/:agentId - update agent
+		agentGroup.Delete("/:agentId", rt.deleteAgent)       // DELETE /agent/:agentId - delete agent
 	}
 }
 
@@ -82,41 +79,46 @@ func (rt *Router) listAgent(c *fiber.Ctx) error {
 	return nil
 }
 
-// getAgent GET /agent/:id - get agent by id
+// getAgentStatistics GET /agent/statistics - get agent statistics
+func (rt *Router) getAgentStatistics(c *fiber.Ctx) error {
+	agentLogic := rt.Services.Agent
+
+	total, online, offline, err := agentLogic.GetAgentStatistics()
+	if err != nil {
+		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
+	}
+
+	result := make(map[string]any)
+	result["total"] = total
+	result["online"] = online
+	result["offline"] = offline
+
+	c.Locals(middleware.DETAIL, result)
+	return nil
+}
+
+// getAgent GET /agent/:agentId - get agent by agentId
 func (rt *Router) getAgent(c *fiber.Ctx) error {
-	idStr := c.Params("id")
-	if idStr == "" {
+	agentId := c.Params("agentId")
+	if agentId == "" {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "agent id is required", c.Path())
 	}
 
-	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil {
-		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid agent id", c.Path())
-	}
-
 	agentLogic := rt.Services.Agent
-	agent, err := agentLogic.GetAgentById(id)
+	agent, err := agentLogic.GetAgentByAgentId(agentId)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return http.WithRepErrMsg(c, http.NotFound.Code, "agent not found", c.Path())
-		}
-		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
+		return http.WithRepErrMsg(c, http.NotFound.Code, "agent not found", c.Path())
 	}
 
 	c.Locals(middleware.DETAIL, agent)
 	return nil
 }
 
-// updateAgent PUT /agent/:id - update agent
+// updateAgent PUT /agent/:agentId - update agent
 func (rt *Router) updateAgent(c *fiber.Ctx) error {
-	idStr := c.Params("id")
-	if idStr == "" {
+	agentId := c.Params("agentId")
+	if agentId == "" {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "agent id is required", c.Path())
-	}
-
-	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil {
-		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid agent id", c.Path())
 	}
 
 	var updateReq *agentmodel.UpdateAgentReq
@@ -125,15 +127,12 @@ func (rt *Router) updateAgent(c *fiber.Ctx) error {
 	}
 
 	agentLogic := rt.Services.Agent
-	if err := agentLogic.UpdateAgent(id, updateReq); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return http.WithRepErrMsg(c, http.NotFound.Code, "agent not found", c.Path())
-		}
-		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
+	if err := agentLogic.UpdateAgentByAgentId(agentId, updateReq); err != nil {
+		return http.WithRepErrMsg(c, http.NotFound.Code, "agent not found", c.Path())
 	}
 
 	// Get updated agent
-	updatedAgent, err := agentLogic.GetAgentById(id)
+	updatedAgent, err := agentLogic.GetAgentByAgentId(agentId)
 	if err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
 	}
@@ -142,24 +141,16 @@ func (rt *Router) updateAgent(c *fiber.Ctx) error {
 	return nil
 }
 
-// deleteAgent DELETE /agent/:id - delete agent
+// deleteAgent DELETE /agent/:agentId - delete agent
 func (rt *Router) deleteAgent(c *fiber.Ctx) error {
-	idStr := c.Params("id")
-	if idStr == "" {
+	agentId := c.Params("agentId")
+	if agentId == "" {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "agent id is required", c.Path())
 	}
 
-	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil {
-		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid agent id", c.Path())
-	}
-
 	agentLogic := rt.Services.Agent
-	if err := agentLogic.DeleteAgent(id); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return http.WithRepErrMsg(c, http.NotFound.Code, "agent not found", c.Path())
-		}
-		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
+	if err := agentLogic.DeleteAgentByAgentId(agentId); err != nil {
+		return http.WithRepErrMsg(c, http.NotFound.Code, "agent not found", c.Path())
 	}
 
 	c.Locals(middleware.OPERATION, "delete agent")

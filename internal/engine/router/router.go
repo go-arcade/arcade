@@ -186,8 +186,17 @@ func (rt *Router) routerGroup(r fiber.Router) {
 	// general settings
 	rt.generalSettingsRouter(r, auth)
 
+	// project
+	rt.projectRouter(r, auth)
+
 	// secrets
 	rt.secretRouter(r, auth)
+
+	// role
+	rt.roleRouter(r, auth)
+
+	// plugin
+	rt.pluginRouter(r, auth)
 }
 
 func queryInt(c *fiber.Ctx, key string) int {

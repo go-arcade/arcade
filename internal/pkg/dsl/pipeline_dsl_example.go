@@ -120,7 +120,7 @@ Example 3: Validation Only
 
 	parser := NewDSLParser(logger)
 	basicValidator := NewPipelineBasicValidatorAdapter(parser)
-	validator := pipeline.NewValidator(basicValidator)
+	validator := validation.NewValidator(basicValidator)
 
 	pipeline, err := parser.Parse(dslJSON)
 	if err != nil {

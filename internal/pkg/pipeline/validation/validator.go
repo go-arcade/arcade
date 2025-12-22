@@ -12,13 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipeline
+package validation
 
 import (
 	"fmt"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/go-arcade/arcade/internal/pkg/pipeline"
+	"github.com/go-arcade/arcade/internal/pkg/pipeline/spec"
 )
 
 // PipelineBasicValidator defines the interface for basic pipeline validation
@@ -26,15 +29,15 @@ import (
 type PipelineBasicValidator interface {
 	// ValidateBasic performs basic validation on a pipeline
 	// This includes checking required fields, basic structure, etc.
-	ValidateBasic(pipeline *Pipeline) error
+	ValidateBasic(pipeline *spec.Pipeline) error
 }
 
 // IPipelineValidator defines the interface for pipeline validation
 type IPipelineValidator interface {
 	// Validate performs comprehensive validation on a pipeline
-	Validate(pipeline *Pipeline) error
+	Validate(pipeline *spec.Pipeline) error
 	// ValidateWithContext validates pipeline with execution context
-	ValidateWithContext(pipeline *Pipeline, ctx *ExecutionContext) error
+	ValidateWithContext(pipeline *spec.Pipeline, ctx *pipeline.ExecutionContext) error
 }
 
 // Validator provides advanced validation for Pipeline DSL
@@ -53,7 +56,7 @@ func NewValidator(basicValidator PipelineBasicValidator) *Validator {
 var _ IPipelineValidator = (*Validator)(nil)
 
 // Validate performs comprehensive validation on a pipeline
-func (v *Validator) Validate(pipeline *Pipeline) error {
+func (v *Validator) Validate(pipeline *spec.Pipeline) error {
 	if pipeline == nil {
 		return fmt.Errorf("pipeline is nil")
 	}
@@ -82,7 +85,7 @@ func (v *Validator) Validate(pipeline *Pipeline) error {
 	// Validate each job in detail
 	for i, job := range pipeline.Jobs {
 		if err := v.validateJobAdvanced(&job, i); err != nil {
-			return fmt.Errorf("job[%d] '%s': %w", i, job.Name, err)
+			return err
 		}
 	}
 
@@ -120,7 +123,7 @@ func (v *Validator) validateVersion(version string) error {
 }
 
 // validateUniqueJobNames ensures all job names are unique
-func (v *Validator) validateUniqueJobNames(jobs []Job) error {
+func (v *Validator) validateUniqueJobNames(jobs []spec.Job) error {
 	jobNames := make(map[string]int)
 	for i, job := range jobs {
 		if job.Name == "" {
@@ -135,35 +138,35 @@ func (v *Validator) validateUniqueJobNames(jobs []Job) error {
 }
 
 // validateJobAdvanced performs advanced validation on a job
-func (v *Validator) validateJobAdvanced(job *Job, index int) error {
+func (v *Validator) validateJobAdvanced(job *spec.Job, index int) error {
 	// Validate job name format
 	if err := v.validateJobName(job.Name); err != nil {
-		return fmt.Errorf("name: %w", err)
+		return fmt.Errorf("job[%d] '%s' name: %w", index, job.Name, err)
 	}
 
 	// Validate timeout format if provided
 	if job.Timeout != "" {
 		if err := v.validateTimeout(job.Timeout); err != nil {
-			return fmt.Errorf("timeout: %w", err)
+			return fmt.Errorf("job[%d] '%s' timeout: %w", index, job.Name, err)
 		}
 	}
 
 	// Validate retry configuration if provided
 	if job.Retry != nil {
 		if err := v.validateRetry(job.Retry); err != nil {
-			return fmt.Errorf("retry: %w", err)
+			return fmt.Errorf("job[%d] '%s' retry: %w", index, job.Name, err)
 		}
 	}
 
 	// Validate step names are unique within job
 	if err := v.validateUniqueStepNames(job.Steps); err != nil {
-		return fmt.Errorf("steps: %w", err)
+		return fmt.Errorf("job[%d] '%s' steps: %w", index, job.Name, err)
 	}
 
 	// Validate each step in detail
 	for i, step := range job.Steps {
 		if err := v.validateStepAdvanced(&step, i); err != nil {
-			return fmt.Errorf("step[%d] '%s': %w", i, step.Name, err)
+			return fmt.Errorf("job[%d] '%s' step[%d] '%s': %w", index, job.Name, i, step.Name, err)
 		}
 	}
 
@@ -200,7 +203,7 @@ func (v *Validator) validateTimeout(timeout string) error {
 }
 
 // validateRetry validates retry configuration
-func (v *Validator) validateRetry(retry *Retry) error {
+func (v *Validator) validateRetry(retry *spec.Retry) error {
 	if retry.MaxAttempts < 0 {
 		return fmt.Errorf("max_attempts must be non-negative")
 	}
@@ -219,7 +222,7 @@ func (v *Validator) validateRetry(retry *Retry) error {
 }
 
 // validateUniqueStepNames ensures all step names are unique within a job
-func (v *Validator) validateUniqueStepNames(steps []Step) error {
+func (v *Validator) validateUniqueStepNames(steps []spec.Step) error {
 	stepNames := make(map[string]int)
 	for i, step := range steps {
 		if step.Name == "" {
@@ -234,28 +237,28 @@ func (v *Validator) validateUniqueStepNames(steps []Step) error {
 }
 
 // validateStepAdvanced performs advanced validation on a step
-func (v *Validator) validateStepAdvanced(step *Step, index int) error {
+func (v *Validator) validateStepAdvanced(step *spec.Step, index int) error {
 	// Validate step name format
 	if err := v.validateStepName(step.Name); err != nil {
-		return fmt.Errorf("name: %w", err)
+		return fmt.Errorf("step[%d] '%s' name: %w", index, step.Name, err)
 	}
 
 	// Validate uses format (should be plugin-name or plugin-name@version)
 	if err := v.validateUses(step.Uses); err != nil {
-		return fmt.Errorf("uses: %w", err)
+		return fmt.Errorf("step[%d] '%s' uses: %w", index, step.Name, err)
 	}
 
 	// Validate timeout format if provided
 	if step.Timeout != "" {
 		if err := v.validateTimeout(step.Timeout); err != nil {
-			return fmt.Errorf("timeout: %w", err)
+			return fmt.Errorf("step[%d] '%s' timeout: %w", index, step.Name, err)
 		}
 	}
 
 	// Validate agent selector if provided
 	if step.AgentSelector != nil {
 		if err := v.validateAgentSelector(step.AgentSelector); err != nil {
-			return fmt.Errorf("agent_selector: %w", err)
+			return fmt.Errorf("step[%d] '%s' agent_selector: %w", index, step.Name, err)
 		}
 	}
 
@@ -314,7 +317,7 @@ func (v *Validator) validateUses(uses string) error {
 }
 
 // validateAgentSelector validates agent selector configuration
-func (v *Validator) validateAgentSelector(selector *AgentSelector) error {
+func (v *Validator) validateAgentSelector(selector *spec.AgentSelector) error {
 	// At least one selector criteria should be provided
 	if len(selector.MatchLabels) == 0 && len(selector.MatchExpressions) == 0 {
 		return fmt.Errorf("agent selector must have at least one match criteria")
@@ -323,7 +326,7 @@ func (v *Validator) validateAgentSelector(selector *AgentSelector) error {
 	// Validate match expressions
 	for i, expr := range selector.MatchExpressions {
 		if err := v.validateLabelExpression(&expr, i); err != nil {
-			return fmt.Errorf("match_expressions[%d]: %w", i, err)
+			return fmt.Errorf("agent selector %w", err)
 		}
 	}
 
@@ -331,9 +334,9 @@ func (v *Validator) validateAgentSelector(selector *AgentSelector) error {
 }
 
 // validateLabelExpression validates a label expression
-func (v *Validator) validateLabelExpression(expr *LabelExpression, index int) error {
+func (v *Validator) validateLabelExpression(expr *spec.LabelExpression, index int) error {
 	if expr.Key == "" {
-		return fmt.Errorf("key is required")
+		return fmt.Errorf("matchExpressions[%d] label expression key is required", index)
 	}
 
 	validOperators := map[string]bool{
@@ -346,7 +349,7 @@ func (v *Validator) validateLabelExpression(expr *LabelExpression, index int) er
 	}
 
 	if !validOperators[expr.Operator] {
-		return fmt.Errorf("invalid operator '%s' (valid: In, NotIn, Exists, NotExists, Gt, Lt)", expr.Operator)
+		return fmt.Errorf("matchExpressions[%d] label expression operator '%s' is invalid (valid: In, NotIn, Exists, NotExists, Gt, Lt)", index, expr.Operator)
 	}
 
 	// Operators that require values
@@ -359,7 +362,7 @@ func (v *Validator) validateLabelExpression(expr *LabelExpression, index int) er
 
 	if operatorsRequiringValues[expr.Operator] {
 		if len(expr.Values) == 0 {
-			return fmt.Errorf("operator '%s' requires at least one value", expr.Operator)
+			return fmt.Errorf("matchExpressions[%d] label expression operator '%s' requires at least one value", index, expr.Operator)
 		}
 	}
 
@@ -370,7 +373,7 @@ func (v *Validator) validateLabelExpression(expr *LabelExpression, index int) er
 	}
 
 	if operatorsNotRequiringValues[expr.Operator] && len(expr.Values) > 0 {
-		return fmt.Errorf("operator '%s' does not require values", expr.Operator)
+		return fmt.Errorf("matchExpressions[%d] label expression operator '%s' does not require values", index, expr.Operator)
 	}
 
 	return nil
@@ -378,7 +381,7 @@ func (v *Validator) validateLabelExpression(expr *LabelExpression, index int) er
 
 // ValidateWithContext validates pipeline with execution context
 // This allows validation of dynamic expressions like when conditions
-func (v *Validator) ValidateWithContext(pipeline *Pipeline, ctx *ExecutionContext) error {
+func (v *Validator) ValidateWithContext(pipeline *spec.Pipeline, ctx *pipeline.ExecutionContext) error {
 	// First perform static validation
 	if err := v.Validate(pipeline); err != nil {
 		return err

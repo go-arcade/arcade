@@ -23,6 +23,8 @@ import (
 	"time"
 
 	"github.com/go-arcade/arcade/internal/engine/config"
+	"github.com/go-arcade/arcade/internal/engine/model"
+	"github.com/go-arcade/arcade/internal/engine/repo"
 	"github.com/go-arcade/arcade/internal/engine/router"
 	"github.com/go-arcade/arcade/internal/pkg/grpc"
 	"github.com/go-arcade/arcade/internal/pkg/queue"
@@ -46,6 +48,7 @@ type App struct {
 	Logger        *log.Logger
 	Storage       storage.StorageProvider
 	AppConf       *config.AppConfig
+	Repos         *repo.Repositories
 }
 
 // InitAppFunc init app function type
@@ -63,6 +66,7 @@ func NewApp(
 	mongoDB database.MongoDB,
 	appConf *config.AppConfig,
 	db database.IDatabase,
+	repos *repo.Repositories,
 ) (*App, func(), error) {
 	httpApp := rt.Router()
 
@@ -80,6 +84,7 @@ func NewApp(
 		Logger:        logger,
 		Storage:       storage,
 		AppConf:       appConf,
+		Repos:         repos,
 	}
 
 	cleanup := func() {
@@ -149,6 +154,13 @@ func Run(app *App, cleanup func()) {
 	// optional: start heartbeat check
 	app.PluginMgr.StartHeartbeat(30 * time.Second)
 
+	// 同步插件信息到数据库
+	if err := syncPluginsToDatabase(app.PluginMgr, app.Repos); err != nil {
+		logger.Warnw("failed to sync plugins to database", zap.Error(err))
+	} else {
+		logger.Info("plugins synced to database successfully")
+	}
+
 	// Register Task Queue metrics if queue server is available
 	if app.MetricsServer != nil && app.QueueServer != nil {
 		metrics.RegisterAsynqMetricsFromQueueServer(app.MetricsServer.GetRegistry(), app.QueueServer)
@@ -213,4 +225,65 @@ func Run(app *App, cleanup func()) {
 	cleanup()
 
 	log.Info("Server shutdown complete")
+}
+
+// syncPluginsToDatabase 同步插件信息到数据库
+func syncPluginsToDatabase(pluginMgr *plugin.Manager, repos *repo.Repositories) error {
+	if pluginMgr == nil || repos == nil || repos.Plugin == nil {
+		return fmt.Errorf("plugin manager or repositories not initialized")
+	}
+
+	// 获取所有已注册的插件信息
+	plugins := pluginMgr.ListPlugins()
+	if len(plugins) == 0 {
+		log.Info("no plugins to sync")
+		return nil
+	}
+
+	var errors []error
+	for name, info := range plugins {
+		// 获取插件实例以获取 Repository 和 Author
+		pluginInstance, err := pluginMgr.GetPlugin(name)
+		var repository string
+		var author string
+		if err == nil && pluginInstance != nil {
+			repository = pluginInstance.Repository()
+			author = pluginInstance.Author()
+		} else {
+			repository = info.Homepage
+			author = info.Author
+		}
+
+		// 将 PluginInfo 转换为 model.Plugin
+		pluginModel := &model.Plugin{
+			PluginId:    name, // 使用插件名称作为 plugin_id
+			Name:        info.Name,
+			Version:     info.Version,
+			Description: info.Description,
+			Author:      author,
+			PluginType:  plugin.PluginTypeToString(info.Type),
+			Repository:  repository,
+		}
+
+		// 创建或更新插件信息
+		if err := repos.Plugin.CreateOrUpdatePlugin(pluginModel); err != nil {
+			log.Errorw("failed to sync plugin to database",
+				"plugin", name,
+				"version", info.Version,
+				zap.Error(err),
+			)
+			errors = append(errors, fmt.Errorf("plugin %s@%s: %w", name, info.Version, err))
+		} else {
+			log.Infow("plugin synced to database",
+				"plugin", name,
+				"version", info.Version,
+			)
+		}
+	}
+
+	if len(errors) > 0 {
+		return fmt.Errorf("failed to sync %d plugin(s): %v", len(errors), errors)
+	}
+
+	return nil
 }

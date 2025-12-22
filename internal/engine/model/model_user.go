@@ -22,8 +22,7 @@ type User struct {
 	BaseModel
 	UserId       string `gorm:"column:user_id" json:"userId"`
 	Username     string `gorm:"column:username" json:"username"`
-	FirstName    string `gorm:"column:first_name" json:"firstName"`
-	LastName     string `gorm:"column:last_name" json:"lastName"`
+	FullName     string `gorm:"column:full_name" json:"fullName"`
 	Password     string `gorm:"column:password" json:"password"`
 	Avatar       string `gorm:"column:avatar" json:"avatar"`
 	Email        string `gorm:"column:email" json:"email"`
@@ -39,8 +38,7 @@ func (User) TableName() string {
 type Register struct {
 	UserId     string    `json:"userId"`
 	Username   string    `json:"username"`
-	FirstName  string    `gorm:"column:first_name" json:"firstName"`
-	LastName   string    `gorm:"column:last_name" json:"lastName"`
+	FullName   string    `gorm:"column:full_name" json:"fullName"`
 	Email      string    `json:"email"`
 	Avatar     string    `gorm:"column:avatar" json:"avatar"`
 	Password   string    `json:"password"`
@@ -88,18 +86,17 @@ type MenuDTO struct {
 type UserInfo struct {
 	UserId    string `json:"userId"`
 	Username  string `json:"username"`
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
+	FullName  string `json:"fullName"`
 	Avatar    string `json:"avatar"`
 	Email     string `json:"email"`
 	Phone     string `json:"phone"`
+	IsEnabled int    `json:"isEnabled"`
 }
 
 type AddUserReq struct {
 	UserId     string    `json:"userId"`
 	Username   string    `json:"username"`
-	FirstName  string    `gorm:"column:first_name" json:"firstName"`
-	LastName   string    `gorm:"column:last_name" json:"lastName"`
+	FullName   string    `gorm:"column:full_name" json:"fullName"`
 	Password   string    `json:"password"`
 	Avatar     string    `json:"avatar"`
 	Email      string    `json:"email"`
@@ -111,4 +108,13 @@ type AddUserReq struct {
 // ResetPasswordReq reset password request (for forgot password scenario)
 type ResetPasswordReq struct {
 	NewPassword string `json:"newPassword"` // new password (base64 encoded)
+}
+
+// UpdateUserReq request for updating user
+type UpdateUserReq struct {
+	FullName  *string `json:"fullName,omitempty"`
+	Avatar    *string `json:"avatar,omitempty"`
+	Email     *string `json:"email,omitempty"`
+	Phone     *string `json:"phone,omitempty"`
+	IsEnabled *int    `json:"isEnabled,omitempty"`
 }

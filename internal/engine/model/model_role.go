@@ -34,3 +34,20 @@ const (
 	Admin  = "admin"  // 组织管理员
 	Member = "member" // 组织成员
 )
+
+// CreateRoleReq request for creating role
+type CreateRoleReq struct {
+	RoleId      string `json:"roleId" binding:"required"`
+	Name        string `json:"name" binding:"required"`
+	DisplayName string `json:"displayName"`
+	Description string `json:"description"`
+	IsEnabled   *int   `json:"isEnabled"`
+}
+
+// UpdateRoleReq request for updating role
+type UpdateRoleReq struct {
+	Name        *string `json:"name,omitempty"`
+	DisplayName *string `json:"displayName,omitempty"`
+	Description *string `json:"description,omitempty"`
+	IsEnabled   *int    `json:"isEnabled,omitempty"`
+}

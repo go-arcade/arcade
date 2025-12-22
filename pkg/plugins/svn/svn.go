@@ -209,6 +209,16 @@ func (p *SVN) Type() plugin.PluginType {
 	return plugin.TypeSource
 }
 
+// Author returns the plugin author
+func (p *SVN) Author() string {
+	return "Arcade Team"
+}
+
+// Repository returns the plugin repository
+func (p *SVN) Repository() string {
+	return "https://github.com/go-arcade/arcade"
+}
+
 // Init initializes the plugin
 func (p *SVN) Init(config json.RawMessage) error {
 	if len(config) > 0 {

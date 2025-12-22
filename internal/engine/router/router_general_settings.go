@@ -31,8 +31,8 @@ func (rt *Router) generalSettingsRouter(r fiber.Router, auth fiber.Handler) {
 		// Note: General settings are pre-defined system configurations, only updates are allowed
 		settingsGroup.Get("/", auth, rt.getGeneralSettingsList)                          // GET /general-settings - list general settings
 		settingsGroup.Get("/categories", auth, rt.getCategories)                         // GET /general-settings/categories - get all categories
-		settingsGroup.Get("/:id", auth, rt.getGeneralSettings)                           // GET /general-settings/:id - get general settings
-		settingsGroup.Put("/:id", auth, rt.updateGeneralSettings)                        // PUT /general-settings/:id - update general settings
+		settingsGroup.Get("/:settingsId", auth, rt.getGeneralSettings)                   // GET /general-settings/:settingsId - get general settings
+		settingsGroup.Put("/:settingsId", auth, rt.updateGeneralSettings)                // PUT /general-settings/:settingsId - update general settings
 		settingsGroup.Get("/by-name/:category/:name", auth, rt.getGeneralSettingsByName) // GET /general-settings/by-name/:category/:name - get by name
 	}
 }
@@ -42,9 +42,8 @@ func (rt *Router) updateGeneralSettings(c *fiber.Ctx) error {
 	generalSettingsService := rt.Services.GeneralSettings
 
 	// get settings ID from path parameter
-	idStr := c.Params("id")
-	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil {
+	settingsId := c.Params("settingsId")
+	if settingsId == "" {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid settings id", c.Path())
 	}
 
@@ -53,7 +52,7 @@ func (rt *Router) updateGeneralSettings(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid request body", c.Path())
 	}
 
-	if err := generalSettingsService.UpdateGeneralSettings(id, &settings); err != nil {
+	if err := generalSettingsService.UpdateGeneralSettings(settingsId, &settings); err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
 	}
 
@@ -62,18 +61,17 @@ func (rt *Router) updateGeneralSettings(c *fiber.Ctx) error {
 	return nil
 }
 
-// getGeneralSettings gets a general settings by ID
+// getGeneralSettings gets a general settings by settings ID
 func (rt *Router) getGeneralSettings(c *fiber.Ctx) error {
 	generalSettingsService := rt.Services.GeneralSettings
 
 	// get settings ID from path parameter
-	idStr := c.Params("id")
-	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil {
+	settingsId := c.Params("settingsId")
+	if settingsId == "" {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid settings id", c.Path())
 	}
 
-	settings, err := generalSettingsService.GetGeneralSettingsByID(id)
+	settings, err := generalSettingsService.GetGeneralSettingsByID(settingsId)
 	if err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
 	}

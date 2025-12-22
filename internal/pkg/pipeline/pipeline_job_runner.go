@@ -18,16 +18,18 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/go-arcade/arcade/internal/pkg/pipeline/spec"
 )
 
 // JobRunner runs a single job
 type JobRunner struct {
 	ctx *ExecutionContext
-	job *Job
+	job *spec.Job
 }
 
 // NewJobRunner creates a new job runner
-func NewJobRunner(ctx *ExecutionContext, job *Job) *JobRunner {
+func NewJobRunner(ctx *ExecutionContext, job *spec.Job) *JobRunner {
 	return &JobRunner{ctx: ctx, job: job}
 }
 

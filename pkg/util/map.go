@@ -12,15 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tool
+package util
 
-import "encoding/base64"
-
-
-func EncodeBase64(data []byte) string {
-	return base64.StdEncoding.EncodeToString(data)
-}
-
-func DecodeBase64(data string) ([]byte, error) {
-	return base64.StdEncoding.DecodeString(data)
+// SetIfNotNil sets the value in the map if the pointer is not nil
+// This is useful for building update maps where zero values should be included
+// Example:
+//
+//	updates := make(map[string]any)
+//	SetIfNotNil(updates, "is_enabled", req.IsEnabled)  // Will set even if IsEnabled is 0
+func SetIfNotNil[T any](m map[string]any, key string, ptr *T) {
+	if ptr != nil {
+		m[key] = *ptr
+	}
 }

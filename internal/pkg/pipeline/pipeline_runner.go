@@ -18,6 +18,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/go-arcade/arcade/internal/pkg/pipeline/spec"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -33,13 +34,13 @@ func NewPipelineRunner(ctx *ExecutionContext) *PipelineRunner {
 
 // Run executes all jobs in the pipeline
 // Jobs can run in parallel unless concurrency is specified
-func (r *PipelineRunner) Run(ctx context.Context, p *Pipeline) error {
+func (r *PipelineRunner) Run(ctx context.Context, p *spec.Pipeline) error {
 	// Update execution context with pipeline
 	r.execCtx.Pipeline = p
 
 	// Group jobs by concurrency key
-	concurrencyGroups := make(map[string][]*Job)
-	var noConcurrencyJobs []*Job
+	concurrencyGroups := make(map[string][]*spec.Job)
+	var noConcurrencyJobs []*spec.Job
 
 	for i := range p.Jobs {
 		job := &p.Jobs[i]
@@ -82,7 +83,7 @@ func (r *PipelineRunner) Run(ctx context.Context, p *Pipeline) error {
 }
 
 // RunWithTimeout runs pipeline with timeout
-func (r *PipelineRunner) RunWithTimeout(ctx context.Context, p *Pipeline, timeout time.Duration) error {
+func (r *PipelineRunner) RunWithTimeout(ctx context.Context, p *spec.Pipeline, timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 

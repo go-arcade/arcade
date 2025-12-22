@@ -55,3 +55,23 @@ func (r *RedisCache) Pipeline() redis.Pipeliner {
 func (r *RedisCache) GetClient() *redis.Client {
 	return r.client
 }
+
+// HSet 设置 Hash 字段
+func (r *RedisCache) HSet(ctx context.Context, key string, values ...any) *redis.IntCmd {
+	return r.client.HSet(ctx, key, values...)
+}
+
+// HGetAll 获取 Hash 所有字段
+func (r *RedisCache) HGetAll(ctx context.Context, key string) *redis.MapStringStringCmd {
+	return r.client.HGetAll(ctx, key)
+}
+
+// HDel 删除 Hash 字段
+func (r *RedisCache) HDel(ctx context.Context, key string, fields ...string) *redis.IntCmd {
+	return r.client.HDel(ctx, key, fields...)
+}
+
+// Expire 设置过期时间
+func (r *RedisCache) Expire(ctx context.Context, key string, expiration time.Duration) *redis.BoolCmd {
+	return r.client.Expire(ctx, key, expiration)
+}

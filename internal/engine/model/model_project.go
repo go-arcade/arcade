@@ -178,3 +178,74 @@ const (
 	AccessLevelTeam  = "team"  // 团队成员
 	AccessLevelOrg   = "org"   // 组织成员
 )
+
+// CreateProjectReq 创建项目请求
+type CreateProjectReq struct {
+	OrgId         string                 `json:"orgId" validate:"required"`
+	Name          string                 `json:"name" validate:"required,min=2,max=128"`
+	DisplayName   string                 `json:"displayName"`
+	Description   string                 `json:"description"`
+	RepoUrl       string                 `json:"repoUrl" validate:"required"`
+	RepoType      string                 `json:"repoType" validate:"required"`
+	DefaultBranch string                 `json:"defaultBranch"`
+	AuthType      int                    `json:"authType"`
+	Credential    string                 `json:"credential"`
+	TriggerMode   int                    `json:"triggerMode"`
+	WebhookSecret string                 `json:"webhookSecret"`
+	CronExpr      string                 `json:"cronExpr"`
+	BuildConfig   map[string]interface{} `json:"buildConfig"`
+	EnvVars       map[string]interface{} `json:"envVars"`
+	Settings      map[string]interface{} `json:"settings"`
+	Tags          string                 `json:"tags"`
+	Language      string                 `json:"language"`
+	Framework     string                 `json:"framework"`
+	Visibility    int                    `json:"visibility"`
+	AccessLevel   string                 `json:"accessLevel"`
+	Icon          string                 `json:"icon"`
+	Homepage      string                 `json:"homepage"`
+}
+
+// UpdateProjectReq 更新项目请求
+type UpdateProjectReq struct {
+	DisplayName   *string                `json:"displayName,omitempty"`
+	Description   *string                `json:"description,omitempty"`
+	RepoUrl       *string                `json:"repoUrl,omitempty"`
+	DefaultBranch *string                `json:"defaultBranch,omitempty"`
+	AuthType      *int                   `json:"authType,omitempty"`
+	Credential    *string                `json:"credential,omitempty"`
+	TriggerMode   *int                   `json:"triggerMode,omitempty"`
+	WebhookSecret *string                `json:"webhookSecret,omitempty"`
+	CronExpr      *string                `json:"cronExpr,omitempty"`
+	BuildConfig   map[string]interface{} `json:"buildConfig,omitempty"`
+	EnvVars       map[string]interface{} `json:"envVars,omitempty"`
+	Settings      map[string]interface{} `json:"settings,omitempty"`
+	Tags          *string                `json:"tags,omitempty"`
+	Language      *string                `json:"language,omitempty"`
+	Framework     *string                `json:"framework,omitempty"`
+	Status        *int                   `json:"status,omitempty"`
+	Visibility    *int                   `json:"visibility,omitempty"`
+	AccessLevel   *string                `json:"accessLevel,omitempty"`
+	Icon          *string                `json:"icon,omitempty"`
+	Homepage      *string                `json:"homepage,omitempty"`
+	IsEnabled     *int                   `json:"isEnabled,omitempty"`
+}
+
+// ProjectQueryReq 查询项目请求
+type ProjectQueryReq struct {
+	OrgId      string `json:"orgId" form:"orgId"`
+	Name       string `json:"name" form:"name"`
+	Language   string `json:"language" form:"language"`
+	Status     *int   `json:"status" form:"status"`
+	Visibility *int   `json:"visibility" form:"visibility"`
+	Tags       string `json:"tags" form:"tags"`
+	PageNum    int    `json:"pageNum" form:"pageNum"`
+	PageSize   int    `json:"pageSize" form:"pageSize"`
+}
+
+// ProjectStatisticsReq 更新项目统计信息请求
+type ProjectStatisticsReq struct {
+	TotalPipelines *int `json:"totalPipelines,omitempty"`
+	TotalBuilds    *int `json:"totalBuilds,omitempty"`
+	SuccessBuilds  *int `json:"successBuilds,omitempty"`
+	FailedBuilds   *int `json:"failedBuilds,omitempty"`
+}

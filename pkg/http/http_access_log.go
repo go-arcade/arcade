@@ -15,26 +15,11 @@
 package http
 
 import (
-	"sync"
 	"time"
 
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/gofiber/fiber/v2"
-	"go.uber.org/zap"
 )
-
-var (
-	accessLogger     *zap.SugaredLogger
-	accessLoggerOnce sync.Once
-)
-
-func logger() *zap.SugaredLogger {
-	accessLoggerOnce.Do(func() {
-		baseLogger := log.GetLogger().Desugar()
-		accessLogger = baseLogger.WithOptions(zap.AddCallerSkip(5)).Sugar()
-	})
-	return accessLogger
-}
 
 func AccessLogFormat(httpConfig *Http) fiber.Handler {
 	// exclude api path
@@ -69,14 +54,21 @@ func AccessLogFormat(httpConfig *Http) fiber.Handler {
 			queryStr = "?" + query
 		}
 
-		logger().Infow("HTTP request",
+		body := c.Body()
+		bodyStr := ""
+		if body != nil {
+			bodyStr = string(body)
+		}
+
+		log.Infow("HTTP request",
 			"method", c.Method(),
 			"path", c.Path(),
 			"query", queryStr,
+			"body", bodyStr,
+			"latency", latency.String(),
 			"status", c.Response().StatusCode(),
 			"ip", c.IP(),
-			"user_agent", c.Get("User-Agent"),
-			"latency", latency.String(),
+			"user-agent", c.Get("User-Agent"),
 		)
 
 		return err

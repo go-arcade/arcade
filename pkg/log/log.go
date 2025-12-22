@@ -156,9 +156,10 @@ func MustInit(conf *Conf) {
 
 // GetLogger 获取全局 zap.Logger 实例
 func GetLogger() *zap.SugaredLogger {
+	ensureLogger()
 	mu.RLock()
 	defer mu.RUnlock()
-	return logger.Sugar()
+	return sugar
 }
 
 // GetLevel 获取当前日志级别
