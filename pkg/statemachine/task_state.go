@@ -27,21 +27,25 @@ const (
 	TaskCanceled TaskStatus = "CANCELED"
 )
 
+// Deprecated: Use FSM instead.
 // IsTerminal 判断是否为终止状态
 func (ts TaskStatus) IsTerminal() bool {
 	return ts == TaskSuccess || ts == TaskFailed || ts == TaskTimeout || ts == TaskCanceled || ts == TaskSkipped
 }
 
+// Deprecated: Use FSM instead.
 // IsRunnable 判断是否为可运行状态
 func (ts TaskStatus) IsRunnable() bool {
 	return ts == TaskPending || ts == TaskQueued
 }
 
+// Deprecated: Use FSM instead.
 // IsFailed 判断是否为失败状态
 func (ts TaskStatus) IsFailed() bool {
 	return ts == TaskFailed || ts == TaskTimeout
 }
 
+// Deprecated: Use FSM instead.
 // NewTaskStateMachine 创建任务状态机
 func NewTaskStateMachine() *StateMachine[TaskStatus] {
 	sm := NewWithState(TaskPending)
@@ -55,6 +59,7 @@ func NewTaskStateMachine() *StateMachine[TaskStatus] {
 	return sm
 }
 
+// Deprecated: Use FSM instead.
 // NewTaskStateMachineWithHooks 创建带钩子的任务状态机
 func NewTaskStateMachineWithHooks(
 	onStart func() error,

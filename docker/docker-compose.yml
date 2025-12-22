@@ -34,3 +34,27 @@ services:
       - ./mysql/data:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: muP4woo9Aidiph2jeX8u
+      
+  arcade:
+    image: go-arcade/arcade:latest
+    container_name: arcade
+    restart: always
+    ports:
+      - 8080:8080
+      - 9090:9090
+      - 8082:8082
+      - 8083:8083
+    volumes:
+      - ./conf.d:/conf.d
+  
+  arcade-agent:
+    image: go-arcade/arcade-agent:latest
+    container_name: arcade-agent
+    restart: always
+    ports:
+      - 8081:8081
+      - 8084:8084
+      - 8085:8085
+      - 8086:8086
+    volumes:
+      - ./conf.d:/conf.d
