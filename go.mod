@@ -47,6 +47,7 @@ require (
 	github.com/confluentinc/confluent-kafka-go/v2 v2.12.0
 	github.com/containerd/containerd v1.7.18
 	github.com/gofiber/contrib/fiberi18n/v2 v2.0.6
+	github.com/hashicorp/go-metrics v0.5.4
 	github.com/hibiken/asynq v0.24.1
 	github.com/opencontainers/runtime-spec v1.1.0
 	github.com/rabbitmq/amqp091-go v1.10.0
@@ -116,6 +117,8 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
 	github.com/googleapis/gax-go/v2 v2.15.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
+	github.com/hashicorp/go-immutable-radix v1.0.0 // indirect
+	github.com/hashicorp/golang-lru v0.5.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-runewidth v0.0.19 // indirect

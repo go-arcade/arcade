@@ -153,7 +153,7 @@ func Run(app *Agent, cleanup func()) {
 
 	// Register Task Queue metrics if queue client is available
 	if app.MetricsServer != nil && app.QueueClient != nil {
-		metrics.RegisterAsynqMetricsFromQueueClient(app.MetricsServer.GetRegistry(), app.QueueClient)
+		metrics.RegisterAsynqMetricsFromQueueClient(app.MetricsServer.GetSink(), app.QueueClient)
 	}
 
 	// start metrics server

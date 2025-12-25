@@ -26,7 +26,7 @@ var ProviderSet = wire.NewSet(
 // NewMetricsServer creates a new metrics server from config
 func NewMetricsServer(config MetricsConfig) *Server {
 	server := NewServer(config)
-	// Register cron metrics
-	SetupCronMetrics(server.GetRegistry())
+	// Setup cron metrics with the sink
+	SetupCronMetrics(server.GetSink())
 	return server
 }

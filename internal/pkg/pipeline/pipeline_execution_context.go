@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/expr-lang/expr"
+	"github.com/go-arcade/arcade/internal/pkg/pipeline/builtin"
 	"github.com/go-arcade/arcade/internal/pkg/pipeline/spec"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/plugin"
@@ -32,12 +33,13 @@ import (
 
 // ExecutionContext provides execution context for pipeline
 type ExecutionContext struct {
-	Pipeline      *spec.Pipeline
-	WorkspaceRoot string
-	PluginManager *plugin.Manager
-	AgentManager  *AgentManager
-	Logger        log.Logger
-	Env           map[string]string
+	Pipeline       *spec.Pipeline
+	WorkspaceRoot  string
+	PluginManager  *plugin.Manager
+	BuiltinManager *builtin.Manager
+	AgentManager   *AgentManager
+	Logger         log.Logger
+	Env            map[string]string
 }
 
 // NewExecutionContext creates a new execution context
@@ -53,12 +55,23 @@ func NewExecutionContext(
 	}
 
 	return &ExecutionContext{
-		Pipeline:      p,
-		PluginManager: pluginMgr,
-		WorkspaceRoot: workspace,
-		Logger:        logger,
-		Env:           env,
+		Pipeline:       p,
+		PluginManager:  pluginMgr,
+		BuiltinManager: builtin.NewManager(logger),
+		WorkspaceRoot:  workspace,
+		Logger:         logger,
+		Env:            env,
 	}
+}
+
+// GetPipeline returns the pipeline (implements builtin.ExecutionContext interface)
+func (c *ExecutionContext) GetPipeline() *spec.Pipeline {
+	return c.Pipeline
+}
+
+// GetWorkspaceRoot returns the workspace root (implements builtin.ExecutionContext interface)
+func (c *ExecutionContext) GetWorkspaceRoot() string {
+	return c.WorkspaceRoot
 }
 
 // JobWorkspace returns workspace path for job

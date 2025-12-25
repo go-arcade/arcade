@@ -15,121 +15,74 @@
 package metrics
 
 import (
+	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/hashicorp/go-metrics"
 	"github.com/hibiken/asynq"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
-// AsynqMetricsCollector collects Asynq queue metrics for Prometheus
+// AsynqMetricsCollector collects Asynq queue metrics using go-metrics
 type AsynqMetricsCollector struct {
 	inspector *asynq.Inspector
+	sink      metrics.MetricSink
 	mu        sync.RWMutex
-
-	// Queue metrics
-	queueSize           *prometheus.Desc
-	queuePending        *prometheus.Desc
-	queueActive         *prometheus.Desc
-	queueScheduled      *prometheus.Desc
-	queueRetry          *prometheus.Desc
-	queueArchived       *prometheus.Desc
-	queueCompleted      *prometheus.Desc
-	queueAggregating    *prometheus.Desc
-	queueProcessedTotal *prometheus.Desc
-	queueFailedTotal    *prometheus.Desc
+	stopCh    chan struct{}
+	doneCh    chan struct{}
 }
 
 // NewAsynqMetricsCollector creates a new Task Queue metrics collector
-func NewAsynqMetricsCollector(inspector *asynq.Inspector) *AsynqMetricsCollector {
+func NewAsynqMetricsCollector(inspector *asynq.Inspector, sink metrics.MetricSink) *AsynqMetricsCollector {
 	return &AsynqMetricsCollector{
 		inspector: inspector,
-		queueSize: prometheus.NewDesc(
-			"asynq_queue_size",
-			"Current size of the queue",
-			[]string{"queue"},
-			nil,
-		),
-		queuePending: prometheus.NewDesc(
-			"asynq_queue_pending",
-			"Number of pending tasks in the queue",
-			[]string{"queue"},
-			nil,
-		),
-		queueActive: prometheus.NewDesc(
-			"asynq_queue_active",
-			"Number of active tasks in the queue",
-			[]string{"queue"},
-			nil,
-		),
-		queueScheduled: prometheus.NewDesc(
-			"asynq_queue_scheduled",
-			"Number of scheduled tasks in the queue",
-			[]string{"queue"},
-			nil,
-		),
-		queueRetry: prometheus.NewDesc(
-			"asynq_queue_retry",
-			"Number of tasks in retry state",
-			[]string{"queue"},
-			nil,
-		),
-		queueArchived: prometheus.NewDesc(
-			"asynq_queue_archived",
-			"Number of archived tasks",
-			[]string{"queue"},
-			nil,
-		),
-		queueCompleted: prometheus.NewDesc(
-			"asynq_queue_completed",
-			"Number of completed tasks",
-			[]string{"queue"},
-			nil,
-		),
-		queueAggregating: prometheus.NewDesc(
-			"asynq_queue_aggregating",
-			"Number of aggregating tasks",
-			[]string{"queue"},
-			nil,
-		),
-		queueProcessedTotal: prometheus.NewDesc(
-			"asynq_queue_processed_total",
-			"Total number of processed tasks",
-			[]string{"queue"},
-			nil,
-		),
-		queueFailedTotal: prometheus.NewDesc(
-			"asynq_queue_failed_total",
-			"Total number of failed tasks",
-			[]string{"queue"},
-			nil,
-		),
+		sink:      sink,
+		stopCh:    make(chan struct{}),
+		doneCh:    make(chan struct{}),
 	}
 }
 
-// Describe implements prometheus.Collector interface
-func (c *AsynqMetricsCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- c.queueSize
-	ch <- c.queuePending
-	ch <- c.queueActive
-	ch <- c.queueScheduled
-	ch <- c.queueRetry
-	ch <- c.queueArchived
-	ch <- c.queueCompleted
-	ch <- c.queueAggregating
-	ch <- c.queueProcessedTotal
-	ch <- c.queueFailedTotal
+// Start starts collecting metrics periodically
+func (c *AsynqMetricsCollector) Start(interval time.Duration) {
+	go c.collectLoop(interval)
 }
 
-// Collect implements prometheus.Collector interface
-func (c *AsynqMetricsCollector) Collect(ch chan<- prometheus.Metric) {
+// Stop stops collecting metrics
+func (c *AsynqMetricsCollector) Stop() {
+	close(c.stopCh)
+	<-c.doneCh
+}
+
+// collectLoop periodically collects queue metrics
+func (c *AsynqMetricsCollector) collectLoop(interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	defer close(c.doneCh)
+
+	// Collect immediately
+	c.collect()
+
+	for {
+		select {
+		case <-ticker.C:
+			c.collect()
+		case <-c.stopCh:
+			return
+		}
+	}
+}
+
+// collect collects metrics from Asynq inspector
+func (c *AsynqMetricsCollector) collect() {
 	c.mu.RLock()
 	inspector := c.inspector
+	sink := c.sink
 	c.mu.RUnlock()
 
-	if inspector == nil {
-		log.Debug("Asynq inspector is nil, skipping metrics collection")
+	if inspector == nil || sink == nil {
+		log.Debug("Asynq inspector or sink is nil, skipping metrics collection")
 		return
 	}
 
@@ -137,17 +90,14 @@ func (c *AsynqMetricsCollector) Collect(ch chan<- prometheus.Metric) {
 	queues, err := inspector.Queues()
 	if err != nil {
 		log.Warnw("Failed to get queues for metrics", "error", err)
-		// Even if we can't get queues, we should still report zero metrics for known queues
-		// This ensures the metrics are always present
 		return
 	}
 
 	// If no queues exist, still report zero metrics for default queues
 	if len(queues) == 0 {
-		// log.Debug("No queues found, reporting zero metrics for default queues")
 		defaultQueues := []string{"critical", "default", "low"}
 		for _, queueName := range defaultQueues {
-			c.emitZeroMetrics(ch, queueName)
+			c.emitZeroMetrics(sink, queueName)
 		}
 		return
 	}
@@ -157,105 +107,71 @@ func (c *AsynqMetricsCollector) Collect(ch chan<- prometheus.Metric) {
 		info, err := inspector.GetQueueInfo(queueName)
 		if err != nil {
 			log.Warnw("Failed to get queue info", "queue", queueName, "error", err)
-			// Report zero metrics if we can't get info
-			c.emitZeroMetrics(ch, queueName)
+			c.emitZeroMetrics(sink, queueName)
 			continue
 		}
 
-		ch <- prometheus.MustNewConstMetric(
-			c.queueSize,
-			prometheus.GaugeValue,
-			float64(info.Size),
-			queueName,
-		)
-		ch <- prometheus.MustNewConstMetric(
-			c.queuePending,
-			prometheus.GaugeValue,
-			float64(info.Pending),
-			queueName,
-		)
-		ch <- prometheus.MustNewConstMetric(
-			c.queueActive,
-			prometheus.GaugeValue,
-			float64(info.Active),
-			queueName,
-		)
-		ch <- prometheus.MustNewConstMetric(
-			c.queueScheduled,
-			prometheus.GaugeValue,
-			float64(info.Scheduled),
-			queueName,
-		)
-		ch <- prometheus.MustNewConstMetric(
-			c.queueRetry,
-			prometheus.GaugeValue,
-			float64(info.Retry),
-			queueName,
-		)
-		ch <- prometheus.MustNewConstMetric(
-			c.queueArchived,
-			prometheus.GaugeValue,
-			float64(info.Archived),
-			queueName,
-		)
-		ch <- prometheus.MustNewConstMetric(
-			c.queueCompleted,
-			prometheus.GaugeValue,
-			float64(info.Completed),
-			queueName,
-		)
-		ch <- prometheus.MustNewConstMetric(
-			c.queueAggregating,
-			prometheus.GaugeValue,
-			float64(info.Aggregating),
-			queueName,
-		)
-		ch <- prometheus.MustNewConstMetric(
-			c.queueProcessedTotal,
-			prometheus.CounterValue,
-			float64(info.Processed),
-			queueName,
-		)
-		ch <- prometheus.MustNewConstMetric(
-			c.queueFailedTotal,
-			prometheus.CounterValue,
-			float64(info.Failed),
-			queueName,
-		)
+		labels := []metrics.Label{
+			{Name: "queue", Value: queueName},
+		}
+
+		// Queue size metrics
+		sink.SetGaugeWithLabels([]string{"asynq", "queue", "size"}, float32(info.Size), labels)
+		sink.SetGaugeWithLabels([]string{"asynq", "queue", "pending"}, float32(info.Pending), labels)
+		sink.SetGaugeWithLabels([]string{"asynq", "queue", "active"}, float32(info.Active), labels)
+		sink.SetGaugeWithLabels([]string{"asynq", "queue", "scheduled"}, float32(info.Scheduled), labels)
+		sink.SetGaugeWithLabels([]string{"asynq", "queue", "retry"}, float32(info.Retry), labels)
+		sink.SetGaugeWithLabels([]string{"asynq", "queue", "archived"}, float32(info.Archived), labels)
+		sink.SetGaugeWithLabels([]string{"asynq", "queue", "completed"}, float32(info.Completed), labels)
+		sink.SetGaugeWithLabels([]string{"asynq", "queue", "aggregating"}, float32(info.Aggregating), labels)
+
+		// Counter metrics (these are cumulative, so we set them as gauges)
+		// Note: Asynq provides Processed and Failed as cumulative counters
+		sink.SetGaugeWithLabels([]string{"asynq", "queue", "processed", "total"}, float32(info.Processed), labels)
+		sink.SetGaugeWithLabels([]string{"asynq", "queue", "failed", "total"}, float32(info.Failed), labels)
 	}
 }
 
 // emitZeroMetrics emits zero values for all metrics for a given queue
-func (c *AsynqMetricsCollector) emitZeroMetrics(ch chan<- prometheus.Metric, queueName string) {
-	ch <- prometheus.MustNewConstMetric(c.queueSize, prometheus.GaugeValue, 0, queueName)
-	ch <- prometheus.MustNewConstMetric(c.queuePending, prometheus.GaugeValue, 0, queueName)
-	ch <- prometheus.MustNewConstMetric(c.queueActive, prometheus.GaugeValue, 0, queueName)
-	ch <- prometheus.MustNewConstMetric(c.queueScheduled, prometheus.GaugeValue, 0, queueName)
-	ch <- prometheus.MustNewConstMetric(c.queueRetry, prometheus.GaugeValue, 0, queueName)
-	ch <- prometheus.MustNewConstMetric(c.queueArchived, prometheus.GaugeValue, 0, queueName)
-	ch <- prometheus.MustNewConstMetric(c.queueCompleted, prometheus.GaugeValue, 0, queueName)
-	ch <- prometheus.MustNewConstMetric(c.queueAggregating, prometheus.GaugeValue, 0, queueName)
-	ch <- prometheus.MustNewConstMetric(c.queueProcessedTotal, prometheus.CounterValue, 0, queueName)
-	ch <- prometheus.MustNewConstMetric(c.queueFailedTotal, prometheus.CounterValue, 0, queueName)
-}
-
-// asynqMetricsOnce ensures metrics are registered only once
-var asynqMetricsOnce sync.Once
-
-// SetupAsynqMetrics sets up Task Queue metrics collection
-func SetupAsynqMetrics(registry *prometheus.Registry, inspector *asynq.Inspector) error {
-	if inspector == nil {
-		return nil // Skip if inspector is not available
+func (c *AsynqMetricsCollector) emitZeroMetrics(sink metrics.MetricSink, queueName string) {
+	labels := []metrics.Label{
+		{Name: "queue", Value: queueName},
 	}
 
-	collector := NewAsynqMetricsCollector(inspector)
-	return registry.Register(collector)
+	sink.SetGaugeWithLabels([]string{"asynq", "queue", "size"}, 0, labels)
+	sink.SetGaugeWithLabels([]string{"asynq", "queue", "pending"}, 0, labels)
+	sink.SetGaugeWithLabels([]string{"asynq", "queue", "active"}, 0, labels)
+	sink.SetGaugeWithLabels([]string{"asynq", "queue", "scheduled"}, 0, labels)
+	sink.SetGaugeWithLabels([]string{"asynq", "queue", "retry"}, 0, labels)
+	sink.SetGaugeWithLabels([]string{"asynq", "queue", "archived"}, 0, labels)
+	sink.SetGaugeWithLabels([]string{"asynq", "queue", "completed"}, 0, labels)
+	sink.SetGaugeWithLabels([]string{"asynq", "queue", "aggregating"}, 0, labels)
+	sink.SetGaugeWithLabels([]string{"asynq", "queue", "processed", "total"}, 0, labels)
+	sink.SetGaugeWithLabels([]string{"asynq", "queue", "failed", "total"}, 0, labels)
+}
+
+var (
+	// asynqMetricsOnce ensures metrics are registered only once
+	asynqMetricsOnce sync.Once
+	asynqCollector   *AsynqMetricsCollector
+)
+
+// SetupAsynqMetrics sets up Task Queue metrics collection
+func SetupAsynqMetrics(sink metrics.MetricSink, inspector *asynq.Inspector) error {
+	if inspector == nil || sink == nil {
+		return nil
+	}
+
+	collector := NewAsynqMetricsCollector(inspector, sink)
+	collector.Start(15 * time.Second) // Collect every 15 seconds
+	asynqCollector = collector
+	return nil
 }
 
 // RegisterAsynqMetrics registers Task Queue metrics collector
-func RegisterAsynqMetrics(registry *prometheus.Registry, inspector *asynq.Inspector) error {
-	if registry == nil {
-		return fmt.Errorf("registry is nil")
+func RegisterAsynqMetrics(sink metrics.MetricSink, inspector *asynq.Inspector) error {
+	if sink == nil {
+		return fmt.Errorf("sink is nil")
 	}
 	if inspector == nil {
 		return fmt.Errorf("inspector is nil")
@@ -263,7 +179,7 @@ func RegisterAsynqMetrics(registry *prometheus.Registry, inspector *asynq.Inspec
 
 	var err error
 	asynqMetricsOnce.Do(func() {
-		err = SetupAsynqMetrics(registry, inspector)
+		err = SetupAsynqMetrics(sink, inspector)
 		if err != nil {
 			log.Errorw("Failed to setup Task Queue metrics", "error", err)
 		}
@@ -272,9 +188,9 @@ func RegisterAsynqMetrics(registry *prometheus.Registry, inspector *asynq.Inspec
 }
 
 // RegisterAsynqMetricsFromQueueServer registers Task Queue metrics from queue server
-func RegisterAsynqMetricsFromQueueServer(registry *prometheus.Registry, queueServer interface{}) {
-	if registry == nil {
-		log.Warn("Metrics registry is nil, cannot register Task Queue metrics")
+func RegisterAsynqMetricsFromQueueServer(sink metrics.MetricSink, queueServer interface{}) {
+	if sink == nil {
+		log.Warn("Metrics sink is nil, cannot register Task Queue metrics")
 		return
 	}
 	if queueServer == nil {
@@ -283,7 +199,6 @@ func RegisterAsynqMetricsFromQueueServer(registry *prometheus.Registry, queueSer
 	}
 
 	// Use type assertion to get RedisConnOpt
-	// This avoids importing queue package directly
 	type QueueServerWithRedis interface {
 		GetRedisConnOpt() asynq.RedisConnOpt
 	}
@@ -307,15 +222,15 @@ func RegisterAsynqMetricsFromQueueServer(registry *prometheus.Registry, queueSer
 		return
 	}
 
-	if err := RegisterAsynqMetrics(registry, inspector); err != nil {
+	if err := RegisterAsynqMetrics(sink, inspector); err != nil {
 		log.Errorw("Failed to register Task Queue metrics", "error", err)
 	}
 }
 
 // RegisterAsynqMetricsFromQueueClient registers Task Queue metrics from queue client
-func RegisterAsynqMetricsFromQueueClient(registry *prometheus.Registry, queueClient interface{}) {
-	if registry == nil {
-		log.Warn("Metrics registry is nil, cannot register Task Queue metrics")
+func RegisterAsynqMetricsFromQueueClient(sink metrics.MetricSink, queueClient interface{}) {
+	if sink == nil {
+		log.Warn("Metrics sink is nil, cannot register Task Queue metrics")
 		return
 	}
 	if queueClient == nil {
@@ -324,7 +239,6 @@ func RegisterAsynqMetricsFromQueueClient(registry *prometheus.Registry, queueCli
 	}
 
 	// Use type assertion to get RedisConnOpt
-	// This avoids importing queue package directly
 	type QueueClientWithRedis interface {
 		GetRedisConnOpt() asynq.RedisConnOpt
 	}
@@ -348,7 +262,17 @@ func RegisterAsynqMetricsFromQueueClient(registry *prometheus.Registry, queueCli
 		return
 	}
 
-	if err := RegisterAsynqMetrics(registry, inspector); err != nil {
+	if err := RegisterAsynqMetrics(sink, inspector); err != nil {
 		log.Errorw("Failed to register Task Queue metrics", "error", err)
 	}
+}
+
+// StopAsynqMetricsCollector stops the Asynq metrics collector
+func StopAsynqMetricsCollector(ctx context.Context) error {
+	if asynqCollector == nil {
+		return nil
+	}
+
+	asynqCollector.Stop()
+	return nil
 }

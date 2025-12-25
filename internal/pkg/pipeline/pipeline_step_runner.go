@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-arcade/arcade/internal/pkg/pipeline/builtin"
 	"github.com/go-arcade/arcade/internal/pkg/pipeline/spec"
 )
 
@@ -165,8 +166,70 @@ func (r *StepRunner) executeOnAgent(ctx context.Context) error {
 	return nil
 }
 
-// executeLocally executes step locally using plugin
+// executeLocally executes step locally using plugin or builtin
 func (r *StepRunner) executeLocally(ctx context.Context) error {
+	// Check if it's a builtin function
+	if r.ctx.BuiltinManager != nil {
+		builtin, isBuiltin := r.ctx.BuiltinManager.IsBuiltin(r.step.Uses)
+		if isBuiltin {
+			return r.executeBuiltin(ctx, builtin)
+		}
+	}
+
+	// Otherwise, treat as plugin
+	return r.executePlugin(ctx)
+}
+
+// executeBuiltin executes a builtin function
+func (r *StepRunner) executeBuiltin(ctx context.Context, builtinName string) error {
+	// Determine action (default to first available action if not specified)
+	action := r.step.Action
+	if action == "" {
+		// Try to get default action from builtin info
+		info, err := r.ctx.BuiltinManager.GetInfo(builtinName)
+		if err == nil && len(info.Actions) > 0 {
+			action = info.Actions[0]
+		} else {
+			action = "Execute"
+		}
+	}
+
+	// Resolve environment variables
+	env := r.ctx.ResolveStepEnv(r.job, r.step)
+
+	// Resolve params with variable substitution
+	resolvedParams := r.ctx.ResolveVariables(r.step.Args)
+
+	// Prepare params JSON
+	paramsJSON, err := json.Marshal(resolvedParams)
+	if err != nil {
+		return fmt.Errorf("marshal params: %w", err)
+	}
+
+	// Prepare builtin options
+	opts := &builtin.Options{
+		Workspace:        r.ctx.StepWorkspace(r.job.Name, r.step.Name),
+		Env:              env,
+		Job:              r.job,
+		Step:             r.step,
+		ExecutionContext: r.ctx,
+	}
+
+	// Execute builtin
+	_, err = r.ctx.BuiltinManager.Execute(ctx, builtinName, action, paramsJSON, opts)
+	if err != nil {
+		return fmt.Errorf("builtin execution failed: %w", err)
+	}
+
+	return nil
+}
+
+// executePlugin executes a plugin
+func (r *StepRunner) executePlugin(ctx context.Context) error {
+	if r.ctx.PluginManager == nil {
+		return fmt.Errorf("plugin manager is not available")
+	}
+
 	pluginClient, err := r.ctx.PluginManager.GetPlugin(r.step.Uses)
 	if err != nil {
 		return fmt.Errorf("plugin not found: %s: %w", r.step.Uses, err)
@@ -201,6 +264,8 @@ func (r *StepRunner) executeLocally(ctx context.Context) error {
 	}
 
 	// Call plugin method
+	// Note: ctx is kept for future use (e.g., timeout control)
+	_ = ctx
 	_, err = pluginClient.Execute(action, paramsJSON, optsJSON)
 	if err != nil {
 		return fmt.Errorf("plugin execution failed: %w", err)
