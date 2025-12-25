@@ -32,6 +32,7 @@ import (
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/metrics"
 	"github.com/go-arcade/arcade/pkg/pprof"
+	"github.com/go-arcade/arcade/pkg/shutdown"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/connectivity"
@@ -47,6 +48,7 @@ type Agent struct {
 	AgentConf     *config.AgentConfig
 	AgentService  *service.AgentService
 	ConfigFile    string // Configuration file path
+	ShutdownMgr   *shutdown.Manager
 }
 
 type InitAppFunc func(configPath string) (*Agent, func(), error)
@@ -62,6 +64,7 @@ func NewAgent(
 	pipelineHandler *queue.PipelineTaskHandler,
 	jobHandler *queue.JobTaskHandler,
 	stepHandler *queue.StepTaskHandler,
+	shutdownMgr *shutdown.Manager,
 ) (*Agent, func(), error) {
 	httpApp := rt.Router()
 
@@ -122,6 +125,7 @@ func NewAgent(
 		Logger:        logger,
 		AgentConf:     agentConf,
 		AgentService:  agentService,
+		ShutdownMgr:   shutdownMgr,
 	}
 	return app, cleanup, nil
 }
@@ -217,9 +221,17 @@ func Run(app *Agent, cleanup func()) {
 		}
 	}()
 
-	// wait for exit signal
-	sig := <-quit
-	log.Infow("Received signal, shutting down gracefully...", "signal", sig)
+	// wait for exit signal (either from OS signal or HTTP shutdown endpoint)
+	select {
+	case sig := <-quit:
+		log.Infow("Received OS signal, shutting down gracefully...", "signal", sig)
+		// mark as shutting down for health check
+		if app.ShutdownMgr != nil {
+			app.ShutdownMgr.Shutdown()
+		}
+	case <-app.ShutdownMgr.Wait():
+		log.Info("Received shutdown request via HTTP endpoint, shutting down gracefully...")
+	}
 
 	// close components in order
 	// close HTTP server

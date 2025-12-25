@@ -23,7 +23,8 @@ import (
 func initAgent(configPath string) (*bootstrap.Agent, func(), error) {
 	agentConfig := config.NewConf(configPath)
 	http := config.ProvideHttpConfig(agentConfig)
-	routerRouter := router.ProvideRouter(http)
+	manager := router.ProvideShutdownManager()
+	routerRouter := router.ProvideRouter(http, manager)
 	clientConf := config.ProvideGrpcClientConfig(agentConfig)
 	clientWrapper, err := grpc.ProvideGrpcClient(clientConf)
 	if err != nil {
@@ -51,7 +52,7 @@ func initAgent(configPath string) (*bootstrap.Agent, func(), error) {
 	pipelineTaskHandler := queue.ProvidePipelineTaskHandler()
 	jobTaskHandler := queue.ProvideJobTaskHandler()
 	stepTaskHandler := queue.ProvideStepTaskHandler()
-	agent, cleanup, err := bootstrap.NewAgent(routerRouter, clientWrapper, queueClient, server, pprofServer, logger, agentConfig, pipelineTaskHandler, jobTaskHandler, stepTaskHandler)
+	agent, cleanup, err := bootstrap.NewAgent(routerRouter, clientWrapper, queueClient, server, pprofServer, logger, agentConfig, pipelineTaskHandler, jobTaskHandler, stepTaskHandler, manager)
 	if err != nil {
 		return nil, nil, err
 	}
