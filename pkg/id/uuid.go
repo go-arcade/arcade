@@ -21,7 +21,6 @@ import (
 	"github.com/google/uuid"
 )
 
-
 var mu = &sync.Mutex{}
 
 // GetUUID generates a new UUID
@@ -36,5 +35,5 @@ func GetUUIDWithoutDashes() string {
 	mu.Lock()
 	defer mu.Unlock()
 
-	return strings.Replace(uuid.NewString(), "-", "", -1)
+	return strings.ReplaceAll(uuid.NewString(), "-", "")
 }
