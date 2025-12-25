@@ -18,7 +18,10 @@ import (
 	"time"
 
 	"github.com/go-arcade/arcade/pkg/http"
+	httpx "github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
+	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/shutdown"
 	"github.com/go-arcade/arcade/pkg/version"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -26,14 +29,17 @@ import (
 )
 
 type Router struct {
-	Http *http.Http
+	Http        *http.Http
+	ShutdownMgr *shutdown.Manager
 }
 
 func NewRouter(
 	httpConf *http.Http,
+	shutdownMgr *shutdown.Manager,
 ) *Router {
 	return &Router{
-		Http: httpConf,
+		Http:        httpConf,
+		ShutdownMgr: shutdownMgr,
 	}
 }
 
@@ -62,9 +68,28 @@ func (rt *Router) Router() *fiber.App {
 		middleware.UnifiedResponseMiddleware(),
 	)
 
-	// 健康检查
+	// 健康检查 - 在下线时返回 503，用于 Kubernetes readiness probe
 	app.Get("/health", func(c *fiber.Ctx) error {
+		if rt.ShutdownMgr != nil && rt.ShutdownMgr.IsShuttingDown() {
+			return c.Status(fiber.StatusServiceUnavailable).SendString("shutting down")
+		}
 		return c.SendString("ok")
+	})
+
+	// 优雅下线接口 - 触发服务优雅关闭
+	app.Post("/shutdown", func(c *fiber.Ctx) error {
+		if rt.ShutdownMgr == nil {
+			return c.Status(fiber.StatusInternalServerError).
+				JSON(httpx.WithRepErr(c, fiber.StatusInternalServerError, "shutdown manager not initialized", c.Path()))
+		}
+
+		if rt.ShutdownMgr.Shutdown() {
+			log.Info("Graceful shutdown triggered via HTTP endpoint")
+			return c.JSON(httpx.WithRepDetail(c, fiber.StatusOK, "shutdown initiated", nil))
+		}
+
+		return c.Status(fiber.StatusConflict).
+			JSON(httpx.WithRepErr(c, fiber.StatusConflict, "shutdown already in progress", c.Path()))
 	})
 
 	// 版本信息

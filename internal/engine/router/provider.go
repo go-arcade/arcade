@@ -18,23 +18,32 @@ import (
 	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/pkg/cache"
 	"github.com/go-arcade/arcade/pkg/http"
+	"github.com/go-arcade/arcade/pkg/shutdown"
 	"github.com/google/wire"
 )
 
 // ProviderSet 提供路由层相关的依赖
 var ProviderSet = wire.NewSet(
+	ProvideShutdownManager,
 	ProvideRouter,
 )
+
+// ProvideShutdownManager 提供优雅下线管理器
+func ProvideShutdownManager() *shutdown.Manager {
+	return shutdown.NewManager()
+}
 
 // ProvideRouter 提供路由实例
 func ProvideRouter(
 	httpConf *http.Http,
 	cache cache.ICache,
 	services *service.Services,
+	shutdownMgr *shutdown.Manager,
 ) *Router {
 	return NewRouter(
 		httpConf,
 		cache,
 		services,
+		shutdownMgr,
 	)
 }

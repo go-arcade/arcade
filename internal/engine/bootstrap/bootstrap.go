@@ -34,6 +34,7 @@ import (
 	"github.com/go-arcade/arcade/pkg/metrics"
 	"github.com/go-arcade/arcade/pkg/plugin"
 	"github.com/go-arcade/arcade/pkg/pprof"
+	"github.com/go-arcade/arcade/pkg/shutdown"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 )
@@ -49,6 +50,7 @@ type App struct {
 	Storage       storage.StorageProvider
 	AppConf       *config.AppConfig
 	Repos         *repo.Repositories
+	ShutdownMgr   *shutdown.Manager
 }
 
 // InitAppFunc init app function type
@@ -67,6 +69,7 @@ func NewApp(
 	appConf *config.AppConfig,
 	db database.IDatabase,
 	repos *repo.Repositories,
+	shutdownMgr *shutdown.Manager,
 ) (*App, func(), error) {
 	httpApp := rt.Router()
 
@@ -85,6 +88,7 @@ func NewApp(
 		Storage:       storage,
 		AppConf:       appConf,
 		Repos:         repos,
+		ShutdownMgr:   shutdownMgr,
 	}
 
 	cleanup := func() {
@@ -207,9 +211,17 @@ func Run(app *App, cleanup func()) {
 		}
 	}()
 
-	// wait for exit signal
-	sig := <-quit
-	log.Infow("Received signal, shutting down gracefully...", "signal", sig)
+	// wait for exit signal (either from OS signal or HTTP shutdown endpoint)
+	select {
+	case sig := <-quit:
+		log.Infow("Received OS signal, shutting down gracefully...", "signal", sig)
+		// mark as shutting down for health check
+		if app.ShutdownMgr != nil {
+			app.ShutdownMgr.Shutdown()
+		}
+	case <-app.ShutdownMgr.Wait():
+		log.Info("Received shutdown request via HTTP endpoint, shutting down gracefully...")
+	}
 
 	// close components in order
 	// close HTTP server
