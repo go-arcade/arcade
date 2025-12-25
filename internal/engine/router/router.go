@@ -81,16 +81,16 @@ func (rt *Router) Router() *fiber.App {
 		ReadTimeout:  time.Duration(rt.Http.ReadTimeout) * time.Second,
 		WriteTimeout: time.Duration(rt.Http.WriteTimeout) * time.Second,
 		IdleTimeout:  time.Duration(rt.Http.IdleTimeout) * time.Second,
-		BodyLimit:    bodyLimit, // 请求体大小限制，用于插件上传等
+		BodyLimit:    bodyLimit, // 请求体大小限制
 	})
-
-	app.Use(httpx.AccessLogFormat(rt.Http))
 
 	// 中间件
 	app.Use(
 		recover.New(),
 		cors.New(),
 		middleware.UnifiedResponseMiddleware(),
+		middleware.TraceMiddleware(),
+		httpx.AccessLogFormat(rt.Http),
 	)
 
 	// Configure i18n middleware with embedded filesystem
