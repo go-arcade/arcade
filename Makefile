@@ -2,7 +2,7 @@ SHELL := /bin/sh
 .ONESHELL:
 .SHELLFLAGS := -eu -o pipefail -c
 
-.PHONY: help prebuild build plugins plugins-clean plugins-package proto proto-clean proto-install wire wire-install wire-clean staticcheck staticcheck-install staticcheck-check version version-check version-tag
+.PHONY: help prebuild build proto proto-clean proto-install wire wire-install wire-clean staticcheck staticcheck-install staticcheck-check version version-check version-tag
 
 # git
 # Version format: YY.Major.Minor.Patch (e.g., 25.1.2.3, where 25 represents 2025)
@@ -26,13 +26,6 @@ GIT_BRANCH = $(shell git rev-parse --abbrev-ref HEAD)
 #GIT_COMMIT = $(shell git rev-parse --short=7 HEAD)
 GIT_COMMIT = $(shell git rev-parse HEAD)
 BUILD_TIME := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
-
-# plugins
-PLUGINS_SRC_DIR := pkg/plugins
-PLUGINS_OUT_DIR := plugins
-
-# use go list to only pick out plugin directories with package=main
-PLUGINS_MAIN_DIRS := $(shell go list -f '{{if eq .Name "main"}}{{.Dir}}{{end}}' ./$(PLUGINS_SRC_DIR)/... | sed '/^$$/d')
 
 # proto
 PROTO_DIR := api
@@ -71,26 +64,12 @@ all: deps-sync prebuild plugins build ## full build (frontend+plugins+main progr
 
 JOBS ?= $(shell getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)
 
-plugins: ## build all RPC plugins (executable files)
-	@./scripts/plugins.sh build $(JOBS)
-
-plugins-package: plugins ## package plugins to zip files
-	@./scripts/plugins.sh package
-
-plugins-all: ## build and package all plugins
-	@./scripts/plugins.sh all $(JOBS)
-
-plugins-clean: ## clean plugin build artifacts
-	@echo ">> cleaning $(PLUGINS_OUT_DIR)/*"
-	@rm -f $(PLUGINS_OUT_DIR)/* || true
-	@rm -rf $(PLUGINS_OUT_DIR)/.tmp || true
-
 prebuild: ## download and embed the front-end file
 	echo "begin download and embed the front-end file..."
 	sh dl.sh
 	echo "web file download and embedding completed."
 
-build: wire plugins buf ## build main program
+build: wire buf ## build main program
 	go build -ldflags "${LDFLAGS}" -o arcade ./cmd/arcade/
 
 build-agent: wire buf ## build agent program
