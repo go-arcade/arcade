@@ -19,129 +19,89 @@ import (
 	"time"
 
 	"github.com/go-arcade/arcade/pkg/cron"
-	"github.com/prometheus/client_golang/prometheus"
+	"github.com/hashicorp/go-metrics"
 )
 
-// CronMetricsRecorder implements cron.MetricsRecorder interface
-type CronMetricsRecorder struct{}
-
 var (
-	// CronJobRunsTotal counts the total number of cron job runs
-	CronJobRunsTotal = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "cron_job_runs_total",
-			Help: "Total number of cron job runs",
-		},
-		[]string{"job_name"},
-	)
-
-	// CronJobRunDurationSeconds measures the duration of cron job runs
-	CronJobRunDurationSeconds = prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Name:    "cron_job_run_duration_seconds",
-			Help:    "Duration of cron job runs in seconds",
-			Buckets: prometheus.ExponentialBuckets(0.001, 2, 15), // 1ms to ~32s
-		},
-		[]string{"job_name"},
-	)
-
-	// CronJobErrorsTotal counts the total number of cron job errors
-	CronJobErrorsTotal = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "cron_job_errors_total",
-			Help: "Total number of cron job errors",
-		},
-		[]string{"job_name"},
-	)
-
-	// CronJobLastRunTime records the last run time of each cron job
-	CronJobLastRunTime = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "cron_job_last_run_time_seconds",
-			Help: "Last run time of cron job in seconds since epoch",
-		},
-		[]string{"job_name"},
-	)
-
-	// CronJobNextRunTime records the next scheduled run time of each cron job
-	CronJobNextRunTime = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "cron_job_next_run_time_seconds",
-			Help: "Next scheduled run time of cron job in seconds since epoch",
-		},
-		[]string{"job_name"},
-	)
-
-	// CronJobsTotal counts the total number of registered cron jobs
-	CronJobsTotal = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "cron_jobs_total",
-			Help: "Total number of registered cron jobs",
-		},
-	)
-
 	// cronMetricsOnce ensures metrics are registered only once
 	cronMetricsOnce sync.Once
 )
 
+// CronMetricsRecorder implements cron.MetricsRecorder interface
+type CronMetricsRecorder struct {
+	sink metrics.MetricSink
+}
+
 // NewCronMetricsRecorder creates a new cron metrics recorder
-func NewCronMetricsRecorder() *CronMetricsRecorder {
-	return &CronMetricsRecorder{}
+func NewCronMetricsRecorder(sink metrics.MetricSink) *CronMetricsRecorder {
+	return &CronMetricsRecorder{sink: sink}
 }
 
 // RecordJobRun records a cron job run
 func (r *CronMetricsRecorder) RecordJobRun(jobName string, duration time.Duration, err error) {
-	RecordCronJobRun(jobName, duration, err)
+	RecordCronJobRun(r.sink, jobName, duration, err)
 }
 
 // UpdateNextRun updates the next run time for a cron job
 func (r *CronMetricsRecorder) UpdateNextRun(jobName string, nextRun time.Time) {
-	UpdateCronJobNextRun(jobName, nextRun)
+	UpdateCronJobNextRun(r.sink, jobName, nextRun)
 }
 
 // UpdateJobsCount updates the total number of registered cron jobs
 func (r *CronMetricsRecorder) UpdateJobsCount(count int) {
-	UpdateCronJobsCount(count)
+	UpdateCronJobsCount(r.sink, count)
 }
 
 // SetupCronMetrics sets up cron metrics recording
-func SetupCronMetrics(registry *prometheus.Registry) {
-	RegisterCronMetrics(registry)
-	cron.SetMetricsRecorder(NewCronMetricsRecorder())
-}
-
-// RegisterCronMetrics registers all cron-related metrics
-func RegisterCronMetrics(registry *prometheus.Registry) {
+func SetupCronMetrics(metricsSink metrics.MetricSink) {
 	cronMetricsOnce.Do(func() {
-		registry.MustRegister(
-			CronJobRunsTotal,
-			CronJobRunDurationSeconds,
-			CronJobErrorsTotal,
-			CronJobLastRunTime,
-			CronJobNextRunTime,
-			CronJobsTotal,
-		)
+		cron.SetMetricsRecorder(NewCronMetricsRecorder(metricsSink))
 	})
 }
 
 // RecordCronJobRun records a cron job run
-func RecordCronJobRun(jobName string, duration time.Duration, err error) {
-	if err != nil {
-		CronJobErrorsTotal.WithLabelValues(jobName).Inc()
+func RecordCronJobRun(metricsSink metrics.MetricSink, jobName string, duration time.Duration, err error) {
+	if metricsSink == nil {
+		return
 	}
-	CronJobRunsTotal.WithLabelValues(jobName).Inc()
-	CronJobRunDurationSeconds.WithLabelValues(jobName).Observe(duration.Seconds())
-	CronJobLastRunTime.WithLabelValues(jobName).Set(float64(time.Now().Unix()))
+
+	labels := []metrics.Label{
+		{Name: "job_name", Value: jobName},
+	}
+
+	// Increment total runs counter
+	metricsSink.IncrCounterWithLabels([]string{"cron", "job", "runs", "total"}, 1, labels)
+
+	// Record duration as histogram
+	metricsSink.AddSampleWithLabels([]string{"cron", "job", "run", "duration", "seconds"}, float32(duration.Seconds()), labels)
+
+	// Record last run time as gauge
+	metricsSink.SetGaugeWithLabels([]string{"cron", "job", "last", "run", "time", "seconds"}, float32(time.Now().Unix()), labels)
+
+	// Increment error counter if there's an error
+	if err != nil {
+		metricsSink.IncrCounterWithLabels([]string{"cron", "job", "errors", "total"}, 1, labels)
+	}
 }
 
 // UpdateCronJobNextRun updates the next run time for a cron job
-func UpdateCronJobNextRun(jobName string, nextRun time.Time) {
-	if !nextRun.IsZero() {
-		CronJobNextRunTime.WithLabelValues(jobName).Set(float64(nextRun.Unix()))
+func UpdateCronJobNextRun(metricsSink metrics.MetricSink, jobName string, nextRun time.Time) {
+	if metricsSink == nil || nextRun.IsZero() {
+		return
 	}
+
+	labels := []metrics.Label{
+		{Name: "job_name", Value: jobName},
+	}
+
+	metricsSink.SetGaugeWithLabels([]string{"cron", "job", "next", "run", "time", "seconds"}, float32(nextRun.Unix()), labels)
 }
 
 // UpdateCronJobsCount updates the total number of registered cron jobs
-func UpdateCronJobsCount(count int) {
-	CronJobsTotal.Set(float64(count))
+func UpdateCronJobsCount(metricsSink metrics.MetricSink, count int) {
+	if metricsSink == nil {
+		return
+	}
+
+	metricsSink.SetGauge([]string{"cron", "jobs", "total"}, float32(count))
 }

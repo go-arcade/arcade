@@ -27,11 +27,9 @@ func (l *Loop) CalculateInterval(loopedTimes uint64) time.Duration {
 	}
 	// interval = initialInterval * declineRatio^(loopedTimes-1)
 	// change loopedTimes+1 to loopedTimes-1 to make interval is accurate
-	interval := time.Duration(float64(l.interval) * math.Pow(l.declineRatio, float64(loopedTimes-1)))
-	// interval not exceed declineLimit
-	if interval > l.declineLimit {
-		interval = l.declineLimit
-	}
+	interval := min(
+		// interval not exceed declineLimit
+		time.Duration(float64(l.interval)*math.Pow(l.declineRatio, float64(loopedTimes-1))), l.declineLimit)
 	// interval not less than initial interval
 	if interval < 0 {
 		interval = time.Duration(math.Min(float64(l.declineLimit), float64(l.interval)))
