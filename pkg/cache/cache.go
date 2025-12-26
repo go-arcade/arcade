@@ -43,6 +43,8 @@ type ICache interface {
 
 // RedisClientGetter 获取 Redis 客户端的接口（用于需要直接访问 redis.Client 的场景）
 type RedisClientGetter interface {
-	// GetClient 获取底层的 redis.Client
+	// GetClient 获取底层的 redis.Client（仅单节点和 Sentinel 模式支持，集群模式返回 nil）
 	GetClient() *redis.Client
+	// GetCmdable 获取底层的 redis.Cmdable（支持所有模式：单节点、Sentinel 和集群）
+	GetCmdable() redis.Cmdable
 }

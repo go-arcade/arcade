@@ -17,6 +17,7 @@ package cache
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -26,16 +27,39 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// ProviderSet 提供缓存相关的依赖
-var ProviderSet = wire.NewSet(ProvideRedis, ProvideICache)
+// ProviderSet 提供缓存相关的依赖（支持单节点、Sentinel 和集群模式）
+var ProviderSet = wire.NewSet(ProvideRedisCmdable, ProvideICache)
 
-// ProvideRedis 提供 Redis 实例
+// ProviderSetLegacy 提供缓存相关的依赖（兼容旧版本，仅支持单节点和 Sentinel）
+var ProviderSetLegacy = wire.NewSet(ProvideRedis, ProvideICacheFromClient)
+
+// ProvideRedis 提供 Redis 实例（兼容旧版本，返回单节点客户端）
+// 注意：集群模式请使用 ProvideRedisCmdable
 func ProvideRedis(conf Redis) (*redis.Client, error) {
-	return NewRedis(conf)
+	cmdable, err := NewRedisCmdable(conf)
+	if err != nil {
+		return nil, err
+	}
+	// 如果是单节点客户端，返回 *redis.Client
+	if client, ok := cmdable.(*redis.Client); ok {
+		return client, nil
+	}
+	// 集群模式不支持返回 *redis.Client，返回错误
+	return nil, fmt.Errorf("cluster mode does not support *redis.Client, use ProvideRedisCmdable instead")
 }
 
-// ProvideICache 提供 ICache 接口实例
-func ProvideICache(client *redis.Client) ICache {
+// ProvideRedisCmdable 提供 Redis 实例（支持单节点、Sentinel 和集群模式）
+func ProvideRedisCmdable(conf Redis) (redis.Cmdable, error) {
+	return NewRedisCmdable(conf)
+}
+
+// ProvideICache 提供 ICache 接口实例（支持单节点、Sentinel 和集群模式）
+func ProvideICache(cmdable redis.Cmdable) ICache {
+	return NewRedisCache(cmdable)
+}
+
+// ProvideICacheFromClient 提供 ICache 接口实例（从 *redis.Client 创建，兼容旧版本）
+func ProvideICacheFromClient(client *redis.Client) ICache {
 	return NewRedisCache(client)
 }
 
@@ -52,11 +76,28 @@ type Redis struct {
 	DialTimeout      time.Duration // 连接超时
 	ReadTimeout      time.Duration // 读超时
 	WriteTimeout     time.Duration // 写超时
+	MaxRedirects     int           // 集群模式最大重定向次数
 }
 
+// NewRedis 创建 Redis 客户端（兼容旧版本，仅支持单节点和 Sentinel）
+// 注意：集群模式请使用 NewRedisCmdable
 func NewRedis(cfg Redis) (*redis.Client, error) {
+	cmdable, err := NewRedisCmdable(cfg)
+	if err != nil {
+		return nil, err
+	}
+	// 如果是单节点客户端，返回 *redis.Client
+	if client, ok := cmdable.(*redis.Client); ok {
+		return client, nil
+	}
+	// 集群模式不支持返回 *redis.Client
+	return nil, fmt.Errorf("cluster mode does not support *redis.Client, use NewRedisCmdable instead")
+}
 
-	var redisClient *redis.Client
+// NewRedisCmdable 创建 Redis 客户端（支持单节点、Sentinel 和集群模式）
+func NewRedisCmdable(cfg Redis) (redis.Cmdable, error) {
+	var cmdable redis.Cmdable
+
 	switch cfg.Mode {
 	case "single":
 		redisOptions := &redis.Options{
@@ -71,7 +112,7 @@ func NewRedis(cfg Redis) (*redis.Client, error) {
 		if cfg.UseTLS {
 			redisOptions.TLSConfig = &tls.Config{}
 		}
-		redisClient = redis.NewClient(redisOptions)
+		cmdable = redis.NewClient(redisOptions)
 	case "sentinel":
 		redisOptions := &redis.FailoverOptions{
 			MasterName:       cfg.MasterName,
@@ -88,15 +129,33 @@ func NewRedis(cfg Redis) (*redis.Client, error) {
 		if cfg.UseTLS {
 			redisOptions.TLSConfig = &tls.Config{}
 		}
-		redisClient = redis.NewFailoverClient(redisOptions)
+		cmdable = redis.NewFailoverClient(redisOptions)
+	case "cluster":
+		maxRedirects := cfg.MaxRedirects
+		if maxRedirects == 0 {
+			maxRedirects = 3 // 默认最大重定向次数
+		}
+		clusterOptions := &redis.ClusterOptions{
+			Addrs:        strings.Split(cfg.Address, ","),
+			Password:     cfg.Password,
+			PoolSize:     cfg.PoolSize,
+			DialTimeout:  cfg.DialTimeout * time.Second,
+			ReadTimeout:  cfg.ReadTimeout * time.Second,
+			WriteTimeout: cfg.WriteTimeout * time.Second,
+			MaxRedirects: maxRedirects,
+		}
+		if cfg.UseTLS {
+			clusterOptions.TLSConfig = &tls.Config{}
+		}
+		cmdable = redis.NewClusterClient(clusterOptions)
 	default:
 		log.Errorw("failed to init redis, redis type is illegal", "mode", cfg.Mode)
 		os.Exit(1)
 	}
 
-	err := redisClient.Ping(context.Background()).Err()
+	err := cmdable.Ping(context.Background()).Err()
 	if err != nil {
-		log.Errorw("failed to connect redis", "error", err)
+		log.Errorw("failed to connect redis", "error", err, "mode", cfg.Mode)
 		return nil, err
 	}
 
@@ -104,5 +163,5 @@ func NewRedis(cfg Redis) (*redis.Client, error) {
 		"mode", cfg.Mode,
 	)
 
-	return redisClient, nil
+	return cmdable, nil
 }
