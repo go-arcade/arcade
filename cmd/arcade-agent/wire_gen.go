@@ -31,12 +31,15 @@ func initAgent(configPath string) (*bootstrap.Agent, func(), error) {
 		return nil, nil, err
 	}
 	redis := config.ProvideRedisConfig(agentConfig)
-	client, err := cache.ProvideRedis(redis)
+	cmdable, err := cache.ProvideRedisCmdable(redis)
 	if err != nil {
 		return nil, nil, err
 	}
-	queueConfig := queue.ProvideAgentConfig(agentConfig, client)
-	queueClient, err := queue.ProvideQueueClient(queueConfig)
+	queueConfig, err := queue.ProvideAgentConfig(agentConfig, cmdable)
+	if err != nil {
+		return nil, nil, err
+	}
+	client, err := queue.ProvideQueueClient(queueConfig)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -52,7 +55,7 @@ func initAgent(configPath string) (*bootstrap.Agent, func(), error) {
 	pipelineTaskHandler := queue.ProvidePipelineTaskHandler()
 	jobTaskHandler := queue.ProvideJobTaskHandler()
 	stepTaskHandler := queue.ProvideStepTaskHandler()
-	agent, cleanup, err := bootstrap.NewAgent(routerRouter, clientWrapper, queueClient, server, pprofServer, logger, agentConfig, pipelineTaskHandler, jobTaskHandler, stepTaskHandler, manager)
+	agent, cleanup, err := bootstrap.NewAgent(routerRouter, clientWrapper, client, server, pprofServer, logger, agentConfig, pipelineTaskHandler, jobTaskHandler, stepTaskHandler, manager)
 	if err != nil {
 		return nil, nil, err
 	}
