@@ -15,6 +15,8 @@
 package queue
 
 import (
+	"fmt"
+
 	agentconfig "github.com/go-arcade/arcade/internal/agent/config"
 	"github.com/go-arcade/arcade/internal/engine/config"
 	"github.com/go-arcade/arcade/pkg/database"
@@ -37,8 +39,23 @@ var AgentProviderSet = wire.NewSet(
 	ProvideStepTaskHandler,
 )
 
+// cmdableToUniversalClient 将 redis.Cmdable 转换为 redis.UniversalClient
+// *redis.Client 和 *redis.ClusterClient 都实现了 redis.UniversalClient 接口
+func cmdableToUniversalClient(cmdable redis.Cmdable) (redis.UniversalClient, error) {
+	// 尝试类型断言为 UniversalClient（*redis.Client 和 *redis.ClusterClient 都实现了此接口）
+	if universalClient, ok := cmdable.(redis.UniversalClient); ok {
+		return universalClient, nil
+	}
+	return nil, fmt.Errorf("redis.Cmdable (type %T) cannot be converted to redis.UniversalClient", cmdable)
+}
+
 // ProvideConfig 提供 queue 配置（主程序使用）
-func ProvideConfig(appConf *config.AppConfig, mongoDB database.MongoDB, redisClient *redis.Client) *Config {
+func ProvideConfig(appConf *config.AppConfig, mongoDB database.MongoDB, cmdable redis.Cmdable) (*Config, error) {
+	redisClient, err := cmdableToUniversalClient(cmdable)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert redis.Cmdable to redis.UniversalClient: %w", err)
+	}
+
 	taskQueueConf := appConf.TaskQueue
 
 	// 默认队列配置
@@ -69,11 +86,16 @@ func ProvideConfig(appConf *config.AppConfig, mongoDB database.MongoDB, redisCli
 		GroupGracePeriod: taskQueueConf.GroupGracePeriod,
 		GroupMaxDelay:    taskQueueConf.GroupMaxDelay,
 		GroupMaxSize:     taskQueueConf.GroupMaxSize,
-	}
+	}, nil
 }
 
 // ProvideAgentConfig 提供 queue 配置（Agent 使用）
-func ProvideAgentConfig(agentConf *agentconfig.AgentConfig, redisClient *redis.Client) *Config {
+func ProvideAgentConfig(agentConf *agentconfig.AgentConfig, cmdable redis.Cmdable) (*Config, error) {
+	redisClient, err := cmdableToUniversalClient(cmdable)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert redis.Cmdable to redis.UniversalClient: %w", err)
+	}
+
 	taskQueueConf := agentConf.TaskQueue
 
 	// 默认队列配置
@@ -104,7 +126,7 @@ func ProvideAgentConfig(agentConf *agentconfig.AgentConfig, redisClient *redis.C
 		GroupGracePeriod: taskQueueConf.GroupGracePeriod,
 		GroupMaxDelay:    taskQueueConf.GroupMaxDelay,
 		GroupMaxSize:     taskQueueConf.GroupMaxSize,
-	}
+	}, nil
 }
 
 // ProvideQueueServer 提供队列服务器（主程序使用）
