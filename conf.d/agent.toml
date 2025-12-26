@@ -164,6 +164,7 @@ bodyLimit = 104857600
 # support single, cluster, sentinel
 mode = "single"
 # address, ip:port or ip1:port,ip2:port for cluster and sentinel(SentinelAddrs)
+# For cluster mode: address = "127.0.0.1:7000,127.0.0.1:7001,127.0.0.1:7002"
 address = "127.0.0.1:6379"
 password = ""
 db = 0
@@ -173,6 +174,8 @@ poolSize = 50
 #masterName = ""
 #sentinelUsername = ""
 #sentinelPassword = ""
+# maxRedirects: maximum number of redirects for cluster mode (default: 3)
+#maxRedirects = 3
 # dialTimeout
 # unit: second
 dialTimeout = 10
