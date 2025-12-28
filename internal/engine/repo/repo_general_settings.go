@@ -16,8 +16,6 @@ package repo
 
 import (
 	"context"
-	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/go-arcade/arcade/internal/engine/consts"
@@ -65,7 +63,7 @@ func (gsr *GeneralSettingsRepo) UpdateGeneralSettings(settings *model.GeneralSet
 	return nil
 }
 
-// GetGeneralSettingsByID gets a general settings by settings ID (with Redis Hash cache)
+// GetGeneralSettingsByID gets a general settings by settings ID (with Redis JSON cache)
 func (gsr *GeneralSettingsRepo) GetGeneralSettingsByID(settingsId string) (*model.GeneralSettings, error) {
 	// First query database to get the name and category
 	var tempSettings model.GeneralSettings
@@ -77,16 +75,16 @@ func (gsr *GeneralSettingsRepo) GetGeneralSettingsByID(settingsId string) (*mode
 		return nil, err
 	}
 
-	// Use name as hash key (category is used in query but cache key is still by name)
+	// Use name as cache key (category is used in query but cache key is still by name)
 	return gsr.getGeneralSettingsByName(tempSettings.Name, tempSettings.Category, settingsId)
 }
 
-// GetGeneralSettingsByName gets a general settings by category and name (with Redis Hash cache)
+// GetGeneralSettingsByName gets a general settings by category and name (with Redis JSON cache)
 func (gsr *GeneralSettingsRepo) GetGeneralSettingsByName(category, name string) (*model.GeneralSettings, error) {
 	return gsr.getGeneralSettingsByName(name, category, "")
 }
 
-// getGeneralSettingsByName gets general settings by name using CachedHashQuery
+// getGeneralSettingsByName gets general settings by name using CachedQuery (stores as JSON string in Redis)
 func (gsr *GeneralSettingsRepo) getGeneralSettingsByName(name string, category string, settingsId string) (*model.GeneralSettings, error) {
 	ctx := context.Background()
 
@@ -113,87 +111,12 @@ func (gsr *GeneralSettingsRepo) getGeneralSettingsByName(name string, category s
 		return &settings, nil
 	}
 
-	hashMarshal := func(settings *model.GeneralSettings) map[string]interface{} {
-		hashFields := map[string]interface{}{
-			"id":          strconv.FormatUint(settings.ID, 10),
-			"settingsId":  settings.SettingsId,
-			"category":    settings.Category,
-			"name":        settings.Name,
-			"displayName": settings.DisplayName,
-			"description": settings.Description,
-		}
-
-		// Convert JSON fields to string
-		if settings.Data != nil {
-			hashFields["data"] = string(settings.Data)
-		}
-		if settings.Schema != nil {
-			hashFields["schema"] = string(settings.Schema)
-		}
-
-		// Convert timestamps
-		if !settings.CreatedAt.IsZero() {
-			hashFields["createdAt"] = settings.CreatedAt.Format(time.RFC3339)
-		}
-		if !settings.UpdatedAt.IsZero() {
-			hashFields["updatedAt"] = settings.UpdatedAt.Format(time.RFC3339)
-		}
-
-		return hashFields
-	}
-
-	hashUnmarshal := func(hashData map[string]string) (*model.GeneralSettings, error) {
-		if len(hashData) == 0 {
-			return nil, fmt.Errorf("empty hash data")
-		}
-
-		settings := &model.GeneralSettings{}
-
-		// Parse ID
-		if idStr, ok := hashData["id"]; ok {
-			if id, err := strconv.ParseUint(idStr, 10, 64); err == nil {
-				settings.ID = id
-			}
-		}
-
-		// Parse string fields
-		settings.SettingsId = hashData["settingsId"]
-		settings.Category = hashData["category"]
-		settings.Name = hashData["name"]
-		settings.DisplayName = hashData["displayName"]
-		settings.Description = hashData["description"]
-
-		// Parse JSON fields
-		if dataStr, ok := hashData["data"]; ok && dataStr != "" {
-			settings.Data = []byte(dataStr)
-		}
-		if schemaStr, ok := hashData["schema"]; ok && schemaStr != "" {
-			settings.Schema = []byte(schemaStr)
-		}
-
-		// Parse timestamps
-		if createdAtStr, ok := hashData["createdAt"]; ok && createdAtStr != "" {
-			if t, err := time.Parse(time.RFC3339, createdAtStr); err == nil {
-				settings.CreatedAt = t
-			}
-		}
-		if updatedAtStr, ok := hashData["updatedAt"]; ok && updatedAtStr != "" {
-			if t, err := time.Parse(time.RFC3339, updatedAtStr); err == nil {
-				settings.UpdatedAt = t
-			}
-		}
-
-		return settings, nil
-	}
-
-	cq := cache.NewCachedHashQuery(
+	cq := cache.NewCachedQuery(
 		gsr.ICache,
 		keyFunc,
 		queryFunc,
-		hashMarshal,
-		hashUnmarshal,
-		cache.WithHashTTL[*model.GeneralSettings](generalSettingsCacheTTL),
-		cache.WithHashLogPrefix[*model.GeneralSettings]("[GeneralSettingsRepo]"),
+		cache.WithTTL[*model.GeneralSettings](generalSettingsCacheTTL),
+		cache.WithLogPrefix[*model.GeneralSettings]("[GeneralSettingsRepo]"),
 	)
 
 	return cq.Get(ctx, name)
@@ -239,7 +162,7 @@ func (gsr *GeneralSettingsRepo) GetCategories() ([]string, error) {
 	return categories, err
 }
 
-// clearGeneralSettingsCache 清除通用设置的缓存（删除 Redis Hash）
+// clearGeneralSettingsCache 清除通用设置的缓存（删除 Redis JSON 字符串）
 func (gsr *GeneralSettingsRepo) clearGeneralSettingsCache(name string) {
 	if gsr.ICache == nil {
 		return
@@ -249,6 +172,6 @@ func (gsr *GeneralSettingsRepo) clearGeneralSettingsCache(name string) {
 	keyFunc := func(params ...any) string {
 		return consts.GeneralSettingsKeyByName + params[0].(string)
 	}
-	cq := cache.NewCachedHashQuery[*model.GeneralSettings](gsr.ICache, keyFunc, nil, nil, nil)
+	cq := cache.NewCachedQuery[*model.GeneralSettings](gsr.ICache, keyFunc, nil)
 	_ = cq.Invalidate(ctx, name)
 }

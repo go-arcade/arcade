@@ -15,7 +15,7 @@
 package router
 
 import (
-	userextnmodel "github.com/go-arcade/arcade/internal/engine/model"
+	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/gofiber/fiber/v2"
@@ -24,50 +24,50 @@ import (
 func (rt *Router) userExtRouter(r fiber.Router, auth fiber.Handler) {
 	userExtGroup := r.Group("/users/:userId/ext", auth)
 	{
-		userExtGroup.Get("/", rt.getUserExt)                       // GET /users/:userId/ext - get user extension info
-		userExtGroup.Put("/", rt.updateUserExt)                    // PUT /users/:userId/ext - update user extension info
+		userExtGroup.Get("/", rt.getUserExt)                       // GET /users/:userId/ext - get user ext info
+		userExtGroup.Put("/", rt.updateUserExt)                    // PUT /users/:userId/ext - update user ext info
 		userExtGroup.Put("/timezone", rt.updateTimezone)           // PUT /users/:userId/ext/timezone - update timezone
 		userExtGroup.Put("/invitation", rt.updateInvitationStatus) // PUT /users/:userId/ext/invitation - update invitation status
 	}
 }
 
-// getUserExtension gets user extension information
+// getUserExt gets user ext information
 func (rt *Router) getUserExt(c *fiber.Ctx) error {
 	userId := c.Params("userId")
 	if userId == "" {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "user id is required", c.Path())
 	}
 
-	userExtService := rt.Services.UserExtension
+	userExtService := rt.Services.UserExt
 
-	extension, err := userExtService.GetUserExtension(userId)
+	ext, err := userExtService.GetUserExt(userId)
 	if err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
 	}
 
-	c.Locals(middleware.DETAIL, extension)
+	c.Locals(middleware.DETAIL, ext)
 	return nil
 }
 
-// updateUserExtension updates user extension information
+// updateUserExt updates user ext information
 func (rt *Router) updateUserExt(c *fiber.Ctx) error {
 	userId := c.Params("userId")
 	if userId == "" {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "user id is required", c.Path())
 	}
 
-	var extension userextnmodel.UserExt
-	if err := c.BodyParser(&extension); err != nil {
+	var ext model.UserExt
+	if err := c.BodyParser(&ext); err != nil {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid request parameters", c.Path())
 	}
 
-	userExtService := rt.Services.UserExtension
+	userExtService := rt.Services.UserExt
 
-	if err := userExtService.UpdateUserExtension(userId, &extension); err != nil {
+	if err := userExtService.UpdateUserExt(userId, &ext); err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
 	}
 
-	c.Locals(middleware.OPERATION, "update user extension")
+	c.Locals(middleware.OPERATION, "update user ext")
 	return nil
 }
 
@@ -91,7 +91,7 @@ func (rt *Router) updateTimezone(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "timezone is required", c.Path())
 	}
 
-	userExtService := rt.Services.UserExtension
+	userExtService := rt.Services.UserExt
 
 	if err := userExtService.UpdateTimezone(userId, req.Timezone); err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
@@ -121,7 +121,7 @@ func (rt *Router) updateInvitationStatus(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "status is required", c.Path())
 	}
 
-	userExtService := rt.Services.UserExtension
+	userExtService := rt.Services.UserExt
 
 	if err := userExtService.UpdateInvitationStatus(userId, req.Status); err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())

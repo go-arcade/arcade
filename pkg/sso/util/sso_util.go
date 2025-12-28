@@ -22,6 +22,12 @@ import (
 
 var StateStore = &sync.Map{}
 
+// StateData contains data stored in state
+type StateData struct {
+	ProviderName string `json:"providerName"`
+	RedirectURI  string `json:"redirectURI,omitempty"`
+}
+
 // GenState generate a random state string
 func GenState() string {
 	b := make([]byte, 16)
@@ -32,11 +38,42 @@ func GenState() string {
 	return base64.URLEncoding.EncodeToString(b)
 }
 
+// StoreState stores state data
+func StoreState(state string, providerName string) {
+	data := StateData{
+		ProviderName: providerName,
+	}
+	StateStore.Store(state, data)
+}
+
 // LoadAndDeleteState load and delete the state from the state store
-func LoadAndDeleteState(state string) (string, bool) {
+func LoadAndDeleteState(state string) (StateData, bool) {
 	value, ok := StateStore.LoadAndDelete(state)
 	if ok {
-		return value.(string), true
+		if data, ok := value.(StateData); ok {
+			return data, true
+		}
+		// Backward compatibility: if stored as string (old format), treat as providerName only
+		if str, ok := value.(string); ok {
+			return StateData{ProviderName: str}, true
+		}
+		return StateData{}, false
 	}
-	return "", false
+	return StateData{}, false
+}
+
+// CheckState checks if a state exists in the store without deleting it (for debugging)
+func CheckState(state string) (StateData, bool) {
+	value, ok := StateStore.Load(state)
+	if ok {
+		if data, ok := value.(StateData); ok {
+			return data, true
+		}
+		// Backward compatibility
+		if str, ok := value.(string); ok {
+			return StateData{ProviderName: str}, true
+		}
+		return StateData{}, false
+	}
+	return StateData{}, false
 }

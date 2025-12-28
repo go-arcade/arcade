@@ -40,6 +40,7 @@ type LoginService interface {
 type UserService struct {
 	cache               cache.ICache
 	userRepo            userrepo.IUserRepository
+	userExtRepo         userrepo.IUserExtRepository
 	userRoleBindingRepo userrepo.IUserRoleBindingRepository
 	roleMenuBindingRepo userrepo.IRoleMenuBindingRepository
 	menuRepo            userrepo.IMenuRepository
@@ -50,6 +51,7 @@ type UserService struct {
 func NewUserService(
 	cache cache.ICache,
 	userRepo userrepo.IUserRepository,
+	userExtRepo userrepo.IUserExtRepository,
 	userRoleBindingRepo userrepo.IUserRoleBindingRepository,
 	roleMenuBindingRepo userrepo.IRoleMenuBindingRepository,
 	menuRepo userrepo.IMenuRepository,
@@ -59,6 +61,7 @@ func NewUserService(
 	return &UserService{
 		cache:               cache,
 		userRepo:            userRepo,
+		userExtRepo:         userExtRepo,
 		userRoleBindingRepo: userRoleBindingRepo,
 		roleMenuBindingRepo: roleMenuBindingRepo,
 		menuRepo:            menuRepo,
@@ -68,26 +71,35 @@ func NewUserService(
 }
 
 func (ul *UserService) Login(login *usermodel.Login, auth http.Auth) (*usermodel.LoginResp, error) {
-	pwd, err := base64.StdEncoding.DecodeString(login.Password)
-	if err != nil {
-		log.Errorw("failed to decode password", "error", err)
-		return nil, errors.New(http.UserIncorrectPassword.Msg)
-	}
-
 	userInfo, err := ul.userRepo.Login(login)
 	if err != nil {
 		log.Errorw("login failed", "username", login.Username, "email", login.Email, "error", err)
 		return nil, err
 	}
-	if userInfo == nil || userInfo.Username == "" || userInfo.Username != login.Username {
+	if userInfo == nil || userInfo.Username == "" {
 		log.Error("userInfo not found")
 		return nil, errors.New(http.UserNotExist.Msg)
 	}
+	// 验证用户名或邮箱匹配（允许使用邮箱登录，或 OAuth 登录时密码为空）
+	if login.Username != "" && userInfo.Username != login.Username {
+		log.Errorw("username mismatch", "expected", login.Username, "got", userInfo.Username)
+		return nil, errors.New(http.UserNotExist.Msg)
+	}
 
-	// compare stored password hash with provided password
-	if !comparePassword(userInfo.Password, string(pwd)) {
-		log.Error("incorrect password provided")
-		return nil, errors.New(http.UserIncorrectPassword.Msg)
+	// 如果提供了密码，则进行密码验证（用于普通登录）
+	// 如果密码为空，则跳过密码验证（用于 OAuth 登录）
+	if login.Password != "" {
+		pwd, err := base64.StdEncoding.DecodeString(login.Password)
+		if err != nil {
+			log.Errorw("failed to decode password", "error", err)
+			return nil, errors.New(http.UserIncorrectPassword.Msg)
+		}
+
+		// compare stored password hash with provided password
+		if !comparePassword(userInfo.Password, string(pwd)) {
+			log.Error("incorrect password provided")
+			return nil, errors.New(http.UserIncorrectPassword.Msg)
+		}
 	}
 
 	aToken, rToken, err := jwt.GenToken(userInfo.UserId, []byte(auth.SecretKey), auth.AccessExpire, auth.RefreshExpire)
@@ -136,9 +148,12 @@ func (ul *UserService) Login(login *usermodel.Login, auth http.Auth) (*usermodel
 			return
 		}
 
-		// update last login time in userInfo extension
-		// Note: This should be injected, but for now we'll skip it to avoid circular dependency
-		// TODO: Inject UserExtensionService to avoid direct repo creation
+		// update last login time in userInfo ext
+		if ul.userExtRepo != nil {
+			if err := ul.userExtRepo.UpdateLastLogin(userInfo.UserId); err != nil {
+				log.Warnw("failed to update last login time", "userId", userInfo.UserId, "error", err)
+			}
+		}
 	}()
 
 	return resp, nil
@@ -173,7 +188,7 @@ func (ul *UserService) Register(register *usermodel.Register) error {
 	if register.FullName == "" {
 		register.FullName = register.Username
 	}
-	register.CreateTime = time.Now()
+	register.CreatedAt = time.Now()
 	password, err := getPassword(register.Password)
 	if err != nil {
 		return err
@@ -183,7 +198,14 @@ func (ul *UserService) Register(register *usermodel.Register) error {
 		return err
 	}
 
-	return err
+	// 创建 UserExt 记录（替代数据库触发器）
+	err = ul.createUserExtIfNotExists(register.UserId)
+	if err != nil {
+		log.Errorw("failed to create user ext after registration", "username", register.Username, "userId", register.UserId, "error", err)
+		// 不返回错误，因为用户已经创建成功，UserExt 可以在后续操作中创建
+	}
+
+	return nil
 }
 
 func (ul *UserService) Logout(userId string) error {
@@ -204,16 +226,52 @@ func (ul *UserService) Logout(userId string) error {
 	return nil
 }
 
+// createUserExtIfNotExists creates UserExt record if it doesn't exist
+// This replaces the database trigger that was inserting into t_user_extension
+func (ul *UserService) createUserExtIfNotExists(userId string) error {
+	exists, err := ul.userExtRepo.Exists(userId)
+	if err != nil {
+		return fmt.Errorf("failed to check user ext exists: %w", err)
+	}
+	if exists {
+		return nil // already exists, no need to create
+	}
+
+	// Create UserExt record with default values (matching the database trigger)
+	now := time.Now()
+	userExt := &usermodel.UserExt{
+		UserId:           userId,
+		Timezone:         "UTC",
+		InvitationStatus: usermodel.UserInvitationStatusAccepted,
+	}
+	userExt.CreatedAt = now
+	userExt.UpdatedAt = now
+
+	if err := ul.userExtRepo.Create(userExt); err != nil {
+		return fmt.Errorf("failed to create user ext: %w", err)
+	}
+
+	return nil
+}
+
 func (ul *UserService) AddUser(addUserReq usermodel.AddUserReq) error {
 
 	var err error
 	addUserReq.UserId = id.GetUUIDWithoutDashes()
 	addUserReq.IsEnabled = 1
-	addUserReq.CreateTime = time.Now()
+	addUserReq.CreatedAt = time.Now()
 	if err = ul.userRepo.AddUser(&addUserReq); err != nil {
 		return err
 	}
-	return err
+
+	// 创建 UserExt 记录（替代数据库触发器）
+	err = ul.createUserExtIfNotExists(addUserReq.UserId)
+	if err != nil {
+		log.Errorw("failed to create user ext after adding user", "username", addUserReq.Username, "userId", addUserReq.UserId, "error", err)
+		// 不返回错误，因为用户已经创建成功，UserExt 可以在后续操作中创建
+	}
+
+	return nil
 }
 
 func (ul *UserService) UpdateUser(userId string, updateReq *usermodel.UpdateUserReq) error {
@@ -264,7 +322,7 @@ func (ul *UserService) FetchUserInfo(userId string) (*usermodel.UserInfo, error)
 	return userInfo, err
 }
 
-func (ul *UserService) GetUserList(pageNum, pageSize int) ([]userrepo.UserWithExtension, int64, error) {
+func (ul *UserService) GetUserList(pageNum, pageSize int) ([]userrepo.UserWithExt, int64, error) {
 	// set default values
 	if pageNum <= 0 {
 		pageNum = 1
@@ -282,7 +340,7 @@ func (ul *UserService) GetUserList(pageNum, pageSize int) ([]userrepo.UserWithEx
 	return users, count, err
 }
 
-func (ul *UserService) GetUsersByRole(roleId, roleName string, pageNum, pageSize int) ([]userrepo.UserWithExtension, int64, error) {
+func (ul *UserService) GetUsersByRole(roleId, roleName string, pageNum, pageSize int) ([]userrepo.UserWithExt, int64, error) {
 	// set default values
 	if pageNum <= 0 {
 		pageNum = 1

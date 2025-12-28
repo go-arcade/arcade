@@ -34,7 +34,7 @@ type Services struct {
 	Secret            *SecretService
 	GeneralSettings   *GeneralSettingsService
 	Project           *ProjectService
-	UserExtension     *UserExtensionService
+	UserExt           *UserExt
 	Menu              *MenuService
 	Role              *RoleService
 	Plugin            *PluginService
@@ -51,16 +51,16 @@ func NewServices(
 ) *Services {
 	// 基础服务
 	menuService := NewMenuService(repos.Menu)
-	userService := NewUserService(cache, repos.User, repos.UserRoleBinding, repos.RoleMenuBinding, repos.Menu, repos.Role, menuService)
+	userService := NewUserService(cache, repos.User, repos.UserExt, repos.UserRoleBinding, repos.RoleMenuBinding, repos.Menu, repos.Role, menuService)
 	generalSettingsService := NewGeneralSettingsService(repos.GeneralSettings)
 	agentService := NewAgentService(repos.Agent, generalSettingsService)
-	identityService := NewIdentityService(repos.Identity, repos.User)
+	identityService := NewIdentityService(repos.Identity, repos.User, repos.UserExt)
 	teamService := NewTeamService(repos.Team)
 	storageService := NewStorageService(repos.Storage)
 	uploadService := NewUploadService(repos.Storage)
 	secretService := NewSecretService(repos.Secret)
 	projectService := NewProjectService(repos.Project)
-	userExtensionService := NewUserExtensionService(repos.UserExtension)
+	userExt := NewUserExt(repos.UserExt)
 	roleService := NewRoleService(repos.Role)
 	pluginService := NewPluginService(repos.Plugin)
 
@@ -74,7 +74,7 @@ func NewServices(
 		Secret:            secretService,
 		GeneralSettings:   generalSettingsService,
 		Project:           projectService,
-		UserExtension:     userExtensionService,
+		UserExt:           userExt,
 		Menu:              menuService,
 		Role:              roleService,
 		Plugin:            pluginService,
