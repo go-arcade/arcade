@@ -18,7 +18,7 @@ import (
 	"time"
 )
 
-// UserExt user extension information table
+// UserExt user ext information table
 type UserExt struct {
 	BaseModel
 	UserId           string     `gorm:"column:user_id;uniqueIndex" json:"userId"`                           // user ID (foreign key)
@@ -34,7 +34,7 @@ func (UserExt) TableName() string {
 	return "t_user_ext"
 }
 
-// UserInvitationStatus constants for user extension
+// UserInvitationStatus constants for user ext
 const (
 	UserInvitationStatusPending  = "pending"  // pending acceptance
 	UserInvitationStatusAccepted = "accepted" // accepted

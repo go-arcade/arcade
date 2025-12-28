@@ -36,13 +36,13 @@ func (User) TableName() string {
 }
 
 type Register struct {
-	UserId     string    `json:"userId"`
-	Username   string    `json:"username"`
-	FullName   string    `gorm:"column:full_name" json:"fullName"`
-	Email      string    `json:"email"`
-	Avatar     string    `gorm:"column:avatar" json:"avatar"`
-	Password   string    `json:"password"`
-	CreateTime time.Time `gorm:"column:create_time" json:"createTime"`
+	UserId   string    `json:"userId"`
+	Username string    `json:"username"`
+	FullName string    `gorm:"column:full_name" json:"fullName"`
+	Email    string    `json:"email"`
+	Avatar   string    `gorm:"column:avatar" json:"avatar"`
+	Password string    `json:"password"`
+	CreatedAt time.Time `gorm:"column:created_at" json:"createdAt"`
 }
 
 type Login struct {
@@ -102,7 +102,7 @@ type AddUserReq struct {
 	Email      string    `json:"email"`
 	Phone      string    `json:"phone"`
 	IsEnabled  int       `gorm:"column:is_enabled" json:"isEnabled"`
-	CreateTime time.Time `gorm:"column:create_time" json:"createTime"`
+	CreatedAt  time.Time `gorm:"column:created_at" json:"createdAt"`
 }
 
 // ResetPasswordReq reset password request (for forgot password scenario)

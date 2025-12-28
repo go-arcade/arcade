@@ -17,7 +17,7 @@ package router
 import (
 	"time"
 
-	usermodel "github.com/go-arcade/arcade/internal/engine/model"
+	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/pkg/auth"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
@@ -49,7 +49,7 @@ func (rt *Router) userRouter(r fiber.Router, auth fiber.Handler) {
 }
 
 func (rt *Router) login(c *fiber.Ctx) error {
-	var login *usermodel.Login
+	var login *model.Login
 	userService := rt.Services.User
 
 	if err := c.BodyParser(&login); err != nil {
@@ -70,7 +70,7 @@ func (rt *Router) login(c *fiber.Ctx) error {
 }
 
 func (rt *Router) register(c *fiber.Ctx) error {
-	var register *usermodel.Register
+	var register *model.Register
 	userLogic := rt.Services.User
 	if err := c.BodyParser(&register); err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
@@ -115,7 +115,7 @@ func (rt *Router) logout(c *fiber.Ctx) error {
 }
 
 func (rt *Router) addUser(c *fiber.Ctx) error {
-	var addUserReq *usermodel.AddUserReq
+	var addUserReq *model.AddUserReq
 	userLogic := rt.Services.User
 	if err := c.BodyParser(&addUserReq); err != nil {
 		return http.WithRepErrMsg(c, http.Failed.Code, http.Failed.Msg, c.Path())
@@ -130,7 +130,7 @@ func (rt *Router) addUser(c *fiber.Ctx) error {
 }
 
 func (rt *Router) updateUser(c *fiber.Ctx) error {
-	var updateReq *usermodel.UpdateUserReq
+	var updateReq *model.UpdateUserReq
 	userLogic := rt.Services.User
 	if err := c.BodyParser(&updateReq); err != nil {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid request body", c.Path())
@@ -150,7 +150,7 @@ func (rt *Router) updateUser(c *fiber.Ctx) error {
 }
 
 func (rt *Router) fetchUserInfo(c *fiber.Ctx) error {
-	var user *usermodel.UserInfo
+	var user *model.UserInfo
 	userLogic := rt.Services.User
 
 	claims, err := auth.ParseAuthorizationToken(c, rt.Http.Auth.SecretKey)
@@ -314,7 +314,7 @@ func (rt *Router) resetPassword(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "user id is required", c.Path())
 	}
 
-	var req usermodel.ResetPasswordReq
+	var req model.ResetPasswordReq
 	if err := c.BodyParser(&req); err != nil {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid request parameters", c.Path())
 	}

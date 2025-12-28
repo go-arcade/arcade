@@ -45,18 +45,29 @@ type PermissionChecker interface {
 // This function is used as the middleware of fiber.
 func AuthorizationMiddleware(secretKey string, cache cache.ICache) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		var tokenString string
+
+		// 优先从 Authorization header 中获取 token
 		aToken := c.Get("Authorization")
-		if aToken == "" {
+		if aToken != "" {
+			// 按空格分割
+			parts := strings.SplitN(aToken, " ", 2)
+			if len(parts) == 2 && parts[0] == "Bearer" {
+				tokenString = parts[1]
+			}
+		}
+
+		// 如果 header 中没有 token，尝试从 cookie 中获取
+		if tokenString == "" {
+			tokenString = c.Cookies("accessToken")
+		}
+
+		// 如果两种方式都没有获取到 token，返回错误
+		if tokenString == "" {
 			return http.WithRepErrMsg(c, http.TokenBeEmpty.Code, http.TokenBeEmpty.Msg, c.Path())
 		}
 
-		// 按空格分割
-		parts := strings.SplitN(aToken, " ", 2)
-		if !(len(parts) == 2 && parts[0] == "Bearer") {
-			return http.WithRepErrMsg(c, http.TokenBeEmpty.Code, http.TokenBeEmpty.Msg, c.Path())
-		}
-
-		claims, err := jwt.ParseToken(parts[1], secretKey)
+		claims, err := jwt.ParseToken(tokenString, secretKey)
 		if err != nil {
 			// 检查是否是令牌过期错误
 			if errors.Is(err, goJwt.ErrTokenExpired) {
@@ -83,7 +94,7 @@ func AuthorizationMiddleware(secretKey string, cache cache.ICache) fiber.Handler
 		}
 
 		// 验证请求中的 Token 是否与 Redis 中存储的 Token 匹配
-		if tokenInfo.AccessToken != parts[1] {
+		if tokenInfo.AccessToken != tokenString {
 			log.Errorw("token mismatch for user: ", "user_id", claims.UserId)
 			return http.WithRepErrMsg(c, http.InvalidToken.Code, http.InvalidToken.Msg, c.Path())
 		}

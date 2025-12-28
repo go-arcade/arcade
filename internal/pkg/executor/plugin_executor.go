@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/bytedance/sonic"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/plugin"
 )
@@ -130,7 +131,7 @@ func (e *PluginExecutor) executePlugin(ctx context.Context, req *ExecutionReques
 	// 解析 plugin 返回结果
 	var resultData map[string]any
 	if len(pluginResult) > 0 {
-		if err := json.Unmarshal(pluginResult, &resultData); err == nil {
+		if err := sonic.Unmarshal(pluginResult, &resultData); err == nil {
 			// 提取输出信息
 			if stdout, ok := resultData["stdout"].(string); ok {
 				result.Output = stdout

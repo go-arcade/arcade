@@ -38,8 +38,8 @@ type IUserRepository interface {
 	Login(login *model.Login) (*model.User, error)
 	Register(register *model.Register) error
 	Logout(userKey string) error
-	GetUserList(offset int, pageSize int) ([]UserWithExtension, int64, error)
-	GetUsersByRole(roleId string, roleName string, offset int, pageSize int) ([]UserWithExtension, int64, error)
+	GetUserList(offset int, pageSize int) ([]UserWithExt, int64, error)
+	GetUsersByRole(roleId string, roleName string, offset int, pageSize int) ([]UserWithExt, int64, error)
 	SetToken(userId, aToken string, auth http.Auth) (string, error)
 	SetLoginRespInfo(accessExpire time.Duration, loginResp *model.LoginResp) error
 	GetToken(key string) (string, error)
@@ -163,7 +163,16 @@ func (ur *UserRepo) Register(register *model.Register) error {
 	if err == nil {
 		return errors.New(http.UserAlreadyExist.Msg)
 	}
-	return ur.Database().Table(user.TableName()).Create(register).Error
+	return ur.Database().Exec(
+		"INSERT INTO t_user (user_id, username, full_name, email, avatar, password, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+		register.UserId,
+		register.Username,
+		register.FullName,
+		register.Email,
+		register.Avatar,
+		register.Password,
+		register.CreatedAt,
+	).Error
 }
 
 func (ur *UserRepo) Logout(userKey string) error {
@@ -174,22 +183,22 @@ func (ur *UserRepo) Logout(userKey string) error {
 	return ur.ICache.Del(ctx, userKey).Err()
 }
 
-// UserWithExtension combines user and extension information
-type UserWithExtension struct {
+// UserWithExt combines user and ext information
+type UserWithExt struct {
 	model.User
 	LastLoginAt      *time.Time `gorm:"column:last_login_at" json:"lastLoginAt"`
 	InvitationStatus string     `gorm:"column:invitation_status" json:"invitationStatus"`
 	RoleName         *string    `gorm:"column:role_name" json:"roleName"` // 角色名称
 }
 
-func (ur *UserRepo) GetUserList(offset int, pageSize int) ([]UserWithExtension, int64, error) {
-	var usersExt []UserWithExtension
+func (ur *UserRepo) GetUserList(offset int, pageSize int) ([]UserWithExt, int64, error) {
+	var usersExt []UserWithExt
 	var user model.User
 	var count int64
 
-	// join with user extension table and role table to get last login time, invitation status, and role name
+	// join with user ext table and role table to get last login time, invitation status, and role name
 	// use subquery to get the first role name for each user to avoid duplicate rows
-	selectFields := "u.user_id, u.username, u.first_name, u.last_name, u.avatar, u.email, u.phone, u.is_enabled, u.is_superadmin, ue.last_login_at, COALESCE(ue.invitation_status, 'accepted') AS invitation_status, role.role_name"
+	selectFields := "u.user_id, u.username, u.full_name, u.avatar, u.email, u.phone, u.is_enabled, u.is_superadmin, ue.last_login_at, COALESCE(ue.invitation_status, 'accepted') AS invitation_status, role.role_name"
 	userExtJoin := "LEFT JOIN t_user_ext ue ON ue.user_id = u.user_id"
 	roleSubqueryJoin := "LEFT JOIN (SELECT user_id, name AS role_name FROM (SELECT urb.user_id, r.name, ROW_NUMBER() OVER (PARTITION BY urb.user_id ORDER BY urb.create_time ASC) rn FROM t_user_role_binding urb JOIN t_role r ON r.role_id = urb.role_id WHERE r.is_enabled = 1) t WHERE rn = 1) role ON role.user_id = u.user_id"
 
@@ -211,11 +220,11 @@ func (ur *UserRepo) GetUserList(offset int, pageSize int) ([]UserWithExtension, 
 }
 
 // GetUsersByRole 根据角色ID或角色名称获取用户列表
-func (ur *UserRepo) GetUsersByRole(roleId string, roleName string, offset int, pageSize int) ([]UserWithExtension, int64, error) {
-	var usersExt []UserWithExtension
+func (ur *UserRepo) GetUsersByRole(roleId string, roleName string, offset int, pageSize int) ([]UserWithExt, int64, error) {
+	var usersExt []UserWithExt
 	var count int64
 
-	selectFields := "u.user_id, u.username, u.first_name, u.last_name, u.avatar, u.email, u.phone, u.is_enabled, u.is_superadmin, ue.last_login_at, COALESCE(ue.invitation_status, 'accepted') AS invitation_status, role.role_name"
+	selectFields := "u.user_id, u.username, u.full_name, u.avatar, u.email, u.phone, u.is_enabled, u.is_superadmin, ue.last_login_at, COALESCE(ue.invitation_status, 'accepted') AS invitation_status, role.role_name"
 	userExtJoin := "LEFT JOIN t_user_ext ue ON ue.user_id = u.user_id"
 
 	// 构建角色子查询，根据 roleId 或 roleName 过滤

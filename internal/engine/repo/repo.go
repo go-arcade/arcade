@@ -32,7 +32,7 @@ type Repositories struct {
 	ProjectMember        IProjectMemberRepository
 	ProjectTeamAccess    IProjectTeamAccessRepository
 	TeamMember           ITeamMemberRepository
-	UserExtension        IUserExtRepository
+	UserExt              IUserExtRepository
 	Secret               ISecretRepository
 	UserRoleBinding      IUserRoleBindingRepository
 	RoleMenuBinding      IRoleMenuBindingRepository
@@ -56,7 +56,7 @@ func NewRepositories(db database.IDatabase, clickHouse *gorm.DB, cache cache.ICa
 		ProjectMember:        NewProjectMemberRepo(db),
 		ProjectTeamAccess:    NewProjectTeamAccessRepo(db),
 		TeamMember:           NewTeamMemberRepo(db),
-		UserExtension:        NewUserExtRepo(db),
+		UserExt:              NewUserExtRepo(db),
 		Secret:               NewSecretRepo(db),
 		UserRoleBinding:      NewUserRoleBindingRepo(db),
 		RoleMenuBinding:      NewRoleMenuBindingRepo(db),

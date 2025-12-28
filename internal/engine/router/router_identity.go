@@ -15,12 +15,18 @@
 package router
 
 import (
-	http2 "net/http"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strconv"
+	"time"
 
+	"github.com/bytedance/sonic"
 	identitymodel "github.com/go-arcade/arcade/internal/engine/model"
 	identityservice "github.com/go-arcade/arcade/internal/engine/service"
-	"github.com/go-arcade/arcade/pkg/http"
+	httpx "github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
+	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -49,15 +55,15 @@ func (rt *Router) authorize(c *fiber.Ctx) error {
 
 	providerName := c.Params("provider")
 	if providerName == "" {
-		return http.WithRepErrMsg(c, http.ProviderIsRequired.Code, http.ProviderIsRequired.Msg, c.Path())
+		return httpx.WithRepErrMsg(c, httpx.ProviderIsRequired.Code, httpx.ProviderIsRequired.Msg, c.Path())
 	}
 
 	url, err := identityService.Authorize(providerName)
 	if err != nil {
-		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
+		return httpx.WithRepErrMsg(c, httpx.Failed.Code, err.Error(), c.Path())
 	}
 
-	return c.Redirect(url, http2.StatusTemporaryRedirect)
+	return c.Redirect(url, http.StatusTemporaryRedirect)
 }
 
 // callback handles OAuth/OIDC authorization callback
@@ -65,19 +71,97 @@ func (rt *Router) callback(c *fiber.Ctx) error {
 	identityService := rt.Services.Identity
 
 	providerName := c.Params("provider")
-	state := c.Query("state")
-	code := c.Query("code")
-	if state == "" || code == "" || providerName == "" {
-		return http.WithRepErrMsg(c, http.InvalidStatusParameter.Code, http.InvalidStatusParameter.Msg, c.Path())
+	// Get raw state parameter and ensure it's properly decoded
+	stateRaw := c.Query("state")
+	codeRaw := c.Query("code")
+
+	if stateRaw == "" || codeRaw == "" || providerName == "" {
+		return httpx.WithRepErrMsg(c, httpx.InvalidStatusParameter.Code, httpx.InvalidStatusParameter.Msg, c.Path())
 	}
 
-	userInfo, err := identityService.Callback(providerName, state, code)
+	// Ensure URL decoding (Fiber should do this automatically, but we ensure it)
+	state, err := url.QueryUnescape(stateRaw)
 	if err != nil {
-		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
+		log.Warnw("failed to decode state parameter", "stateRaw", stateRaw, "error", err)
+		state = stateRaw // fallback to raw value
 	}
 
-	c.Locals(middleware.DETAIL, userInfo)
-	return nil
+	code, err := url.QueryUnescape(codeRaw)
+	if err != nil {
+		log.Warnw("failed to decode code parameter", "codeRaw", codeRaw, "error", err)
+		code = codeRaw // fallback to raw value
+	}
+
+	log.Debugw("OAuth callback received", "provider", providerName, "state", state, "codeLength", len(code))
+
+	userInfo, _, err := identityService.Callback(providerName, state, code)
+	if err != nil {
+		return httpx.WithRepErrMsg(c, httpx.Failed.Code, err.Error(), c.Path())
+	}
+
+	// 自动登录：使用 Login 方法（密码为空时跳过密码验证）
+	userService := rt.Services.User
+	loginReq := &identitymodel.Login{
+		Username: userInfo.Username,
+		Email:    userInfo.Email,
+		Password: "", // OAuth 登录不需要密码
+	}
+	loginResp, err := userService.Login(loginReq, rt.Http.Auth)
+	if err != nil {
+		log.Errorw("OAuth auto login failed", "provider", providerName, "userId", userInfo.UserId, "error", err)
+		return httpx.WithRepErrMsg(c, httpx.Failed.Code, fmt.Sprintf("OAuth login failed: %v", err), c.Path())
+	}
+
+	// 解析 expireAt 以设置 cookie 过期时间（expireAt 是 Unix 时间戳字符串）
+	var expireAt time.Time
+	if expireAtUnix, err := strconv.ParseInt(loginResp.Token["expireAt"], 10, 64); err == nil {
+		expireAt = time.Unix(expireAtUnix, 0)
+	} else {
+		// 如果解析失败，使用默认过期时间（AccessExpire 分钟）
+		expireAt = time.Now().Add(rt.Http.Auth.AccessExpire * time.Minute)
+	}
+
+	// 从数据库获取 cookie path，如果获取失败则使用默认值 "/"
+	cookiePath := rt.getCookiePath()
+
+	// 设置 accessToken cookie（HTTP-only）
+	// 注意：在 302 重定向时，cookie 会随响应头一起发送
+	c.Cookie(&fiber.Cookie{
+		Name:     "accessToken",
+		Value:    loginResp.Token["accessToken"],
+		Path:     cookiePath,
+		Expires:  expireAt,
+		HTTPOnly: true,
+		Secure:   false, // 在生产环境应设置为 true（HTTPS）
+		SameSite: fiber.CookieSameSiteLaxMode,
+	})
+
+	// 设置 refreshToken cookie（HTTP-only）
+	refreshExpireAt := time.Now().Add(rt.Http.Auth.RefreshExpire * time.Minute)
+	c.Cookie(&fiber.Cookie{
+		Name:     "refreshToken",
+		Value:    loginResp.Token["refreshToken"],
+		Path:     cookiePath,
+		Expires:  refreshExpireAt,
+		HTTPOnly: true,
+		Secure:   false, // 在生产环境应设置为 true（HTTPS）
+		SameSite: fiber.CookieSameSiteLaxMode,
+	})
+
+	// Get frontend base URL from database configuration for redirect
+	baseURL := rt.getBaseURL()
+	log.Debugw("OAuth callback success, auto login completed, cookies set, redirecting to frontend",
+		"provider", providerName,
+		"username", userInfo.Username,
+		"userId", userInfo.UserId,
+		"baseURL", baseURL,
+		"cookiePath", cookiePath,
+		"host", c.Hostname())
+
+	// 在 Fiber 中，c.Cookie() 会立即将 cookie 添加到响应头
+	// c.Redirect() 会发送 302 响应，cookie 会随响应头一起发送
+	// 使用 StatusFound (302) 进行临时重定向
+	return c.Redirect(baseURL, http.StatusFound)
 }
 
 // listProviders lists all providers (supports ?type=xxx filter)
@@ -97,7 +181,7 @@ func (rt *Router) listProviders(c *fiber.Ctx) error {
 	}
 
 	if err != nil {
-		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
+		return httpx.WithRepErrMsg(c, httpx.Failed.Code, err.Error(), c.Path())
 	}
 
 	// build response without timestamps
@@ -135,12 +219,12 @@ func (rt *Router) getProvider(c *fiber.Ctx) error {
 
 	name := c.Params("name")
 	if name == "" {
-		return http.WithRepErrMsg(c, http.ProviderIsRequired.Code, http.ProviderIsRequired.Msg, c.Path())
+		return httpx.WithRepErrMsg(c, httpx.ProviderIsRequired.Code, httpx.ProviderIsRequired.Msg, c.Path())
 	}
 
 	provider, err := identityService.GetProvider(name)
 	if err != nil {
-		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
+		return httpx.WithRepErrMsg(c, httpx.Failed.Code, err.Error(), c.Path())
 	}
 
 	c.Locals(middleware.DETAIL, provider)
@@ -153,7 +237,7 @@ func (rt *Router) listProviderTypes(c *fiber.Ctx) error {
 
 	providerTypes, err := identityService.GetProviderTypeList()
 	if err != nil {
-		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
+		return httpx.WithRepErrMsg(c, httpx.Failed.Code, err.Error(), c.Path())
 	}
 
 	c.Locals(middleware.DETAIL, providerTypes)
@@ -166,24 +250,40 @@ func (rt *Router) ldapLogin(c *fiber.Ctx) error {
 
 	providerName := c.Params("provider")
 	if providerName == "" {
-		return http.WithRepErrMsg(c, http.ProviderIsRequired.Code, http.ProviderIsRequired.Msg, c.Path())
+		return httpx.WithRepErrMsg(c, httpx.ProviderIsRequired.Code, httpx.ProviderIsRequired.Msg, c.Path())
 	}
 
 	var req identityservice.LDAPLoginRequest
 	if err := c.BodyParser(&req); err != nil {
-		return http.WithRepErrMsg(c, http.BadRequest.Code, http.BadRequest.Msg, c.Path())
+		return httpx.WithRepErrMsg(c, httpx.BadRequest.Code, httpx.BadRequest.Msg, c.Path())
 	}
 
 	if req.Username == "" || req.Password == "" {
-		return http.WithRepErrMsg(c, http.UsernameArePasswordIsRequired.Code, http.UsernameArePasswordIsRequired.Msg, c.Path())
+		return httpx.WithRepErrMsg(c, httpx.UsernameArePasswordIsRequired.Code, httpx.UsernameArePasswordIsRequired.Msg, c.Path())
 	}
 
+	// Step 1: Verify LDAP identity and map/create Arcade user
 	userInfo, err := identityService.LDAPLogin(providerName, req.Username, req.Password)
 	if err != nil {
-		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
+		return httpx.WithRepErrMsg(c, httpx.Failed.Code, err.Error(), c.Path())
 	}
 
-	c.Locals(middleware.DETAIL, userInfo)
+	// Step 2 & 3: Generate Arcade token using Login method (password empty for LDAP)
+	// This follows the unified flow: verify identity → map/create user → generate Arcade token
+	userService := rt.Services.User
+	loginReq := &identitymodel.Login{
+		Username: userInfo.Username,
+		Email:    userInfo.Email,
+		Password: "", // LDAP login: password already verified, use empty for token generation
+	}
+	loginResp, err := userService.Login(loginReq, rt.Http.Auth)
+	if err != nil {
+		log.Errorw("LDAP auto login failed", "provider", providerName, "userId", userInfo.UserId, "error", err)
+		return httpx.WithRepErrMsg(c, httpx.Failed.Code, fmt.Sprintf("failed to generate token: %v", err), c.Path())
+	}
+
+	// Step 4: Return LoginResp with Arcade token (subsequent requests only use Arcade token)
+	c.Locals(middleware.DETAIL, loginResp)
 	return nil
 }
 
@@ -193,16 +293,16 @@ func (rt *Router) createProvider(c *fiber.Ctx) error {
 
 	var provider identitymodel.Identity
 	if err := c.BodyParser(&provider); err != nil {
-		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid request parameters", c.Path())
+		return httpx.WithRepErrMsg(c, httpx.BadRequest.Code, "invalid request parameters", c.Path())
 	}
 
 	// validate required fields
 	if provider.Name == "" || provider.ProviderType == "" {
-		return http.WithRepErrMsg(c, http.BadRequest.Code, "name and providerType are required fields", c.Path())
+		return httpx.WithRepErrMsg(c, httpx.BadRequest.Code, "name and providerType are required fields", c.Path())
 	}
 
 	if err := identityService.CreateProvider(&provider); err != nil {
-		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
+		return httpx.WithRepErrMsg(c, httpx.Failed.Code, err.Error(), c.Path())
 	}
 
 	c.Locals(middleware.DETAIL, provider)
@@ -216,16 +316,16 @@ func (rt *Router) updateProvider(c *fiber.Ctx) error {
 
 	name := c.Params("name")
 	if name == "" {
-		return http.WithRepErrMsg(c, http.ProviderIsRequired.Code, http.ProviderIsRequired.Msg, c.Path())
+		return httpx.WithRepErrMsg(c, httpx.ProviderIsRequired.Code, httpx.ProviderIsRequired.Msg, c.Path())
 	}
 
 	var provider identitymodel.Identity
 	if err := c.BodyParser(&provider); err != nil {
-		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid request parameters", c.Path())
+		return httpx.WithRepErrMsg(c, httpx.BadRequest.Code, "invalid request parameters", c.Path())
 	}
 
 	if err := identityService.UpdateProvider(name, &provider); err != nil {
-		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
+		return httpx.WithRepErrMsg(c, httpx.Failed.Code, err.Error(), c.Path())
 	}
 
 	c.Locals(middleware.OPERATION, "update identity provider")
@@ -238,11 +338,11 @@ func (rt *Router) toggleProvider(c *fiber.Ctx) error {
 
 	name := c.Params("name")
 	if name == "" {
-		return http.WithRepErrMsg(c, http.ProviderIsRequired.Code, http.ProviderIsRequired.Msg, c.Path())
+		return httpx.WithRepErrMsg(c, httpx.ProviderIsRequired.Code, httpx.ProviderIsRequired.Msg, c.Path())
 	}
 
 	if err := identityService.ToggleProvider(name); err != nil {
-		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
+		return httpx.WithRepErrMsg(c, httpx.Failed.Code, err.Error(), c.Path())
 	}
 
 	c.Locals(middleware.OPERATION, "toggle identity provider status")
@@ -255,13 +355,127 @@ func (rt *Router) deleteProvider(c *fiber.Ctx) error {
 
 	name := c.Params("name")
 	if name == "" {
-		return http.WithRepErrMsg(c, http.ProviderIsRequired.Code, http.ProviderIsRequired.Msg, c.Path())
+		return httpx.WithRepErrMsg(c, httpx.ProviderIsRequired.Code, httpx.ProviderIsRequired.Msg, c.Path())
 	}
 
 	if err := identityService.DeleteProvider(name); err != nil {
-		return http.WithRepErrMsg(c, http.Failed.Code, err.Error(), c.Path())
+		return httpx.WithRepErrMsg(c, httpx.Failed.Code, err.Error(), c.Path())
 	}
 
 	c.Locals(middleware.OPERATION, "delete identity provider")
 	return nil
+}
+
+// getCookiePath gets cookie path from database configuration
+// Returns the configured cookie path, or "/" as default if not found or error occurs
+func (rt *Router) getCookiePath() string {
+	const (
+		defaultCookiePath = "/"
+		category          = "system"
+		name              = "base_path"
+	)
+
+	settings, err := rt.Services.GeneralSettings.GetGeneralSettingsByName(category, name)
+	if err != nil {
+		log.Debugw("failed to get cookie path from database, using default", "category", category, "name", name, "error", err)
+		return defaultCookiePath
+	}
+
+	// Parse JSON data to extract cookie path
+	if len(settings.Data) == 0 {
+		log.Debugw("cookie path configuration data is empty, using default", "category", category, "name", name)
+		return defaultCookiePath
+	}
+
+	var configData map[string]any
+	if err := sonic.Unmarshal(settings.Data, &configData); err != nil {
+		log.Warnw("failed to unmarshal cookie path configuration, using default", "category", category, "name", name, "error", err)
+		return defaultCookiePath
+	}
+
+	// Extract base_path value from config data
+	basePathValue, ok := configData["base_path"]
+	if !ok {
+		log.Debugw("base_path not found in configuration data, using default", "category", category, "name", name)
+		return defaultCookiePath
+	}
+
+	basePathStr, ok := basePathValue.(string)
+	if !ok || basePathStr == "" {
+		log.Debugw("base_path is not a valid string, using default", "category", category, "name", name)
+		return defaultCookiePath
+	}
+
+	// Parse URL to extract path component
+	parsedURL, err := url.Parse(basePathStr)
+	if err != nil {
+		log.Warnw("failed to parse base_path as URL, using default", "base_path", basePathStr, "error", err)
+		return defaultCookiePath
+	}
+
+	// Use the path from URL, or "/" if path is empty
+	cookiePath := parsedURL.Path
+	if cookiePath == "" {
+		cookiePath = defaultCookiePath
+	}
+
+	log.Debugw("cookie path extracted from base_path", "base_path", basePathStr, "cookie_path", cookiePath)
+	return cookiePath
+}
+
+// getBaseURL gets frontend base URL from database configuration
+// Returns the configured frontend URL, or "http://localhost:5173" as default if not found or error occurs
+func (rt *Router) getBaseURL() string {
+	const (
+		defaultBaseURL = "/"
+		category       = "system"
+		name           = "base_path"
+	)
+
+	settings, err := rt.Services.GeneralSettings.GetGeneralSettingsByName(category, name)
+	if err != nil {
+		log.Debugw("failed to get frontend base URL from database, using default", "category", category, "name", name, "error", err)
+		return defaultBaseURL
+	}
+
+	// Parse JSON data to extract frontend URL
+	if len(settings.Data) == 0 {
+		log.Debugw("frontend base URL configuration data is empty, using default", "category", category, "name", name)
+		return defaultBaseURL
+	}
+
+	var configData map[string]any
+	if err := sonic.Unmarshal(settings.Data, &configData); err != nil {
+		log.Warnw("failed to unmarshal frontend base URL configuration, using default", "category", category, "name", name, "error", err)
+		return defaultBaseURL
+	}
+
+	// Extract base_path value from config data
+	basePathValue, ok := configData["base_path"]
+	if !ok {
+		log.Debugw("base_path not found in configuration data, using default", "category", category, "name", name)
+		return defaultBaseURL
+	}
+
+	basePathStr, ok := basePathValue.(string)
+	if !ok || basePathStr == "" {
+		log.Debugw("base_path is not a valid string, using default", "category", category, "name", name)
+		return defaultBaseURL
+	}
+
+	// Validate URL format
+	parsedURL, err := url.Parse(basePathStr)
+	if err != nil {
+		log.Warnw("failed to parse base_path as URL, using default", "base_path", basePathStr, "error", err)
+		return defaultBaseURL
+	}
+
+	// Return the full URL (scheme + host + path)
+	frontendURL := fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Host, parsedURL.Path)
+	if parsedURL.Path == "" {
+		frontendURL = fmt.Sprintf("%s://%s/", parsedURL.Scheme, parsedURL.Host)
+	}
+
+	log.Debugw("base URL extracted from base_path", "base_path", basePathStr, "frontendURL", frontendURL)
+	return frontendURL
 }

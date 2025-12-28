@@ -24,60 +24,60 @@ import (
 	"github.com/go-arcade/arcade/pkg/log"
 )
 
-type UserExtensionService struct {
+type UserExt struct {
 	userExtRepo userrepo.IUserExtRepository
 }
 
-func NewUserExtensionService(userExtRepo userrepo.IUserExtRepository) *UserExtensionService {
-	return &UserExtensionService{
+func NewUserExt(userExtRepo userrepo.IUserExtRepository) *UserExt {
+	return &UserExt{
 		userExtRepo: userExtRepo,
 	}
 }
 
-// GetUserExtension gets user extension information
-func (ues *UserExtensionService) GetUserExtension(userId string) (*model.UserExt, error) {
-	extension, err := ues.userExtRepo.GetByUserId(userId)
+// GetUserExt gets user Ext information
+func (ues *UserExt) GetUserExt(userId string) (*model.UserExt, error) {
+	Ext, err := ues.userExtRepo.GetByUserId(userId)
 	if err != nil {
-		log.Errorw("failed to get user extension", "userId", userId, "error", err)
+		log.Errorw("failed to get user Ext", "userId", userId, "error", err)
 		return nil, err
 	}
-	return extension, nil
+	return Ext, nil
 }
 
-// CreateUserExtension creates user extension record
-func (ues *UserExtensionService) CreateUserExtension(extension *model.UserExt) error {
+// CreateUserExt creates user Ext record
+func (ues *UserExt) CreateUserExt(Ext *model.UserExt) error {
 	// check if already exists
-	exists, err := ues.userExtRepo.Exists(extension.UserId)
+	exists, err := ues.userExtRepo.Exists(Ext.UserId)
 	if err != nil {
-		log.Errorw("failed to check user extension exists", "userId", extension.UserId, "error", err)
+		log.Errorw("failed to check user Ext exists", "userId", Ext.UserId, "error", err)
 		return err
 	}
 	if exists {
-		return fmt.Errorf("user extension already exists for user: %s", extension.UserId)
+		return fmt.Errorf("user Ext already exists for user: %s", Ext.UserId)
 	}
 
-	if err := ues.userExtRepo.Create(extension); err != nil {
-		log.Errorw("failed to create user extension", "userId", extension.UserId, "error", err)
+	if err := ues.userExtRepo.Create(Ext); err != nil {
+		log.Errorw("failed to create user Ext", "userId", Ext.UserId, "error", err)
 		return err
 	}
 
 	return nil
 }
 
-// UpdateUserExtension updates user extension information
-func (ues *UserExtensionService) UpdateUserExtension(userId string, extension *model.UserExt) error {
+// UpdateUserExt updates user Ext information
+func (ues *UserExt) UpdateUserExt(userId string, Ext *model.UserExt) error {
 	// check if exists
 	exists, err := ues.userExtRepo.Exists(userId)
 	if err != nil {
-		log.Errorw("failed to check user extension exists", "userId", userId, "error", err)
+		log.Errorw("failed to check user Ext exists", "userId", userId, "error", err)
 		return err
 	}
 	if !exists {
-		return fmt.Errorf("user extension not found for user: %s", userId)
+		return fmt.Errorf("user Ext not found for user: %s", userId)
 	}
 
-	if err := ues.userExtRepo.Update(userId, extension); err != nil {
-		log.Errorw("failed to update user extension", "userId", userId, "error", err)
+	if err := ues.userExtRepo.Update(userId, Ext); err != nil {
+		log.Errorw("failed to update user Ext", "userId", userId, "error", err)
 		return err
 	}
 
@@ -85,25 +85,25 @@ func (ues *UserExtensionService) UpdateUserExtension(userId string, extension *m
 }
 
 // UpdateLastLogin updates user's last login timestamp
-func (ues *UserExtensionService) UpdateLastLogin(userId string) error {
-	// create extension record if not exists
+func (ues *UserExt) UpdateLastLogin(userId string) error {
+	// create Ext record if not exists
 	exists, err := ues.userExtRepo.Exists(userId)
 	if err != nil {
-		log.Errorw("failed to check user extension exists", "userId", userId, "error", err)
+		log.Errorw("failed to check user Ext exists", "userId", userId, "error", err)
 		return err
 	}
 
 	if !exists {
-		// auto-create extension record with default values
+		// auto-create Ext record with default values
 		now := time.Now()
-		extension := &model.UserExt{
+		Ext := &model.UserExt{
 			UserId:           userId,
 			Timezone:         "UTC",
 			LastLoginAt:      &now,
 			InvitationStatus: model.UserInvitationStatusAccepted,
 		}
-		if err := ues.userExtRepo.Create(extension); err != nil {
-			log.Errorw("failed to create user extension", "userId", userId, "error", err)
+		if err := ues.userExtRepo.Create(Ext); err != nil {
+			log.Errorw("failed to create user Ext", "userId", userId, "error", err)
 			return err
 		}
 		return nil
@@ -118,7 +118,7 @@ func (ues *UserExtensionService) UpdateLastLogin(userId string) error {
 }
 
 // UpdateTimezone updates user timezone
-func (ues *UserExtensionService) UpdateTimezone(userId, timezone string) error {
+func (ues *UserExt) UpdateTimezone(userId, timezone string) error {
 	if err := ues.userExtRepo.UpdateTimezone(userId, timezone); err != nil {
 		log.Errorw("failed to update timezone", "userId", userId, "timezone", timezone, "error", err)
 		return err
@@ -127,7 +127,7 @@ func (ues *UserExtensionService) UpdateTimezone(userId, timezone string) error {
 }
 
 // UpdateInvitationStatus updates invitation status
-func (ues *UserExtensionService) UpdateInvitationStatus(userId, status string) error {
+func (ues *UserExt) UpdateInvitationStatus(userId, status string) error {
 	// validate status
 	validStatuses := []string{
 		model.UserInvitationStatusPending,
