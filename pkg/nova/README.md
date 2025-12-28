@@ -9,7 +9,7 @@ Nova is a flexible and high-performance task queue library for Go that supports 
 - **Priority Queues**: Support for high, normal, and low priority task queues
 - **Batch Processing**: Efficient batch processing with configurable aggregators
 - **Message Formats**: Support for JSON, Blob, Protobuf, and Sonic message formats
-- **Task Recording**: Optional MongoDB-based task status tracking
+- **Task Recording**: Optional ClickHouse-based task status tracking
 - **Flexible Configuration**: Option pattern for clean and extensible configuration
 - **Thread-Safe**: Fully concurrent-safe implementation
 
@@ -282,15 +282,19 @@ queue, err := taskqueue.NewTaskQueue(
 )
 ```
 
-### 7. Task Recording (MongoDB)
+### 7. Task Recording (ClickHouse)
 
-Optional task status tracking with MongoDB:
+Optional task status tracking with ClickHouse:
 
 ```go
-import "go.mongodb.org/mongo-driver/mongo"
+import (
+    "gorm.io/driver/clickhouse"
+    "gorm.io/gorm"
+)
 
-client, _ := mongo.Connect(context.Background(), options.Client().ApplyURI("mongodb://localhost:27017"))
-recorder := taskqueue.NewMongoTaskRecorder(client.Database("mydb"))
+dsn := "clickhouse://user:password@localhost:9000/database"
+db, _ := gorm.Open(clickhouse.Open(dsn), &gorm.Config{})
+recorder, _ := taskqueue.NewClickHouseTaskRecorder(db, "")
 
 queue, err := taskqueue.NewTaskQueue(
     taskqueue.WithKafka("localhost:9092"),

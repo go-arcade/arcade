@@ -9,7 +9,7 @@ Nova 是一个灵活且高性能的 Go 任务队列库，支持多种消息代�
 - **优先级队列**：支持高、中、低优先级任务队列
 - **批量处理**：高效的批量处理，支持可配置的聚合器
 - **消息格式**：支持 JSON、Blob、Protobuf 和 Sonic 消息格式
-- **任务记录**：可选的基于 MongoDB 的任务状态跟踪
+- **任务记录**：可选的基于 ClickHouse 的任务状态跟踪
 - **灵活配置**：使用选项模式实现清晰且可扩展的配置
 - **线程安全**：完全并发安全的实现
 
@@ -283,15 +283,19 @@ queue, err := taskqueue.NewTaskQueue(
 )
 ```
 
-### 7. 任务记录（MongoDB）
+### 7. 任务记录（ClickHouse）
 
-可选的基于 MongoDB 的任务状态跟踪：
+可选的基于 ClickHouse 的任务状态跟踪：
 
 ```go
-import "go.mongodb.org/mongo-driver/mongo"
+import (
+    "gorm.io/driver/clickhouse"
+    "gorm.io/gorm"
+)
 
-client, _ := mongo.Connect(context.Background(), options.Client().ApplyURI("mongodb://localhost:27017"))
-recorder := taskqueue.NewMongoTaskRecorder(client.Database("mydb"))
+dsn := "clickhouse://user:password@localhost:9000/database"
+db, _ := gorm.Open(clickhouse.Open(dsn), &gorm.Config{})
+recorder, _ := taskqueue.NewClickHouseTaskRecorder(db, "")
 
 queue, err := taskqueue.NewTaskQueue(
     taskqueue.WithKafka("localhost:9092"),

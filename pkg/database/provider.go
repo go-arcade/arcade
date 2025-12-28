@@ -15,41 +15,30 @@
 package database
 
 import (
-	"context"
-
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/google/wire"
 	"gorm.io/gorm"
 )
 
-// ProviderSet 提供数据库相关的依赖
+// ProviderSet provides database-related dependencies
 var ProviderSet = wire.NewSet(
-	ProvideDatabase,
-	ProvideMongoDB,
+	ProvideManager,
+	ProvideClickHouse,
 	ProvideIDatabase,
-	ProvideMongoDBInterface,
 )
 
-// ProvideDatabase 提供 MySQL 数据库实例
-func ProvideDatabase(conf Database, logger *log.Logger) (*gorm.DB, error) {
-	return NewDatabase(conf)
+// ProvideManager creates and returns a database Manager instance
+func ProvideManager(conf Database, logger *log.Logger) (Manager, error) {
+	return NewManager(conf)
 }
 
-// ProvideMongoDB 提供 MongoDB 实例
-func ProvideMongoDB(conf Database, ctx context.Context) (*MongoClient, error) {
-	client, err := NewMongoDB(conf.MongoDB, ctx)
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
+// ProvideClickHouse provides ClickHouse database instance from Manager
+// Returns nil if ClickHouse is not configured (optional)
+func ProvideClickHouse(manager Manager) *gorm.DB {
+	return manager.ClickHouse()
 }
 
-// ProvideIDatabase 提供 IDatabase 接口实例
-func ProvideIDatabase(db *gorm.DB) IDatabase {
-	return NewGormDB(db)
-}
-
-// ProvideMongoDBInterface 提供 MongoDB 接口实例
-func ProvideMongoDBInterface(client *MongoClient) MongoDB {
-	return NewMongoDBWrapper(client)
+// ProvideIDatabase provides IDatabase interface instance for backward compatibility
+func ProvideIDatabase(manager Manager) IDatabase {
+	return NewDatabaseAdapter(manager)
 }

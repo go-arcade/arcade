@@ -22,7 +22,6 @@ type Http struct {
 	Host            string
 	Port            int
 	AccessLog       bool
-	UseFileAssets   bool
 	ReadTimeout     int
 	WriteTimeout    int
 	IdleTimeout     int

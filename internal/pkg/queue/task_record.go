@@ -16,81 +16,124 @@ package queue
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/go-arcade/arcade/internal/engine/model"
-	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/go-arcade/arcade/pkg/log"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"gorm.io/gorm"
 )
 
-// TaskRecordManager 任务记录管理器，负责将任务状态写入 MongoDB
+// TaskRecordManager 任务记录管理器，负责将任务状态写入 ClickHouse
 type TaskRecordManager struct {
-	taskRecords *mongo.Collection
+	db        *gorm.DB
+	tableName string
 }
 
 // NewTaskRecordManager 创建任务记录管理器
-func NewTaskRecordManager(mongoDB database.MongoDB) (*TaskRecordManager, error) {
-	if mongoDB == nil {
+func NewTaskRecordManager(clickHouse *gorm.DB) (*TaskRecordManager, error) {
+	if clickHouse == nil {
 		return nil, nil
 	}
 
+	tableName := model.TaskQueueRecord{}.CollectionName()
 	manager := &TaskRecordManager{
-		taskRecords: mongoDB.GetCollection(model.TaskQueueRecord{}.CollectionName()),
+		db:        clickHouse,
+		tableName: tableName,
 	}
 
-	// 创建索引
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// 创建表（如果不存在）
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	indexes := []mongo.IndexModel{
-		{
-			Keys:    bson.D{{Key: "task_id", Value: 1}},
-			Options: options.Index().SetUnique(true),
-		},
-		{
-			Keys: bson.D{{Key: "status", Value: 1}},
-		},
-		{
-			Keys: bson.D{{Key: "created_at", Value: -1}},
-		},
-	}
-	_, err := manager.taskRecords.Indexes().CreateMany(ctx, indexes)
-	if err != nil {
-		log.Warnw("failed to create task records indexes", "error", err)
+
+	if err := manager.createTableIfNotExists(ctx); err != nil {
+		log.Warnw("failed to create task records table", "error", err)
+		// 不返回错误，允许继续运行
 	}
 
 	return manager, nil
 }
 
+// createTableIfNotExists 创建表（如果不存在）
+func (m *TaskRecordManager) createTableIfNotExists(ctx context.Context) error {
+	sqlDB, err := m.db.DB()
+	if err != nil {
+		return fmt.Errorf("failed to get SQL DB from GORM: %w", err)
+	}
+
+	// ClickHouse 表结构
+	createTableSQL := fmt.Sprintf(`
+		CREATE TABLE IF NOT EXISTS %s (
+			task_id String,
+			task_type String,
+			status String,
+			queue String,
+			priority Int32,
+			pipeline_id String,
+			pipeline_run_id String,
+			stage_id String,
+			agent_id String,
+			payload String,
+			create_time DateTime,
+			start_time Nullable(DateTime),
+			end_time Nullable(DateTime),
+			duration Nullable(Int64),
+			retry_count Int32,
+			current_retry Int32,
+			error_message Nullable(String)
+		) ENGINE = MergeTree()
+		ORDER BY (task_id, create_time)
+		PRIMARY KEY task_id
+		SETTINGS index_granularity = 8192
+	`, m.tableName)
+
+	_, err = sqlDB.ExecContext(ctx, createTableSQL)
+	return err
+}
+
 // RecordTaskEnqueued 记录任务入队
 func (m *TaskRecordManager) RecordTaskEnqueued(payload *TaskPayload, queueName string) {
-	if m == nil || m.taskRecords == nil {
+	if m == nil || m.db == nil {
 		return
 	}
 
 	now := time.Now()
-	record := &model.TaskQueueRecord{
-		TaskID:        payload.TaskID,
-		TaskType:      payload.TaskType,
-		Status:        TaskRecordStatusPending,
-		Queue:         queueName,
-		Priority:      payload.Priority,
-		PipelineID:    payload.PipelineID,
-		PipelineRunID: payload.PipelineRunID,
-		StageID:       payload.StageID,
-		AgentID:       payload.AgentID,
-		Payload:       payload.Data,
-		CreateTime:    now,
-		RetryCount:    payload.RetryCount,
-		CurrentRetry:  0,
+	payloadJSON, _ := json.Marshal(payload.Data)
+
+	sqlDB, err := m.db.DB()
+	if err != nil {
+		log.Warnw("failed to get SQL DB from GORM", "task_id", payload.TaskID, "error", err)
+		return
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	_, err := m.taskRecords.InsertOne(ctx, record)
+	// 使用 INSERT 语句（ClickHouse 支持 INSERT ... ON DUPLICATE KEY UPDATE，但更推荐使用 ReplacingMergeTree）
+	insertSQL := fmt.Sprintf(`
+		INSERT INTO %s (
+			task_id, task_type, status, queue, priority, pipeline_id, pipeline_run_id,
+			stage_id, agent_id, payload, create_time, retry_count, current_retry
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, m.tableName)
+
+	_, err = sqlDB.ExecContext(ctx, insertSQL,
+		payload.TaskID,
+		payload.TaskType,
+		TaskRecordStatusPending,
+		queueName,
+		payload.Priority,
+		payload.PipelineID,
+		payload.PipelineRunID,
+		payload.StageID,
+		payload.AgentID,
+		string(payloadJSON),
+		now,
+		payload.RetryCount,
+		0,
+	)
 	if err != nil {
 		log.Warnw("failed to record task enqueued", "task_id", payload.TaskID, "error", err)
 	}
@@ -98,98 +141,192 @@ func (m *TaskRecordManager) RecordTaskEnqueued(payload *TaskPayload, queueName s
 
 // RecordTaskStarted 记录任务开始
 func (m *TaskRecordManager) RecordTaskStarted(payload *TaskPayload) {
-	if m == nil || m.taskRecords == nil {
+	if m == nil || m.db == nil {
 		return
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	now := time.Now()
-	update := bson.M{
-		"$set": bson.M{
-			"status":     TaskRecordStatusRunning,
-			"start_time": &now,
-		},
+	sqlDB, err := m.db.DB()
+	if err != nil {
+		log.Warnw("failed to get SQL DB from GORM", "task_id", payload.TaskID, "error", err)
+		return
 	}
 
-	_, err := m.taskRecords.UpdateOne(
-		ctx,
-		bson.M{"task_id": payload.TaskID},
-		update,
-	)
+	now := time.Now()
+	// ClickHouse 使用 ALTER TABLE UPDATE 或 INSERT 来更新数据
+	// 由于 ClickHouse 是列式数据库，更适合使用 INSERT 覆盖旧数据
+	// 这里我们使用 ALTER TABLE UPDATE（需要表引擎支持）
+	updateSQL := fmt.Sprintf(`
+		ALTER TABLE %s UPDATE status = ?, start_time = ? WHERE task_id = ?
+	`, m.tableName)
+
+	_, err = sqlDB.ExecContext(ctx, updateSQL, TaskRecordStatusRunning, now, payload.TaskID)
 	if err != nil {
 		log.Warnw("failed to record task started", "task_id", payload.TaskID, "error", err)
+		// 如果 ALTER UPDATE 失败，尝试使用 INSERT 覆盖
+		m.insertOrUpdateTask(ctx, payload.TaskID, TaskRecordStatusRunning, &now, nil, nil, nil)
 	}
 }
 
 // RecordTaskCompleted 记录任务完成
 func (m *TaskRecordManager) RecordTaskCompleted(payload *TaskPayload) {
-	if m == nil || m.taskRecords == nil {
+	if m == nil || m.db == nil {
 		return
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	now := time.Now()
-	update := bson.M{
-		"$set": bson.M{
-			"status":   TaskRecordStatusCompleted,
-			"end_time": &now,
-		},
+	sqlDB, err := m.db.DB()
+	if err != nil {
+		log.Warnw("failed to get SQL DB from GORM", "task_id", payload.TaskID, "error", err)
+		return
 	}
+
+	now := time.Now()
 
 	// 先获取开始时间以计算耗时
-	var record model.TaskQueueRecord
-	_ = m.taskRecords.FindOne(ctx, bson.M{"task_id": payload.TaskID}).Decode(&record)
-	if record.StartTime != nil {
-		duration := now.Sub(*record.StartTime).Milliseconds()
-		update["$set"].(bson.M)["duration"] = duration
+	var startTime sql.NullTime
+	var duration sql.NullInt64
+	selectSQL := fmt.Sprintf(`SELECT start_time FROM %s WHERE task_id = ?`, m.tableName)
+	row := sqlDB.QueryRowContext(ctx, selectSQL, payload.TaskID)
+	if err := row.Scan(&startTime); err == nil && startTime.Valid {
+		durationValue := now.Sub(startTime.Time).Milliseconds()
+		duration = sql.NullInt64{Int64: durationValue, Valid: true}
 	}
 
-	_, err := m.taskRecords.UpdateOne(
-		ctx,
-		bson.M{"task_id": payload.TaskID},
-		update,
-	)
+	updateSQL := fmt.Sprintf(`
+		ALTER TABLE %s UPDATE status = ?, end_time = ?, duration = ? WHERE task_id = ?
+	`, m.tableName)
+
+	_, err = sqlDB.ExecContext(ctx, updateSQL, TaskRecordStatusCompleted, now, duration, payload.TaskID)
 	if err != nil {
 		log.Warnw("failed to record task completed", "task_id", payload.TaskID, "error", err)
+		// 如果 ALTER UPDATE 失败，尝试使用 INSERT 覆盖
+		m.insertOrUpdateTask(ctx, payload.TaskID, TaskRecordStatusCompleted, nil, &now, &duration, nil)
 	}
 }
 
 // RecordTaskFailed 记录任务失败
 func (m *TaskRecordManager) RecordTaskFailed(payload *TaskPayload, err error) {
-	if m == nil || m.taskRecords == nil {
+	if m == nil || m.db == nil {
 		return
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	sqlDB, dbErr := m.db.DB()
+	if dbErr != nil {
+		log.Warnw("failed to get SQL DB from GORM", "task_id", payload.TaskID, "error", dbErr)
+		return
+	}
+
 	now := time.Now()
-	update := bson.M{
-		"$set": bson.M{
-			"status":        TaskRecordStatusFailed,
-			"error_message": err.Error(),
-			"end_time":      &now,
-		},
+	errorMsg := ""
+	if err != nil {
+		errorMsg = err.Error()
 	}
 
 	// 先获取开始时间以计算耗时
-	var record model.TaskQueueRecord
-	_ = m.taskRecords.FindOne(ctx, bson.M{"task_id": payload.TaskID}).Decode(&record)
-	if record.StartTime != nil {
-		duration := now.Sub(*record.StartTime).Milliseconds()
-		update["$set"].(bson.M)["duration"] = duration
+	var startTime sql.NullTime
+	var duration sql.NullInt64
+	selectSQL := fmt.Sprintf(`SELECT start_time FROM %s WHERE task_id = ?`, m.tableName)
+	row := sqlDB.QueryRowContext(ctx, selectSQL, payload.TaskID)
+	if scanErr := row.Scan(&startTime); scanErr == nil && startTime.Valid {
+		durationValue := now.Sub(startTime.Time).Milliseconds()
+		duration = sql.NullInt64{Int64: durationValue, Valid: true}
 	}
 
-	_, updateErr := m.taskRecords.UpdateOne(
-		ctx,
-		bson.M{"task_id": payload.TaskID},
-		update,
-	)
+	updateSQL := fmt.Sprintf(`
+		ALTER TABLE %s UPDATE status = ?, error_message = ?, end_time = ?, duration = ? WHERE task_id = ?
+	`, m.tableName)
+
+	_, updateErr := sqlDB.ExecContext(ctx, updateSQL, TaskRecordStatusFailed, errorMsg, now, duration, payload.TaskID)
 	if updateErr != nil {
 		log.Warnw("failed to record task failed", "task_id", payload.TaskID, "error", updateErr)
+		// 如果 ALTER UPDATE 失败，尝试使用 INSERT 覆盖
+		m.insertOrUpdateTask(ctx, payload.TaskID, TaskRecordStatusFailed, nil, &now, &duration, &errorMsg)
+	}
+}
+
+// insertOrUpdateTask 插入或更新任务记录（备用方法）
+func (m *TaskRecordManager) insertOrUpdateTask(ctx context.Context, taskID, status string, startTime, endTime *time.Time, duration *sql.NullInt64, errorMsg *string) {
+	sqlDB, err := m.db.DB()
+	if err != nil {
+		return
+	}
+
+	// 先查询现有记录
+	var existingRecord struct {
+		TaskType      string
+		Queue         string
+		Priority      int32
+		PipelineID    string
+		PipelineRunID string
+		StageID       string
+		AgentID       string
+		Payload       string
+		CreateTime    time.Time
+		RetryCount    int32
+		CurrentRetry  int32
+	}
+
+	selectSQL := fmt.Sprintf(`SELECT task_type, queue, priority, pipeline_id, pipeline_run_id, stage_id, agent_id, payload, create_time, retry_count, current_retry FROM %s WHERE task_id = ?`, m.tableName)
+	row := sqlDB.QueryRowContext(ctx, selectSQL, taskID)
+	if err := row.Scan(&existingRecord.TaskType, &existingRecord.Queue, &existingRecord.Priority,
+		&existingRecord.PipelineID, &existingRecord.PipelineRunID, &existingRecord.StageID,
+		&existingRecord.AgentID, &existingRecord.Payload, &existingRecord.CreateTime,
+		&existingRecord.RetryCount, &existingRecord.CurrentRetry); err != nil {
+		// 记录不存在，无法更新
+		return
+	}
+
+	// 插入新记录（覆盖旧记录）
+	insertSQL := fmt.Sprintf(`
+		INSERT INTO %s (
+			task_id, task_type, status, queue, priority, pipeline_id, pipeline_run_id,
+			stage_id, agent_id, payload, create_time, start_time, end_time, duration,
+			retry_count, current_retry, error_message
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, m.tableName)
+
+	var durationValue interface{}
+	if duration != nil && duration.Valid {
+		durationValue = duration.Int64
+	} else {
+		durationValue = nil
+	}
+
+	var errorMsgValue interface{}
+	if errorMsg != nil {
+		errorMsgValue = *errorMsg
+	} else {
+		errorMsgValue = nil
+	}
+
+	_, err = sqlDB.ExecContext(ctx, insertSQL,
+		taskID,
+		existingRecord.TaskType,
+		status,
+		existingRecord.Queue,
+		existingRecord.Priority,
+		existingRecord.PipelineID,
+		existingRecord.PipelineRunID,
+		existingRecord.StageID,
+		existingRecord.AgentID,
+		existingRecord.Payload,
+		existingRecord.CreateTime,
+		startTime,
+		endTime,
+		durationValue,
+		existingRecord.RetryCount,
+		existingRecord.CurrentRetry,
+		errorMsgValue,
+	)
+	if err != nil {
+		log.Warnw("failed to insert/update task record", "task_id", taskID, "error", err)
 	}
 }

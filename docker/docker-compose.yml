@@ -11,19 +11,6 @@ services:
       - ./redis/data:/data
     command: ["redis-server", "--appendonly", "no"]
 
-  mongo:
-    image: mongo:8.0.15
-    container_name: mongo
-    restart: always
-    ports:
-      - 27017:27017
-    volumes:
-      - ./mongo/data:/data/db
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: mongo
-      MONGO_INITDB_ROOT_PASSWORD: muP4woo9Aidiph2jeX8u
-    command: --auth
-
   mysql:
     image: mysql:8.0.40
     container_name: mysql
@@ -34,6 +21,23 @@ services:
       - ./mysql/data:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: muP4woo9Aidiph2jeX8u
+
+  clickhouse:
+    image: clickhouse/clickhouse-server
+    container_name: clickhouse
+    restart: always
+    ports:
+      - 8123:8123  # HTTP interface
+      - 9000:9000  # Native interface
+    volumes:
+      - ./clickhouse/data:/var/lib/clickhouse
+      - ./clickhouse/log:/var/log/clickhouse-server
+    environment:
+      CLICKHOUSE_PASSWORD: Doh4Pur5lix6ru0OoK0t
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
       
   arcade:
     image: go-arcade/arcade:latest

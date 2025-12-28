@@ -16,8 +16,6 @@ package router
 
 import (
 	"embed"
-	"io/fs"
-	"net/http"
 	"strconv"
 	"time"
 
@@ -31,7 +29,6 @@ import (
 	fiberi18n "github.com/gofiber/contrib/fiberi18n/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"golang.org/x/text/language"
 )
@@ -47,9 +44,6 @@ const (
 	apiContextPath = "/api/v1"
 	// openApiPath    = "/openapi"
 )
-
-//go:embed all:static
-var web embed.FS
 
 //go:embed localize/*
 var localizeFS embed.FS
@@ -89,7 +83,7 @@ func (rt *Router) Router() *fiber.App {
 		recover.New(),
 		cors.New(),
 		middleware.UnifiedResponseMiddleware(),
-		middleware.TraceMiddleware(),
+		middleware.RequestMiddleware(),
 		httpx.AccessLogFormat(rt.Http),
 	)
 
@@ -104,32 +98,6 @@ func (rt *Router) Router() *fiber.App {
 		DefaultLanguage: language.English,
 		Loader:          &fiberi18n.EmbedLoader{FS: localizeFS},
 	}))
-
-	// 静态文件
-	if rt.Http.UseFileAssets {
-		staticFS, err := fs.Sub(web, "static")
-		if err != nil {
-			log.Fatalw("embed FS subdir error", "error", err)
-		}
-
-		app.Use("/", filesystem.New(filesystem.Config{
-			Root:   http.FS(staticFS),
-			Index:  "index.html",
-			Browse: false,
-		}))
-
-		app.Use(func(c *fiber.Ctx) error {
-			if c.Method() != fiber.MethodGet {
-				return c.Next()
-			}
-			file, err := staticFS.Open("index.html")
-			if err != nil {
-				return fiber.ErrNotFound
-			}
-			stat, _ := file.Stat()
-			return c.Type("html").Status(fiber.StatusOK).SendStream(file, int(stat.Size()))
-		})
-	}
 
 	// 健康检查 - 在下线时返回 503，用于 Kubernetes readiness probe
 	app.Get("/health", func(c *fiber.Ctx) error {
@@ -153,11 +121,6 @@ func (rt *Router) Router() *fiber.App {
 
 		return c.Status(fiber.StatusConflict).
 			JSON(httpx.WithRepErr(c, fiber.StatusConflict, "shutdown already in progress", c.Path()))
-	})
-
-	// 版本信息
-	app.Get("/version", func(c *fiber.Ctx) error {
-		return c.JSON(version.GetVersion())
 	})
 
 	// API路由
@@ -189,6 +152,11 @@ func (rt *Router) Router() *fiber.App {
 
 func (rt *Router) routerGroup(r fiber.Router) {
 	auth := middleware.AuthorizationMiddleware(rt.Http.Auth.SecretKey, rt.Cache)
+
+	// 版本信息
+	r.Get("/version", func(c *fiber.Ctx) error {
+		return c.JSON(version.GetVersion())
+	})
 
 	// user
 	rt.userRouter(r, auth)

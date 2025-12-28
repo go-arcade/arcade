@@ -18,6 +18,7 @@ import (
 	"github.com/go-arcade/arcade/pkg/cache"
 	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/google/wire"
+	"gorm.io/gorm"
 )
 
 // ProviderSet 提供仓储层相关的依赖
@@ -26,6 +27,6 @@ var ProviderSet = wire.NewSet(
 )
 
 // ProvideRepositories 提供统一的 Repositories 实例
-func ProvideRepositories(db database.IDatabase, mongo database.MongoDB, cache cache.ICache) *Repositories {
-	return NewRepositories(db, mongo, cache)
+func ProvideRepositories(db database.IDatabase, clickHouse *gorm.DB, cache cache.ICache) *Repositories {
+	return NewRepositories(db, clickHouse, cache)
 }

@@ -20,24 +20,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/hibiken/asynq"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// mockMongoDB 模拟 MongoDB 客户端
-type mockMongoDB struct{}
-
-func (m *mockMongoDB) GetCollection(name string) *mongo.Collection {
-	// 返回 nil，测试中不需要真实的 MongoDB 连接
-	return nil
-}
-
-// 确保 mockMongoDB 实现了 database.MongoDB 接口
-var _ database.MongoDB = (*mockMongoDB)(nil)
+// mockClickHouse 不再需要，直接使用 *gorm.DB
 
 // 创建测试用的配置（用于 Server）
 func createTestConfigForServer() *Config {
@@ -48,7 +37,7 @@ func createTestConfigForServer() *Config {
 
 	return &Config{
 		RedisClient:      redisClient,
-		MongoDB:          &mockMongoDB{}, // Server 需要 MongoDB
+		ClickHouse:       nil, // Server 需要 ClickHouse，测试中使用 nil
 		Concurrency:      2,
 		StrictPriority:   false,
 		Queues:           map[string]int{Critical: 6, Default: 3, Low: 1},
@@ -70,7 +59,7 @@ func createTestConfig() *Config {
 
 	return &Config{
 		RedisClient:      redisClient,
-		MongoDB:          nil, // Client 不需要 MongoDB
+		ClickHouse:       nil, // Client 不需要 ClickHouse
 		Concurrency:      2,
 		StrictPriority:   false,
 		Queues:           map[string]int{Critical: 6, Default: 3, Low: 1},
@@ -103,10 +92,10 @@ func TestNewQueueServer(t *testing.T) {
 			errMsg:  "redis client is required",
 		},
 		{
-			name:    "nil mongodb",
+			name:    "nil clickhouse",
 			cfg:     &Config{RedisClient: redis.NewClient(&redis.Options{Addr: "localhost:6379"})},
 			wantErr: true,
-			errMsg:  "mongodb is required for queue server",
+			errMsg:  "clickhouse is required for queue server",
 		},
 		{
 			name:    "valid config",

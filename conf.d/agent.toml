@@ -141,8 +141,6 @@ host = "0.0.0.0"
 port = 8081
 # access log, false or true
 accessLog = true
-# use file assets, false or true
-useFileAssets = false
 # read timeout
 # unit: second
 readTimeout = 60

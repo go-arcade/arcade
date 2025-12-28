@@ -20,6 +20,8 @@ import (
 	"github.com/go-arcade/arcade/internal/pkg/grpc/interceptor"
 	"github.com/go-arcade/arcade/pkg/cache"
 	"github.com/google/wire"
+	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 )
 
 // ProviderSet 提供 gRPC 服务层相关的依赖（主程序使用）
@@ -29,14 +31,21 @@ var ProviderSet = wire.NewSet(
 )
 
 // ProvideGrpcServer 提供 gRPC 服务器实例
-func ProvideGrpcServer(cfg *Conf, services *service.Services, repos *repo.Repositories, cache cache.ICache) *ServerWrapper {
+func ProvideGrpcServer(cfg *Conf, services *service.Services, repos *repo.Repositories, cache cache.ICache, clickHouse *gorm.DB) *ServerWrapper {
 	server := NewGrpcServer(*cfg)
 
 	// Set up token verifier for agent authentication
 	tokenVerifier := interceptor.NewAgentTokenVerifier(services.Agent, repos.Agent, services.GeneralSettings, cache)
 	interceptor.SetTokenVerifier(tokenVerifier)
 
-	server.Register(services)
+	// 获取 Redis 客户端
+	var redisClient *redis.Client
+	// 使用类型断言获取 RedisCache，然后调用 GetClient()
+	if rc, ok := cache.(interface{ GetClient() *redis.Client }); ok {
+		redisClient = rc.GetClient()
+	}
+
+	server.Register(services, redisClient, clickHouse)
 	return server
 }
 

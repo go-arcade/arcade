@@ -22,19 +22,18 @@ import (
 
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/redis/go-redis/v9"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"gorm.io/gorm"
 )
 
 // LogAggregator 日志聚合器
 type LogAggregator struct {
-	mongo         *mongo.Database
+	clickHouse    *gorm.DB
 	mu            sync.RWMutex
 	streams       map[string]*LogStream       // taskID -> LogStream
 	subscribers   map[string][]chan *LogEntry // taskID -> subscribers channels
 	bufferSize    int
 	flushInterval time.Duration
+	tableName     string
 }
 
 // LogStream 日志流
@@ -49,25 +48,68 @@ type LogStream struct {
 
 // LogEntry 日志条目
 type LogEntry struct {
-	TaskID     string `json:"task_id" bson:"task_id"`
-	Timestamp  int64  `json:"timestamp" bson:"timestamp"`
-	LineNumber int32  `json:"line_number" bson:"line_number"`
-	Level      string `json:"level" bson:"level"`
-	Content    string `json:"content" bson:"content"`
-	Stream     string `json:"stream" bson:"stream"` // stdout/stderr
-	PluginName string `json:"plugin_name" bson:"plugin_name"`
-	AgentID    string `json:"agent_id" bson:"agent_id"`
+	TaskID     string `json:"task_id"`
+	Timestamp  int64  `json:"timestamp"`
+	LineNumber int32  `json:"line_number"`
+	Level      string `json:"level"`
+	Content    string `json:"content"`
+	Stream     string `json:"stream"` // stdout/stderr
+	PluginName string `json:"plugin_name"`
+	AgentID    string `json:"agent_id"`
 }
 
 // NewLogAggregator 创建日志聚合器
-func NewLogAggregator(redis *redis.Client, mongo *mongo.Database) *LogAggregator {
-	return &LogAggregator{
-		mongo:         mongo,
+func NewLogAggregator(redis *redis.Client, clickHouse *gorm.DB) *LogAggregator {
+	la := &LogAggregator{
+		clickHouse:    clickHouse,
 		streams:       make(map[string]*LogStream),
 		subscribers:   make(map[string][]chan *LogEntry),
 		bufferSize:    100,             // 缓冲100条日志后写入
 		flushInterval: 3 * time.Second, // 3秒强制刷新
+		tableName:     "task_logs",
 	}
+
+	// 创建表（如果不存在）
+	if clickHouse != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := la.createTableIfNotExists(ctx); err != nil {
+			log.Warnw("failed to create task logs table", "error", err)
+		}
+	}
+
+	return la
+}
+
+// createTableIfNotExists 创建表（如果不存在）
+func (la *LogAggregator) createTableIfNotExists(ctx context.Context) error {
+	if la.clickHouse == nil {
+		return fmt.Errorf("clickhouse is nil")
+	}
+
+	sqlDB, err := la.clickHouse.DB()
+	if err != nil {
+		return fmt.Errorf("failed to get SQL DB from GORM: %w", err)
+	}
+
+	createTableSQL := fmt.Sprintf(`
+		CREATE TABLE IF NOT EXISTS %s (
+			task_id String,
+			timestamp Int64,
+			line_number Int32,
+			level String,
+			content String,
+			stream String,
+			plugin_name String,
+			agent_id String
+		) ENGINE = MergeTree()
+		ORDER BY (task_id, line_number, timestamp)
+		PRIMARY KEY (task_id, line_number)
+		SETTINGS index_granularity = 8192
+	`, la.tableName)
+
+	_, err = sqlDB.ExecContext(ctx, createTableSQL)
+	return err
 }
 
 // PushLog 推送日志到聚合器
@@ -136,35 +178,67 @@ func (la *LogAggregator) flushStream(stream *LogStream) error {
 
 	// 异步写入，避免阻塞
 	go func() {
-
-		// 写入 MongoDB
-		if err := la.writeToMongo(logs); err != nil {
-			log.Errorw("failed to write logs to mongodb", "logCount", len(logs), "error", err)
+		// 写入 ClickHouse
+		if err := la.writeToClickHouse(logs); err != nil {
+			log.Errorw("failed to write logs to clickhouse", "logCount", len(logs), "error", err)
 		}
 	}()
 
 	return nil
 }
 
-// writeToMongo 写入 MongoDB
-func (la *LogAggregator) writeToMongo(logs []*LogEntry) error {
-	if la.mongo == nil {
-		return fmt.Errorf("mongo client is nil")
+// writeToClickHouse 写入 ClickHouse
+func (la *LogAggregator) writeToClickHouse(logs []*LogEntry) error {
+	if la.clickHouse == nil {
+		return fmt.Errorf("clickhouse client is nil")
 	}
 
-	collection := la.mongo.Collection("task_logs")
+	sqlDB, err := la.clickHouse.DB()
+	if err != nil {
+		return fmt.Errorf("failed to get SQL DB from GORM: %w", err)
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	// 批量插入
-	docs := make([]interface{}, len(logs))
-	for i, logEntry := range logs {
-		docs[i] = logEntry
+	insertSQL := fmt.Sprintf(`
+		INSERT INTO %s (
+			task_id, timestamp, line_number, level, content, stream, plugin_name, agent_id
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`, la.tableName)
+
+	// 使用事务批量插入
+	tx, err := sqlDB.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.PrepareContext(ctx, insertSQL)
+	if err != nil {
+		return fmt.Errorf("prepare statement: %w", err)
+	}
+	defer stmt.Close()
+
+	for _, logEntry := range logs {
+		_, err := stmt.ExecContext(ctx,
+			logEntry.TaskID,
+			logEntry.Timestamp,
+			logEntry.LineNumber,
+			logEntry.Level,
+			logEntry.Content,
+			logEntry.Stream,
+			logEntry.PluginName,
+			logEntry.AgentID,
+		)
+		if err != nil {
+			return fmt.Errorf("insert log to clickhouse: %w", err)
+		}
 	}
 
-	_, err := collection.InsertMany(ctx, docs)
-	if err != nil {
-		return fmt.Errorf("insert logs to mongodb: %w", err)
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit transaction: %w", err)
 	}
 
 	return nil
@@ -220,38 +294,67 @@ func (la *LogAggregator) CloseStream(taskID string) error {
 	return nil
 }
 
-// GetLogsByTaskID 从MongoDB获取任务日志
+// GetLogsByTaskID 从 ClickHouse 获取任务日志
 func (la *LogAggregator) GetLogsByTaskID(taskID string, fromLine int32, limit int) ([]*LogEntry, error) {
-	if la.mongo == nil {
-		return nil, fmt.Errorf("mongo client is nil")
+	if la.clickHouse == nil {
+		return nil, fmt.Errorf("clickhouse client is nil")
 	}
 
-	collection := la.mongo.Collection("task_logs")
+	sqlDB, err := la.clickHouse.DB()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get SQL DB from GORM: %w", err)
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// 查询条件
-	filter := bson.M{"task_id": taskID}
+	// 构建查询 SQL
+	querySQL := fmt.Sprintf(`
+		SELECT task_id, timestamp, line_number, level, content, stream, plugin_name, agent_id
+		FROM %s
+		WHERE task_id = ?
+	`, la.tableName)
+
+	args := []interface{}{taskID}
 	if fromLine > 0 {
-		filter["line_number"] = bson.M{"$gte": fromLine}
+		querySQL += " AND line_number >= ?"
+		args = append(args, fromLine)
 	}
 
-	// 按行号排序
-	opts := options.Find()
-	opts.SetSort(bson.D{{Key: "line_number", Value: 1}})
+	querySQL += " ORDER BY line_number ASC"
+
 	if limit > 0 {
-		opts.SetLimit(int64(limit))
+		querySQL += " LIMIT ?"
+		args = append(args, limit)
 	}
 
-	cursor, err := collection.Find(ctx, filter, opts)
+	rows, err := sqlDB.QueryContext(ctx, querySQL, args...)
 	if err != nil {
-		return nil, fmt.Errorf("query logs from mongodb: %w", err)
+		return nil, fmt.Errorf("query logs from clickhouse: %w", err)
 	}
-	defer cursor.Close(ctx)
+	defer rows.Close()
 
 	var logs []*LogEntry
-	if err := cursor.All(ctx, &logs); err != nil {
-		return nil, fmt.Errorf("decode logs from mongodb: %w", err)
+	for rows.Next() {
+		var entry LogEntry
+		if err := rows.Scan(
+			&entry.TaskID,
+			&entry.Timestamp,
+			&entry.LineNumber,
+			&entry.Level,
+			&entry.Content,
+			&entry.Stream,
+			&entry.PluginName,
+			&entry.AgentID,
+		); err != nil {
+			log.Warnw("failed to scan log entry", "error", err)
+			continue
+		}
+		logs = append(logs, &entry)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows error: %w", err)
 	}
 
 	return logs, nil
