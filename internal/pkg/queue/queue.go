@@ -20,10 +20,10 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
-	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/hibiken/asynq"
 	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 )
 
 // TaskQueue 基于 asynq 的分布式任务队列
@@ -40,7 +40,7 @@ type TaskQueue struct {
 // Config queue 配置
 type Config struct {
 	RedisClient      redis.UniversalClient // Redis 客户端（复用已有的客户端）
-	MongoDB          database.MongoDB      // MongoDB 实例（用于任务记录）
+	ClickHouse       *gorm.DB              // ClickHouse GORM 实例（用于任务记录）
 	Concurrency      int                   // 并发处理数
 	StrictPriority   bool                  // 是否严格优先级
 	Queues           map[string]int        // 队列配置：队列名 -> 优先级权重
@@ -182,7 +182,7 @@ func NewTaskQueue(cfg *Config) (*TaskQueue, error) {
 	mux := asynq.NewServeMux()
 
 	// 初始化任务记录管理器
-	taskRecordMgr, err := NewTaskRecordManager(cfg.MongoDB)
+	taskRecordMgr, err := NewTaskRecordManager(cfg.ClickHouse)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create task record manager: %w", err)
 	}
@@ -287,7 +287,7 @@ func (q *TaskQueue) Enqueue(payload *TaskPayload, queueName string) error {
 		return fmt.Errorf("enqueue task: %w", err)
 	}
 
-	// 记录到 MongoDB
+	// 记录到 ClickHouse
 	if q.taskRecordMgr != nil {
 		q.taskRecordMgr.RecordTaskEnqueued(payload, queueName)
 	}
@@ -373,7 +373,7 @@ func (q *TaskQueue) EnqueueDelayed(payload *TaskPayload, delay time.Duration, qu
 		return fmt.Errorf("enqueue delayed task: %w", err)
 	}
 
-	// 记录到 MongoDB
+	// 记录到 ClickHouse
 	if q.taskRecordMgr != nil {
 		q.taskRecordMgr.RecordTaskEnqueued(payload, queueName)
 	}

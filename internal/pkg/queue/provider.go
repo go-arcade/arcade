@@ -19,9 +19,9 @@ import (
 
 	agentconfig "github.com/go-arcade/arcade/internal/agent/config"
 	"github.com/go-arcade/arcade/internal/engine/config"
-	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 )
 
 // ProviderSet 提供 queue 相关的依赖（主程序使用）
@@ -50,7 +50,7 @@ func cmdableToUniversalClient(cmdable redis.Cmdable) (redis.UniversalClient, err
 }
 
 // ProvideConfig 提供 queue 配置（主程序使用）
-func ProvideConfig(appConf *config.AppConfig, mongoDB database.MongoDB, cmdable redis.Cmdable) (*Config, error) {
+func ProvideConfig(appConf *config.AppConfig, clickHouse *gorm.DB, cmdable redis.Cmdable) (*Config, error) {
 	redisClient, err := cmdableToUniversalClient(cmdable)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert redis.Cmdable to redis.UniversalClient: %w", err)
@@ -76,7 +76,7 @@ func ProvideConfig(appConf *config.AppConfig, mongoDB database.MongoDB, cmdable 
 
 	return &Config{
 		RedisClient:      redisClient, // 复用已有的 Redis 客户端
-		MongoDB:          mongoDB,     // MongoDB 用于任务记录
+		ClickHouse:       clickHouse,  // ClickHouse 用于任务记录
 		Concurrency:      concurrency,
 		StrictPriority:   taskQueueConf.StrictPriority,
 		Queues:           queues,
@@ -116,7 +116,7 @@ func ProvideAgentConfig(agentConf *agentconfig.AgentConfig, cmdable redis.Cmdabl
 
 	return &Config{
 		RedisClient:      redisClient, // 复用已有的 Redis 客户端
-		MongoDB:          nil,         // Agent 不需要 MongoDB 实例
+		ClickHouse:       nil,         // Agent 不需要 ClickHouse 实例
 		Concurrency:      concurrency,
 		StrictPriority:   taskQueueConf.StrictPriority,
 		Queues:           queues,

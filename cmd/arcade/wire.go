@@ -18,7 +18,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/go-arcade/arcade/internal/engine/bootstrap"
@@ -38,11 +37,6 @@ import (
 	"github.com/google/wire"
 )
 
-// ProvideContext 提供基础 context.Context
-func ProvideContext() context.Context {
-	return context.Background()
-}
-
 // ProvidePluginConfig 提供插件配置，直接从 conf.d/plugins.toml 读取
 func ProvidePluginConfig() map[string]any {
 	configs, err := plugin.LoadPluginConfig("conf.d/plugins.toml")
@@ -58,8 +52,6 @@ func initApp(configPath string) (*bootstrap.App, func(), error) {
 		ProvidePluginConfig,
 		// 配置层
 		config.ProviderSet,
-		// 上下文层
-		ProvideContext,
 		// 日志层（依赖 config）
 		log.ProviderSet,
 		// 数据库层（依赖 config, log, ctx）

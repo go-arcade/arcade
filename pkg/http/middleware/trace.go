@@ -5,13 +5,14 @@ import (
 	"github.com/google/uuid"
 )
 
-func TraceMiddleware() fiber.Handler {
+// RequestMiddleware set request id
+func RequestMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		traceId := c.Get("X-Request-Id")
-		if traceId == "" {
-			traceId = uuid.New().String()
+		requestId := c.Request().Header.Peek("X-Request-Id")
+		if len(requestId) == 0 {
+			requestId = []byte(uuid.New().String())
 		}
-		c.Set("X-Request-Id", traceId)
+		c.Request().Header.Set("X-Request-Id", string(requestId))
 		return c.Next()
 	}
 }

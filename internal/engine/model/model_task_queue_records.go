@@ -18,28 +18,28 @@ import (
 	"time"
 )
 
-// TaskQueueRecord queue 任务记录（MongoDB）
+// TaskQueueRecord queue 任务记录（ClickHouse）
 type TaskQueueRecord struct {
-	TaskID        string         `bson:"task_id" json:"task_id"`
-	TaskType      string         `bson:"task_type" json:"task_type"`
-	Status        string         `bson:"status" json:"status"` // pending/running/completed/failed
-	Priority      int            `bson:"priority" json:"priority"`
-	Queue         string         `bson:"queue" json:"queue"`
-	PipelineID    string         `bson:"pipeline_id,omitempty" json:"pipeline_id,omitempty"`
-	PipelineRunID string         `bson:"pipeline_run_id,omitempty" json:"pipeline_run_id,omitempty"`
-	StageID       string         `bson:"stage_id,omitempty" json:"stage_id,omitempty"`
-	AgentID       string         `bson:"agent_id,omitempty" json:"agent_id,omitempty"`
-	Payload       map[string]any `bson:"payload" json:"payload"` // 任务负载数据
-	ErrorMessage  string         `bson:"error_message,omitempty" json:"error_message,omitempty"`
-	CreateTime    time.Time      `bson:"create_time" json:"create_time"`
-	StartTime     *time.Time     `bson:"start_time,omitempty" json:"start_time,omitempty"`
-	EndTime       *time.Time     `bson:"end_time,omitempty" json:"end_time,omitempty"`
-	Duration      int64          `bson:"duration,omitempty" json:"duration,omitempty"` // 毫秒
-	RetryCount    int            `bson:"retry_count" json:"retry_count"`
-	CurrentRetry  int            `bson:"current_retry" json:"current_retry"`
+	TaskID        string         `gorm:"column:task_id;type:String" json:"task_id"`
+	TaskType      string         `gorm:"column:task_type;type:String" json:"task_type"`
+	Status        string         `gorm:"column:status;type:String" json:"status"` // pending/running/completed/failed
+	Priority      int            `gorm:"column:priority;type:Int32" json:"priority"`
+	Queue         string         `gorm:"column:queue;type:String" json:"queue"`
+	PipelineID    string         `gorm:"column:pipeline_id;type:String" json:"pipeline_id,omitempty"`
+	PipelineRunID string         `gorm:"column:pipeline_run_id;type:String" json:"pipeline_run_id,omitempty"`
+	StageID       string         `gorm:"column:stage_id;type:String" json:"stage_id,omitempty"`
+	AgentID       string         `gorm:"column:agent_id;type:String" json:"agent_id,omitempty"`
+	Payload       map[string]any `gorm:"column:payload;type:String" json:"payload"` // 任务负载数据（JSON 字符串）
+	ErrorMessage  string         `gorm:"column:error_message;type:String" json:"error_message,omitempty"`
+	CreateTime    time.Time      `gorm:"column:create_time;type:DateTime" json:"create_time"`
+	StartTime     *time.Time     `gorm:"column:start_time;type:DateTime" json:"start_time,omitempty"`
+	EndTime       *time.Time     `gorm:"column:end_time;type:DateTime" json:"end_time,omitempty"`
+	Duration      int64          `gorm:"column:duration;type:Int64" json:"duration,omitempty"` // 毫秒
+	RetryCount    int            `gorm:"column:retry_count;type:Int32" json:"retry_count"`
+	CurrentRetry  int            `gorm:"column:current_retry;type:Int32" json:"current_retry"`
 }
 
-// CollectionName 返回集合名称
+// CollectionName 返回表名称（ClickHouse）
 func (TaskQueueRecord) CollectionName() string {
-	return "c_task_queue_records"
+	return "l_task_queue_records"
 }

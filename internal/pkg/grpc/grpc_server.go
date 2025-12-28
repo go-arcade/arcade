@@ -23,8 +23,10 @@ import (
 
 	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"gorm.io/gorm"
 
 	agentv1 "github.com/go-arcade/arcade/api/agent/v1"
 	pipelinev1 "github.com/go-arcade/arcade/api/pipeline/v1"
@@ -74,10 +76,10 @@ func NewGrpcServer(cfg Conf) *ServerWrapper {
 }
 
 // Register 注册所有 gRPC 服务
-func (s *ServerWrapper) Register(services *service.Services) {
+func (s *ServerWrapper) Register(services *service.Services, redisClient *redis.Client, clickHouse *gorm.DB) {
 	agentv1.RegisterAgentServiceServer(s.svr, service.NewAgentServiceImpl(services.Agent))
 	taskv1.RegisterTaskServiceServer(s.svr, &service.TaskServiceImpl{})
-	streamv1.RegisterStreamServiceServer(s.svr, &service.StreamServiceImpl{})
+	streamv1.RegisterStreamServiceServer(s.svr, service.NewStreamService(redisClient, clickHouse))
 	pipelinev1.RegisterPipelineServiceServer(s.svr, &service.PipelineServiceImpl{})
 	// reflection（调试）
 	reflection.Register(s.svr)

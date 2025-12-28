@@ -23,8 +23,8 @@ import (
 	streamv1 "github.com/go-arcade/arcade/api/stream/v1"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/redis/go-redis/v9"
-	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/grpc"
+	"gorm.io/gorm"
 )
 
 // StreamServiceImpl Stream 服务实现
@@ -32,7 +32,7 @@ type StreamServiceImpl struct {
 	streamv1.UnimplementedStreamServiceServer
 	logAggregator *LogAggregator
 	redis         *redis.Client
-	mongo         *mongo.Database
+	clickHouse    *gorm.DB
 	mu            sync.RWMutex
 	subscribers   map[string][]*LogSubscriber // taskID -> subscribers
 }
@@ -45,11 +45,11 @@ type LogSubscriber struct {
 }
 
 // NewStreamService 创建Stream服务实例
-func NewStreamService(redis *redis.Client, mongo *mongo.Database) *StreamServiceImpl {
+func NewStreamService(redis *redis.Client, clickHouse *gorm.DB) *StreamServiceImpl {
 	return &StreamServiceImpl{
-		logAggregator: NewLogAggregator(redis, mongo),
+		logAggregator: NewLogAggregator(redis, clickHouse),
 		redis:         redis,
-		mongo:         mongo,
+		clickHouse:    clickHouse,
 		subscribers:   make(map[string][]*LogSubscriber),
 	}
 }
@@ -117,7 +117,7 @@ func (s *StreamServiceImpl) StreamTaskLog(req *streamv1.StreamTaskLogRequest, st
 
 	log.Infow("client requesting log stream", "taskId", taskID, "fromLine", req.FromLine, "follow", req.Follow)
 
-	// 先从MongoDB获取历史日志
+	// 先从 ClickHouse 获取历史日志
 	historicalLogs, err := s.logAggregator.GetLogsByTaskID(taskID, req.FromLine, 1000)
 	if err != nil {
 		log.Errorw("failed to get historical logs", "taskId", taskID, "error", err)

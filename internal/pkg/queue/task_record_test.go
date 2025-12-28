@@ -18,26 +18,26 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/go-arcade/arcade/pkg/database"
 	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
 )
 
 func TestNewTaskRecordManager(t *testing.T) {
 	tests := []struct {
-		name    string
-		mongoDB database.MongoDB
-		wantNil bool
+		name       string
+		clickHouse *gorm.DB
+		wantNil    bool
 	}{
 		{
-			name:    "nil MongoDB",
-			mongoDB: nil,
-			wantNil: true,
+			name:       "nil ClickHouse",
+			clickHouse: nil,
+			wantNil:    true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			manager, err := NewTaskRecordManager(tt.mongoDB)
+			manager, err := NewTaskRecordManager(tt.clickHouse)
 			if tt.wantNil {
 				assert.NoError(t, err)
 				assert.Nil(t, manager)

@@ -37,6 +37,7 @@ import (
 	"github.com/go-arcade/arcade/pkg/shutdown"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type App struct {
@@ -65,7 +66,7 @@ func NewApp(
 	metricsServer *metrics.Server,
 	pprofServer *pprof.Server,
 	storage storage.StorageProvider,
-	mongoDB database.MongoDB,
+	clickHouse *gorm.DB,
 	appConf *config.AppConfig,
 	db database.IDatabase,
 	repos *repo.Repositories,

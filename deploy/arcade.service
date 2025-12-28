@@ -1,7 +1,7 @@
 [Unit]
 Description=Arcade CI/CD Platform Server
 Documentation=https://github.com/go-arcade/arcade
-After=network.target mysql.service mongodb.service
+After=network.target mysql.service clickhouse.service
 Wants=network.target
 
 [Service]

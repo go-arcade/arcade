@@ -50,8 +50,6 @@ host = "0.0.0.0"
 port = 8080
 # access log, false or true
 accessLog = true
-# use file assets, false or true
-useFileAssets = false
 # read timeout
 # unit: second
 readTimeout = 60
@@ -80,24 +78,12 @@ refreshExpire = 7200
 secretKey = "bf284d03-ba65-42d4-a9fe-0d2fbfe61060"
 
 [database]
-# support mysql
-type = "mysql"
-# mysql host
-host = "127.0.0.1"
-# mysql port
-port = "3306"
-# mysql user
-user = "root"
-password = "muP4woo9Aidiph2jeX8u"
-# mysql database
-db = "arcade"
+# Common configuration for all data sources
 # sql print, false or true
 output = true
 # max open connections
-# unit: second
 maxOpenConns = 500
 # max idle connections
-# unit: second
 maxIdleConns = 5
 # max life time
 # unit: second
@@ -106,15 +92,24 @@ maxLifeTime = 300
 # unit: second
 maxIdleTime = 60
 
-[database.mongodb]
-# cluster, standalone
-# cluster: uri = "mongodb://localhost:27017,localhost:27018,localhost:27019"
-# auth: 
-uri = "mongodb://mongo:muP4woo9Aidiph2jeX8u@localhost:27017"
-# uri = "mongodb://127.0.0.1:27017"
-compressors = ["snappy", "zstd", "zlib"]
-db = "arcade"
-poolSize = 100
+# MySQL data source configuration
+[database.mysql]
+host = "127.0.0.1"
+port = "3306"
+user = "root"
+password = "muP4woo9Aidiph2jeX8u"
+dbname = "arcade"
+
+# ClickHouse data source configuration
+[database.clickhouse]
+host = "localhost"
+port = 9000
+dbname = "arcade"
+username = "default"
+password = "Doh4Pur5lix6ru0OoK0t"
+# unit: second
+dialTimeout = 10
+readTimeout = 20
 
 [redis]
 # support single, cluster, sentinel

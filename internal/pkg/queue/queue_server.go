@@ -42,15 +42,15 @@ func NewQueueServer(cfg *Config) (*Server, error) {
 		return nil, fmt.Errorf("redis client is required")
 	}
 
-	if cfg.MongoDB == nil {
-		return nil, fmt.Errorf("mongodb is required for queue server")
+	if cfg.ClickHouse == nil {
+		return nil, fmt.Errorf("clickhouse is required for queue server")
 	}
 
 	redisOpt := &redisConnOptWrapper{client: cfg.RedisClient}
 	client := asynq.NewClient(redisOpt)
 
 	// 初始化任务记录管理器
-	taskRecordMgr, err := NewTaskRecordManager(cfg.MongoDB)
+	taskRecordMgr, err := NewTaskRecordManager(cfg.ClickHouse)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create task record manager: %w", err)
 	}
@@ -103,7 +103,7 @@ func (s *Server) Enqueue(payload *TaskPayload, queueName string) error {
 		return fmt.Errorf("enqueue task: %w", err)
 	}
 
-	// 记录到 MongoDB
+	// 记录到 ClickHouse
 	if s.taskRecordMgr != nil {
 		s.taskRecordMgr.RecordTaskEnqueued(payload, queueName)
 	}
@@ -188,7 +188,7 @@ func (s *Server) EnqueueDelayed(payload *TaskPayload, delay time.Duration, queue
 		return fmt.Errorf("enqueue delayed task: %w", err)
 	}
 
-	// 记录到 MongoDB
+	// 记录到 ClickHouse
 	if s.taskRecordMgr != nil {
 		s.taskRecordMgr.RecordTaskEnqueued(payload, queueName)
 	}
