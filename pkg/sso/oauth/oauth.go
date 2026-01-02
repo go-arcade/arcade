@@ -73,20 +73,52 @@ func (p *OAuthProvider) GetUserInfo(ctx context.Context, token *oauth2.Token) (*
 		return nil, fmt.Errorf("user info request failed: %s", resp.Status)
 	}
 
-	var data struct {
-		Login     string `json:"login"`
-		Email     string `json:"email"`
-		Name      string `json:"name"`
-		AvatarURL string `json:"avatar_url"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+	// Decode as map to support dynamic field mapping
+	var dataMap map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&dataMap); err != nil {
 		return nil, err
 	}
 
-	return &UserInfo{
-		Username:  data.Login,
-		Email:     data.Email,
-		Nickname:  data.Name,
-		AvatarURL: data.AvatarURL,
-	}, nil
+	// Extract default fields with fallback to common field names
+	userInfo := &UserInfo{}
+	if v, ok := dataMap["login"].(string); ok {
+		userInfo.Username = v
+	}
+	if v, ok := dataMap["email"].(string); ok {
+		userInfo.Email = v
+	}
+	if v, ok := dataMap["name"].(string); ok {
+		userInfo.Nickname = v
+	}
+	if v, ok := dataMap["avatar_url"].(string); ok {
+		userInfo.AvatarURL = v
+	}
+
+	return userInfo, nil
+}
+
+// GetRawUserInfo returns raw user info map for field mapping
+func (p *OAuthProvider) GetRawUserInfo(ctx context.Context, token *oauth2.Token) (map[string]interface{}, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, p.UserInfoURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	token.SetAuthHeader(req)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("user info request failed: %s", resp.Status)
+	}
+
+	var dataMap map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&dataMap); err != nil {
+		return nil, err
+	}
+
+	return dataMap, nil
 }

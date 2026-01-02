@@ -23,7 +23,6 @@ import (
 	"github.com/bytedance/sonic"
 	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/internal/engine/repo"
-	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/id"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/sso"
@@ -140,13 +139,28 @@ func (iis *IdentityService) Callback(providerName, state, code string) (*model.R
 		return nil, "", fmt.Errorf("get user info failed: %w", err)
 	}
 
+	// Get CoverAttributes configuration
+	var coverAttributes bool
+	switch integration.ProviderType {
+	case "oauth":
+		var oauthCfg model.OAuthConfig
+		if err := sonic.Unmarshal(integration.Config, &oauthCfg); err == nil {
+			coverAttributes = oauthCfg.CoverAttributes
+		}
+	case "oidc":
+		var oidcCfg model.OIDCConfig
+		if err := sonic.Unmarshal(integration.Config, &oidcCfg); err == nil {
+			coverAttributes = oidcCfg.CoverAttributes
+		}
+	}
+
 	registerInfo, err := iis.registerOrLoginUser(actualProviderName, &sso.UserInfoAdapter{
 		Username:  userInfo.Username,
 		Email:     userInfo.Email,
 		Name:      userInfo.Name,
 		Nickname:  userInfo.Nickname,
 		AvatarURL: userInfo.AvatarURL,
-	})
+	}, coverAttributes)
 	if err != nil {
 		return nil, "", err
 	}
@@ -193,6 +207,7 @@ func (iis *IdentityService) convertToProviderConfig(integration *model.Identity)
 		cfg.RedirectURL = oauthCfg.RedirectURL
 		cfg.Scopes = oauthCfg.Scopes
 		cfg.UserInfoURL = oauthCfg.UserInfoURL
+		cfg.FieldMap = oauthCfg.Mapping
 
 		// Convert AuthURL and TokenURL to Endpoint
 		if oauthCfg.Endpoint.AuthURL != "" && oauthCfg.Endpoint.TokenURL != "" {
@@ -218,6 +233,7 @@ func (iis *IdentityService) convertToProviderConfig(integration *model.Identity)
 		cfg.RedirectURL = oidcCfg.RedirectURL
 		cfg.Scopes = oidcCfg.Scopes
 		cfg.SkipVerify = oidcCfg.SkipVerify
+		cfg.FieldMap = oidcCfg.Mapping
 
 	default:
 		return nil, fmt.Errorf("unsupported provider type: %s", integration.ProviderType)
@@ -334,18 +350,133 @@ func (iis *IdentityService) LDAPLogin(providerName, username, password string) (
 		return nil, fmt.Errorf("authentication failed: %w", err)
 	}
 
+	// Convert LDAP attributes to map[string]any for field mapping
+	rawData := make(map[string]any)
+	for key, values := range userInfo.Attributes {
+		if len(values) > 0 {
+			rawData[key] = values[0]
+		}
+	}
+	// Add standard fields
+	rawData["username"] = userInfo.Username
+	rawData["email"] = userInfo.Email
+	rawData["displayName"] = userInfo.DisplayName
+	rawData["dn"] = userInfo.DN
+
+	// Apply field mapping if configured
+	userInfoAdapter := applyLDAPFieldMapping(rawData, ldapCfg.Mapping, userInfo)
+
 	// use common user registration logic
-	return iis.registerOrLoginUser(providerName, &sso.UserInfoAdapter{
-		Username: userInfo.Username,
-		Email:    userInfo.Email,
-		Name:     userInfo.DisplayName,
-		Nickname: userInfo.DisplayName,
-	})
+	return iis.registerOrLoginUser(providerName, userInfoAdapter, ldapCfg.CoverAttributes)
 }
 
-// registerOrLoginUser common user registration or login logic
-func (iis *IdentityService) registerOrLoginUser(providerName string, userInfo *sso.UserInfoAdapter) (*model.Register, error) {
-	// split name into first and last name
+// applyLDAPFieldMapping applies field mapping rules for LDAP user information.
+// It converts LDAP attributes to UserInfoAdapter using the provided mapping configuration.
+func applyLDAPFieldMapping(
+	rawData map[string]any,
+	fieldMap map[string]string,
+	ldapUserInfo *ldap.UserInfo,
+) *sso.UserInfoAdapter {
+	// Use the shared field mapping function
+	result := sso.ApplyFieldMappingFromRaw(rawData, fieldMap)
+
+	// Apply LDAP-specific fallback values for missing fields
+	if result.Username == "" {
+		result.Username = ldapUserInfo.Username
+	}
+	if result.Email == "" {
+		result.Email = ldapUserInfo.Email
+	}
+	if result.Name == "" {
+		result.Name = ldapUserInfo.DisplayName
+	}
+	if result.Nickname == "" {
+		result.Nickname = ldapUserInfo.DisplayName
+	}
+	if result.ID == "" {
+		result.ID = ldapUserInfo.DN
+	}
+
+	return result
+}
+
+// registerOrLoginUser handles user registration or login logic according to the SSO flow.
+// It checks if user exists, and either creates a new user or updates existing user based on CoverAttributes configuration.
+func (iis *IdentityService) registerOrLoginUser(providerName string, userInfo *sso.UserInfoAdapter, coverAttributes bool) (*model.Register, error) {
+	// Check if user exists by username
+	userId, err := iis.userRepo.GetUserByUsername(userInfo.Username)
+	if err == nil && userId != "" {
+		// User exists - check CoverAttributes configuration
+		log.Debugw("user already exists", "provider", providerName, "username", userInfo.Username, "coverAttributes", coverAttributes)
+
+		existingUser, err := iis.userRepo.GetUserByUserId(userId)
+		if err != nil {
+			log.Errorw("failed to get existing user details", "provider", providerName, "userId", userId, "error", err)
+			return nil, fmt.Errorf("user exists but failed to get user details: %w", err)
+		}
+
+		// Update SSO fields if CoverAttributes is enabled
+		if coverAttributes {
+			log.Debugw("updating SSO fields for existing user", "provider", providerName, "userId", userId)
+			if err := iis.updateSsoFields(userId, userInfo); err != nil {
+				log.Errorw("failed to update SSO fields", "provider", providerName, "userId", userId, "error", err)
+				// Continue with login even if update fails
+			} else {
+				// Fetch updated user info after successful update
+				existingUser, err = iis.userRepo.GetUserByUserId(userId)
+				if err != nil {
+					log.Errorw("failed to get updated user details", "provider", providerName, "userId", userId, "error", err)
+				}
+			}
+		} else {
+			log.Debugw("keeping original fields for existing user", "provider", providerName, "userId", userId)
+		}
+
+		// Return existing user info for login
+		return &model.Register{
+			UserId:    existingUser.UserId,
+			Username:  existingUser.Username,
+			FullName:  existingUser.FullName,
+			Avatar:    existingUser.Avatar,
+			Email:     existingUser.Email,
+			Password:  existingUser.Password,
+			CreatedAt: existingUser.CreatedAt,
+		}, nil
+	}
+
+	// User does not exist (err != nil means user not found) - create new user with full SSO fields
+	log.Debugw("creating new user", "provider", providerName, "username", userInfo.Username)
+	return iis.createUserWithFullSsoFields(providerName, userInfo)
+}
+
+// updateSsoFields updates SSO-related fields for an existing user.
+func (iis *IdentityService) updateSsoFields(userId string, userInfo *sso.UserInfoAdapter) error {
+	fullName := splitName(userInfo.Name, userInfo.Nickname)
+	if fullName == "" {
+		fullName = userInfo.Username
+	}
+
+	updates := make(map[string]any)
+	if userInfo.Email != "" {
+		updates["email"] = userInfo.Email
+	}
+	if fullName != "" {
+		updates["full_name"] = fullName
+	}
+	if userInfo.AvatarURL != "" {
+		updates["avatar"] = userInfo.AvatarURL
+	}
+
+	if len(updates) == 0 {
+		return nil
+	}
+
+	updates["updated_at"] = time.Now()
+	return iis.userRepo.UpdateUser(userId, updates)
+}
+
+// createUserWithFullSsoFields creates a new user with complete SSO fields.
+func (iis *IdentityService) createUserWithFullSsoFields(providerName string, userInfo *sso.UserInfoAdapter) (*model.Register, error) {
 	fullName := splitName(userInfo.Name, userInfo.Nickname)
 
 	registerUserInfo := &model.Register{
@@ -356,12 +487,12 @@ func (iis *IdentityService) registerOrLoginUser(providerName string, userInfo *s
 		Email:    userInfo.Email,
 	}
 
-	// if no email, generate default email
+	// Generate default email if missing
 	if registerUserInfo.Email == "" {
 		registerUserInfo.Email = fmt.Sprintf("%s@%s.com", userInfo.Username, providerName)
 	}
 
-	// if no first name, use username as first name
+	// Use username as full name if missing
 	if registerUserInfo.FullName == "" {
 		registerUserInfo.FullName = userInfo.Username
 	}
@@ -375,39 +506,15 @@ func (iis *IdentityService) registerOrLoginUser(providerName string, userInfo *s
 
 	err = iis.userRepo.Register(registerUserInfo)
 	if err != nil {
-		// 如果用户已存在，获取已存在用户的信息并返回（用于登录）
-		if err.Error() == http.UserAlreadyExist.Msg {
-			log.Debugw("user already exists, getting user info for login", "provider", providerName, "username", userInfo.Username)
-			userId, err := iis.userRepo.GetUserByUsername(userInfo.Username)
-			if err != nil {
-				log.Errorw("failed to get existing user", "provider", providerName, "username", userInfo.Username, "error", err)
-				return nil, fmt.Errorf("user exists but failed to get user info: %w", err)
-			}
-			existingUser, err := iis.userRepo.GetUserByUserId(userId)
-			if err != nil {
-				log.Errorw("failed to get existing user details", "provider", providerName, "userId", userId, "error", err)
-				return nil, fmt.Errorf("user exists but failed to get user details: %w", err)
-			}
-			// 返回已存在用户的信息
-			return &model.Register{
-				UserId:    existingUser.UserId,
-				Username:  existingUser.Username,
-				FullName:  existingUser.FullName,
-				Avatar:    existingUser.Avatar,
-				Email:     existingUser.Email,
-				Password:  existingUser.Password,
-				CreatedAt: existingUser.CreatedAt,
-			}, nil
-		}
 		log.Errorw("failed to register user", "provider", providerName, "username", userInfo.Username, "error", err)
 		return nil, err
 	}
 
-	// 创建 UserExt 记录（替代数据库触发器）
+	// Create UserExt record
 	err = iis.createUserExtIfNotExists(registerUserInfo.UserId)
 	if err != nil {
 		log.Errorw("failed to create user ext after registration", "provider", providerName, "username", userInfo.Username, "userId", registerUserInfo.UserId, "error", err)
-		// 不返回错误，因为用户已经创建成功，UserExt 可以在后续操作中创建
+		// Don't return error, as user creation succeeded
 	}
 
 	return registerUserInfo, nil

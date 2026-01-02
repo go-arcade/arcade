@@ -37,40 +37,46 @@ func (s *Identity) TableName() string {
 
 // OAuthConfig OAuth 配置
 type OAuthConfig struct {
-	ClientID     string          `json:"clientId"`
-	ClientSecret string          `json:"clientSecret"`
-	AuthURL      string          `json:"authURL"`
-	TokenURL     string          `json:"tokenURL"`
-	UserInfoURL  string          `json:"userInfoURL"`
-	RedirectURL  string          `json:"redirectURL"`
-	Scopes       []string        `json:"scopes"`
-	Endpoint     oauth2.Endpoint `json:"endpoint"`
+	ClientID        string            `json:"clientId"`
+	ClientSecret    string            `json:"clientSecret"`
+	AuthURL         string            `json:"authURL"`
+	TokenURL        string            `json:"tokenURL"`
+	UserInfoURL     string            `json:"userInfoURL"`
+	RedirectURL     string            `json:"redirectURL"`
+	Scopes          []string          `json:"scopes"`
+	Endpoint        oauth2.Endpoint   `json:"endpoint"`
+	Mapping         map[string]string `json:"mapping"`
+	CoverAttributes bool              `json:"coverAttributes"` // 是否覆盖已存在用户的属性
 }
 
 // LDAPConfig LDAP 配置
 type LDAPConfig struct {
-	Host         string            `json:"host"`
-	Port         int               `json:"port"`
-	UseTLS       bool              `json:"useTLS"`
-	SkipVerify   bool              `json:"skipVerify"`
-	BaseDN       string            `json:"baseDN"`
-	BindDN       string            `json:"bindDN"`
-	BindPassword string            `json:"bindPassword"`
-	UserFilter   string            `json:"userFilter"`  // (uid=%s)
-	UserDN       string            `json:"userDN"`      // ou=users,dc=example,dc=com
-	GroupFilter  string            `json:"groupFilter"` // (memberUid=%s)
-	GroupDN      string            `json:"groupDN"`     // ou=groups,dc=example,dc=com
-	Attributes   map[string]string `json:"attributes"`  // username, email, displayName, groups
+	Host            string            `json:"host"`
+	Port            int               `json:"port"`
+	UseTLS          bool              `json:"useTLS"`
+	SkipVerify      bool              `json:"skipVerify"`
+	BaseDN          string            `json:"baseDN"`
+	BindDN          string            `json:"bindDN"`
+	BindPassword    string            `json:"bindPassword"`
+	UserFilter      string            `json:"userFilter"`  // (uid=%s)
+	UserDN          string            `json:"userDN"`      // ou=users,dc=example,dc=com
+	GroupFilter     string            `json:"groupFilter"` // (memberUid=%s)
+	GroupDN         string            `json:"groupDN"`     // ou=groups,dc=example,dc=com
+	Attributes      map[string]string `json:"attributes"`  // username, email, displayName, groups
+	Mapping         map[string]string `json:"mapping"`
+	CoverAttributes bool              `json:"coverAttributes"` // 是否覆盖已存在用户的属性
 }
 
 // OIDCConfig OIDC (OpenID Connect) 配置
 type OIDCConfig struct {
-	Issuer       string   `json:"issuer"`
-	ClientID     string   `json:"clientId"`
-	ClientSecret string   `json:"clientSecret"`
-	RedirectURL  string   `json:"redirectURL"`
-	Scopes       []string `json:"scopes"`
-	UserInfoURL  string   `json:"userInfoURL,omitempty"`
-	SkipVerify   bool     `json:"skipVerify"`
-	HostedDomain string   `json:"hostedDomain,omitempty"` // Google Workspace domain
+	Issuer          string            `json:"issuer"`
+	ClientID        string            `json:"clientId"`
+	ClientSecret    string            `json:"clientSecret"`
+	RedirectURL     string            `json:"redirectURL"`
+	Scopes          []string          `json:"scopes"`
+	UserInfoURL     string            `json:"userInfoURL,omitempty"`
+	SkipVerify      bool              `json:"skipVerify"`
+	HostedDomain    string            `json:"hostedDomain,omitempty"` // Google Workspace domain
+	Mapping         map[string]string `json:"mapping"`
+	CoverAttributes bool              `json:"coverAttributes"` // 是否覆盖已存在用户的属性
 }

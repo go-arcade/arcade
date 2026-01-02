@@ -73,20 +73,46 @@ func (p *OIDCProvider) GetUserInfo(ctx context.Context, token *oauth2.Token) (*U
 		return nil, fmt.Errorf("invalid id_token: %w", err)
 	}
 
-	var claims struct {
-		Sub     string `json:"sub"`
-		Email   string `json:"email"`
-		Name    string `json:"name"`
-		Picture string `json:"picture"`
-	}
-	if err := idToken.Claims(&claims); err != nil {
+	// Extract all claims as a map to support dynamic field mapping
+	var claimsMap map[string]any
+	if err := idToken.Claims(&claimsMap); err != nil {
 		return nil, err
 	}
 
-	return &UserInfo{
-		Username:  claims.Sub,
-		Email:     claims.Email,
-		Nickname:  claims.Name,
-		AvatarURL: claims.Picture,
-	}, nil
+	// Extract default fields with fallback to common field names
+	userInfo := &UserInfo{}
+	if v, ok := claimsMap["sub"].(string); ok {
+		userInfo.Username = v
+	}
+	if v, ok := claimsMap["email"].(string); ok {
+		userInfo.Email = v
+	}
+	if v, ok := claimsMap["name"].(string); ok {
+		userInfo.Nickname = v
+	}
+	if v, ok := claimsMap["picture"].(string); ok {
+		userInfo.AvatarURL = v
+	}
+
+	return userInfo, nil
+}
+
+// GetRawClaims returns raw claims map for field mapping
+func (p *OIDCProvider) GetRawClaims(ctx context.Context, token *oauth2.Token) (map[string]interface{}, error) {
+	rawIDToken, ok := token.Extra("id_token").(string)
+	if !ok {
+		return nil, fmt.Errorf("missing id_token")
+	}
+
+	idToken, err := p.Verifier.Verify(ctx, rawIDToken)
+	if err != nil {
+		return nil, fmt.Errorf("invalid id_token: %w", err)
+	}
+
+	var claimsMap map[string]interface{}
+	if err := idToken.Claims(&claimsMap); err != nil {
+		return nil, err
+	}
+
+	return claimsMap, nil
 }
