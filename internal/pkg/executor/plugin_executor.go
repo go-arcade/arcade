@@ -16,7 +16,6 @@ package executor
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/bytedance/sonic"
@@ -25,7 +24,9 @@ import (
 )
 
 // PluginExecutor 插件执行器
-// 根据 plugin 的 ExecutionType 选择合适的执行方式
+// 支持两种执行方式：
+// 1. Shell/Plugin 执行：通过 plugin 接口执行（本地或远程）
+// 2. HTTP 执行：通过 HTTP 请求执行（当 step args 包含 url 字段时）
 type PluginExecutor struct {
 	pluginManager *plugin.Manager
 	httpExecutor  *HTTPExecutor
@@ -47,17 +48,19 @@ func (e *PluginExecutor) Name() string {
 }
 
 // CanExecute 检查是否可以执行
-// 插件执行器可以执行所有不需要 RunOnAgent 的 step
+// 插件执行器可以执行所有不需要 RunRemotely 的 step
 func (e *PluginExecutor) CanExecute(req *ExecutionRequest) bool {
 	if req == nil || req.Step == nil {
 		return false
 	}
-	// 如果 step 指定了 RunOnAgent，则不应该使用插件执行器
-	return !req.Step.RunOnAgent
+	// 如果 step 指定了 RunRemotely，则不应该使用插件执行器
+	return !req.Step.RunRemotely
 }
 
 // Execute 执行 step
-// 根据 plugin 的 ExecutionType 选择执行方式
+// 根据 step 的 args 判断执行方式：
+// - 如果 args 中包含 url 字段，使用 HTTP 执行
+// - 否则使用 Shell/Plugin 执行（本地或远程）
 func (e *PluginExecutor) Execute(ctx context.Context, req *ExecutionRequest) (*ExecutionResult, error) {
 	if req.Step == nil {
 		result := NewExecutionResult(e.Name())
@@ -66,6 +69,15 @@ func (e *PluginExecutor) Execute(ctx context.Context, req *ExecutionRequest) (*E
 		return result, err
 	}
 
+	// 判断执行类型：检查 args 中是否包含 url 字段
+	if req.Step.Args != nil {
+		if url, ok := req.Step.Args["url"].(string); ok && url != "" {
+			// 使用 HTTP 执行
+			return e.executeHTTP(ctx, req)
+		}
+	}
+
+	// 使用 Shell/Plugin 执行（本地或远程）
 	// 获取 plugin
 	pluginInstance, err := e.pluginManager.GetPlugin(req.Step.Uses)
 	if err != nil {
@@ -75,11 +87,11 @@ func (e *PluginExecutor) Execute(ctx context.Context, req *ExecutionRequest) (*E
 		return result, err
 	}
 
-	// 默认使用 plugin 调用方式
 	return e.executePlugin(ctx, req, pluginInstance)
 }
 
-// executePlugin 通过 plugin 调用执行
+// executePlugin 通过 plugin 调用执行（Shell 类型）
+// 支持本地执行和远程执行，由 UnifiedExecutor 根据 RunRemotely 字段决定
 func (e *PluginExecutor) executePlugin(ctx context.Context, req *ExecutionRequest, pluginInstance plugin.Plugin) (*ExecutionResult, error) {
 	result := NewExecutionResult(e.Name())
 
@@ -98,7 +110,7 @@ func (e *PluginExecutor) executePlugin(ctx context.Context, req *ExecutionReques
 	}
 
 	// 准备参数 JSON
-	paramsJSON, err := json.Marshal(resolvedParams)
+	paramsJSON, err := sonic.Marshal(resolvedParams)
 	if err != nil {
 		err = fmt.Errorf("marshal params: %w", err)
 		result.Complete(false, -1, err)
@@ -113,7 +125,7 @@ func (e *PluginExecutor) executePlugin(ctx context.Context, req *ExecutionReques
 	if req.Options != nil && req.Options.Timeout > 0 {
 		opts["timeout"] = req.Options.Timeout.Seconds()
 	}
-	optsJSON, err := json.Marshal(opts)
+	optsJSON, err := sonic.Marshal(opts)
 	if err != nil {
 		err = fmt.Errorf("marshal opts: %w", err)
 		result.Complete(false, -1, err)
@@ -168,7 +180,13 @@ func (e *PluginExecutor) executePlugin(ctx context.Context, req *ExecutionReques
 }
 
 // executeHTTP 通过 HTTP 执行（HTTP 类型）
+// 当 step args 包含 url 字段时，使用 HTTP 执行器执行 HTTP 请求
 func (e *PluginExecutor) executeHTTP(ctx context.Context, req *ExecutionRequest) (*ExecutionResult, error) {
+	if e.logger.Log != nil {
+		e.logger.Log.Debugw("executing step via HTTP",
+			"step", req.Step.Name,
+			"url", req.Step.Args["url"])
+	}
 	// 使用 HTTP 执行器执行
 	return e.httpExecutor.Execute(ctx, req)
 }

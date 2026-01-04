@@ -20,7 +20,7 @@ import (
 )
 
 // Executor 定义了执行器的统一接口
-// 执行器负责执行 pipeline step，支持多种执行方式（本地、agent、容器等）
+// 执行器负责执行 pipeline step，支持多种执行方式（本地、远程、容器等）
 type Executor interface {
 	// Execute 执行一个 step
 	// 返回执行结果和错误
@@ -55,14 +55,14 @@ type ExecutionRequest struct {
 
 // StepInfo step 信息
 type StepInfo struct {
-	Name          string
-	Uses          string // Plugin name
-	Action        string // Plugin action
-	Args          map[string]any
-	Env           map[string]string
-	Timeout       string
-	RunOnAgent    bool
-	AgentSelector *AgentSelector
+	Name           string
+	Uses           string // Plugin name
+	Action         string // Plugin action
+	Args           map[string]any
+	Env            map[string]string
+	Timeout        string
+	RunRemotely    bool
+	RemoteSelector *RemoteSelector
 }
 
 // JobInfo job 信息
@@ -86,8 +86,8 @@ type PipelineInfo struct {
 	Variables map[string]string
 }
 
-// AgentSelector agent 选择器
-type AgentSelector struct {
+// RemoteSelector 远程执行节点选择器
+type RemoteSelector struct {
 	MatchLabels      map[string]string
 	MatchExpressions []LabelExpression
 }

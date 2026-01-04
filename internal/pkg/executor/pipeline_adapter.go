@@ -104,39 +104,39 @@ func ConvertStepInfo(
 	args map[string]any,
 	env map[string]string,
 	timeout string,
-	runOnAgent bool,
-	agentSelector *AgentSelector,
+	runRemotely bool,
+	remoteSelector *RemoteSelector,
 ) *StepInfo {
 	return &StepInfo{
-		Name:          name,
-		Uses:          uses,
-		Action:        action,
-		Args:          args,
-		Env:           env,
-		Timeout:       timeout,
-		RunOnAgent:    runOnAgent,
-		AgentSelector: agentSelector,
+		Name:           name,
+		Uses:           uses,
+		Action:         action,
+		Args:           args,
+		Env:            env,
+		Timeout:        timeout,
+		RunRemotely:    runRemotely,
+		RemoteSelector: remoteSelector,
 	}
 }
 
 // NewExecutorManagerWithDefaults 创建带默认执行器的执行器管理器
 func NewExecutorManagerWithDefaults(
 	pluginManager *plugin.Manager,
-	agentManager AgentManager,
+	remoteExecutor RemoteExecutor,
 	logger log.Logger,
 ) *ExecutorManager {
 	manager := NewExecutorManager()
+
+	// 注册统一执行器（根据 RunRemotely 自动选择本地或远程执行）
+	if pluginManager != nil || remoteExecutor != nil {
+		unifiedExec := NewUnifiedExecutor(pluginManager, remoteExecutor, logger)
+		manager.Register(unifiedExec)
+	}
 
 	// 注册插件执行器（根据 ExecutionType 自动选择执行方式）
 	if pluginManager != nil {
 		pluginExec := NewPluginExecutor(pluginManager, logger)
 		manager.Register(pluginExec)
-	}
-
-	// 注册 agent 执行器
-	if agentManager != nil {
-		agentExec := NewAgentExecutor(agentManager, logger)
-		manager.Register(agentExec)
 	}
 
 	return manager

@@ -16,18 +16,20 @@ package executor
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/bytedance/sonic"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-resty/resty/v2"
 )
 
 // HTTPExecutor HTTP 执行器
-// 根据 plugin 的 ExecutionType 执行 HTTP 请求
+// 执行 HTTP 类型的请求
+// 注意：HTTPExecutor 不应直接注册到 ExecutorManager，而是通过 PluginExecutor 内部调用
+// PluginExecutor 会根据 step args 中是否包含 url 字段来判断是否使用 HTTP 执行
 type HTTPExecutor struct {
 	client *resty.Client
 	logger log.Logger
@@ -213,7 +215,7 @@ func (e *HTTPExecutor) Execute(ctx context.Context, req *ExecutionRequest) (*Exe
 		"success":     isSuccess,
 	}
 
-	responseJSON, _ := json.Marshal(responseData)
+	responseJSON, _ := sonic.Marshal(responseData)
 	result.Output = string(responseJSON)
 
 	if !isSuccess {
