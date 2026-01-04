@@ -17,7 +17,6 @@ package cache
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -30,24 +29,6 @@ import (
 // ProviderSet 提供缓存相关的依赖（支持单节点、Sentinel 和集群模式）
 var ProviderSet = wire.NewSet(ProvideRedisCmdable, ProvideICache)
 
-// ProviderSetLegacy 提供缓存相关的依赖（兼容旧版本，仅支持单节点和 Sentinel）
-var ProviderSetLegacy = wire.NewSet(ProvideRedis, ProvideICacheFromClient)
-
-// ProvideRedis 提供 Redis 实例（兼容旧版本，返回单节点客户端）
-// 注意：集群模式请使用 ProvideRedisCmdable
-func ProvideRedis(conf Redis) (*redis.Client, error) {
-	cmdable, err := NewRedisCmdable(conf)
-	if err != nil {
-		return nil, err
-	}
-	// 如果是单节点客户端，返回 *redis.Client
-	if client, ok := cmdable.(*redis.Client); ok {
-		return client, nil
-	}
-	// 集群模式不支持返回 *redis.Client，返回错误
-	return nil, fmt.Errorf("cluster mode does not support *redis.Client, use ProvideRedisCmdable instead")
-}
-
 // ProvideRedisCmdable 提供 Redis 实例（支持单节点、Sentinel 和集群模式）
 func ProvideRedisCmdable(conf Redis) (redis.Cmdable, error) {
 	return NewRedisCmdable(conf)
@@ -56,11 +37,6 @@ func ProvideRedisCmdable(conf Redis) (redis.Cmdable, error) {
 // ProvideICache 提供 ICache 接口实例（支持单节点、Sentinel 和集群模式）
 func ProvideICache(cmdable redis.Cmdable) ICache {
 	return NewRedisCache(cmdable)
-}
-
-// ProvideICacheFromClient 提供 ICache 接口实例（从 *redis.Client 创建，兼容旧版本）
-func ProvideICacheFromClient(client *redis.Client) ICache {
-	return NewRedisCache(client)
 }
 
 type Redis struct {
@@ -77,21 +53,6 @@ type Redis struct {
 	ReadTimeout      time.Duration // 读超时
 	WriteTimeout     time.Duration // 写超时
 	MaxRedirects     int           // 集群模式最大重定向次数
-}
-
-// NewRedis 创建 Redis 客户端（兼容旧版本，仅支持单节点和 Sentinel）
-// 注意：集群模式请使用 NewRedisCmdable
-func NewRedis(cfg Redis) (*redis.Client, error) {
-	cmdable, err := NewRedisCmdable(cfg)
-	if err != nil {
-		return nil, err
-	}
-	// 如果是单节点客户端，返回 *redis.Client
-	if client, ok := cmdable.(*redis.Client); ok {
-		return client, nil
-	}
-	// 集群模式不支持返回 *redis.Client
-	return nil, fmt.Errorf("cluster mode does not support *redis.Client, use NewRedisCmdable instead")
 }
 
 // NewRedisCmdable 创建 Redis 客户端（支持单节点、Sentinel 和集群模式）

@@ -31,6 +31,11 @@ func NewRedisCache(cmdable redis.Cmdable) ICache {
 	return &RedisCache{cmdable: cmdable}
 }
 
+// GetCmdable 获取底层的 redis.Cmdable（支持所有模式：单节点、Sentinel 和集群）
+func (r *RedisCache) GetCmdable() redis.Cmdable {
+	return r.cmdable
+}
+
 // Get 获取缓存值
 func (r *RedisCache) Get(ctx context.Context, key string) *redis.StringCmd {
 	return r.cmdable.Get(ctx, key)
@@ -49,20 +54,6 @@ func (r *RedisCache) Del(ctx context.Context, keys ...string) *redis.IntCmd {
 // Pipeline 创建管道
 func (r *RedisCache) Pipeline() redis.Pipeliner {
 	return r.cmdable.Pipeline()
-}
-
-// GetClient 获取底层的 redis.Client（仅单节点和 Sentinel 模式支持）
-// 集群模式返回 nil
-func (r *RedisCache) GetClient() *redis.Client {
-	if client, ok := r.cmdable.(*redis.Client); ok {
-		return client
-	}
-	return nil
-}
-
-// GetCmdable 获取底层的 redis.Cmdable（支持所有模式）
-func (r *RedisCache) GetCmdable() redis.Cmdable {
-	return r.cmdable
 }
 
 // HSet 设置 Hash 字段
