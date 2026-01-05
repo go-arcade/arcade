@@ -394,5 +394,5 @@ func (p *Shell) runCommandWithOpts(command string, args []string, env map[string
 
 // init registers the plugin
 func init() {
-	plugin.MustRegister(NewShell())
+	plugin.Register(NewShell())
 }

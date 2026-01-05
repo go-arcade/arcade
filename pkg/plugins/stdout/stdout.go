@@ -245,5 +245,5 @@ func (p *Stdout) SendTemplate(tpl string, data json.RawMessage, opts json.RawMes
 
 // init registers the plugin
 func init() {
-	plugin.MustRegister(NewStdout())
+	plugin.Register(NewStdout())
 }

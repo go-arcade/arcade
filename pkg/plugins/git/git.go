@@ -681,5 +681,5 @@ func (p *Git) runGitCommand(args []string, auth map[string]string, env map[strin
 
 // init registers the plugin
 func init() {
-	plugin.MustRegister(NewGit())
+	plugin.Register(NewGit())
 }

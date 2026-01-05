@@ -74,7 +74,7 @@ func (m *Manager) RegisterPlugin(name string, plugin Plugin, config *RuntimePlug
 	return m.registerPluginLocked(name, plugin, config)
 }
 
-// registerPluginLocked 注册插件（内部方法，假设锁已持有）
+// registerPluginLocked 注册插件
 func (m *Manager) registerPluginLocked(name string, plugin Plugin, config *RuntimePluginConfig) error {
 	// 检查插件是否已存在
 	if _, exists := m.plugins[name]; exists {
@@ -250,13 +250,27 @@ func (m *Manager) Count() int {
 }
 
 // Execute 执行插件操作
-func (m *Manager) Execute(pluginName string, action string, params json.RawMessage, opts json.RawMessage) (json.RawMessage, error) {
+func (m *Manager) Execute(pluginName string, action string, params json.RawMessage, opts json.RawMessage) (result json.RawMessage, err error) {
 	plugin, err := m.GetPlugin(pluginName)
 	if err != nil {
 		return nil, err
 	}
 
-	return plugin.Execute(action, params, opts)
+	// 捕获 panic
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorw("plugin panic recovered",
+				"plugin", pluginName,
+				"action", action,
+				"panic", r,
+			)
+			err = fmt.Errorf("plugin %s panicked during execution of action %s: %v", pluginName, action, r)
+			result = nil
+		}
+	}()
+
+	result, err = plugin.Execute(action, params, opts)
+	return result, err
 }
 
 // HealthCheck 执行健康检查
@@ -281,7 +295,7 @@ func (m *Manager) StartHeartbeat(interval time.Duration) {
 }
 
 // Close 关闭管理器
-func (m *Manager) Close() error {
+func (m *Manager) Clear() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 

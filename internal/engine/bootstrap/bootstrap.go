@@ -121,7 +121,7 @@ func NewApp(
 		// stop all plugins
 		if pluginMgr != nil {
 			log.Info("Shutting down plugin manager...")
-			if err := pluginMgr.Close(); err != nil {
+			if err := pluginMgr.Clear(); err != nil {
 				log.Errorw("Failed to close plugin manager", zap.Error(err))
 			}
 		}

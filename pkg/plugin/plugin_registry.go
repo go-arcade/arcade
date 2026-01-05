@@ -34,64 +34,29 @@ type registry struct {
 
 // Register 注册一个插件
 // 插件应该在init函数中调用此函数进行注册
-// 如果同名插件已存在，会返回错误
-func Register(plugin Plugin) error {
+// 如果注册失败（插件为nil、名称为空或同名插件已存在），会panic
+func Register(plugin Plugin) {
 	if plugin == nil {
-		return fmt.Errorf("plugin cannot be nil")
+		panic("plugin cannot be nil")
 	}
 
 	name := plugin.Name()
 	if name == "" {
-		return fmt.Errorf("plugin name cannot be empty")
+		panic("plugin name cannot be empty")
 	}
 
 	reg.mu.Lock()
 	defer reg.mu.Unlock()
 
 	if _, exists := reg.plugins[name]; exists {
-		return fmt.Errorf("plugin %s already registered", name)
+		panic(fmt.Sprintf("plugin %s already registered", name))
 	}
 
 	reg.plugins[name] = plugin
-	return nil
-}
-
-// MustRegister 注册一个插件，如果失败会panic
-// 适用于在init函数中注册插件
-func MustRegister(plugin Plugin) {
-	if err := Register(plugin); err != nil {
-		panic(fmt.Sprintf("failed to register plugin: %v", err))
-	}
-}
-
-// Unregister 取消注册一个插件
-func Unregister(name string) {
-	reg.mu.Lock()
-	defer reg.mu.Unlock()
-	delete(reg.plugins, name)
-}
-
-// Get 获取已注册的插件
-func Get(name string) (Plugin, bool) {
-	reg.mu.RLock()
-	defer reg.mu.RUnlock()
-	plugin, ok := reg.plugins[name]
-	return plugin, ok
-}
-
-// List 列出所有已注册的插件名称
-func List() []string {
-	reg.mu.RLock()
-	defer reg.mu.RUnlock()
-
-	names := make([]string, 0, len(reg.plugins))
-	for name := range reg.plugins {
-		names = append(names, name)
-	}
-	return names
 }
 
 // ListPlugins 列出所有已注册的插件实例
+// 供 Manager 从全局注册表加载插件使用
 func ListPlugins() map[string]Plugin {
 	reg.mu.RLock()
 	defer reg.mu.RUnlock()
@@ -101,18 +66,4 @@ func ListPlugins() map[string]Plugin {
 		plugins[name] = plugin
 	}
 	return plugins
-}
-
-// Count 返回已注册插件的数量
-func Count() int {
-	reg.mu.RLock()
-	defer reg.mu.RUnlock()
-	return len(reg.plugins)
-}
-
-// Clear 清空所有已注册的插件（主要用于测试）
-func Clear() {
-	reg.mu.Lock()
-	defer reg.mu.Unlock()
-	reg.plugins = make(map[string]Plugin)
 }

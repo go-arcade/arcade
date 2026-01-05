@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 )
 
-// PluginType 是插件类型枚举
+// PluginType 插件类型枚举
 type PluginType int32
 
 const (

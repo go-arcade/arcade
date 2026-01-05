@@ -600,5 +600,5 @@ func (p *SVN) runSVNCommand(args []string, auth map[string]string, env map[strin
 
 // init registers the plugin
 func init() {
-	plugin.MustRegister(NewSVN())
+	plugin.Register(NewSVN())
 }
