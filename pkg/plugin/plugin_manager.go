@@ -249,8 +249,8 @@ func (m *Manager) Count() int {
 	return len(m.plugins)
 }
 
-// Execute 执行插件操作
-func (m *Manager) Execute(pluginName string, action string, params json.RawMessage, opts json.RawMessage) (result json.RawMessage, err error) {
+// SafeExecute 执行插件操作
+func (m *Manager) SafeExecute(pluginName string, action string, params json.RawMessage, opts json.RawMessage) (result json.RawMessage, err error) {
 	plugin, err := m.GetPlugin(pluginName)
 	if err != nil {
 		return nil, err
