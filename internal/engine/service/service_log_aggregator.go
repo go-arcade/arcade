@@ -29,8 +29,8 @@ import (
 type LogAggregator struct {
 	clickHouse    *gorm.DB
 	mu            sync.RWMutex
-	streams       map[string]*LogStream       // taskID -> LogStream
-	subscribers   map[string][]chan *LogEntry // taskID -> subscribers channels
+	streams       map[string]*LogStream       // stepRunID -> LogStream
+	subscribers   map[string][]chan *LogEntry // stepRunID -> subscribers channels
 	bufferSize    int
 	flushInterval time.Duration
 	tableName     string
@@ -38,7 +38,7 @@ type LogAggregator struct {
 
 // LogStream 日志流
 type LogStream struct {
-	taskID    string
+	stepRunID string
 	buffer    []*LogEntry
 	mu        sync.Mutex
 	lastFlush time.Time
@@ -48,7 +48,7 @@ type LogStream struct {
 
 // LogEntry 日志条目
 type LogEntry struct {
-	TaskID     string `json:"task_id"`
+	StepRunID  string `json:"step_run_id"`
 	Timestamp  int64  `json:"timestamp"`
 	LineNumber int32  `json:"line_number"`
 	Level      string `json:"level"`
@@ -66,7 +66,7 @@ func NewLogAggregator(redis *redis.Client, clickHouse *gorm.DB) *LogAggregator {
 		subscribers:   make(map[string][]chan *LogEntry),
 		bufferSize:    100,             // 缓冲100条日志后写入
 		flushInterval: 3 * time.Second, // 3秒强制刷新
-		tableName:     "task_logs",
+		tableName:     "step_run_logs",
 	}
 
 	// 创建表（如果不存在）
@@ -74,7 +74,7 @@ func NewLogAggregator(redis *redis.Client, clickHouse *gorm.DB) *LogAggregator {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		if err := la.createTableIfNotExists(ctx); err != nil {
-			log.Warnw("failed to create task logs table", "error", err)
+			log.Warnw("failed to create step run logs table", "error", err)
 		}
 	}
 
@@ -94,7 +94,7 @@ func (la *LogAggregator) createTableIfNotExists(ctx context.Context) error {
 
 	createTableSQL := fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s (
-			task_id String,
+			step_run_id String,
 			timestamp Int64,
 			line_number Int32,
 			level String,
@@ -103,8 +103,8 @@ func (la *LogAggregator) createTableIfNotExists(ctx context.Context) error {
 			plugin_name String,
 			agent_id String
 		) ENGINE = MergeTree()
-		ORDER BY (task_id, line_number, timestamp)
-		PRIMARY KEY (task_id, line_number)
+		ORDER BY (step_run_id, line_number, timestamp)
+		PRIMARY KEY (step_run_id, line_number)
 		SETTINGS index_granularity = 8192
 	`, la.tableName)
 
@@ -115,36 +115,36 @@ func (la *LogAggregator) createTableIfNotExists(ctx context.Context) error {
 // PushLog 推送日志到聚合器
 func (la *LogAggregator) PushLog(entry *LogEntry) error {
 	la.mu.RLock()
-	stream, exists := la.streams[entry.TaskID]
+	stream, exists := la.streams[entry.StepRunID]
 	la.mu.RUnlock()
 
 	if !exists {
 		// 创建新的流
 		stream = &LogStream{
-			taskID:    entry.TaskID,
+			stepRunID: entry.StepRunID,
 			buffer:    make([]*LogEntry, 0, la.bufferSize),
 			lastFlush: time.Now(),
 		}
 		la.mu.Lock()
-		la.streams[entry.TaskID] = stream
+		la.streams[entry.StepRunID] = stream
 		la.mu.Unlock()
 
 		// 启动定期刷新
-		go la.periodicFlush(entry.TaskID)
+		go la.periodicFlush(entry.StepRunID)
 	}
 
 	stream.mu.Lock()
 	defer stream.mu.Unlock()
 
 	if stream.closed {
-		return fmt.Errorf("log stream for task %s is closed", entry.TaskID)
+		return fmt.Errorf("log stream for step run %s is closed", entry.StepRunID)
 	}
 
 	stream.buffer = append(stream.buffer, entry)
 	stream.lineCount++
 
 	// 广播到所有订阅者（异步，不阻塞）
-	go la.broadcastToSubscribers(entry.TaskID, entry)
+	go la.broadcastToSubscribers(entry.StepRunID, entry)
 
 	// 达到缓冲大小，触发刷新
 	if len(stream.buffer) >= la.bufferSize {
@@ -158,7 +158,7 @@ func (la *LogAggregator) PushLog(entry *LogEntry) error {
 func (la *LogAggregator) PushBatch(entries []*LogEntry) error {
 	for _, entry := range entries {
 		if err := la.PushLog(entry); err != nil {
-			log.Errorw("failed to push log", "taskId", entry.TaskID, "error", err)
+			log.Errorw("failed to push log", "stepRunId", entry.StepRunID, "error", err)
 		}
 	}
 	return nil
@@ -204,7 +204,7 @@ func (la *LogAggregator) writeToClickHouse(logs []*LogEntry) error {
 	// 批量插入
 	insertSQL := fmt.Sprintf(`
 		INSERT INTO %s (
-			task_id, timestamp, line_number, level, content, stream, plugin_name, agent_id
+			step_run_id, timestamp, line_number, level, content, stream, plugin_name, agent_id
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`, la.tableName)
 
@@ -223,7 +223,7 @@ func (la *LogAggregator) writeToClickHouse(logs []*LogEntry) error {
 
 	for _, logEntry := range logs {
 		_, err := stmt.ExecContext(ctx,
-			logEntry.TaskID,
+			logEntry.StepRunID,
 			logEntry.Timestamp,
 			logEntry.LineNumber,
 			logEntry.Level,
@@ -245,13 +245,13 @@ func (la *LogAggregator) writeToClickHouse(logs []*LogEntry) error {
 }
 
 // periodicFlush 定期刷新日志流
-func (la *LogAggregator) periodicFlush(taskID string) {
+func (la *LogAggregator) periodicFlush(stepRunID string) {
 	ticker := time.NewTicker(la.flushInterval)
 	defer ticker.Stop()
 
 	for range ticker.C {
 		la.mu.RLock()
-		stream, exists := la.streams[taskID]
+		stream, exists := la.streams[stepRunID]
 		la.mu.RUnlock()
 
 		if !exists {
@@ -272,14 +272,14 @@ func (la *LogAggregator) periodicFlush(taskID string) {
 }
 
 // CloseStream 关闭日志流
-func (la *LogAggregator) CloseStream(taskID string) error {
+func (la *LogAggregator) CloseStream(stepRunID string) error {
 	la.mu.Lock()
-	stream, exists := la.streams[taskID]
+	stream, exists := la.streams[stepRunID]
 	if !exists {
 		la.mu.Unlock()
-		return fmt.Errorf("log stream for task %s not found", taskID)
+		return fmt.Errorf("log stream for step run %s not found", stepRunID)
 	}
-	delete(la.streams, taskID)
+	delete(la.streams, stepRunID)
 	la.mu.Unlock()
 
 	stream.mu.Lock()
@@ -294,8 +294,8 @@ func (la *LogAggregator) CloseStream(taskID string) error {
 	return nil
 }
 
-// GetLogsByTaskID 从 ClickHouse 获取任务日志
-func (la *LogAggregator) GetLogsByTaskID(taskID string, fromLine int32, limit int) ([]*LogEntry, error) {
+// GetLogsByStepRunID 从 ClickHouse 获取步骤执行日志
+func (la *LogAggregator) GetLogsByStepRunID(stepRunID string, fromLine int32, limit int) ([]*LogEntry, error) {
 	if la.clickHouse == nil {
 		return nil, fmt.Errorf("clickhouse client is nil")
 	}
@@ -310,12 +310,12 @@ func (la *LogAggregator) GetLogsByTaskID(taskID string, fromLine int32, limit in
 
 	// 构建查询 SQL
 	querySQL := fmt.Sprintf(`
-		SELECT task_id, timestamp, line_number, level, content, stream, plugin_name, agent_id
+		SELECT step_run_id, timestamp, line_number, level, content, stream, plugin_name, agent_id
 		FROM %s
-		WHERE task_id = ?
+		WHERE step_run_id = ?
 	`, la.tableName)
 
-	args := []interface{}{taskID}
+	args := []interface{}{stepRunID}
 	if fromLine > 0 {
 		querySQL += " AND line_number >= ?"
 		args = append(args, fromLine)
@@ -338,7 +338,7 @@ func (la *LogAggregator) GetLogsByTaskID(taskID string, fromLine int32, limit in
 	for rows.Next() {
 		var entry LogEntry
 		if err := rows.Scan(
-			&entry.TaskID,
+			&entry.StepRunID,
 			&entry.Timestamp,
 			&entry.LineNumber,
 			&entry.Level,
@@ -360,48 +360,48 @@ func (la *LogAggregator) GetLogsByTaskID(taskID string, fromLine int32, limit in
 	return logs, nil
 }
 
-// Subscribe 订阅任务日志（创建一个channel接收实时日志）
-func (la *LogAggregator) Subscribe(ctx context.Context, taskID string) <-chan *LogEntry {
+// Subscribe 订阅步骤执行日志（创建一个channel接收实时日志）
+func (la *LogAggregator) Subscribe(ctx context.Context, stepRunID string) <-chan *LogEntry {
 	logChan := make(chan *LogEntry, 100)
 
 	la.mu.Lock()
-	la.subscribers[taskID] = append(la.subscribers[taskID], logChan)
+	la.subscribers[stepRunID] = append(la.subscribers[stepRunID], logChan)
 	la.mu.Unlock()
 
 	// 清理订阅
 	go func() {
 		<-ctx.Done()
-		la.unsubscribe(taskID, logChan)
+		la.unsubscribe(stepRunID, logChan)
 	}()
 
 	return logChan
 }
 
 // unsubscribe 取消订阅
-func (la *LogAggregator) unsubscribe(taskID string, logChan chan *LogEntry) {
+func (la *LogAggregator) unsubscribe(stepRunID string, logChan chan *LogEntry) {
 	la.mu.Lock()
 	defer la.mu.Unlock()
 
-	subs := la.subscribers[taskID]
+	subs := la.subscribers[stepRunID]
 	for i, ch := range subs {
 		if ch == logChan {
 			// 从切片中移除
-			la.subscribers[taskID] = append(subs[:i], subs[i+1:]...)
+			la.subscribers[stepRunID] = append(subs[:i], subs[i+1:]...)
 			close(logChan)
 			break
 		}
 	}
 
 	// 如果没有订阅者了，删除key
-	if len(la.subscribers[taskID]) == 0 {
-		delete(la.subscribers, taskID)
+	if len(la.subscribers[stepRunID]) == 0 {
+		delete(la.subscribers, stepRunID)
 	}
 }
 
 // broadcastToSubscribers 广播日志到所有订阅者
-func (la *LogAggregator) broadcastToSubscribers(taskID string, entry *LogEntry) {
+func (la *LogAggregator) broadcastToSubscribers(stepRunID string, entry *LogEntry) {
 	la.mu.RLock()
-	subscribers := la.subscribers[taskID]
+	subscribers := la.subscribers[stepRunID]
 	la.mu.RUnlock()
 
 	if len(subscribers) == 0 {
@@ -415,7 +415,7 @@ func (la *LogAggregator) broadcastToSubscribers(taskID string, entry *LogEntry) 
 			// 发送成功
 		default:
 			// channel满了，跳过（避免阻塞）
-			log.Warnw("subscriber channel full for task, skipping log entry", "taskId", taskID)
+			log.Warnw("subscriber channel full for step run, skipping log entry", "stepRunId", stepRunID)
 		}
 	}
 }
@@ -430,9 +430,9 @@ func (la *LogAggregator) GetStats() map[string]interface{} {
 		"streams":        make(map[string]interface{}),
 	}
 
-	for taskID, stream := range la.streams {
+	for stepRunID, stream := range la.streams {
 		stream.mu.Lock()
-		stats["streams"].(map[string]interface{})[taskID] = map[string]interface{}{
+		stats["streams"].(map[string]interface{})[stepRunID] = map[string]interface{}{
 			"buffer_size": len(stream.buffer),
 			"line_count":  stream.lineCount,
 			"closed":      stream.closed,

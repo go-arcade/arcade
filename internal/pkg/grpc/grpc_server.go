@@ -30,8 +30,8 @@ import (
 
 	agentv1 "github.com/go-arcade/arcade/api/agent/v1"
 	pipelinev1 "github.com/go-arcade/arcade/api/pipeline/v1"
+	steprunv1 "github.com/go-arcade/arcade/api/steprun/v1"
 	streamv1 "github.com/go-arcade/arcade/api/stream/v1"
-	taskv1 "github.com/go-arcade/arcade/api/task/v1"
 	"github.com/go-arcade/arcade/internal/pkg/grpc/interceptor"
 	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpcrecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
@@ -78,7 +78,7 @@ func NewGrpcServer(cfg Conf) *ServerWrapper {
 // Register 注册所有 gRPC 服务
 func (s *ServerWrapper) Register(services *service.Services, redisClient *redis.Client, clickHouse *gorm.DB) {
 	agentv1.RegisterAgentServiceServer(s.svr, service.NewAgentServiceImpl(services.Agent))
-	taskv1.RegisterTaskServiceServer(s.svr, &service.TaskServiceImpl{})
+	steprunv1.RegisterStepRunServiceServer(s.svr, &service.StepRunServiceImpl{})
 	streamv1.RegisterStreamServiceServer(s.svr, service.NewStreamService(redisClient, clickHouse))
 	pipelinev1.RegisterPipelineServiceServer(s.svr, &service.PipelineServiceImpl{})
 	// reflection（调试）

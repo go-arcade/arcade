@@ -28,7 +28,7 @@ import (
 type Server struct {
 	client        *asynq.Client
 	config        *Config
-	taskRecordMgr *TaskRecordManager
+	taskRecordMgr *StepRunRecordManager
 	redisOpt      asynq.RedisConnOpt // 保存 Redis 连接选项，用于创建 Inspector
 }
 
@@ -49,10 +49,10 @@ func NewQueueServer(cfg *Config) (*Server, error) {
 	redisOpt := &redisConnOptWrapper{client: cfg.RedisClient}
 	client := asynq.NewClient(redisOpt)
 
-	// 初始化任务记录管理器
-	taskRecordMgr, err := NewTaskRecordManager(cfg.ClickHouse)
+	// 初始化步骤执行记录管理器
+	taskRecordMgr, err := NewStepRunRecordManager(cfg.ClickHouse)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create task record manager: %w", err)
+		return nil, fmt.Errorf("failed to create step run record manager: %w", err)
 	}
 
 	server := &Server{
@@ -105,7 +105,7 @@ func (s *Server) Enqueue(payload *TaskPayload, queueName string) error {
 
 	// 记录到 ClickHouse
 	if s.taskRecordMgr != nil {
-		s.taskRecordMgr.RecordTaskEnqueued(payload, queueName)
+		s.taskRecordMgr.RecordStepRunEnqueued(payload, queueName)
 	}
 
 	log.Infow("task enqueued",
@@ -190,7 +190,7 @@ func (s *Server) EnqueueDelayed(payload *TaskPayload, delay time.Duration, queue
 
 	// 记录到 ClickHouse
 	if s.taskRecordMgr != nil {
-		s.taskRecordMgr.RecordTaskEnqueued(payload, queueName)
+		s.taskRecordMgr.RecordStepRunEnqueued(payload, queueName)
 	}
 
 	log.Infow("delayed task enqueued",

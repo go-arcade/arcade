@@ -18,18 +18,20 @@ import (
 	"time"
 )
 
-// TaskQueueRecord queue 任务记录（ClickHouse）
-type TaskQueueRecord struct {
-	TaskID        string         `gorm:"column:task_id;type:String" json:"task_id"`
-	TaskType      string         `gorm:"column:task_type;type:String" json:"task_type"`
+// StepRunQueueRecord queue 步骤执行记录（ClickHouse）
+type StepRunQueueRecord struct {
+	StepRunID     string         `gorm:"column:step_run_id;type:String" json:"step_run_id"`
+	StepRunType   string         `gorm:"column:step_run_type;type:String" json:"step_run_type"`
 	Status        string         `gorm:"column:status;type:String" json:"status"` // pending/running/completed/failed
 	Priority      int            `gorm:"column:priority;type:Int32" json:"priority"`
 	Queue         string         `gorm:"column:queue;type:String" json:"queue"`
 	PipelineID    string         `gorm:"column:pipeline_id;type:String" json:"pipeline_id,omitempty"`
 	PipelineRunID string         `gorm:"column:pipeline_run_id;type:String" json:"pipeline_run_id,omitempty"`
 	StageID       string         `gorm:"column:stage_id;type:String" json:"stage_id,omitempty"`
+	JobID         string         `gorm:"column:job_id;type:String" json:"job_id,omitempty"`
+	JobRunID      string         `gorm:"column:job_run_id;type:String" json:"job_run_id,omitempty"`
 	AgentID       string         `gorm:"column:agent_id;type:String" json:"agent_id,omitempty"`
-	Payload       map[string]any `gorm:"column:payload;type:String" json:"payload"` // 任务负载数据（JSON 字符串）
+	Payload       map[string]any `gorm:"column:payload;type:String" json:"payload"` // 步骤执行负载数据（JSON 字符串）
 	ErrorMessage  string         `gorm:"column:error_message;type:String" json:"error_message,omitempty"`
 	CreateTime    time.Time      `gorm:"column:create_time;type:DateTime" json:"create_time"`
 	StartTime     *time.Time     `gorm:"column:start_time;type:DateTime" json:"start_time,omitempty"`
@@ -40,6 +42,6 @@ type TaskQueueRecord struct {
 }
 
 // CollectionName 返回表名称（ClickHouse）
-func (TaskQueueRecord) CollectionName() string {
-	return "l_task_queue_records"
+func (StepRunQueueRecord) CollectionName() string {
+	return "l_step_run_queue_records"
 }

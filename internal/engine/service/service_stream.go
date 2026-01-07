@@ -34,14 +34,14 @@ type StreamServiceImpl struct {
 	redis         *redis.Client
 	clickHouse    *gorm.DB
 	mu            sync.RWMutex
-	subscribers   map[string][]*LogSubscriber // taskID -> subscribers
+	subscribers   map[string][]*LogSubscriber // stepRunID -> subscribers
 }
 
 // LogSubscriber 日志订阅者
 type LogSubscriber struct {
-	TaskID string
-	Stream grpc.ServerStreamingServer[streamv1.StreamTaskLogResponse]
-	Cancel context.CancelFunc
+	StepRunID string
+	Stream    grpc.ServerStreamingServer[streamv1.StreamStepRunLogResponse]
+	Cancel    context.CancelFunc
 }
 
 // NewStreamService 创建Stream服务实例
@@ -59,17 +59,17 @@ func (s *StreamServiceImpl) GetLogAggregator() *LogAggregator {
 	return s.logAggregator
 }
 
-// UploadTaskLog Agent端流式上报日志给Server
-func (s *StreamServiceImpl) UploadTaskLog(stream grpc.ClientStreamingServer[streamv1.UploadTaskLogRequest, streamv1.UploadTaskLogResponse]) error {
-	var taskID, agentID string
+// UploadStepRunLog Agent端流式上报日志给Server
+func (s *StreamServiceImpl) UploadStepRunLog(stream grpc.ClientStreamingServer[streamv1.UploadStepRunLogRequest, streamv1.UploadStepRunLogResponse]) error {
+	var stepRunID, agentID string
 	receivedLines := int32(0)
 
 	for {
 		req, err := stream.Recv()
 		if err == io.EOF {
 			// 客户端关闭流，返回响应
-			log.Infow("log upload stream closed", "taskId", taskID, "agentId", agentID, "receivedLines", receivedLines)
-			return stream.SendAndClose(&streamv1.UploadTaskLogResponse{
+			log.Infow("log upload stream closed", "stepRunId", stepRunID, "agentId", agentID, "receivedLines", receivedLines)
+			return stream.SendAndClose(&streamv1.UploadStepRunLogResponse{
 				Success:       true,
 				Message:       "logs uploaded successfully",
 				ReceivedLines: receivedLines,
@@ -80,17 +80,17 @@ func (s *StreamServiceImpl) UploadTaskLog(stream grpc.ClientStreamingServer[stre
 			return err
 		}
 
-		// 记录任务ID和AgentID
-		if taskID == "" {
-			taskID = req.TaskId
+		// 记录步骤执行ID和AgentID
+		if stepRunID == "" {
+			stepRunID = req.StepRunId
 			agentID = req.AgentId
-			log.Infow("start receiving logs for task", "taskId", taskID, "agentId", agentID)
+			log.Infow("start receiving logs for step run", "stepRunId", stepRunID, "agentId", agentID)
 		}
 
 		// 转换日志条目并推送到聚合器
 		for _, logChunk := range req.Logs {
 			entry := &LogEntry{
-				TaskID:     req.TaskId,
+				StepRunID:  req.StepRunId,
 				Timestamp:  logChunk.Timestamp,
 				LineNumber: logChunk.LineNumber,
 				Level:      logChunk.Level,
@@ -100,27 +100,27 @@ func (s *StreamServiceImpl) UploadTaskLog(stream grpc.ClientStreamingServer[stre
 			}
 
 			if err := s.logAggregator.PushLog(entry); err != nil {
-				log.Errorw("failed to push log to aggregator", "taskId", req.TaskId, "error", err)
+				log.Errorw("failed to push log to aggregator", "stepRunId", req.StepRunId, "error", err)
 			}
 			receivedLines++
 
 			// 通知订阅者
-			s.notifySubscribers(req.TaskId, logChunk)
+			s.notifySubscribers(req.StepRunId, logChunk)
 		}
 	}
 }
 
-// StreamTaskLog 实时获取任务日志流
-func (s *StreamServiceImpl) StreamTaskLog(req *streamv1.StreamTaskLogRequest, stream grpc.ServerStreamingServer[streamv1.StreamTaskLogResponse]) error {
+// StreamStepRunLog 实时获取步骤执行日志流
+func (s *StreamServiceImpl) StreamStepRunLog(req *streamv1.StreamStepRunLogRequest, stream grpc.ServerStreamingServer[streamv1.StreamStepRunLogResponse]) error {
 	ctx := stream.Context()
-	taskID := req.JobId
+	stepRunID := req.StepRunId
 
-	log.Infow("client requesting log stream", "taskId", taskID, "fromLine", req.FromLine, "follow", req.Follow)
+	log.Infow("client requesting log stream", "stepRunId", stepRunID, "fromLine", req.FromLine, "follow", req.Follow)
 
 	// 先从 ClickHouse 获取历史日志
-	historicalLogs, err := s.logAggregator.GetLogsByTaskID(taskID, req.FromLine, 1000)
+	historicalLogs, err := s.logAggregator.GetLogsByStepRunID(stepRunID, req.FromLine, 1000)
 	if err != nil {
-		log.Errorw("failed to get historical logs", "taskId", taskID, "error", err)
+		log.Errorw("failed to get historical logs", "stepRunId", stepRunID, "error", err)
 		return err
 	}
 
@@ -134,28 +134,28 @@ func (s *StreamServiceImpl) StreamTaskLog(req *streamv1.StreamTaskLogRequest, st
 			Stream:     entry.Stream,
 		}
 
-		if err := stream.Send(&streamv1.StreamTaskLogResponse{
-			TaskId:     taskID,
+		if err := stream.Send(&streamv1.StreamStepRunLogResponse{
+			StepRunId:  stepRunID,
 			LogChunk:   logChunk,
 			IsComplete: false,
 		}); err != nil {
-			log.Errorw("failed to send log", "taskId", taskID, "error", err)
+			log.Errorw("failed to send log", "stepRunId", stepRunID, "error", err)
 			return err
 		}
 	}
 
 	// 如果不需要持续跟踪，发送完成标记并返回
 	if !req.Follow {
-		return stream.Send(&streamv1.StreamTaskLogResponse{
-			TaskId:     taskID,
+		return stream.Send(&streamv1.StreamStepRunLogResponse{
+			StepRunId:  stepRunID,
 			IsComplete: true,
 		})
 	}
 
 	// 订阅实时日志
 	subscriber := &LogSubscriber{
-		TaskID: taskID,
-		Stream: stream,
+		StepRunID: stepRunID,
+		Stream:    stream,
 	}
 	ctx2, cancel := context.WithCancel(ctx)
 	subscriber.Cancel = cancel
@@ -163,40 +163,40 @@ func (s *StreamServiceImpl) StreamTaskLog(req *streamv1.StreamTaskLogRequest, st
 
 	// 注册订阅者
 	s.mu.Lock()
-	s.subscribers[taskID] = append(s.subscribers[taskID], subscriber)
+	s.subscribers[stepRunID] = append(s.subscribers[stepRunID], subscriber)
 	s.mu.Unlock()
 
 	// 清理订阅者
 	defer func() {
 		s.mu.Lock()
 		defer s.mu.Unlock()
-		subs := s.subscribers[taskID]
+		subs := s.subscribers[stepRunID]
 		for i, sub := range subs {
 			if sub == subscriber {
-				s.subscribers[taskID] = append(subs[:i], subs[i+1:]...)
+				s.subscribers[stepRunID] = append(subs[:i], subs[i+1:]...)
 				break
 			}
 		}
-		if len(s.subscribers[taskID]) == 0 {
-			delete(s.subscribers, taskID)
+		if len(s.subscribers[stepRunID]) == 0 {
+			delete(s.subscribers, stepRunID)
 		}
 	}()
 
 	// 订阅实时日志channel
-	logChan := s.logAggregator.Subscribe(ctx2, taskID)
-	log.Infow("subscribed to real-time logs for task", "taskId", taskID)
+	logChan := s.logAggregator.Subscribe(ctx2, stepRunID)
+	log.Infow("subscribed to real-time logs for step run", "stepRunId", stepRunID)
 
 	// 持续发送日志直到上下文取消
 	for {
 		select {
 		case <-ctx.Done():
-			log.Infow("log stream cancelled for task", "taskId", taskID)
+			log.Infow("log stream cancelled for step run", "stepRunId", stepRunID)
 			return ctx.Err()
 		case entry, ok := <-logChan:
 			if !ok {
 				// 频道关闭
-				return stream.Send(&streamv1.StreamTaskLogResponse{
-					TaskId:     taskID,
+				return stream.Send(&streamv1.StreamStepRunLogResponse{
+					StepRunId:  stepRunID,
 					IsComplete: true,
 				})
 			}
@@ -209,21 +209,27 @@ func (s *StreamServiceImpl) StreamTaskLog(req *streamv1.StreamTaskLogRequest, st
 				Stream:     entry.Stream,
 			}
 
-			if err := stream.Send(&streamv1.StreamTaskLogResponse{
-				TaskId:     taskID,
+			if err := stream.Send(&streamv1.StreamStepRunLogResponse{
+				StepRunId:  stepRunID,
 				LogChunk:   logChunk,
 				IsComplete: false,
 			}); err != nil {
-				log.Errorw("failed to send real-time log", "taskId", taskID, "error", err)
+				log.Errorw("failed to send real-time log", "stepRunId", stepRunID, "error", err)
 				return err
 			}
 		}
 	}
 }
 
-// StreamTaskStatus 实时获取任务状态流
-func (s *StreamServiceImpl) StreamTaskStatus(req *streamv1.StreamTaskStatusRequest, stream grpc.ServerStreamingServer[streamv1.StreamTaskStatusResponse]) error {
-	// TODO: 实现任务状态流
+// StreamStepRunStatus 实时获取步骤执行状态流
+func (s *StreamServiceImpl) StreamStepRunStatus(req *streamv1.StreamStepRunStatusRequest, stream grpc.ServerStreamingServer[streamv1.StreamStepRunStatusResponse]) error {
+	// TODO: 实现步骤执行状态流
+	return fmt.Errorf("not implemented")
+}
+
+// StreamJobStatus 实时获取作业状态流
+func (s *StreamServiceImpl) StreamJobStatus(req *streamv1.StreamJobStatusRequest, stream grpc.ServerStreamingServer[streamv1.StreamJobStatusResponse]) error {
+	// TODO: 实现作业状态流
 	return fmt.Errorf("not implemented")
 }
 
@@ -252,9 +258,9 @@ func (s *StreamServiceImpl) StreamEvents(req *streamv1.StreamEventsRequest, stre
 }
 
 // notifySubscribers 通知订阅者
-func (s *StreamServiceImpl) notifySubscribers(taskID string, logChunk *streamv1.LogChunk) {
+func (s *StreamServiceImpl) notifySubscribers(stepRunID string, logChunk *streamv1.LogChunk) {
 	s.mu.RLock()
-	subs := s.subscribers[taskID]
+	subs := s.subscribers[stepRunID]
 	s.mu.RUnlock()
 
 	if len(subs) == 0 {
@@ -264,13 +270,13 @@ func (s *StreamServiceImpl) notifySubscribers(taskID string, logChunk *streamv1.
 	// 异步通知所有订阅者
 	for _, sub := range subs {
 		go func(subscriber *LogSubscriber) {
-			err := subscriber.Stream.Send(&streamv1.StreamTaskLogResponse{
-				TaskId:     taskID,
+			err := subscriber.Stream.Send(&streamv1.StreamStepRunLogResponse{
+				StepRunId:  stepRunID,
 				LogChunk:   logChunk,
 				IsComplete: false,
 			})
 			if err != nil {
-				log.Errorw("failed to send log to subscriber", "taskId", taskID, "error", err)
+				log.Errorw("failed to send log to subscriber", "stepRunId", stepRunID, "error", err)
 			}
 		}(sub)
 	}

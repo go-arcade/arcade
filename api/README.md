@@ -10,7 +10,7 @@ This directory contains all gRPC API definitions for the Arcade and Agent intera
 
 - **Agent Service** - Core interface for communication between Agent and Server
 - **Pipeline Service** - Pipeline management interface
-- **Task Service** - Task management interface
+- **StepRun Service** - StepRun (Step execution) management interface
 - **Stream Service** - Real-time data streaming interface
 - **Plugin Service** - Plugin communication interface
 
@@ -26,18 +26,18 @@ api/
 │   ├── agent.proto             # Proto definition file
 │   ├── agent.pb.go             # Generated Go message code
 │   └── agent_grpc.pb.go        # Generated gRPC service code
-├── pipeline/v1/                # Pipeline Service API
+├── pipeline/v1/               # Pipeline Service API
 │   ├── pipeline.proto
 │   ├── pipeline.pb.go
 │   └── pipeline_grpc.pb.go
+├── steprun/v1/                 # StepRun Service API
+│   ├── steprun.proto
+│   ├── steprun.pb.go
+│   └── steprun_grpc.pb.go
 ├── stream/v1/                  # Stream Service API
 │   ├── stream.proto
 │   ├── stream.pb.go
 │   └── stream_grpc.pb.go
-├── task/v1/                    # Task Service API
-│   ├── task.proto
-│   ├── task.pb.go
-│   └── task_grpc.pb.go
 └── plugin/v1/                  # Plugin Service API
     ├── plugin.proto
     ├── plugin_type.proto
@@ -50,20 +50,20 @@ api/
 
 ### 1. Agent Service (`agent/v1`)
 
-The main interface for communication between Agent and Server, responsible for Agent lifecycle management and task execution.
+The main interface for communication between Agent and Server, responsible for Agent lifecycle management and step run execution.
 
 **Main Features:**
 - **Heartbeat** (`Heartbeat`) - Agent periodically sends heartbeat to Server
 - **Agent Registration/Unregistration** (`Register`/`Unregister`) - Agent lifecycle management
-- **Task Fetching** (`FetchTask`) - Agent actively pulls tasks to execute
-- **Status Reporting** (`ReportTaskStatus`) - Report task execution status
-- **Log Reporting** (`ReportTaskLog`) - Batch report task execution logs
-- **Task Cancellation** (`CancelTask`) - Server notifies Agent to cancel task
+- **StepRun Fetching** (`FetchStepRun`) - Agent actively pulls step runs to execute
+- **Status Reporting** (`ReportStepRunStatus`) - Report step run execution status
+- **Log Reporting** (`ReportStepRunLog`) - Batch report step run execution logs
+- **StepRun Cancellation** (`CancelStepRun`) - Server notifies Agent to cancel step run
 - **Label Updates** (`UpdateLabels`) - Dynamically update Agent's labels
 - **Plugin Management** (`DownloadPlugin`, `ListAvailablePlugins`) - Plugin distribution and query
 
 **Core Features:**
-- Support label selector for intelligent task routing
+- Support label selector for intelligent step run routing
 - Support dynamic plugin distribution
 - Comprehensive metrics reporting mechanism
 
@@ -73,16 +73,26 @@ Pipeline management interface, responsible for creating, executing and managing 
 
 **Main Features:**
 - **Create Pipeline** (`CreatePipeline`) - Define pipeline configuration
+- **Update Pipeline** (`UpdatePipeline`) - Update pipeline configuration
 - **Get Pipeline** (`GetPipeline`) - Get pipeline details
 - **List Pipelines** (`ListPipelines`) - Paginated pipeline list query
+- **Delete Pipeline** (`DeletePipeline`) - Delete pipeline
 - **Trigger Execution** (`TriggerPipeline`) - Trigger pipeline execution
 - **Stop Pipeline** (`StopPipeline`) - Stop running pipeline
+- **Get Pipeline Run** (`GetPipelineRun`) - Get pipeline run details
+- **List Pipeline Runs** (`ListPipelineRuns`) - Paginated pipeline run list query
+- **Get Pipeline Run Log** (`GetPipelineRunLog`) - Get pipeline run log
 
 **Supported Trigger Methods:**
 - Manual trigger (Manual)
-- Webhook trigger (Webhook)
-- Schedule trigger (Schedule/Cron)
-- API trigger (API)
+- Cron/Schedule trigger (Cron)
+- Event trigger (Event/Webhook)
+
+**Pipeline Structure:**
+- Supports two modes:
+  - `stages` mode: Stage-based pipeline definition (Stage → Jobs → Steps)
+  - `jobs` mode: Jobs-only mode (will be automatically wrapped in default Stage)
+- Supports complete configuration: Source, Approval, Target, Notify, Triggers
 
 **Pipeline Status:**
 - PENDING (Pending)
@@ -92,22 +102,24 @@ Pipeline management interface, responsible for creating, executing and managing 
 - CANCELLED (Cancelled)
 - PARTIAL (Partial success)
 
-### 3. Task Service (`task/v1`)
+### 3. StepRun Service (`steprun/v1`)
 
-Task management interface, responsible for CRUD operations and execution management of individual tasks.
+StepRun (Step execution) management interface, responsible for CRUD operations and execution management of step runs.
+
+According to DSL: Step → StepRun (execution of a Step)
 
 **Main Features:**
-- **Create Task** (`CreateTask`) - Create new task
-- **Get Task** (`GetTask`) - Get task details
-- **List Tasks** (`ListTasks`) - Paginated task list query
-- **Update Task** (`UpdateTask`) - Update task configuration
-- **Delete Task** (`DeleteTask`) - Delete task
-- **Cancel Task** (`CancelTask`) - Cancel running task
-- **Retry Task** (`RetryTask`) - Re-execute failed task
-- **Get Log** (`GetTaskLog`) - Get task execution log
-- **Artifact Management** (`ListTaskArtifacts`) - Manage task artifacts
+- **Create StepRun** (`CreateStepRun`) - Create new step run
+- **Get StepRun** (`GetStepRun`) - Get step run details
+- **List StepRuns** (`ListStepRuns`) - Paginated step run list query
+- **Update StepRun** (`UpdateStepRun`) - Update step run configuration
+- **Delete StepRun** (`DeleteStepRun`) - Delete step run
+- **Cancel StepRun** (`CancelStepRun`) - Cancel running step run
+- **Retry StepRun** (`RetryStepRun`) - Re-execute failed step run
+- **Get Log** (`GetStepRunLog`) - Get step run execution log
+- **Artifact Management** (`ListStepRunArtifacts`) - Manage step run artifacts
 
-**Task Status:**
+**StepRun Status:**
 - PENDING (Pending)
 - QUEUED (Queued)
 - RUNNING (Running)
@@ -118,26 +130,29 @@ Task management interface, responsible for CRUD operations and execution managem
 - SKIPPED (Skipped)
 
 **Core Features:**
-- Support task dependencies
+- Support plugin-driven execution model (uses + action + args)
 - Support failure retry mechanism
 - Support artifact collection and management
 - Support label selector routing
+- Support conditional expressions (when)
 
 ### 4. Stream Service (`stream/v1`)
 
 Real-time data streaming interface, providing bidirectional streaming communication capability.
 
 **Main Features:**
-- **Task Log Stream** (`StreamTaskLog`, `UploadTaskLog`) - Real-time get and report task logs
-- **Task Status Stream** (`StreamTaskStatus`) - Real-time push task status changes
-- **Pipeline Status Stream** (`StreamPipelineStatus`) - Real-time push pipeline status changes
+- **StepRun Log Stream** (`StreamStepRunLog`, `UploadStepRunLog`) - Real-time get and report step run logs
+- **StepRun Status Stream** (`StreamStepRunStatus`) - Real-time push step run status changes
+- **Job Status Stream** (`StreamJobStatus`) - Real-time push job (JobRun) status changes
+- **Pipeline Status Stream** (`StreamPipelineStatus`) - Real-time push pipeline (PipelineRun) status changes
 - **Agent Channel** (`AgentChannel`) - Bidirectional communication between Agent and Server
 - **Agent Status Stream** (`StreamAgentStatus`) - Real-time monitor Agent status
 - **Event Stream** (`StreamEvents`) - Push system events
 
 **Supported Event Types:**
-- Task events (created, started, completed, failed, cancelled)
-- Pipeline events (started, completed, failed)
+- StepRun events (created, started, completed, failed, cancelled)
+- JobRun events (started, completed, failed, cancelled)
+- PipelineRun events (started, completed, failed, cancelled)
 - Agent events (registered, unregistered, offline)
 
 ### 5. Plugin Service (`plugin/v1`)
@@ -268,12 +283,11 @@ func main() {
     
     // Call Register RPC
     req := &agentv1.RegisterRequest{
-        Hostname:          "my-agent",
         Ip:                "192.168.1.100",
         Os:                "linux",
         Arch:              "amd64",
         Version:           "1.0.0",
-        MaxConcurrentJobs: 5,
+        MaxConcurrentStepRuns: 5,
         Labels: map[string]string{
             "env":  "production",
             "zone": "us-west-1",
@@ -337,14 +351,14 @@ func main() {
 ### Streaming RPC Example
 
 ```go
-// Client: Receive task logs in real-time
-func streamTaskLog(client streamv1.StreamServiceClient, taskID string) {
-    req := &streamv1.StreamTaskLogRequest{
-        JobId:  taskID,
-        Follow: true, // Continuously track, similar to tail -f
+// Client: Receive step run logs in real-time
+func streamStepRunLog(client streamv1.StreamServiceClient, stepRunID string) {
+    req := &streamv1.StreamStepRunLogRequest{
+        StepRunId: stepRunID,
+        Follow:    true, // Continuously track, similar to tail -f
     }
     
-    stream, err := client.StreamTaskLog(context.Background(), req)
+    stream, err := client.StreamStepRunLog(context.Background(), req)
     if err != nil {
         log.Fatalf("Failed to create stream: %v", err)
     }
@@ -365,13 +379,13 @@ func streamTaskLog(client streamv1.StreamServiceClient, taskID string) {
 
 ## Label Selector Usage
 
-Label selectors are used for task routing, allowing precise control over which Agents execute tasks.
+Label selectors are used for step run routing, allowing precise control over which Agents execute step runs.
 
 ### Simple Matching
 
 ```go
 // Match Agents with specific labels
-labelSelector := &agentv1.LabelSelector{
+labelSelector := &agentv1.AgentSelector{
     MatchLabels: map[string]string{
         "env":  "production",
         "zone": "us-west-1",
@@ -384,20 +398,20 @@ labelSelector := &agentv1.LabelSelector{
 
 ```go
 // Use more complex matching rules
-labelSelector := &agentv1.LabelSelector{
-    MatchExpressions: []*agentv1.LabelSelectorRequirement{
+labelSelector := &agentv1.AgentSelector{
+    MatchExpressions: []*agentv1.LabelExpression{
         {
             Key:      "env",
-            Operator: agentv1.LabelOperator_LABEL_OPERATOR_IN,
+            Operator: "In",
             Values:   []string{"production", "staging"},
         },
         {
             Key:      "gpu",
-            Operator: agentv1.LabelOperator_LABEL_OPERATOR_EXISTS,
+            Operator: "Exists",
         },
         {
             Key:      "memory",
-            Operator: agentv1.LabelOperator_LABEL_OPERATOR_GT,
+            Operator: "Gt",
             Values:   []string{"8192"}, // Memory greater than 8GB
         },
     },
@@ -406,12 +420,12 @@ labelSelector := &agentv1.LabelSelector{
 
 ### Supported Operators
 
-- `IN` - Label value is in the specified list
-- `NOT_IN` - Label value is not in the specified list
-- `EXISTS` - Label key exists
-- `NOT_EXISTS` - Label key does not exist
-- `GT` - Label value greater than specified value (for numeric comparison)
-- `LT` - Label value less than specified value (for numeric comparison)
+- `In` - Label value is in the specified list
+- `NotIn` - Label value is not in the specified list
+- `Exists` - Label key exists
+- `NotExists` - Label key does not exist
+- `Gt` - Label value greater than specified value (for numeric comparison)
+- `Lt` - Label value less than specified value (for numeric comparison)
 
 ## Plugin Service Usage
 
@@ -538,6 +552,20 @@ if calculateSHA256(resp.PluginData) != resp.Checksum {
 os.WriteFile("plugins/notify.so", resp.PluginData, 0755)
 ```
 
+## Concept Mapping
+
+According to DSL documentation, runtime model mapping:
+
+| DSL Concept | Runtime Model | Description |
+| --- | --- | --- |
+| Pipeline | Pipeline | Pipeline definition (static) |
+| Stage | Stage | Stage (logical structure, not executed) |
+| Job | Job | Job (minimum schedulable and executable unit) |
+| Step | Step | Step (sequential operations within a Job) |
+| PipelineRun | PipelineRun | Pipeline execution record |
+| JobRun | JobRun | Job execution record |
+| StepRun | StepRun | Step execution record (managed by StepRun Service) |
+
 ## Development Guide
 
 ### Modifying Proto Files
@@ -584,33 +612,35 @@ For large files (such as plugin binaries), recommend:
 - Use streaming RPC for chunked transfer
 - Or return pre-signed URL, let client download directly from object storage
 
-### 2. How to handle long-running tasks?
+### 2. How to handle long-running step runs?
 
 Use Stream Service's streaming interface:
-- Real-time push task status updates
+- Real-time push step run status updates
 - Real-time push log output
 - Use bidirectional stream to maintain connection
 
-### 3. How to implement task priority?
+### 3. How to implement step run priority?
 
-Add `priority` label in task's `labels`:
+Add `priority` label in step run's `labels`:
 ```go
 labels: map[string]string{
     "priority": "high",
 }
 ```
 
-Agent can sort by priority when FetchTask.
+Agent can sort by priority when FetchStepRun.
 
 ### 4. How to handle Agent disconnect and reconnect?
 
 Agent should:
 1. Implement exponential backoff reconnection strategy
 2. Re-register after reconnection
-3. Report status of incomplete tasks
+3. Report status of incomplete step runs
 
 ## Related Documentation
 
+- [Pipeline DSL Documentation](../docs/Pipeline%20DSL.md)
+- [Pipeline Schema Documentation](../docs/pipeline_schema.md)
 - [Plugin Development Guide](../docs/PLUGIN_DEVELOPMENT.md)
 - [Plugin Distribution Guide](../docs/PLUGIN_DISTRIBUTION.md)
 - [Implementation Guide](../docs/IMPLEMENTATION_GUIDE.md)

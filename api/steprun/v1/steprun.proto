@@ -1,0 +1,341 @@
+syntax = "proto3";
+
+package steprun.v1;
+
+import "google/protobuf/struct.proto";
+
+option go_package = "github.com/go-arcade/arcade/api/steprun/v1;steprunv1";
+
+// StepRunService - StepRun management interface
+// StepRun represents the execution of a Step within a Job
+// According to DSL: Step → StepRun
+service StepRunService {
+  // Create step run
+  rpc CreateStepRun(CreateStepRunRequest) returns (CreateStepRunResponse) {}
+
+  // Get step run details
+  rpc GetStepRun(GetStepRunRequest) returns (GetStepRunResponse) {}
+
+  // List step runs (supports pagination and filtering)
+  rpc ListStepRuns(ListStepRunsRequest) returns (ListStepRunsResponse) {}
+
+  // Update step run
+  rpc UpdateStepRun(UpdateStepRunRequest) returns (UpdateStepRunResponse) {}
+
+  // Delete step run
+  rpc DeleteStepRun(DeleteStepRunRequest) returns (DeleteStepRunResponse) {}
+
+  // Cancel step run
+  rpc CancelStepRun(CancelStepRunRequest) returns (CancelStepRunResponse) {}
+
+  // Retry step run
+  rpc RetryStepRun(RetryStepRunRequest) returns (RetryStepRunResponse) {}
+
+  // Get step run log
+  rpc GetStepRunLog(GetStepRunLogRequest) returns (GetStepRunLogResponse) {}
+
+  // List step run artifacts
+  rpc ListStepRunArtifacts(ListStepRunArtifactsRequest) returns (ListStepRunArtifactsResponse) {}
+}
+
+// StepRun status enum
+enum StepRunStatus {
+  STEP_RUN_STATUS_UNSPECIFIED = 0;
+  STEP_RUN_STATUS_PENDING = 1;       // Pending
+  STEP_RUN_STATUS_QUEUED = 2;        // Queued
+  STEP_RUN_STATUS_RUNNING = 3;       // Running
+  STEP_RUN_STATUS_SUCCESS = 4;       // Success
+  STEP_RUN_STATUS_FAILED = 5;        // Failed
+  STEP_RUN_STATUS_CANCELLED = 6;     // Cancelled
+  STEP_RUN_STATUS_TIMEOUT = 7;       // Timeout
+  STEP_RUN_STATUS_SKIPPED = 8;       // Skipped
+}
+
+// Create step run request
+message CreateStepRunRequest {
+  string pipeline_id = 1;                // Pipeline ID (required)
+  string pipeline_run_id = 2;            // Pipeline run ID (required)
+  string job_id = 3;                     // Job ID (required)
+  string job_name = 4;                   // Job name (required)
+  string step_name = 5;                  // Step name (required)
+  int32 step_index = 6;                  // Step index in job (0-based)
+  
+  // Step execution configuration (plugin-based)
+  string uses = 7;                       // Plugin identifier (required, from Step.uses)
+  string action = 8;                     // Plugin action (optional, from Step.action)
+  google.protobuf.Struct args = 9;       // Plugin parameters (from Step.args)
+  
+  // Execution context
+  map<string, string> env = 10;          // Environment variables
+  string workspace = 11;                 // Working directory
+  string timeout = 12;                   // Timeout (e.g., "30m", "1h")
+  
+  // Runtime configuration
+  string image = 13;                     // Docker image (optional, for containerized execution)
+  map<string, string> secrets = 14;     // Secret information
+  
+  // Artifact configuration
+  repeated ArtifactConfig artifacts = 15; // Artifact configuration
+  
+  // Execution control
+  bool continue_on_error = 16;          // Continue execution even if step fails
+  string when = 17;                      // Condition expression (evaluate before execution)
+  
+  // Agent selection
+  AgentSelector agent_selector = 18;    // Agent selector (for matching Agent)
+  bool run_on_agent = 19;               // Run on agent (if true, step runs on agent; if false, runs locally)
+  
+  // Plugin requirements
+  repeated PluginInfo plugins = 20;     // List of plugins required by step run
+}
+
+// Artifact configuration
+message ArtifactConfig {
+  string name = 1;                       // Artifact name
+  string path = 2;                       // Artifact path (supports glob pattern)
+  string destination = 3;                // Target storage path
+  bool expire = 4;                       // Whether it expires
+  int64 expire_days = 5;                 // Expiration days
+}
+
+// Plugin information
+message PluginInfo {
+  string plugin_id = 1;                  // Plugin ID
+  string name = 2;                       // Plugin name
+  string version = 3;                    // Version number
+  string checksum = 4;                   // SHA256 checksum
+  int64 size = 5;                        // File size (bytes)
+  string download_url = 6;               // Download URL (optional, for CDN distribution)
+  PluginLocation location = 7;           // Plugin location
+}
+
+// Plugin location
+enum PluginLocation {
+  PLUGIN_LOCATION_UNSPECIFIED = 0;
+  PLUGIN_LOCATION_SERVER = 1;            // Server filesystem
+  PLUGIN_LOCATION_STORAGE = 2;           // Object storage
+  PLUGIN_LOCATION_REGISTRY = 3;          // Plugin registry
+}
+
+// Create step run response
+message CreateStepRunResponse {
+  bool success = 1;
+  string message = 2;
+  string step_run_id = 3;                // Created step run ID
+  Error error = 4;                       // Error details (if success == false)
+}
+
+// Get step run request
+message GetStepRunRequest {
+  string step_run_id = 1;                // Step run ID
+}
+
+// Get step run response
+message GetStepRunResponse {
+  bool success = 1;
+  string message = 2;
+  StepRunDetail step_run = 3;           // Step run details
+  Error error = 4;                       // Error details (if success == false)
+}
+
+// Step run details
+message StepRunDetail {
+  string step_run_id = 1;                // Step run ID
+  string pipeline_id = 2;                // Pipeline ID
+  string pipeline_run_id = 3;            // Pipeline run ID
+  string job_id = 4;                     // Job ID
+  string job_name = 5;                   // Job name
+  string step_name = 6;                  // Step name
+  int32 step_index = 7;                  // Step index in job
+  
+  // Step execution configuration
+  string uses = 8;                       // Plugin identifier
+  string action = 9;                     // Plugin action
+  google.protobuf.Struct args = 10;      // Plugin parameters
+  
+  // Execution context
+  StepRunStatus status = 11;             // Step run status
+  map<string, string> env = 12;          // Environment variables
+  string workspace = 13;                 // Working directory
+  string timeout = 14;                   // Timeout
+  
+  // Runtime configuration
+  string image = 15;                     // Docker image
+  repeated ArtifactConfig artifacts = 16; // Artifact configuration
+  
+  // Execution control
+  bool continue_on_error = 17;          // Continue on error
+  string when = 18;                      // Condition expression
+  
+  // Agent selection
+  AgentSelector agent_selector = 19;    // Agent selector
+  bool run_on_agent = 20;               // Run on agent
+  string agent_id = 21;                  // Executing agent ID
+  map<string, string> agent_labels = 22; // Agent labels executing the step run
+  
+  // Execution results
+  int32 exit_code = 23;                  // Exit code
+  string error_message = 24;             // Error message
+  int64 created_at = 25;                 // Creation time (Unix timestamp in seconds)
+  int64 started_at = 26;                 // Start time (Unix timestamp in seconds)
+  int64 finished_at = 27;                // Finish time (Unix timestamp in seconds)
+  int64 duration = 28;                   // Execution duration (milliseconds)
+  string created_by = 29;                // Creator
+  map<string, string> metrics = 30;     // Execution metrics
+  
+  // Plugin requirements
+  repeated PluginInfo plugins = 31;     // List of plugins required by step run
+}
+
+// List step runs request
+message ListStepRunsRequest {
+  string pipeline_id = 1;                // Pipeline ID filter (optional)
+  string pipeline_run_id = 2;            // Pipeline run ID filter (optional)
+  string job_id = 3;                     // Job ID filter (optional)
+  string job_name = 4;                   // Job name filter (optional)
+  string step_name = 5;                  // Step name filter (optional)
+  StepRunStatus status = 6;              // Status filter (optional)
+  string agent_id = 7;                   // Agent ID filter (optional)
+  int32 page = 8;                        // Page number (starting from 1)
+  int32 page_size = 9;                   // Items per page (default 20)
+  string sort_by = 10;                   // Sort field (created_at, started_at, etc.)
+  bool sort_desc = 11;                   // Descending order
+}
+
+// List step runs response
+message ListStepRunsResponse {
+  bool success = 1;
+  string message = 2;
+  repeated StepRunDetail step_runs = 3;  // List of step runs
+  int32 total = 4;                       // Total count
+  int32 page = 5;                        // Current page
+  int32 page_size = 6;                   // Items per page
+}
+
+// Update step run request
+message UpdateStepRunRequest {
+  string step_run_id = 1;                // Step run ID
+  map<string, string> env = 2;           // Environment variables (optional)
+  string timeout = 3;                    // Timeout (optional)
+}
+
+// Update step run response
+message UpdateStepRunResponse {
+  bool success = 1;
+  string message = 2;
+  Error error = 3;                       // Error details (if success == false)
+}
+
+// Delete step run request
+message DeleteStepRunRequest {
+  string step_run_id = 1;                // Step run ID
+}
+
+// Delete step run response
+message DeleteStepRunResponse {
+  bool success = 1;
+  string message = 2;
+  Error error = 3;                       // Error details (if success == false)
+}
+
+// Cancel step run request
+message CancelStepRunRequest {
+  string step_run_id = 1;                // Step run ID
+  string reason = 2;                     // Cancellation reason
+}
+
+// Cancel step run response
+message CancelStepRunResponse {
+  bool success = 1;
+  string message = 2;
+  Error error = 3;                       // Error details (if success == false)
+}
+
+// Retry step run request
+message RetryStepRunRequest {
+  string step_run_id = 1;                // Step run ID
+}
+
+// Retry step run response
+message RetryStepRunResponse {
+  bool success = 1;
+  string message = 2;
+  string new_step_run_id = 3;           // Newly created step run ID
+  Error error = 4;                       // Error details (if success == false)
+}
+
+// Get step run log request
+message GetStepRunLogRequest {
+  string step_run_id = 1;                // Step run ID
+  int32 offset = 2;                      // Log offset (line number, default 0)
+  int32 limit = 3;                       // Number of lines to fetch (default 1000)
+}
+
+// Get step run log response
+message GetStepRunLogResponse {
+  bool success = 1;
+  string message = 2;
+  repeated LogLine logs = 3;             // Log lines
+  int32 total_lines = 4;                 // Total lines
+  bool has_more = 5;                     // Whether there are more logs
+  Error error = 6;                       // Error details (if success == false)
+}
+
+// Log line
+message LogLine {
+  int32 line_number = 1;                  // Line number
+  int64 timestamp = 2;                   // Timestamp (Unix timestamp in seconds)
+  string level = 3;                      // Log level (info, warn, error, debug)
+  string content = 4;                    // Log content
+  string stream = 5;                     // Stream type (stdout, stderr)
+}
+
+// List step run artifacts request
+message ListStepRunArtifactsRequest {
+  string step_run_id = 1;                // Step run ID
+}
+
+// List step run artifacts response
+message ListStepRunArtifactsResponse {
+  bool success = 1;
+  string message = 2;
+  repeated Artifact artifacts = 3;       // List of artifacts
+  Error error = 4;                       // Error details (if success == false)
+}
+
+// Artifact
+message Artifact {
+  string artifact_id = 1;                // Artifact ID
+  string name = 2;                       // Artifact name
+  string path = 3;                       // Artifact path
+  int64 size = 4;                        // File size (bytes)
+  string download_url = 5;               // Download URL
+  int64 created_at = 6;                  // Creation time (Unix timestamp in seconds)
+  int64 expire_at = 7;                   // Expiration time (Unix timestamp in seconds)
+}
+
+// ============ Agent Selector ============
+
+// AgentSelector defines criteria for selecting an agent
+message AgentSelector {
+  map<string, string> match_labels = 1;  // MatchLabels requires all specified labels to match (AND logic)
+  repeated LabelExpression match_expressions = 2; // MatchExpressions provides more complex matching rules
+}
+
+// LabelExpression defines a label matching expression
+message LabelExpression {
+  string key = 1;                        // Label key (required)
+  string operator = 2;                    // Operator: In, NotIn, Exists, NotExists, Gt, Lt (required)
+  repeated string values = 3;            // Values for operator comparison
+}
+
+// ============ Error Definition ============
+
+// Error represents a structured error response
+message Error {
+  int32 code = 1;                        // Error code
+  string message = 2;                    // Error message
+  string type = 3;                       // Error type (validation, execution, not_found, etc.)
+  google.protobuf.Struct details = 4;   // Error details (arbitrary JSON)
+}
+

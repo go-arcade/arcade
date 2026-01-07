@@ -24,26 +24,27 @@ import (
 	"time"
 
 	agentv1 "github.com/go-arcade/arcade/api/agent/v1"
-	taskv1 "github.com/go-arcade/arcade/api/task/v1"
+	steprunv1 "github.com/go-arcade/arcade/api/steprun/v1"
 	"github.com/go-arcade/arcade/internal/pkg/pipeline/spec"
 	"github.com/go-arcade/arcade/pkg/log"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// AgentManager manages agent selection and task assignment for pipeline execution
+// AgentManager manages agent selection and step run assignment for pipeline execution
 type AgentManager struct {
-	agentClient agentv1.AgentServiceClient
-	taskClient  taskv1.TaskServiceClient
-	logger      log.Logger
+	agentClient   agentv1.AgentServiceClient
+	stepRunClient steprunv1.StepRunServiceClient
+	logger        log.Logger
 	// Agent status cache (updated from heartbeat)
 	agentStatusCache map[string]*AgentStatus
 	statusCacheMu    sync.RWMutex
 }
 
 // NewAgentManager creates a new agent manager
-func NewAgentManager(agentClient agentv1.AgentServiceClient, taskClient taskv1.TaskServiceClient, logger log.Logger) *AgentManager {
+func NewAgentManager(agentClient agentv1.AgentServiceClient, stepRunClient steprunv1.StepRunServiceClient, logger log.Logger) *AgentManager {
 	return &AgentManager{
 		agentClient:      agentClient,
-		taskClient:       taskClient,
+		stepRunClient:    stepRunClient,
 		logger:           logger,
 		agentStatusCache: make(map[string]*AgentStatus),
 	}
@@ -89,30 +90,32 @@ func (am *AgentManager) ExecuteStepOnAgent(ctx context.Context, req *StepExecuti
 		am.logger.Log.Infow("executing step on agent", "job", req.JobName, "step", req.StepName, "agent", agentID)
 	}
 
-	// Convert step to agent task
-	agentTask, err := am.convertStepToTask(req)
+	// Convert step to agent step run
+	agentStepRun, err := am.convertStepToStepRun(req)
 	if err != nil {
-		return nil, fmt.Errorf("convert step to task: %w", err)
+		return nil, fmt.Errorf("convert step to step run: %w", err)
 	}
 
-	taskID, err := am.createTask(ctx, req, agentTask)
+	stepRunID, err := am.createStepRun(ctx, req, agentStepRun)
 	if err != nil {
-		return nil, fmt.Errorf("create task: %w", err)
+		return nil, fmt.Errorf("create step run: %w", err)
 	}
 
 	if am.logger.Log != nil {
-		am.logger.Log.Infow("created task for step, waiting for agent to fetch", "task", taskID, "job", req.JobName, "step", req.StepName)
+		am.logger.Log.Infow("created step run for step, waiting for agent to fetch", "stepRun", stepRunID, "job", req.JobName, "step", req.StepName)
 	}
 
-	// 2-5. 等待 agent 拉取任务并执行，监听状态更新
-	timeout := time.Duration(agentTask.Timeout) * time.Second
-	if timeout == 0 {
-		timeout = 1 * time.Hour // Default timeout
+	// 2-5. 等待 agent 拉取步骤执行并执行，监听状态更新
+	timeout := 1 * time.Hour // Default timeout
+	if agentStepRun.Timeout != "" {
+		if duration, err := time.ParseDuration(agentStepRun.Timeout); err == nil {
+			timeout = duration
+		}
 	}
 
-	result, err := am.WaitForTaskCompletion(ctx, taskID, timeout)
+	result, err := am.WaitForStepRunCompletion(ctx, stepRunID, timeout)
 	if err != nil {
-		return nil, fmt.Errorf("wait for task completion: %w", err)
+		return nil, fmt.Errorf("wait for step run completion: %w", err)
 	}
 
 	return result, nil
@@ -156,10 +159,10 @@ func (am *AgentManager) SelectAgent(ctx context.Context, selector *spec.AgentSel
 		return "", fmt.Errorf("no agents match the selector criteria")
 	}
 
-	// Select agent with least running jobs (load balancing)
+	// Select agent with least running step runs (load balancing)
 	selectedAgent := matchedAgents[0]
 	for _, agent := range matchedAgents[1:] {
-		if agent.RunningJobsCount < selectedAgent.RunningJobsCount {
+		if agent.RunningStepRunsCount < selectedAgent.RunningStepRunsCount {
 			selectedAgent = agent
 		}
 	}
@@ -259,8 +262,8 @@ func (am *AgentManager) matchExpression(agentLabels map[string]string, expr spec
 	}
 }
 
-// convertStepToTask converts a pipeline step to an agent task
-func (am *AgentManager) convertStepToTask(req *StepExecutionRequest) (*agentv1.Task, error) {
+// convertStepToStepRun converts a pipeline step to an agent step run
+func (am *AgentManager) convertStepToStepRun(req *StepExecutionRequest) (*agentv1.StepRun, error) {
 	// Resolve variables in step args if context is provided
 	var resolvedArgs map[string]any
 	if req.Context != nil && len(req.Step.Args) > 0 {
@@ -279,20 +282,12 @@ func (am *AgentManager) convertStepToTask(req *StepExecutionRequest) (*agentv1.T
 		}
 	}
 
-	// Build commands from step action
-	var commands []string
+	// Build commands from step action (not used directly in StepRun, but kept for compatibility)
 	if req.Context != nil {
-		commands, err = am.buildCommands(req.Step, req.Context)
+		_, err = am.buildCommands(req.Step, req.Context)
 		if err != nil {
 			return nil, fmt.Errorf("build commands: %w", err)
 		}
-	} else {
-		// Fallback if context is not provided
-		action := req.Step.Action
-		if action == "" {
-			action = "Execute"
-		}
-		commands = []string{fmt.Sprintf("plugin execute --plugin %s --action %s", req.Step.Uses, action)}
 	}
 
 	// Prepare environment variables (include plugin params)
@@ -312,10 +307,10 @@ func (am *AgentManager) convertStepToTask(req *StepExecutionRequest) (*agentv1.T
 		env["PLUGIN_ACTION"] = "Execute"
 	}
 
-	// Build label selector
+	// Build label selector (for agent matching, will be converted to steprun format in createStepRun)
 	labelSelector := am.buildLabelSelector(req.Selector)
 
-	// Build plugin info list
+	// Build plugin info list (for agent, will be converted to steprun format in createStepRun)
 	plugins := []*agentv1.PluginInfo{
 		{
 			PluginId: req.Step.Uses,
@@ -332,23 +327,80 @@ func (am *AgentManager) convertStepToTask(req *StepExecutionRequest) (*agentv1.T
 		}
 	}
 
-	// Calculate stage number from step index
-	stage := int32(req.StepIndex)
+	// Convert args to Struct
+	var argsStruct *structpb.Struct
+	if len(resolvedArgs) > 0 {
+		argsBytes, _ := json.Marshal(resolvedArgs)
+		argsStruct = &structpb.Struct{}
+		if err := json.Unmarshal(argsBytes, argsStruct); err != nil {
+			return nil, fmt.Errorf("convert args to struct: %w", err)
+		}
+	}
 
-	task := &agentv1.Task{
-		JobId:         fmt.Sprintf("%s-%s-%s", req.PipelineID, req.JobName, req.StepName),
-		Name:          req.StepName,
+	stepRun := &agentv1.StepRun{
+		StepRunId:     fmt.Sprintf("%s-%s-%s", req.PipelineID, req.JobName, req.StepName),
 		PipelineId:    req.PipelineID,
-		Stage:         stage,
-		Commands:      commands,
+		JobId:         fmt.Sprintf("%s-%s", req.PipelineID, req.JobName),
+		JobName:       req.JobName,
+		StepName:      req.StepName,
+		StepIndex:     int32(req.StepIndex),
+		Uses:          req.Step.Uses,
+		Action:        req.Step.Action,
+		Args:          argsStruct,
 		Env:           env,
 		Workspace:     req.Workspace,
-		Timeout:       timeout,
-		LabelSelector: labelSelector,
+		Timeout:       fmt.Sprintf("%ds", timeout),
+		AgentSelector: labelSelector,
 		Plugins:       plugins,
 	}
 
-	return task, nil
+	return stepRun, nil
+}
+
+// convertAgentSelectorToStepRunSelector converts agent AgentSelector to steprun AgentSelector
+func (am *AgentManager) convertAgentSelectorToStepRunSelector(agentSelector *agentv1.AgentSelector) *steprunv1.AgentSelector {
+	if agentSelector == nil {
+		return nil
+	}
+
+	stepRunSelector := &steprunv1.AgentSelector{
+		MatchLabels: agentSelector.MatchLabels,
+	}
+
+	if len(agentSelector.MatchExpressions) > 0 {
+		expressions := make([]*steprunv1.LabelExpression, 0, len(agentSelector.MatchExpressions))
+		for _, expr := range agentSelector.MatchExpressions {
+			expressions = append(expressions, &steprunv1.LabelExpression{
+				Key:      expr.Key,
+				Operator: expr.Operator,
+				Values:   expr.Values,
+			})
+		}
+		stepRunSelector.MatchExpressions = expressions
+	}
+
+	return stepRunSelector
+}
+
+// convertAgentPluginsToStepRunPlugins converts agent PluginInfo list to steprun PluginInfo list
+func (am *AgentManager) convertAgentPluginsToStepRunPlugins(agentPlugins []*agentv1.PluginInfo) []*steprunv1.PluginInfo {
+	if len(agentPlugins) == 0 {
+		return nil
+	}
+
+	stepRunPlugins := make([]*steprunv1.PluginInfo, 0, len(agentPlugins))
+	for _, plugin := range agentPlugins {
+		stepRunPlugins = append(stepRunPlugins, &steprunv1.PluginInfo{
+			PluginId: plugin.PluginId,
+			Name:     plugin.Name,
+			Version:  plugin.Version,
+			Checksum: plugin.Checksum,
+			Size:     plugin.Size,
+			// DownloadUrl and Location would be populated from plugin registry
+		})
+	}
+
+	return stepRunPlugins
 }
 
 // buildCommands builds command list from step action and params
@@ -381,7 +433,7 @@ func (am *AgentManager) buildCommands(step *spec.Step, ctx *ExecutionContext) ([
 
 	// Prepare opts JSON with dry-run flag to get commands instead of executing
 	opts := map[string]any{
-		"workspace":       ctx.StepWorkspace("", step.Name), // Will be set properly when task is created
+		"workspace":       ctx.StepWorkspace("", step.Name), // Will be set properly when step run is created
 		"dry_run":         true,                             // Request plugin to return commands instead of executing
 		"build_for_agent": true,                             // Indicate this is for agent execution
 	}
@@ -486,129 +538,74 @@ func (am *AgentManager) buildGenericPluginCommand(step *spec.Step, action string
 }
 
 // buildLabelSelector builds agent label selector from step selector
-func (am *AgentManager) buildLabelSelector(selector *spec.AgentSelector) *agentv1.LabelSelector {
+func (am *AgentManager) buildLabelSelector(selector *spec.AgentSelector) *agentv1.AgentSelector {
 	if selector == nil {
 		return nil
 	}
 
-	labelSelector := &agentv1.LabelSelector{
+	agentSelector := &agentv1.AgentSelector{
 		MatchLabels: selector.MatchLabels,
 	}
 
-	// Convert match expressions (from string operator to agent LabelOperator enum)
+	// Convert match expressions (from string operator to agent LabelExpression)
 	if len(selector.MatchExpressions) > 0 {
-		expressions := make([]*agentv1.LabelSelectorRequirement, 0, len(selector.MatchExpressions))
+		expressions := make([]*agentv1.LabelExpression, 0, len(selector.MatchExpressions))
 		for _, expr := range selector.MatchExpressions {
-			operator := am.convertOperator(expr.Operator)
-			expressions = append(expressions, &agentv1.LabelSelectorRequirement{
+			expressions = append(expressions, &agentv1.LabelExpression{
 				Key:      expr.Key,
-				Operator: operator,
+				Operator: expr.Operator,
 				Values:   expr.Values,
 			})
 		}
-		labelSelector.MatchExpressions = expressions
+		agentSelector.MatchExpressions = expressions
 	}
 
-	return labelSelector
+	return agentSelector
 }
 
-// convertOperator converts string operator to agent LabelOperator enum
-func (am *AgentManager) convertOperator(op string) agentv1.LabelOperator {
-	switch op {
-	case "In":
-		return agentv1.LabelOperator_LABEL_OPERATOR_IN
-	case "NotIn":
-		return agentv1.LabelOperator_LABEL_OPERATOR_NOT_IN
-	case "Exists":
-		return agentv1.LabelOperator_LABEL_OPERATOR_EXISTS
-	case "NotExists":
-		return agentv1.LabelOperator_LABEL_OPERATOR_NOT_EXISTS
-	case "Gt":
-		return agentv1.LabelOperator_LABEL_OPERATOR_GT
-	case "Lt":
-		return agentv1.LabelOperator_LABEL_OPERATOR_LT
-	default:
-		return agentv1.LabelOperator_LABEL_OPERATOR_UNSPECIFIED
-	}
-}
-
-// createTask creates a task in the task service
-func (am *AgentManager) createTask(ctx context.Context, req *StepExecutionRequest, agentTask *agentv1.Task) (string, error) {
-	if am.taskClient == nil {
-		return "", fmt.Errorf("task client is not initialized")
+// createStepRun creates a step run in the step run service
+func (am *AgentManager) createStepRun(ctx context.Context, req *StepExecutionRequest, agentStepRun *agentv1.StepRun) (string, error) {
+	if am.stepRunClient == nil {
+		return "", fmt.Errorf("step run client is not initialized")
 	}
 
-	// Convert agent task to task service request
-	createReq := &taskv1.CreateTaskRequest{
-		Name:         agentTask.Name,
-		PipelineId:   agentTask.PipelineId,
-		Stage:        agentTask.Stage,
-		Commands:     agentTask.Commands,
-		Env:          agentTask.Env,
-		Workspace:    agentTask.Workspace,
-		Timeout:      agentTask.Timeout,
-		AllowFailure: req.Step.ContinueOnError,
-		RetryCount:   0, // Retry is handled at step level
+	// Convert agent step run to step run service request
+	createReq := &steprunv1.CreateStepRunRequest{
+		PipelineId:      agentStepRun.PipelineId,
+		JobId:           agentStepRun.JobId,
+		JobName:         agentStepRun.JobName,
+		StepName:        agentStepRun.StepName,
+		StepIndex:       agentStepRun.StepIndex,
+		Uses:            agentStepRun.Uses,
+		Action:          agentStepRun.Action,
+		Args:            agentStepRun.Args,
+		Env:             agentStepRun.Env,
+		Workspace:       agentStepRun.Workspace,
+		Timeout:         agentStepRun.Timeout,
+		ContinueOnError: req.Step.ContinueOnError,
+		When:            req.Step.When,
+		AgentSelector:   am.convertAgentSelectorToStepRunSelector(agentStepRun.AgentSelector),
+		Plugins:         am.convertAgentPluginsToStepRunPlugins(agentStepRun.Plugins),
 	}
 
-	// Convert label selector
-	if agentTask.LabelSelector != nil {
-		createReq.LabelSelector = &taskv1.LabelSelector{
-			MatchLabels: agentTask.LabelSelector.MatchLabels,
-		}
-		if len(agentTask.LabelSelector.MatchExpressions) > 0 {
-			expressions := make([]*taskv1.LabelSelectorRequirement, 0, len(agentTask.LabelSelector.MatchExpressions))
-			for _, expr := range agentTask.LabelSelector.MatchExpressions {
-				// Convert agent LabelOperator to task LabelOperator
-				taskOp := am.convertAgentOperatorToTaskOperator(expr.Operator)
-				expressions = append(expressions, &taskv1.LabelSelectorRequirement{
-					Key:      expr.Key,
-					Operator: taskOp,
-					Values:   expr.Values,
-				})
-			}
-			createReq.LabelSelector.MatchExpressions = expressions
-		}
-	}
-
-	// Create task
-	resp, err := am.taskClient.CreateTask(ctx, createReq)
+	// Create step run
+	resp, err := am.stepRunClient.CreateStepRun(ctx, createReq)
 	if err != nil {
-		return "", fmt.Errorf("create task via task service: %w", err)
+		return "", fmt.Errorf("create step run via step run service: %w", err)
 	}
 
 	if !resp.Success {
-		return "", fmt.Errorf("create task failed: %s", resp.Message)
+		return "", fmt.Errorf("create step run failed: %s", resp.Message)
 	}
 
-	return resp.TaskId, nil
+	return resp.StepRunId, nil
 }
 
-// convertAgentOperatorToTaskOperator converts agent LabelOperator to task LabelOperator
-func (am *AgentManager) convertAgentOperatorToTaskOperator(op agentv1.LabelOperator) taskv1.LabelOperator {
-	switch op {
-	case agentv1.LabelOperator_LABEL_OPERATOR_IN:
-		return taskv1.LabelOperator_LABEL_OPERATOR_IN
-	case agentv1.LabelOperator_LABEL_OPERATOR_NOT_IN:
-		return taskv1.LabelOperator_LABEL_OPERATOR_NOT_IN
-	case agentv1.LabelOperator_LABEL_OPERATOR_EXISTS:
-		return taskv1.LabelOperator_LABEL_OPERATOR_EXISTS
-	case agentv1.LabelOperator_LABEL_OPERATOR_NOT_EXISTS:
-		return taskv1.LabelOperator_LABEL_OPERATOR_NOT_EXISTS
-	case agentv1.LabelOperator_LABEL_OPERATOR_GT:
-		return taskv1.LabelOperator_LABEL_OPERATOR_GT
-	case agentv1.LabelOperator_LABEL_OPERATOR_LT:
-		return taskv1.LabelOperator_LABEL_OPERATOR_LT
-	default:
-		return taskv1.LabelOperator_LABEL_OPERATOR_UNSPECIFIED
-	}
-}
-
-// WaitForTaskCompletion waits for a task to complete on an agent
-// It polls the task status from task service and waits for completion
-func (am *AgentManager) WaitForTaskCompletion(ctx context.Context, taskID string, timeout time.Duration) (*StepExecutionResult, error) {
-	if am.taskClient == nil {
-		return nil, fmt.Errorf("task client is not initialized")
+// WaitForStepRunCompletion waits for a step run to complete on an agent
+// It polls the step run status from step run service and waits for completion
+func (am *AgentManager) WaitForStepRunCompletion(ctx context.Context, stepRunID string, timeout time.Duration) (*StepExecutionResult, error) {
+	if am.stepRunClient == nil {
+		return nil, fmt.Errorf("step run client is not initialized")
 	}
 
 	// Create context with timeout
@@ -631,98 +628,98 @@ func (am *AgentManager) WaitForTaskCompletion(ctx context.Context, taskID string
 		case <-ctx.Done():
 			// Timeout or context cancelled
 			if ctx.Err() == context.DeadlineExceeded {
-				// Mark task as timeout
-				if err := am.cancelTask(ctx, taskID, "task execution timeout"); err != nil {
+				// Mark step run as timeout
+				if err := am.cancelStepRun(ctx, stepRunID, "step run execution timeout"); err != nil {
 					if am.logger.Log != nil {
-						am.logger.Log.Warnw("failed to cancel timeout task", "task", taskID, "error", err)
+						am.logger.Log.Warnw("failed to cancel timeout step run", "stepRun", stepRunID, "error", err)
 					}
 				}
-				return nil, fmt.Errorf("task %s execution timeout after %v", taskID, timeout)
+				return nil, fmt.Errorf("step run %s execution timeout after %v", stepRunID, timeout)
 			}
 			return nil, ctx.Err()
 
 		case <-ticker.C:
-			// Poll task status
-			task, err := am.getTaskStatus(ctx, taskID)
+			// Poll step run status
+			stepRun, err := am.getStepRunStatus(ctx, stepRunID)
 			if err != nil {
 				if am.logger.Log != nil {
-					am.logger.Log.Warnw("failed to get task status", "task", taskID, "error", err)
+					am.logger.Log.Warnw("failed to get step run status", "stepRun", stepRunID, "error", err)
 				}
 				continue
 			}
 
-			if task == nil {
+			if stepRun == nil {
 				continue
 			}
 
-			// Update result based on task status
-			switch task.Status {
-			case taskv1.TaskStatus_TASK_STATUS_SUCCESS:
-				// Task completed successfully
+			// Update result based on step run status
+			switch stepRun.Status {
+			case steprunv1.StepRunStatus_STEP_RUN_STATUS_SUCCESS:
+				// Step run completed successfully
 				result.Success = true
-				result.ExitCode = task.ExitCode
-				if task.FinishedAt > 0 {
-					result.EndTime = time.Unix(task.FinishedAt/1000, (task.FinishedAt%1000)*1000000)
+				result.ExitCode = stepRun.ExitCode
+				if stepRun.FinishedAt > 0 {
+					result.EndTime = time.Unix(stepRun.FinishedAt/1000, (stepRun.FinishedAt%1000)*1000000)
 				} else {
 					result.EndTime = time.Now()
 				}
-				if task.StartedAt > 0 {
-					result.StartTime = time.Unix(task.StartedAt/1000, (task.StartedAt%1000)*1000000)
+				if stepRun.StartedAt > 0 {
+					result.StartTime = time.Unix(stepRun.StartedAt/1000, (stepRun.StartedAt%1000)*1000000)
 				}
 				if am.logger.Log != nil {
-					am.logger.Log.Infow("task completed successfully", "task", taskID)
+					am.logger.Log.Infow("step run completed successfully", "stepRun", stepRunID)
 				}
 				return result, nil
 
-			case taskv1.TaskStatus_TASK_STATUS_FAILED:
-				// Task failed
+			case steprunv1.StepRunStatus_STEP_RUN_STATUS_FAILED:
+				// Step run failed
 				result.Success = false
-				result.ExitCode = task.ExitCode
-				result.Error = task.ErrorMessage
-				if task.FinishedAt > 0 {
-					result.EndTime = time.Unix(task.FinishedAt/1000, (task.FinishedAt%1000)*1000000)
+				result.ExitCode = stepRun.ExitCode
+				result.Error = stepRun.ErrorMessage
+				if stepRun.FinishedAt > 0 {
+					result.EndTime = time.Unix(stepRun.FinishedAt/1000, (stepRun.FinishedAt%1000)*1000000)
 				} else {
 					result.EndTime = time.Now()
 				}
-				if task.StartedAt > 0 {
-					result.StartTime = time.Unix(task.StartedAt/1000, (task.StartedAt%1000)*1000000)
+				if stepRun.StartedAt > 0 {
+					result.StartTime = time.Unix(stepRun.StartedAt/1000, (stepRun.StartedAt%1000)*1000000)
 				}
 				if am.logger.Log != nil {
-					am.logger.Log.Errorw("task failed", "task", taskID, "error", task.ErrorMessage)
+					am.logger.Log.Errorw("step run failed", "stepRun", stepRunID, "error", stepRun.ErrorMessage)
 				}
-				return result, fmt.Errorf("task execution failed: %s", task.ErrorMessage)
+				return result, fmt.Errorf("step run execution failed: %s", stepRun.ErrorMessage)
 
-			case taskv1.TaskStatus_TASK_STATUS_CANCELLED:
-				// Task cancelled
+			case steprunv1.StepRunStatus_STEP_RUN_STATUS_CANCELLED:
+				// Step run cancelled
 				result.Success = false
 				result.ExitCode = -1
-				result.Error = "task cancelled"
+				result.Error = "step run cancelled"
 				result.EndTime = time.Now()
 				if am.logger.Log != nil {
-					am.logger.Log.Warnw("task was cancelled", "task", taskID)
+					am.logger.Log.Warnw("step run was cancelled", "stepRun", stepRunID)
 				}
-				return result, fmt.Errorf("task was cancelled")
+				return result, fmt.Errorf("step run was cancelled")
 
-			case taskv1.TaskStatus_TASK_STATUS_TIMEOUT:
-				// Task timeout
+			case steprunv1.StepRunStatus_STEP_RUN_STATUS_TIMEOUT:
+				// Step run timeout
 				result.Success = false
 				result.ExitCode = -1
-				result.Error = "task execution timeout"
+				result.Error = "step run execution timeout"
 				result.EndTime = time.Now()
 				if am.logger.Log != nil {
-					am.logger.Log.Warnw("task timed out", "task", taskID)
+					am.logger.Log.Warnw("step run timed out", "stepRun", stepRunID)
 				}
-				return result, fmt.Errorf("task execution timeout")
+				return result, fmt.Errorf("step run execution timeout")
 
-			case taskv1.TaskStatus_TASK_STATUS_RUNNING:
-				// Task is running, continue polling
-				if task.StartedAt > 0 && result.StartTime.IsZero() {
-					result.StartTime = time.Unix(task.StartedAt/1000, (task.StartedAt%1000)*1000000)
+			case steprunv1.StepRunStatus_STEP_RUN_STATUS_RUNNING:
+				// Step run is running, continue polling
+				if stepRun.StartedAt > 0 && result.StartTime.IsZero() {
+					result.StartTime = time.Unix(stepRun.StartedAt/1000, (stepRun.StartedAt%1000)*1000000)
 				}
 				continue
 
-			case taskv1.TaskStatus_TASK_STATUS_PENDING, taskv1.TaskStatus_TASK_STATUS_QUEUED:
-				// Task is pending or queued, continue polling
+			case steprunv1.StepRunStatus_STEP_RUN_STATUS_PENDING, steprunv1.StepRunStatus_STEP_RUN_STATUS_QUEUED:
+				// Step run is pending or queued, continue polling
 				continue
 
 			default:
@@ -733,66 +730,66 @@ func (am *AgentManager) WaitForTaskCompletion(ctx context.Context, taskID string
 	}
 }
 
-// getTaskStatus gets task status from task service
-func (am *AgentManager) getTaskStatus(ctx context.Context, taskID string) (*taskv1.TaskDetail, error) {
-	req := &taskv1.GetTaskRequest{
-		TaskId: taskID,
+// getStepRunStatus gets step run status from step run service
+func (am *AgentManager) getStepRunStatus(ctx context.Context, stepRunID string) (*steprunv1.StepRunDetail, error) {
+	req := &steprunv1.GetStepRunRequest{
+		StepRunId: stepRunID,
 	}
 
-	resp, err := am.taskClient.GetTask(ctx, req)
+	resp, err := am.stepRunClient.GetStepRun(ctx, req)
 	if err != nil {
-		return nil, fmt.Errorf("get task status: %w", err)
+		return nil, fmt.Errorf("get step run status: %w", err)
 	}
 
 	if !resp.Success {
-		return nil, fmt.Errorf("get task failed: %s", resp.Message)
+		return nil, fmt.Errorf("get step run failed: %s", resp.Message)
 	}
 
-	return resp.Task, nil
+	return resp.StepRun, nil
 }
 
-// cancelTask cancels a task
-func (am *AgentManager) cancelTask(ctx context.Context, taskID, reason string) error {
-	if am.taskClient == nil {
-		return fmt.Errorf("task client is not initialized")
+// cancelStepRun cancels a step run
+func (am *AgentManager) cancelStepRun(ctx context.Context, stepRunID, reason string) error {
+	if am.stepRunClient == nil {
+		return fmt.Errorf("step run client is not initialized")
 	}
 
-	req := &taskv1.CancelTaskRequest{
-		TaskId: taskID,
-		Reason: reason,
+	req := &steprunv1.CancelStepRunRequest{
+		StepRunId: stepRunID,
+		Reason:    reason,
 	}
 
-	resp, err := am.taskClient.CancelTask(ctx, req)
+	resp, err := am.stepRunClient.CancelStepRun(ctx, req)
 	if err != nil {
-		return fmt.Errorf("cancel task: %w", err)
+		return fmt.Errorf("cancel step run: %w", err)
 	}
 
 	if !resp.Success {
-		return fmt.Errorf("cancel task failed: %s", resp.Message)
+		return fmt.Errorf("cancel step run failed: %s", resp.Message)
 	}
 
 	return nil
 }
 
-// CancelTask cancels a running task on an agent
-func (am *AgentManager) CancelTask(ctx context.Context, agentID, taskID, reason string) error {
+// CancelStepRun cancels a running step run on an agent
+func (am *AgentManager) CancelStepRun(ctx context.Context, agentID, stepRunID, reason string) error {
 	if am.agentClient == nil {
 		return fmt.Errorf("agent client is not initialized")
 	}
 
-	req := &agentv1.CancelTaskRequest{
-		AgentId: agentID,
-		JobId:   taskID,
-		Reason:  reason,
+	req := &agentv1.CancelStepRunRequest{
+		AgentId:   agentID,
+		StepRunId: stepRunID,
+		Reason:    reason,
 	}
 
-	_, err := am.agentClient.CancelTask(ctx, req)
+	_, err := am.agentClient.CancelStepRun(ctx, req)
 	if err != nil {
-		return fmt.Errorf("cancel task: %w", err)
+		return fmt.Errorf("cancel step run: %w", err)
 	}
 
 	if am.logger.Log != nil {
-		am.logger.Log.Infow("cancelled task on agent", "task", taskID, "agent", agentID, "reason", reason)
+		am.logger.Log.Infow("cancelled step run on agent", "stepRun", stepRunID, "agent", agentID, "reason", reason)
 	}
 
 	return nil
@@ -812,13 +809,13 @@ func (am *AgentManager) GetAgentStatus(ctx context.Context, agentID string) (*Ag
 	if !exists {
 		// Agent not found in cache, return offline status
 		return &AgentStatus{
-			AgentID:           agentID,
-			Status:            "offline",
-			RunningJobsCount:  0,
-			MaxConcurrentJobs: 0,
-			Metrics:           make(map[string]string),
-			Labels:            make(map[string]string),
-			LastHeartbeat:     time.Time{},
+			AgentID:               agentID,
+			Status:                "offline",
+			RunningStepRunsCount:  0,
+			MaxConcurrentStepRuns: 0,
+			Metrics:               make(map[string]string),
+			Labels:                make(map[string]string),
+			LastHeartbeat:         time.Time{},
 		}, nil
 	}
 
@@ -842,16 +839,16 @@ func (am *AgentManager) UpdateAgentStatusFromHeartbeat(req *agentv1.HeartbeatReq
 	defer am.statusCacheMu.Unlock()
 
 	status := &AgentStatus{
-		AgentID:          req.AgentId,
-		Status:           am.convertAgentStatusToString(req.Status),
-		RunningJobsCount: req.RunningJobsCount,
-		LastHeartbeat:    time.Now(),
+		AgentID:              req.AgentId,
+		Status:               am.convertAgentStatusToString(req.Status),
+		RunningStepRunsCount: req.RunningStepRunsCount,
+		LastHeartbeat:        time.Now(),
 	}
 
 	am.agentStatusCache[req.AgentId] = status
 
 	if am.logger.Log != nil {
-		am.logger.Log.Debugw("updated agent status", "agent", req.AgentId, "status", status.Status, "running_jobs", req.RunningJobsCount)
+		am.logger.Log.Debugw("updated agent status", "agent", req.AgentId, "status", status.Status, "running_step_runs", req.RunningStepRunsCount)
 	}
 }
 
@@ -902,11 +899,11 @@ func (am *AgentManager) RemoveAgentStatus(agentID string) {
 
 // AgentStatus represents agent status information
 type AgentStatus struct {
-	AgentID           string
-	Status            string
-	RunningJobsCount  int32
-	MaxConcurrentJobs int32
-	Metrics           map[string]string
-	Labels            map[string]string // Agent labels for matching
-	LastHeartbeat     time.Time
+	AgentID               string
+	Status                string
+	RunningStepRunsCount  int32
+	MaxConcurrentStepRuns int32
+	Metrics               map[string]string
+	Labels                map[string]string // Agent labels for matching
+	LastHeartbeat         time.Time
 }

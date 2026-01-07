@@ -27,8 +27,8 @@ import (
 
 	agentv1 "github.com/go-arcade/arcade/api/agent/v1"
 	pipelinev1 "github.com/go-arcade/arcade/api/pipeline/v1"
+	steprunv1 "github.com/go-arcade/arcade/api/steprun/v1"
 	streamv1 "github.com/go-arcade/arcade/api/stream/v1"
-	taskv1 "github.com/go-arcade/arcade/api/task/v1"
 	"github.com/go-arcade/arcade/internal/pkg/grpc/interceptor"
 	"github.com/go-arcade/arcade/pkg/log"
 
@@ -53,7 +53,7 @@ type ClientWrapper struct {
 
 	// service clients
 	AgentClient    agentv1.AgentServiceClient
-	TaskClient     taskv1.TaskServiceClient
+	StepRunClient  steprunv1.StepRunServiceClient
 	StreamClient   streamv1.StreamServiceClient
 	PipelineClient pipelinev1.PipelineServiceClient
 
@@ -123,7 +123,7 @@ func NewGrpcClient(cfg ClientConf) (*ClientWrapper, error) {
 // initClients init clients
 func (c *ClientWrapper) initClients() {
 	c.AgentClient = agentv1.NewAgentServiceClient(c.conn)
-	c.TaskClient = taskv1.NewTaskServiceClient(c.conn)
+	c.StepRunClient = steprunv1.NewStepRunServiceClient(c.conn)
 	c.StreamClient = streamv1.NewStreamServiceClient(c.conn)
 	c.PipelineClient = pipelinev1.NewPipelineServiceClient(c.conn)
 }
@@ -273,7 +273,7 @@ func (c *ClientWrapper) reconnect() error {
 	// Reset reconnect attempts on successful reconnection
 	c.reconnectAttempts = 0
 	c.maxReconnectReached = false
-	
+
 	return nil
 }
 

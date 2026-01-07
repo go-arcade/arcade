@@ -39,18 +39,18 @@ func NewLogStreamHandler(logAggregator *LogAggregator) *LogStreamHandler {
 
 // LogStreamRequest WebSocket请求消息
 type LogStreamRequest struct {
-	Type     string `json:"type"`      // subscribe, unsubscribe
-	TaskID   string `json:"task_id"`   // 任务ID
-	FromLine int32  `json:"from_line"` // 从第几行开始
+	Type      string `json:"type"`        // subscribe, unsubscribe
+	StepRunID string `json:"step_run_id"` // 步骤执行ID
+	FromLine  int32  `json:"from_line"`   // 从第几行开始
 }
 
 // LogStreamResponse WebSocket响应消息
 type LogStreamResponse struct {
-	Type    string    `json:"type"`    // log, error, complete
-	TaskID  string    `json:"task_id"` // 任务ID
-	Log     *LogEntry `json:"log,omitempty"`
-	Error   string    `json:"error,omitempty"`
-	Message string    `json:"message,omitempty"`
+	Type      string    `json:"type"`        // log, error, complete
+	StepRunID string    `json:"step_run_id"` // 步骤执行ID
+	Log       *LogEntry `json:"log,omitempty"`
+	Error     string    `json:"error,omitempty"`
+	Message   string    `json:"message,omitempty"`
 }
 
 // Upgrade 创建WebSocket升级中间件
@@ -72,7 +72,7 @@ func (h *LogStreamHandler) Upgrade() fiber.Handler {
 
 		// 活跃订阅
 		var activeSubscription <-chan *LogEntry
-		var currentTaskID string
+		var currentStepRunID string
 
 		// 发送消息的辅助函数
 		sendResponse := func(resp *LogStreamResponse) error {
@@ -126,24 +126,24 @@ func (h *LogStreamHandler) Upgrade() fiber.Handler {
 				switch req.Type {
 				case "subscribe":
 					// 处理订阅请求
-					if currentTaskID != "" && currentTaskID != req.TaskID {
+					if currentStepRunID != "" && currentStepRunID != req.StepRunID {
 						// 取消之前的订阅
 						cancel()
 						activeSubscription = nil
 					}
 
-					currentTaskID = req.TaskID
-					log.Infow("client subscribing to task", "taskId", req.TaskID, "fromLine", req.FromLine)
+					currentStepRunID = req.StepRunID
+					log.Infow("client subscribing to step run", "stepRunId", req.StepRunID, "fromLine", req.FromLine)
 
 					// 先发送历史日志
 					go func() {
-						historicalLogs, err := h.logAggregator.GetLogsByTaskID(req.TaskID, req.FromLine, 1000)
+						historicalLogs, err := h.logAggregator.GetLogsByStepRunID(req.StepRunID, req.FromLine, 1000)
 						if err != nil {
-							log.Errorw("failed to get historical logs", "taskId", req.TaskID, "error", err)
+							log.Errorw("failed to get historical logs", "stepRunId", req.StepRunID, "error", err)
 							sendResponse(&LogStreamResponse{
-								Type:   "error",
-								TaskID: req.TaskID,
-								Error:  fmt.Sprintf("failed to load history: %v", err),
+								Type:      "error",
+								StepRunID: req.StepRunID,
+								Error:     fmt.Sprintf("failed to load history: %v", err),
 							})
 							return
 						}
@@ -151,43 +151,43 @@ func (h *LogStreamHandler) Upgrade() fiber.Handler {
 						// 发送历史日志
 						for _, entry := range historicalLogs {
 							if err := sendResponse(&LogStreamResponse{
-								Type:   "log",
-								TaskID: req.TaskID,
-								Log:    entry,
+								Type:      "log",
+								StepRunID: req.StepRunID,
+								Log:       entry,
 							}); err != nil {
-								log.Errorw("failed to send historical log", "taskId", req.TaskID, "error", err)
+								log.Errorw("failed to send historical log", "stepRunId", req.StepRunID, "error", err)
 								return
 							}
 						}
 
 						// 发送历史日志完成标记
 						sendResponse(&LogStreamResponse{
-							Type:    "message",
-							TaskID:  req.TaskID,
-							Message: "historical logs loaded",
+							Type:      "message",
+							StepRunID: req.StepRunID,
+							Message:   "historical logs loaded",
 						})
 					}()
 
 					// 订阅实时日志
-					activeSubscription = h.logAggregator.Subscribe(ctx, req.TaskID)
+					activeSubscription = h.logAggregator.Subscribe(ctx, req.StepRunID)
 
 					// 确认订阅成功
 					sendResponse(&LogStreamResponse{
-						Type:    "message",
-						TaskID:  req.TaskID,
-						Message: "subscribed",
+						Type:      "message",
+						StepRunID: req.StepRunID,
+						Message:   "subscribed",
 					})
 
 				case "unsubscribe":
 					// 取消订阅
-					if currentTaskID == req.TaskID {
-						currentTaskID = ""
+					if currentStepRunID == req.StepRunID {
+						currentStepRunID = ""
 						activeSubscription = nil
 
 						sendResponse(&LogStreamResponse{
-							Type:    "message",
-							TaskID:  req.TaskID,
-							Message: "unsubscribed",
+							Type:      "message",
+							StepRunID: req.StepRunID,
+							Message:   "unsubscribed",
 						})
 					}
 
@@ -202,11 +202,11 @@ func (h *LogStreamHandler) Upgrade() fiber.Handler {
 				if !ok {
 					// channel关闭
 					activeSubscription = nil
-					if currentTaskID != "" {
+					if currentStepRunID != "" {
 						sendResponse(&LogStreamResponse{
-							Type:    "complete",
-							TaskID:  currentTaskID,
-							Message: "log stream completed",
+							Type:      "complete",
+							StepRunID: currentStepRunID,
+							Message:   "log stream completed",
 						})
 					}
 					continue
@@ -214,11 +214,11 @@ func (h *LogStreamHandler) Upgrade() fiber.Handler {
 
 				// 发送实时日志
 				if err := sendResponse(&LogStreamResponse{
-					Type:   "log",
-					TaskID: currentTaskID,
-					Log:    entry,
+					Type:      "log",
+					StepRunID: currentStepRunID,
+					Log:       entry,
 				}); err != nil {
-					log.Errorw("failed to send real-time log", "taskId", currentTaskID, "error", err)
+					log.Errorw("failed to send real-time log", "stepRunId", currentStepRunID, "error", err)
 					return
 				}
 			}

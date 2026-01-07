@@ -16,10 +16,10 @@ package model
 
 import "time"
 
-// TaskLog 任务日志(ClickHouse Table: l_task_logs)
-type TaskLog struct {
+// StepRunLog 步骤执行日志(ClickHouse Table: l_step_run_logs)
+type StepRunLog struct {
 	LogId         string    `gorm:"column:log_id;type:String" json:"logId"`
-	TaskId        string    `gorm:"column:task_id;type:String;index" json:"taskId"`
+	StepRunId     string    `gorm:"column:step_run_id;type:String;index" json:"stepRunId"`
 	PipelineRunId string    `gorm:"column:pipeline_run_id;type:String;index" json:"pipelineRunId"`
 	AgentId       string    `gorm:"column:agent_id;type:String;index" json:"agentId"`
 	LineNumber    int       `gorm:"column:line_number;type:Int32" json:"lineNumber"`
@@ -34,7 +34,7 @@ type TerminalLog struct {
 	SessionId        string              `gorm:"column:session_id;type:String;primaryKey" json:"sessionId"`
 	SessionType      string              `gorm:"column:session_type;type:String" json:"sessionType"`      // build/deploy/release/debug
 	Environment      string              `gorm:"column:environment;type:String;index" json:"environment"` // dev/test/staging/prod
-	TaskId           string              `gorm:"column:task_id;type:String;index" json:"taskId,omitempty"`
+	StepRunId        string              `gorm:"column:step_run_id;type:String;index" json:"stepRunId,omitempty"`
 	PipelineId       string              `gorm:"column:pipeline_id;type:String" json:"pipelineId,omitempty"`
 	PipelineRunId    string              `gorm:"column:pipeline_run_id;type:String;index" json:"pipelineRunId,omitempty"`
 	UserId           string              `gorm:"column:user_id;type:String;index" json:"userId"`
@@ -69,7 +69,7 @@ type TerminalLogMetadata struct {
 // BuildArtifactLog 产物构建日志(ClickHouse Table: l_build_artifacts_logs)
 type BuildArtifactLog struct {
 	ArtifactId   string    `gorm:"column:artifact_id;type:String;index" json:"artifactId"`
-	TaskId       string    `gorm:"column:task_id;type:String;index" json:"taskId"`
+	StepRunId    string    `gorm:"column:step_run_id;type:String;index" json:"stepRunId"`
 	Operation    string    `gorm:"column:operation;type:String;index" json:"operation"` // upload/download/delete
 	FileName     string    `gorm:"column:file_name;type:String" json:"fileName"`
 	FileSize     int64     `gorm:"column:file_size;type:Int64" json:"fileSize"`

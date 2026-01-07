@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bytedance/sonic"
 	"github.com/go-arcade/arcade/internal/pkg/pipeline/builtin"
 	"github.com/go-arcade/arcade/internal/pkg/pipeline/spec"
 )
@@ -201,7 +202,7 @@ func (r *StepRunner) executeBuiltin(ctx context.Context, builtinName string) err
 	resolvedParams := r.ctx.ResolveVariables(r.step.Args)
 
 	// Prepare params JSON
-	paramsJSON, err := json.Marshal(resolvedParams)
+	paramsJSON, err := sonic.Marshal(resolvedParams)
 	if err != nil {
 		return fmt.Errorf("marshal params: %w", err)
 	}

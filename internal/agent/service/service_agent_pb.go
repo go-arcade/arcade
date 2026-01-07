@@ -15,8 +15,8 @@
 package service
 
 import (
-	"maps"
 	"context"
+	"maps"
 	"time"
 
 	agentv1 "github.com/go-arcade/arcade/api/agent/v1"
@@ -76,37 +76,50 @@ func (s *AgentService) Unregister(ctx context.Context, req *agentv1.UnregisterRe
 	}, nil
 }
 
-// ReportTaskStatus handles task status reporting requests
-func (s *AgentService) ReportTaskStatus(ctx context.Context, req *agentv1.ReportTaskStatusRequest) (*agentv1.ReportTaskStatusResponse, error) {
-	log.Debugw("ReportTaskStatus request received", "agent_id", req.AgentId, "task_id", req.TaskId, "status", req.Status.String())
+// FetchStepRun handles step run fetching requests
+func (s *AgentService) FetchStepRun(ctx context.Context, req *agentv1.FetchStepRunRequest) (*agentv1.FetchStepRunResponse, error) {
+	log.Debugw("FetchStepRun request received", "agent_id", req.AgentId, "max_step_runs", req.MaxStepRuns)
 
-	// TODO: Implement task status reporting logic
-	return &agentv1.ReportTaskStatusResponse{
-		Success: true,
-		Message: "task status reported successfully",
+	// TODO: Implement step run fetching logic
+	// For now, return empty step run list
+	return &agentv1.FetchStepRunResponse{
+		Success:  true,
+		Message:  "no step runs available",
+		StepRuns: []*agentv1.StepRun{},
 	}, nil
 }
 
-// ReportTaskLog handles task log reporting requests
-func (s *AgentService) ReportTaskLog(ctx context.Context, req *agentv1.ReportTaskLogRequest) (*agentv1.ReportTaskLogResponse, error) {
-	log.Debugw("ReportTaskLog request received", "agent_id", req.AgentId, "task_id", req.TaskId, "log_count", len(req.Logs))
+// ReportStepRunStatus handles step run status reporting requests
+func (s *AgentService) ReportStepRunStatus(ctx context.Context, req *agentv1.ReportStepRunStatusRequest) (*agentv1.ReportStepRunStatusResponse, error) {
+	log.Debugw("ReportStepRunStatus request received", "agent_id", req.AgentId, "step_run_id", req.StepRunId, "status", req.Status.String())
 
-	// TODO: Implement task log reporting logic
-	return &agentv1.ReportTaskLogResponse{
+	// TODO: Implement step run status reporting logic
+	return &agentv1.ReportStepRunStatusResponse{
 		Success: true,
-		Message: "task logs reported successfully",
+		Message: "step run status reported successfully",
 	}, nil
 }
 
-// CancelTask handles task cancellation requests from server
-func (s *AgentService) CancelTask(ctx context.Context, req *agentv1.CancelTaskRequest) (*agentv1.CancelTaskResponse, error) {
-	log.Infow("CancelTask request received", "agent_id", req.AgentId, "job_id", req.JobId, "reason", req.Reason)
+// ReportStepRunLog handles step run log reporting requests
+func (s *AgentService) ReportStepRunLog(ctx context.Context, req *agentv1.ReportStepRunLogRequest) (*agentv1.ReportStepRunLogResponse, error) {
+	log.Debugw("ReportStepRunLog request received", "agent_id", req.AgentId, "step_run_id", req.StepRunId, "log_count", len(req.Logs))
 
-	// TODO: Implement task cancellation logic
-	// This should cancel the running task identified by job_id
-	return &agentv1.CancelTaskResponse{
+	// TODO: Implement step run log reporting logic
+	return &agentv1.ReportStepRunLogResponse{
 		Success: true,
-		Message: "task cancellation request received",
+		Message: "step run logs reported successfully",
+	}, nil
+}
+
+// CancelStepRun handles step run cancellation requests from server
+func (s *AgentService) CancelStepRun(ctx context.Context, req *agentv1.CancelStepRunRequest) (*agentv1.CancelStepRunResponse, error) {
+	log.Infow("CancelStepRun request received", "agent_id", req.AgentId, "step_run_id", req.StepRunId, "reason", req.Reason)
+
+	// TODO: Implement step run cancellation logic
+	// This should cancel the running step run identified by step_run_id
+	return &agentv1.CancelStepRunResponse{
+		Success: true,
+		Message: "step run cancellation request received",
 	}, nil
 }
 

@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package pipeline.v1;
 
+import "google/protobuf/struct.proto";
+
 option go_package = "github.com/go-arcade/arcade/api/pipeline/v1;pipelinev1";
 
 // PipelineService - Pipeline management interface
@@ -9,17 +11,32 @@ service PipelineService {
   // Create pipeline
   rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {}
 
+  // Update pipeline
+  rpc UpdatePipeline(UpdatePipelineRequest) returns (UpdatePipelineResponse) {}
+
   // Get pipeline details
   rpc GetPipeline(GetPipelineRequest) returns (GetPipelineResponse) {}
 
   // List pipelines
   rpc ListPipelines(ListPipelinesRequest) returns (ListPipelinesResponse) {}
 
+  // Delete pipeline
+  rpc DeletePipeline(DeletePipelineRequest) returns (DeletePipelineResponse) {}
+
   // Trigger pipeline execution
   rpc TriggerPipeline(TriggerPipelineRequest) returns (TriggerPipelineResponse) {}
 
-  // Stop pipeline
+  // Stop pipeline execution
   rpc StopPipeline(StopPipelineRequest) returns (StopPipelineResponse) {}
+
+  // Get pipeline run details
+  rpc GetPipelineRun(GetPipelineRunRequest) returns (GetPipelineRunResponse) {}
+
+  // List pipeline runs
+  rpc ListPipelineRuns(ListPipelineRunsRequest) returns (ListPipelineRunsResponse) {}
+
+  // Get pipeline run log
+  rpc GetPipelineRunLog(GetPipelineRunLogRequest) returns (GetPipelineRunLogResponse) {}
 }
 
 // Pipeline status enum
@@ -28,97 +45,106 @@ enum PipelineStatus {
   PIPELINE_STATUS_PENDING = 1;   // Pending
   PIPELINE_STATUS_RUNNING = 2;   // Running
   PIPELINE_STATUS_SUCCESS = 3;   // Success
-  PIPELINE_STATUS_FAILED = 4;    // Failed
-  PIPELINE_STATUS_CANCELLED = 5; // Cancelled
-  PIPELINE_STATUS_PARTIAL = 6;   // Partial success
+  PIPELINE_STATUS_FAILED = 4;     // Failed
+  PIPELINE_STATUS_CANCELLED = 5;  // Cancelled
+  PIPELINE_STATUS_PARTIAL = 6;    // Partial success
 }
 
 // Trigger type enum
 enum TriggerType {
   TRIGGER_TYPE_UNSPECIFIED = 0;
   TRIGGER_TYPE_MANUAL = 1;       // Manual trigger
-  TRIGGER_TYPE_WEBHOOK = 2;      // Webhook trigger
-  TRIGGER_TYPE_SCHEDULE = 3;     // Schedule trigger
-  TRIGGER_TYPE_API = 4;          // API trigger
+  TRIGGER_TYPE_CRON = 2;         // Cron/Schedule trigger
+  TRIGGER_TYPE_EVENT = 3;        // Event trigger (webhook, git push, etc.)
 }
 
-// Stage definition
-message Stage {
-  string name = 1;                      // Stage name
-  repeated Job jobs = 2;                // List of jobs in the stage
-  bool parallel = 3;                    // Whether to execute jobs in parallel
+// Approval type enum
+enum ApprovalType {
+  APPROVAL_TYPE_UNSPECIFIED = 0;
+  APPROVAL_TYPE_MANUAL = 1;      // Manual approval
 }
 
-// Job definition
-message Job {
-  string name = 1;                      // Job name
-  string image = 2;                     // Docker image
-  repeated string commands = 3;         // Commands to execute
-  map<string, string> env = 4;          // Environment variables
-  repeated string depends_on = 5;       // Dependent jobs
-  int32 timeout = 6;                    // Timeout (seconds)
-  int32 retry = 7;                      // Retry count
+// Source type enum
+enum SourceType {
+  SOURCE_TYPE_UNSPECIFIED = 0;
+  SOURCE_TYPE_GIT = 1;           // Git repository
 }
+
+// ============ Pipeline Definition ============
 
 // Create pipeline request
 message CreatePipelineRequest {
-  string name = 1;                      // Pipeline name
-  string description = 2;               // Description
-  string repo_url = 3;                  // Repository URL
-  string branch = 4;                    // Branch
-  repeated Stage stages = 5;            // Stage configuration
-  map<string, string> env = 6;          // Global environment variables
-  TriggerType trigger_type = 7;         // Trigger type
-  string cron = 8;                      // Cron expression (required for schedule trigger)
-  string created_by = 9;                // Creator
+  string namespace = 1;                    // Pipeline namespace (required, e.g., prod, staging, org)
+  map<string, string> variables = 2;     // Pipeline-level variables (read-only in pipeline)
+  repeated Stage stages = 3;              // Stage-based pipeline definition (oneOf with jobs)
+  repeated Job jobs = 4;                  // Jobs-only mode (will be wrapped in default stage, oneOf with stages)
+  repeated Trigger triggers = 5;          // Pipeline triggers
+  string created_by = 6;                  // Creator
+}
+
+// Update pipeline request
+message UpdatePipelineRequest {
+  string pipeline_id = 1;                // Pipeline ID
+  string namespace = 2;                   // Pipeline namespace (optional)
+  map<string, string> variables = 3;    // Pipeline-level variables (optional)
+  repeated Stage stages = 4;              // Stage-based pipeline definition (optional)
+  repeated Job jobs = 5;                  // Jobs-only mode (optional)
+  repeated Trigger triggers = 6;         // Pipeline triggers (optional)
 }
 
 // Create pipeline response
 message CreatePipelineResponse {
   bool success = 1;
   string message = 2;
-  string pipeline_id = 3;               // Created pipeline ID
+  string pipeline_id = 3;                // Created pipeline ID
+  Error error = 4;                       // Error details (if success == false)
 }
 
-// 获取流水线请求
+// Update pipeline response
+message UpdatePipelineResponse {
+  bool success = 1;
+  string message = 2;
+  Error error = 3;                       // Error details (if success == false)
+}
+
+// Get pipeline request
 message GetPipelineRequest {
   string pipeline_id = 1;
 }
 
-// 获取流水线响应
+// Get pipeline response
 message GetPipelineResponse {
   bool success = 1;
   string message = 2;
   PipelineDetail pipeline = 3;
+  Error error = 4;                       // Error details (if success == false)
 }
 
 // Pipeline details
 message PipelineDetail {
-  string pipeline_id = 1;               // Pipeline ID
-  string name = 2;                      // Pipeline name
-  string description = 3;               // Description
-  string repo_url = 4;                  // Repository URL
-  string branch = 5;                    // Branch
-  PipelineStatus status = 6;            // Pipeline status
-  repeated Stage stages = 7;            // Stage configuration
-  map<string, string> env = 8;          // Global environment variables
-  TriggerType trigger_type = 9;         // Trigger type
-  string cron = 10;                     // Cron expression
-  int64 created_at = 11;                // Creation time
-  int64 updated_at = 12;                // Update time
-  string created_by = 13;               // Creator
-  int32 total_runs = 14;                // Total runs
-  int32 success_runs = 15;              // Successful runs
-  int32 failed_runs = 16;               // Failed runs
+  string pipeline_id = 1;                // Pipeline ID
+  string namespace = 2;                  // Pipeline namespace
+  map<string, string> variables = 3;    // Pipeline-level variables
+  repeated Stage stages = 4;             // Stage-based pipeline definition
+  repeated Job jobs = 5;                  // Jobs-only mode
+  repeated Trigger triggers = 6;         // Pipeline triggers
+  PipelineStatus status = 7;            // Pipeline status
+  int64 created_at = 8;                  // Creation time (Unix timestamp in seconds)
+  int64 updated_at = 9;                  // Update time (Unix timestamp in seconds)
+  string created_by = 10;                // Creator
+  int32 total_runs = 11;                 // Total runs
+  int32 success_runs = 12;               // Successful runs
+  int32 failed_runs = 13;                // Failed runs
 }
 
 // List pipelines request
 message ListPipelinesRequest {
-  PipelineStatus status = 1;            // Status filter (optional)
-  int32 page = 2;                       // Page number (starting from 1)
-  int32 page_size = 3;                  // Items per page (default 20)
-  string sort_by = 4;                   // Sort field
-  bool sort_desc = 5;                   // Descending order
+  string namespace = 1;                   // Namespace filter (optional)
+  PipelineStatus status = 2;              // Status filter (optional)
+  int32 page = 3;                        // Page number (starting from 1)
+  int32 page_size = 4;                   // Items per page (default 20)
+  string sort_by = 5;                    // Sort field (created_at, updated_at, etc.)
+  bool sort_desc = 6;                    // Descending order
 }
 
 // List pipelines response
@@ -126,37 +152,266 @@ message ListPipelinesResponse {
   bool success = 1;
   string message = 2;
   repeated PipelineDetail pipelines = 3;
-  int32 total = 4;                      // Total count
+  int32 total = 4;                       // Total count
   int32 page = 5;                       // Current page
   int32 page_size = 6;                  // Items per page
 }
 
+// Delete pipeline request
+message DeletePipelineRequest {
+  string pipeline_id = 1;
+}
+
+// Delete pipeline response
+message DeletePipelineResponse {
+  bool success = 1;
+  string message = 2;
+  Error error = 3;                       // Error details (if success == false)
+}
+
+// ============ Stage Definition ============
+
+// Stage represents a logical stage in the pipeline
+// Stage is a logical structure, not an execution unit
+// Mainly used for process segmentation, approval boundaries, and UI display
+message Stage {
+  string name = 1;                       // Stage name (required)
+  Approval approval = 2;                 // Approval gate before entering this stage
+  repeated Job jobs = 3;                 // List of jobs in this stage (required)
+}
+
+// ============ Job Definition ============
+
+// Job represents a pipeline job
+// Job is the minimum schedulable and executable unit
+// All resources, logs, timeouts, and concurrency controls take effect at the Job level
+message Job {
+  string name = 1;                       // Job name (required, unique within pipeline)
+  string description = 2;                 // Job description
+  string concurrency = 3;                 // Concurrency control key (jobs with same key execute serially)
+  string timeout = 4;                     // Job maximum runtime (e.g., "30m", "1h", pattern: ^[0-9]+(s|m|h)$)
+  map<string, string> env = 5;           // Job-level environment variables
+  Source source = 6;                     // Source configuration
+  repeated Step steps = 7;               // Steps to execute sequentially in job (required, minItems: 1)
+  Approval approval = 8;                  // Approval gate after job completion
+  Target target = 9;                     // Deployment target
+  Notify notify = 10;                     // Notification configuration
+}
+
+// ============ Step Definition ============
+
+// Step represents a step within a job
+// Step is a sequential operation unit within a job
+// All steps share the same execution context and working directory
+message Step {
+  string name = 1;                       // Step name (required)
+  string uses = 2;                       // Plugin identifier (required)
+  string action = 3;                     // Specific action within the plugin
+  google.protobuf.Struct args = 4;       // Plugin parameters (arbitrary JSON)
+}
+
+// ============ Source Configuration ============
+
+// Source represents the source configuration
+message Source {
+  SourceType type = 1;                   // Source type (required)
+  string repo = 2;                       // Repository URL
+  string branch = 3;                     // Branch name
+}
+
+// ============ Approval Configuration ============
+
+// Approval represents an approval gate
+// Approval is a logical gate, not an execution step
+message Approval {
+  bool required = 1;                     // Whether approval is required (required)
+  ApprovalType type = 2;                 // Approval type (required)
+  string plugin = 3;                     // Approval plugin
+  google.protobuf.Struct args = 4;       // Plugin parameters (arbitrary JSON)
+}
+
+// ============ Target Configuration ============
+
+// Target represents deployment target configuration
+message Target {
+  string type = 1;                       // Target type (required, e.g., "k8s")
+  google.protobuf.Struct config = 2;     // Target-specific configuration (arbitrary JSON)
+}
+
+// ============ Notification Configuration ============
+
+// Notify represents notification configuration
+message Notify {
+  Notification on_success = 1;           // Notification on success
+  Notification on_failure = 2;           // Notification on failure
+}
+
+// Notification represents a notification item
+message Notification {
+  string plugin = 1;                     // Notification plugin (required)
+  string action = 2;                     // Plugin action
+  google.protobuf.Struct args = 3;      // Plugin parameters (arbitrary JSON)
+}
+
+// ============ Trigger Configuration ============
+
+// Trigger represents a pipeline trigger
+message Trigger {
+  TriggerType type = 1;                  // Trigger type (required)
+  google.protobuf.Struct options = 2;     // Trigger-specific options (arbitrary JSON)
+}
+
+// ============ Pipeline Execution ============
+
 // Trigger pipeline request
 message TriggerPipelineRequest {
-  string pipeline_id = 1;
-  string branch = 2;                    // Branch (optional, override default branch)
-  string commit_sha = 3;                // Commit SHA (optional)
-  map<string, string> env = 4;          // Additional environment variables (optional)
-  string triggered_by = 5;              // Triggerer
+  string pipeline_id = 1;                // Pipeline ID (required)
+  string branch = 2;                     // Branch (optional, override default branch)
+  string commit_sha = 3;                 // Commit SHA (optional)
+  map<string, string> variables = 4;     // Additional environment variables (optional, override pipeline variables)
+  string triggered_by = 5;               // Triggerer
 }
 
 // Trigger pipeline response
 message TriggerPipelineResponse {
   bool success = 1;
   string message = 2;
-  string run_id = 3;                    // Pipeline run ID
-  repeated string job_ids = 4;          // List of created job IDs
+  string run_id = 3;                     // Pipeline run ID
+  repeated string job_run_ids = 4;        // List of created job run IDs
+  Error error = 5;                       // Error details (if success == false)
 }
 
 // Stop pipeline request
 message StopPipelineRequest {
-  string pipeline_id = 1;
-  string run_id = 2;                    // Pipeline run ID
-  string reason = 3;                    // Stop reason
+  string pipeline_id = 1;                // Pipeline ID
+  string run_id = 2;                     // Pipeline run ID (required)
+  string reason = 3;                     // Stop reason
 }
 
 // Stop pipeline response
 message StopPipelineResponse {
   bool success = 1;
   string message = 2;
+  Error error = 3;                       // Error details (if success == false)
+}
+
+// ============ Pipeline Run Management ============
+
+// Get pipeline run request
+message GetPipelineRunRequest {
+  string run_id = 1;                     // Pipeline run ID
+}
+
+// Get pipeline run response
+message GetPipelineRunResponse {
+  bool success = 1;
+  string message = 2;
+  PipelineRunDetail run = 3;             // Pipeline run details
+  Error error = 4;                        // Error details (if success == false)
+}
+
+// Pipeline run details
+message PipelineRunDetail {
+  string run_id = 1;                     // Pipeline run ID
+  string pipeline_id = 2;                // Pipeline ID
+  string namespace = 3;                  // Pipeline namespace
+  string branch = 4;                     // Branch
+  string commit_sha = 5;                 // Commit SHA
+  PipelineStatus status = 6;            // Pipeline status
+  TriggerType trigger_type = 7;           // Trigger type
+  string triggered_by = 8;               // Triggerer
+  map<string, string> variables = 9;    // Runtime variables
+  int32 total_jobs = 10;                 // Total number of jobs
+  int32 completed_jobs = 11;             // Number of completed jobs
+  int32 failed_jobs = 12;                 // Number of failed jobs
+  int32 running_jobs = 13;                // Number of running jobs
+  int64 start_time = 14;                 // Start time (Unix timestamp in seconds)
+  int64 end_time = 15;                   // End time (Unix timestamp in seconds)
+  int64 duration = 16;                   // Execution duration (milliseconds)
+  repeated JobRunDetail job_runs = 17;   // Job run details
+}
+
+// Job run details
+message JobRunDetail {
+  string job_run_id = 1;                 // Job run ID
+  string job_name = 2;                   // Job name
+  PipelineStatus status = 3;             // Job status
+  int64 start_time = 4;                  // Start time (Unix timestamp in seconds)
+  int64 end_time = 5;                    // End time (Unix timestamp in seconds)
+  int64 duration = 6;                    // Execution duration (milliseconds)
+  string agent_id = 7;                   // Executing agent ID
+  int32 exit_code = 8;                   // Exit code
+  string error_message = 9;               // Error message
+  repeated StepRunDetail step_runs = 10; // Step run details
+}
+
+// Step run details
+message StepRunDetail {
+  string step_run_id = 1;                // Step run ID
+  string step_name = 2;                  // Step name
+  PipelineStatus status = 3;             // Step status
+  int64 start_time = 4;                  // Start time (Unix timestamp in seconds)
+  int64 end_time = 5;                    // End time (Unix timestamp in seconds)
+  int64 duration = 6;                    // Execution duration (milliseconds)
+  string agent_id = 7;                   // Executing agent ID
+  int32 exit_code = 8;                   // Exit code
+  string error_message = 9;              // Error message
+}
+
+// List pipeline runs request
+message ListPipelineRunsRequest {
+  string pipeline_id = 1;                // Pipeline ID filter (optional)
+  string namespace = 2;                  // Namespace filter (optional)
+  PipelineStatus status = 3;              // Status filter (optional)
+  int32 page = 4;                        // Page number (starting from 1)
+  int32 page_size = 5;                   // Items per page (default 20)
+  string sort_by = 6;                    // Sort field (start_time, end_time, etc.)
+  bool sort_desc = 7;                    // Descending order
+}
+
+// List pipeline runs response
+message ListPipelineRunsResponse {
+  bool success = 1;
+  string message = 2;
+  repeated PipelineRunDetail runs = 3;
+  int32 total = 4;                       // Total count
+  int32 page = 5;                        // Current page
+  int32 page_size = 6;                   // Items per page
+}
+
+// Get pipeline run log request
+message GetPipelineRunLogRequest {
+  string run_id = 1;                     // Pipeline run ID
+  int32 offset = 2;                      // Log offset (line number, default 0)
+  int32 limit = 3;                       // Number of lines to fetch (default 1000)
+}
+
+// Get pipeline run log response
+message GetPipelineRunLogResponse {
+  bool success = 1;
+  string message = 2;
+  repeated LogLine logs = 3;             // Log lines
+  int32 total_lines = 4;                 // Total lines
+  bool has_more = 5;                     // Whether there are more logs
+  Error error = 6;                       // Error details (if success == false)
+}
+
+// Log line
+message LogLine {
+  int32 line_number = 1;                 // Line number
+  int64 timestamp = 2;                   // Timestamp (Unix timestamp in seconds)
+  string level = 3;                      // Log level (info, warn, error, debug)
+  string content = 4;                    // Log content
+  string job_name = 5;                   // Job name (optional)
+  string step_name = 6;                  // Step name (optional)
+}
+
+// ============ Error Definition ============
+
+// Error represents a structured error response
+message Error {
+  int32 code = 1;                        // Error code
+  string message = 2;                     // Error message
+  string type = 3;                       // Error type (validation, execution, not_found, etc.)
+  google.protobuf.Struct details = 4;    // Error details (arbitrary JSON)
 }

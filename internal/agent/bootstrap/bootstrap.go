@@ -71,7 +71,7 @@ func NewAgent(
 	// Create agent service
 	agentService := service.NewAgentService(agentConf, grpcClient)
 
-	// 注册任务处理器（Agent 作为 worker 执行任务）
+	// 注册步骤执行处理器（Agent 作为 worker 执行步骤执行）
 	if queueClient != nil {
 		queueClient.RegisterHandler(queue.TaskTypePipeline, pipelineHandler)
 		queueClient.RegisterHandler(queue.TaskTypeJob, jobHandler)
@@ -193,7 +193,7 @@ func Run(app *Agent, cleanup func()) {
 		go app.waitForRegistrationAndStartHeartbeat()
 	}
 
-	// start queue client (Agent 作为 worker 执行任务)
+	// start queue client (Agent 作为 worker 执行步骤执行)
 	if app.QueueClient != nil {
 		go func() {
 			if err := app.QueueClient.Start(); err != nil {
@@ -313,16 +313,16 @@ func (app *Agent) startPeriodicHeartbeat() {
 
 	// Add heartbeat job to global cron
 	err := cron.AddFunc(spec, func() {
-		// Get current running jobs count from metrics
-		runningJobsCount := getRunningJobsCount(app.MetricsServer)
+		// Get current running step runs count from metrics
+		runningStepRunsCount := getRunningStepRunsCount(app.MetricsServer)
 
 		// Build heartbeat request
 		req := &agentv1.HeartbeatRequest{
-			AgentId:          appConf.Agent.ID,
-			AgentName:        appConf.Agent.Name,
-			Status:           agentv1.AgentStatus_AGENT_STATUS_ONLINE,
-			RunningJobsCount: runningJobsCount,
-			Timestamp:        time.Now().Unix(),
+			AgentId:              appConf.Agent.ID,
+			AgentName:            appConf.Agent.Name,
+			Status:               agentv1.AgentStatus_AGENT_STATUS_ONLINE,
+			RunningStepRunsCount: runningStepRunsCount,
+			Timestamp:            time.Now().Unix(),
 		}
 
 		// Call Heartbeat through gRPC client
@@ -354,13 +354,13 @@ func (app *Agent) startPeriodicHeartbeat() {
 	log.Infow("Added periodic heartbeat to crond", "interval", spec)
 
 	// Do initial heartbeat immediately
-	runningJobsCount := getRunningJobsCount(app.MetricsServer)
+	runningStepRunsCount := getRunningStepRunsCount(app.MetricsServer)
 	req := &agentv1.HeartbeatRequest{
-		AgentId:          appConf.Agent.ID,
-		AgentName:        appConf.Agent.Name,
-		Status:           agentv1.AgentStatus_AGENT_STATUS_ONLINE,
-		RunningJobsCount: runningJobsCount,
-		Timestamp:        time.Now().Unix(),
+		AgentId:              appConf.Agent.ID,
+		AgentName:            appConf.Agent.Name,
+		Status:               agentv1.AgentStatus_AGENT_STATUS_ONLINE,
+		RunningStepRunsCount: runningStepRunsCount,
+		Timestamp:            time.Now().Unix(),
 	}
 
 	if app.GrpcClient != nil && app.GrpcClient.AgentClient != nil {
@@ -383,9 +383,9 @@ func (app *Agent) startPeriodicHeartbeat() {
 	}
 }
 
-// getRunningJobsCount gets the current running jobs count from prometheus metrics
-// It searches for common metric names: agent_running_jobs, running_tasks, agent_running_tasks
-func getRunningJobsCount(metricsServer *metrics.Server) int32 {
+// getRunningStepRunsCount gets the current running step runs count from prometheus metrics
+// It searches for common metric names: agent_running_step_runs, running_step_runs, agent_step_runs_running
+func getRunningStepRunsCount(metricsServer *metrics.Server) int32 {
 	if metricsServer == nil {
 		return 0
 	}
@@ -402,8 +402,13 @@ func getRunningJobsCount(metricsServer *metrics.Server) int32 {
 		return 0
 	}
 
-	// Common metric names to check
+	// Common metric names to check (including legacy names for backward compatibility)
 	metricNames := []string{
+		"agent_running_step_runs",
+		"running_step_runs",
+		"agent_step_runs_running",
+		"step_runs_running",
+		// Legacy metric names (for backward compatibility)
 		"agent_running_jobs",
 		"running_tasks",
 		"agent_running_tasks",

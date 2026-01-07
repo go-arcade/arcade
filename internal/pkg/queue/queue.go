@@ -33,7 +33,7 @@ type TaskQueue struct {
 	mux           *asynq.ServeMux
 	config        *Config
 	handlers      map[string]TaskHandler
-	taskRecordMgr *TaskRecordManager
+	taskRecordMgr *StepRunRecordManager
 	redisOpt      asynq.RedisConnOpt // 保存 Redis 连接选项，用于创建 Inspector
 }
 
@@ -181,10 +181,10 @@ func NewTaskQueue(cfg *Config) (*TaskQueue, error) {
 	// 创建 ServeMux
 	mux := asynq.NewServeMux()
 
-	// 初始化任务记录管理器
-	taskRecordMgr, err := NewTaskRecordManager(cfg.ClickHouse)
+	// 初始化步骤执行记录管理器
+	taskRecordMgr, err := NewStepRunRecordManager(cfg.ClickHouse)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create task record manager: %w", err)
+		return nil, fmt.Errorf("failed to create step run record manager: %w", err)
 	}
 
 	queue := &TaskQueue{
@@ -217,9 +217,9 @@ func (q *TaskQueue) RegisterHandler(taskType string, handler TaskHandler) {
 			return fmt.Errorf("unmarshal task payload: %w", err)
 		}
 
-		// 更新任务状态为运行中
+		// 更新步骤执行状态为运行中
 		if q.taskRecordMgr != nil {
-			q.taskRecordMgr.RecordTaskStarted(&taskPayload)
+			q.taskRecordMgr.RecordStepRunStarted(&taskPayload)
 		}
 
 		log.Infow("processing task",
@@ -231,16 +231,16 @@ func (q *TaskQueue) RegisterHandler(taskType string, handler TaskHandler) {
 		// 执行任务
 		err := handler.HandleTask(ctx, &taskPayload)
 
-		// 更新任务状态
+		// 更新步骤执行状态
 		if err != nil {
 			if q.taskRecordMgr != nil {
-				q.taskRecordMgr.RecordTaskFailed(&taskPayload, err)
+				q.taskRecordMgr.RecordStepRunFailed(&taskPayload, err)
 			}
 			return err
 		}
 
 		if q.taskRecordMgr != nil {
-			q.taskRecordMgr.RecordTaskCompleted(&taskPayload)
+			q.taskRecordMgr.RecordStepRunCompleted(&taskPayload)
 		}
 		return nil
 	})
@@ -289,7 +289,7 @@ func (q *TaskQueue) Enqueue(payload *TaskPayload, queueName string) error {
 
 	// 记录到 ClickHouse
 	if q.taskRecordMgr != nil {
-		q.taskRecordMgr.RecordTaskEnqueued(payload, queueName)
+		q.taskRecordMgr.RecordStepRunEnqueued(payload, queueName)
 	}
 
 	log.Infow("task enqueued",
@@ -375,7 +375,7 @@ func (q *TaskQueue) EnqueueDelayed(payload *TaskPayload, delay time.Duration, qu
 
 	// 记录到 ClickHouse
 	if q.taskRecordMgr != nil {
-		q.taskRecordMgr.RecordTaskEnqueued(payload, queueName)
+		q.taskRecordMgr.RecordStepRunEnqueued(payload, queueName)
 	}
 
 	log.Infow("delayed task enqueued",
