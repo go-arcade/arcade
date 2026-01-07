@@ -22,7 +22,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func TestNewTaskRecordManager(t *testing.T) {
+func TestNewStepRunRecordManager(t *testing.T) {
 	tests := []struct {
 		name       string
 		clickHouse *gorm.DB
@@ -37,7 +37,7 @@ func TestNewTaskRecordManager(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			manager, err := NewTaskRecordManager(tt.clickHouse)
+			manager, err := NewStepRunRecordManager(tt.clickHouse)
 			if tt.wantNil {
 				assert.NoError(t, err)
 				assert.Nil(t, manager)
@@ -49,9 +49,9 @@ func TestNewTaskRecordManager(t *testing.T) {
 	}
 }
 
-func TestTaskRecordManager_RecordTaskEnqueued(t *testing.T) {
+func TestStepRunRecordManager_RecordStepRunEnqueued(t *testing.T) {
 	// 测试 nil manager 的情况（不 panic）
-	var manager *TaskRecordManager
+	var manager *StepRunRecordManager
 
 	payload := &TaskPayload{
 		TaskID:        "test-task-1",
@@ -67,13 +67,13 @@ func TestTaskRecordManager_RecordTaskEnqueued(t *testing.T) {
 
 	// 应该不 panic
 	assert.NotPanics(t, func() {
-		manager.RecordTaskEnqueued(payload, Default)
+		manager.RecordStepRunEnqueued(payload, Default)
 	})
 }
 
-func TestTaskRecordManager_RecordTaskStarted(t *testing.T) {
+func TestStepRunRecordManager_RecordStepRunStarted(t *testing.T) {
 	// 测试 nil manager 的情况（不 panic）
-	var manager *TaskRecordManager
+	var manager *StepRunRecordManager
 
 	payload := &TaskPayload{
 		TaskID: "test-task-1",
@@ -81,13 +81,13 @@ func TestTaskRecordManager_RecordTaskStarted(t *testing.T) {
 
 	// 应该不 panic
 	assert.NotPanics(t, func() {
-		manager.RecordTaskStarted(payload)
+		manager.RecordStepRunStarted(payload)
 	})
 }
 
-func TestTaskRecordManager_RecordTaskCompleted(t *testing.T) {
+func TestStepRunRecordManager_RecordStepRunCompleted(t *testing.T) {
 	// 测试 nil manager 的情况（不 panic）
-	var manager *TaskRecordManager
+	var manager *StepRunRecordManager
 
 	payload := &TaskPayload{
 		TaskID: "test-task-1",
@@ -95,13 +95,13 @@ func TestTaskRecordManager_RecordTaskCompleted(t *testing.T) {
 
 	// 应该不 panic
 	assert.NotPanics(t, func() {
-		manager.RecordTaskCompleted(payload)
+		manager.RecordStepRunCompleted(payload)
 	})
 }
 
-func TestTaskRecordManager_RecordTaskFailed(t *testing.T) {
+func TestStepRunRecordManager_RecordStepRunFailed(t *testing.T) {
 	// 测试 nil manager 的情况（不 panic）
-	var manager *TaskRecordManager
+	var manager *StepRunRecordManager
 
 	payload := &TaskPayload{
 		TaskID: "test-task-1",
@@ -110,12 +110,12 @@ func TestTaskRecordManager_RecordTaskFailed(t *testing.T) {
 
 	// 应该不 panic
 	assert.NotPanics(t, func() {
-		manager.RecordTaskFailed(payload, err)
+		manager.RecordStepRunFailed(payload, err)
 	})
 }
 
-func TestTaskRecordManager_NilSafety(t *testing.T) {
-	var manager *TaskRecordManager
+func TestStepRunRecordManager_NilSafety(t *testing.T) {
+	var manager *StepRunRecordManager
 
 	payload := &TaskPayload{
 		TaskID: "test-task",
@@ -123,18 +123,18 @@ func TestTaskRecordManager_NilSafety(t *testing.T) {
 
 	// 这些调用不应该 panic
 	assert.NotPanics(t, func() {
-		manager.RecordTaskEnqueued(payload, Default)
+		manager.RecordStepRunEnqueued(payload, Default)
 	})
 
 	assert.NotPanics(t, func() {
-		manager.RecordTaskStarted(payload)
+		manager.RecordStepRunStarted(payload)
 	})
 
 	assert.NotPanics(t, func() {
-		manager.RecordTaskCompleted(payload)
+		manager.RecordStepRunCompleted(payload)
 	})
 
 	assert.NotPanics(t, func() {
-		manager.RecordTaskFailed(payload, errors.New("test"))
+		manager.RecordStepRunFailed(payload, errors.New("test"))
 	})
 }
