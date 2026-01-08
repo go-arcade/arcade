@@ -95,7 +95,7 @@ func (tf *TaskFramework) Execute(ctx context.Context, task *Task) error {
 }
 
 // prepare validates and prepares task execution
-func (tf *TaskFramework) prepare(ctx context.Context, task *Task) error {
+func (tf *TaskFramework) prepare(_ context.Context, task *Task) error {
 	task.State = TaskStatePrepared
 
 	// Evaluate when condition
@@ -147,7 +147,7 @@ func (tf *TaskFramework) create(ctx context.Context, task *Task) error {
 }
 
 // start starts task execution
-func (tf *TaskFramework) start(ctx context.Context, task *Task) error {
+func (tf *TaskFramework) start(_ context.Context, task *Task) error {
 	now := time.Now()
 	task.StartedAt = &now
 	task.State = TaskStateStarted
@@ -159,7 +159,7 @@ func (tf *TaskFramework) start(ctx context.Context, task *Task) error {
 }
 
 // queue queues task for execution
-func (tf *TaskFramework) queue(ctx context.Context, task *Task) error {
+func (tf *TaskFramework) queue(_ context.Context, task *Task) error {
 	task.State = TaskStateQueued
 
 	if tf.logger.Log != nil {
@@ -213,11 +213,11 @@ func (tf *TaskFramework) executeStep(ctx context.Context, task *Task, step *spec
 		}
 
 		var lastErr error
-		err := retry.DoWithInterval(func() error {
+		err := retry.Do(ctx, func(ctx context.Context) error {
 			task.RetryCount++
 			lastErr = tf.executeStepOnce(ctx, task, step)
 			return lastErr
-		}, task.Job.Retry.MaxAttempts, delay)
+		}, retry.WithMaxAttempts(task.Job.Retry.MaxAttempts), retry.WithBackoff(retry.Fixed(delay)))
 
 		if err != nil {
 			return fmt.Errorf("step execution failed after retries: %w", lastErr)
@@ -265,21 +265,21 @@ func (tf *TaskFramework) executeStepOnce(ctx context.Context, task *Task, step *
 }
 
 // handleSource handles source configuration
-func (tf *TaskFramework) handleSource(ctx context.Context, task *Task) error {
+func (tf *TaskFramework) handleSource(_ context.Context, _ *Task) error {
 	// Implementation similar to JobRunner.handleSource
 	// This would use workspace manager and source plugins
 	return nil
 }
 
 // handleApproval handles approval configuration
-func (tf *TaskFramework) handleApproval(ctx context.Context, task *Task) error {
+func (tf *TaskFramework) handleApproval(_ context.Context, _ *Task) error {
 	// Implementation similar to JobRunner.handleApproval
 	// This would use approval manager
 	return nil
 }
 
 // handleTarget handles target deployment
-func (tf *TaskFramework) handleTarget(ctx context.Context, task *Task) error {
+func (tf *TaskFramework) handleTarget(_ context.Context, _ *Task) error {
 	// Implementation similar to JobRunner.handleTarget
 	// This would use target plugins
 	return nil

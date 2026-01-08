@@ -469,7 +469,7 @@ func (am *AgentManager) buildCommands(step *spec.Step, ctx *ExecutionContext) ([
 }
 
 // buildShellCommands builds shell commands from step params
-func (am *AgentManager) buildShellCommands(step *spec.Step, params map[string]any, ctx *ExecutionContext) ([]string, error) {
+func (am *AgentManager) buildShellCommands(step *spec.Step, params map[string]any, _ *ExecutionContext) ([]string, error) {
 	commands := []string{}
 
 	// Determine shell action

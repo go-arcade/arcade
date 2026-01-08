@@ -108,7 +108,7 @@ func (r *JobRunner) Run(ctx context.Context) error {
 }
 
 // handleSource handles source checkout/clone
-func (r *JobRunner) handleSource(ctx context.Context) error {
+func (r *JobRunner) handleSource(_ context.Context) error {
 	if r.job.Source.Type == "" {
 		return fmt.Errorf("source type is required")
 	}
@@ -145,7 +145,7 @@ func (r *JobRunner) handleSource(ctx context.Context) error {
 }
 
 // handleApproval handles approval workflow
-func (r *JobRunner) handleApproval(ctx context.Context) error {
+func (r *JobRunner) handleApproval(_ context.Context) error {
 	if r.job.Approval.Plugin == "" {
 		return fmt.Errorf("approval plugin is required")
 	}
@@ -172,7 +172,7 @@ func (r *JobRunner) handleApproval(ctx context.Context) error {
 }
 
 // handleTarget handles deployment target
-func (r *JobRunner) handleTarget(ctx context.Context) error {
+func (r *JobRunner) handleTarget(_ context.Context) error {
 	if r.job.Target.Type == "" {
 		return fmt.Errorf("target type is required")
 	}

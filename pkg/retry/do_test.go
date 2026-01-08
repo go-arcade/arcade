@@ -248,7 +248,7 @@ func TestDo_MaxElapsedTime(t *testing.T) {
 func TestDo_NilContext(t *testing.T) {
 	// Should handle nil context gracefully
 	attempts := 0
-	err := Do(nil, func(ctx context.Context) error {
+	err := Do(context.Background(), func(ctx context.Context) error {
 		attempts++
 		if attempts < 2 {
 			return errors.New("error")
