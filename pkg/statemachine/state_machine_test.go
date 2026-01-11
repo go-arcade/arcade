@@ -16,6 +16,7 @@ package statemachine
 
 import (
 	"errors"
+	"strings"
 	"testing"
 	"time"
 )
@@ -200,8 +201,8 @@ func TestStateMachine_MaxHistorySize(t *testing.T) {
 
 	// 执行多次转移
 	for i := 0; i < 5; i++ {
-		sm.TransitTo(OrderPaid)
-		sm.Transit(OrderPaid, OrderCreated)
+		_ = sm.TransitTo(OrderPaid)
+		_ = sm.TransitionTo(OrderCreated)
 	}
 
 	history := sm.History()
@@ -292,11 +293,12 @@ func TestStateMachine_Concurrency(t *testing.T) {
 
 	for i := 0; i < 50; i++ {
 		go func() {
-			sm.TransitTo(OrderPaid)
+			// 并发切换时可能出现非法转移错误，这里只验证不会死锁/崩溃
+			_ = sm.TransitTo(OrderPaid)
 			done <- true
 		}()
 		go func() {
-			sm.Transit(OrderPaid, OrderCreated)
+			_ = sm.TransitionTo(OrderCreated)
 			done <- true
 		}()
 	}
@@ -333,14 +335,5 @@ func TestStateMachine_ToDot(t *testing.T) {
 }
 
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && findSubstring(s, substr))
-}
-
-func findSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
+	return strings.Contains(s, substr)
 }
