@@ -25,6 +25,7 @@ import (
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/shutdown"
+	"github.com/go-arcade/arcade/pkg/trace/inject"
 	"github.com/go-arcade/arcade/pkg/version"
 	fiberi18n "github.com/gofiber/contrib/fiberi18n/v2"
 	"github.com/gofiber/fiber/v2"
@@ -75,15 +76,18 @@ func (rt *Router) Router() *fiber.App {
 		ReadTimeout:  time.Duration(rt.Http.ReadTimeout) * time.Second,
 		WriteTimeout: time.Duration(rt.Http.WriteTimeout) * time.Second,
 		IdleTimeout:  time.Duration(rt.Http.IdleTimeout) * time.Second,
-		BodyLimit:    bodyLimit, // 请求体大小限制
+		BodyLimit:    bodyLimit,                 // 请求体大小限制
+		ProxyHeader:  fiber.HeaderXForwardedFor, // get real ip from proxy header
 	})
 
-	// 中间件
+	// WARNING: middleware.RealIPMiddleware -> middleware.RequestMiddleware -> inject.FiberMiddleware sequence is important
 	app.Use(
+		middleware.RealIPMiddleware(),  // 先解析真实 IP 到 Locals("ip")
+		middleware.RequestMiddleware(), // 设置 request_id 到 Locals("request_id")
+		inject.FiberMiddleware(),       // trace middleware 读取 request_id/ip 并传播上下文
 		recover.New(),
 		cors.New(),
 		middleware.UnifiedResponseMiddleware(),
-		middleware.RequestMiddleware(),
 		httpx.AccessLogFormat(rt.Http),
 	)
 

@@ -31,6 +31,7 @@ import (
 	streamv1 "github.com/go-arcade/arcade/api/stream/v1"
 	"github.com/go-arcade/arcade/internal/pkg/grpc/interceptor"
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/trace/inject"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
@@ -74,10 +75,12 @@ func NewGrpcClient(cfg ClientConf) (*ClientWrapper, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithChainUnaryInterceptor(
+			inject.UnaryClientInterceptor(), // OpenTelemetry trace interceptor
 			//	interceptor.AuthUnaryClientInterceptor(cfg.Token),
 			interceptor.LoggingUnaryClientInterceptor(),
 		),
 		grpc.WithChainStreamInterceptor(
+			inject.StreamClientInterceptor(), // OpenTelemetry trace interceptor
 			//	interceptor.AuthStreamClientInterceptor(cfg.Token),
 			interceptor.LoggingStreamClientInterceptor(),
 		),
@@ -239,9 +242,11 @@ func (c *ClientWrapper) reconnect() error {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithChainUnaryInterceptor(
+			inject.UnaryClientInterceptor(), // OpenTelemetry trace interceptor
 			interceptor.LoggingUnaryClientInterceptor(),
 		),
 		grpc.WithChainStreamInterceptor(
+			inject.StreamClientInterceptor(), // OpenTelemetry trace interceptor
 			interceptor.LoggingStreamClientInterceptor(),
 		),
 	}

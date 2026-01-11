@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/trace/inject"
 	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
 )
@@ -119,6 +120,9 @@ func NewRedisCmdable(cfg Redis) (redis.Cmdable, error) {
 		log.Errorw("failed to connect redis", "error", err, "mode", cfg.Mode)
 		return nil, err
 	}
+
+	// Register OpenTelemetry hook (noop tracer provider when trace is disabled)
+	inject.RegisterRedisHook(cmdable, false)
 
 	log.Infow("redis connected",
 		"mode", cfg.Mode,

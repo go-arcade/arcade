@@ -16,10 +16,12 @@ package context
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -27,10 +29,15 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var (
-	tracer     = otel.Tracer("go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc")
-	propagator = otel.GetTextMapPropagator()
-)
+const grpcTracerName = "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+
+func getTracer() trace.Tracer {
+	return otel.Tracer(grpcTracerName)
+}
+
+func getPropagator() propagation.TextMapPropagator {
+	return otel.GetTextMapPropagator()
+}
 
 // metadataCarrier adapts metadata.MD to propagation.TextMapCarrier
 type metadataCarrier struct {
@@ -68,25 +75,41 @@ func UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 		if !ok {
 			md = metadata.New(nil)
 		}
-		ctx = propagator.Extract(ctx, &metadataCarrier{md: &md})
+		ctx = getPropagator().Extract(ctx, &metadataCarrier{md: &md})
 
 		name := spanName(info.FullMethod)
-		ctx, span := tracer.Start(ctx, name, trace.WithSpanKind(trace.SpanKindServer))
+		start := time.Now()
+		ctx, span := getTracer().Start(ctx, name, trace.WithSpanKind(trace.SpanKindServer))
 		defer span.End()
 
 		SetContext(ctx)
 		defer ClearContext()
 
-		if p, ok := peer.FromContext(ctx); ok {
-			span.SetAttributes(attribute.String("net.peer.ip", p.Addr.String()))
+		// Set peer IP if available (only set non-empty values to avoid null in trace data)
+		if p, ok := peer.FromContext(ctx); ok && p.Addr != nil {
+			if peerIP := p.Addr.String(); peerIP != "" {
+				span.SetAttributes(attribute.String("net.peer.ip", peerIP))
+			}
 		}
 
-		span.SetAttributes(
+		// Set RPC attributes (only set non-empty values to avoid null in trace data)
+		attrs := []attribute.KeyValue{
 			attribute.String("rpc.system", "grpc"),
-			attribute.String("rpc.service", info.FullMethod),
-		)
+		}
+		if info.FullMethod != "" {
+			attrs = append(attrs, attribute.String("rpc.service", info.FullMethod))
+		}
+		span.SetAttributes(attrs...)
 
 		resp, err = handler(ctx, req)
+
+		// Calculate duration
+		duration := time.Since(start)
+		span.SetAttributes(
+			attribute.Int64("rpc.duration_ms", duration.Milliseconds()),
+			attribute.Float64("rpc.duration_seconds", duration.Seconds()),
+		)
+
 		if err != nil {
 			s, _ := status.FromError(err)
 			span.SetStatus(codes.Error, s.Message())
@@ -107,26 +130,42 @@ func StreamServerInterceptor() grpc.StreamServerInterceptor {
 		if !ok {
 			md = metadata.New(nil)
 		}
-		ctx = propagator.Extract(ctx, &metadataCarrier{md: &md})
+		ctx = getPropagator().Extract(ctx, &metadataCarrier{md: &md})
 
 		name := spanName(info.FullMethod)
-		ctx, span := tracer.Start(ctx, name, trace.WithSpanKind(trace.SpanKindServer))
+		start := time.Now()
+		ctx, span := getTracer().Start(ctx, name, trace.WithSpanKind(trace.SpanKindServer))
 		defer span.End()
 
 		SetContext(ctx)
 		defer ClearContext()
 
-		if p, ok := peer.FromContext(ctx); ok {
-			span.SetAttributes(attribute.String("net.peer.ip", p.Addr.String()))
+		// Set peer IP if available (only set non-empty values to avoid null in trace data)
+		if p, ok := peer.FromContext(ctx); ok && p.Addr != nil {
+			if peerIP := p.Addr.String(); peerIP != "" {
+				span.SetAttributes(attribute.String("net.peer.ip", peerIP))
+			}
 		}
 
-		span.SetAttributes(
+		// Set RPC attributes (only set non-empty values to avoid null in trace data)
+		attrs := []attribute.KeyValue{
 			attribute.String("rpc.system", "grpc"),
-			attribute.String("rpc.service", info.FullMethod),
-		)
+		}
+		if info.FullMethod != "" {
+			attrs = append(attrs, attribute.String("rpc.service", info.FullMethod))
+		}
+		span.SetAttributes(attrs...)
 
 		wrapped := &wrappedServerStream{ServerStream: ss, ctx: ctx}
 		err := handler(srv, wrapped)
+
+		// Calculate duration
+		duration := time.Since(start)
+		span.SetAttributes(
+			attribute.Int64("rpc.duration_ms", duration.Milliseconds()),
+			attribute.Float64("rpc.duration_seconds", duration.Seconds()),
+		)
+
 		if err != nil {
 			s, _ := status.FromError(err)
 			span.SetStatus(codes.Error, s.Message())
@@ -144,14 +183,15 @@ func UnaryClientInterceptor() grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 		ctx = ContextWithSpan(ctx)
 		name := spanName(method)
-		ctx, span := tracer.Start(ctx, name, trace.WithSpanKind(trace.SpanKindClient))
+		start := time.Now()
+		ctx, span := getTracer().Start(ctx, name, trace.WithSpanKind(trace.SpanKindClient))
 		defer span.End()
 
 		md, ok := metadata.FromOutgoingContext(ctx)
 		if !ok {
 			md = metadata.New(nil)
 		}
-		propagator.Inject(ctx, &metadataCarrier{md: &md})
+		getPropagator().Inject(ctx, &metadataCarrier{md: &md})
 		ctx = metadata.NewOutgoingContext(ctx, md)
 
 		span.SetAttributes(
@@ -160,6 +200,14 @@ func UnaryClientInterceptor() grpc.UnaryClientInterceptor {
 		)
 
 		err := invoker(ctx, method, req, reply, cc, opts...)
+
+		// Calculate duration
+		duration := time.Since(start)
+		span.SetAttributes(
+			attribute.Int64("rpc.duration_ms", duration.Milliseconds()),
+			attribute.Float64("rpc.duration_seconds", duration.Seconds()),
+		)
+
 		if err != nil {
 			s, _ := status.FromError(err)
 			span.SetStatus(codes.Error, s.Message())
@@ -177,14 +225,15 @@ func StreamClientInterceptor() grpc.StreamClientInterceptor {
 	return func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
 		ctx = ContextWithSpan(ctx)
 		name := spanName(method)
-		ctx, span := tracer.Start(ctx, name, trace.WithSpanKind(trace.SpanKindClient))
+		start := time.Now()
+		ctx, span := getTracer().Start(ctx, name, trace.WithSpanKind(trace.SpanKindClient))
 		defer span.End()
 
 		md, ok := metadata.FromOutgoingContext(ctx)
 		if !ok {
 			md = metadata.New(nil)
 		}
-		propagator.Inject(ctx, &metadataCarrier{md: &md})
+		getPropagator().Inject(ctx, &metadataCarrier{md: &md})
 		ctx = metadata.NewOutgoingContext(ctx, md)
 
 		span.SetAttributes(
@@ -193,6 +242,14 @@ func StreamClientInterceptor() grpc.StreamClientInterceptor {
 		)
 
 		stream, err := streamer(ctx, desc, cc, method, opts...)
+
+		// Calculate duration for stream setup
+		duration := time.Since(start)
+		span.SetAttributes(
+			attribute.Int64("rpc.duration_ms", duration.Milliseconds()),
+			attribute.Float64("rpc.duration_seconds", duration.Seconds()),
+		)
+
 		if err != nil {
 			s, _ := status.FromError(err)
 			span.SetStatus(codes.Error, s.Message())

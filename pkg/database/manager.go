@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/trace/inject"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -95,6 +96,9 @@ func NewManager(cfg Database) (Manager, error) {
 	}
 	m.mysql = mysqlDB
 	log.Info("MySQL database connected successfully")
+	if err := inject.RegisterGormPlugin(m.mysql, false, false); err != nil {
+		log.Warnw("failed to register OpenTelemetry gorm plugin (mysql)", "error", err)
+	}
 
 	// Initialize ClickHouse connection if configured
 	if cfg.ClickHouse.Host != "" && cfg.ClickHouse.DBName != "" && cfg.ClickHouse.Username != "" {
@@ -108,6 +112,9 @@ func NewManager(cfg Database) (Manager, error) {
 		}
 		m.clickHouse = chDB
 		log.Info("ClickHouse database connected successfully")
+		if err := inject.RegisterGormPlugin(m.clickHouse, false, false); err != nil {
+			log.Warnw("failed to register OpenTelemetry gorm plugin (clickhouse)", "error", err)
+		}
 	}
 
 	return m, nil

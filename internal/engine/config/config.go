@@ -28,14 +28,8 @@ import (
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/metrics"
 	"github.com/go-arcade/arcade/pkg/pprof"
+	"github.com/go-arcade/arcade/pkg/trace"
 )
-
-// TaskPoolConfig Task 池配置
-type TaskPoolConfig struct {
-	MaxWorkers    int
-	QueueSize     int
-	WorkerTimeout int
-}
 
 type TaskQueueConfig struct {
 	Concurrency      int            `mapstructure:"concurrency"`
@@ -57,6 +51,7 @@ type AppConfig struct {
 	TaskQueue TaskQueueConfig
 	Metrics   metrics.MetricsConfig
 	Pprof     pprof.PprofConfig
+	Trace     trace.TraceConfig
 }
 
 var (

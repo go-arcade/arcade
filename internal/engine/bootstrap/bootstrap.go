@@ -35,6 +35,7 @@ import (
 	"github.com/go-arcade/arcade/pkg/plugin"
 	"github.com/go-arcade/arcade/pkg/pprof"
 	"github.com/go-arcade/arcade/pkg/shutdown"
+	"github.com/go-arcade/arcade/pkg/trace"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -131,6 +132,14 @@ func NewApp(
 			log.Info("Shutting down gRPC server...")
 			grpcServer.Stop()
 		}
+
+		// shutdown OpenTelemetry tracing
+		log.Info("Shutting down OpenTelemetry tracing...")
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := trace.Shutdown(shutdownCtx); err != nil {
+			log.Errorw("Failed to shutdown OpenTelemetry tracing", zap.Error(err))
+		}
 	}
 
 	return app, cleanup, nil
@@ -147,12 +156,20 @@ func Bootstrap(configFile string, initApp InitAppFunc) (*App, func(), *config.Ap
 	// 获取配置（从 app 中获取）
 	appConf := app.AppConf
 
+	// Initialize OpenTelemetry Tracing (在 Run 之前，确保拦截器/中间件生效)
+	if err := trace.Init(appConf.Trace); err != nil {
+		// 如果 trace 初始化失败，清理已创建的资源
+		if cleanup != nil {
+			cleanup()
+		}
+		return nil, nil, nil, fmt.Errorf("failed to initialize OpenTelemetry tracing: %w", err)
+	}
+
 	return app, cleanup, appConf, nil
 }
 
 // Run start app and wait for exit signal, then gracefully shutdown
 func Run(app *App, cleanup func()) {
-	logger := app.Logger.Log
 	appConf := app.AppConf
 
 	// plugin manager is initialized in wire
@@ -161,9 +178,9 @@ func Run(app *App, cleanup func()) {
 
 	// 同步插件信息到数据库
 	if err := syncPluginsToDatabase(app.PluginMgr, app.Repos); err != nil {
-		logger.Warnw("failed to sync plugins to database", zap.Error(err))
+		log.Warnw("failed to sync plugins to database", zap.Error(err))
 	} else {
-		logger.Info("plugins synced to database successfully")
+		log.Info("plugins synced to database successfully")
 	}
 
 	// Register Task Queue metrics if queue server is available
@@ -174,14 +191,14 @@ func Run(app *App, cleanup func()) {
 	// start metrics server
 	if app.MetricsServer != nil {
 		if err := app.MetricsServer.Start(); err != nil {
-			logger.Errorw("Metrics server failed: %v", err)
+			log.Errorw("Metrics server failed: %v", err)
 		}
 	}
 
 	// start pprof server
 	if app.PprofServer != nil {
 		if err := app.PprofServer.Start(); err != nil {
-			logger.Errorw("Pprof server failed: %v", err)
+			log.Errorw("Pprof server failed: %v", err)
 		}
 	}
 
@@ -189,7 +206,7 @@ func Run(app *App, cleanup func()) {
 	if app.GrpcServer != nil && appConf.Grpc.Port > 0 {
 		go func() {
 			if err := app.GrpcServer.Start(appConf.Grpc); err != nil {
-				logger.Errorw("gRPC server failed: %v", err)
+				log.Errorw("gRPC server failed: %v", err)
 			}
 		}()
 	}

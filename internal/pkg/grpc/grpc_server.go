@@ -33,6 +33,7 @@ import (
 	steprunv1 "github.com/go-arcade/arcade/api/steprun/v1"
 	streamv1 "github.com/go-arcade/arcade/api/stream/v1"
 	"github.com/go-arcade/arcade/internal/pkg/grpc/interceptor"
+	"github.com/go-arcade/arcade/pkg/trace/inject"
 	grpcmiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpcrecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpcctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
@@ -55,13 +56,16 @@ func NewGrpcServer(cfg Conf) *ServerWrapper {
 	opts := []grpc.ServerOption{
 		grpc.MaxConcurrentStreams(uint32(cfg.MaxConnections)),
 		grpc.StreamInterceptor(grpcmiddleware.ChainStreamServer(
-			// 注意顺序，先 tags，再 logging，再 auth，最后 recovery
+			// 注意顺序：先 trace（提取和传播 trace context），再 tags，再 logging，再 auth，最后 recovery
+			inject.StreamServerInterceptor(), // OpenTelemetry trace interceptor
 			grpcctxtags.StreamServerInterceptor(),
 			interceptor.LoggingStreamInterceptor(), // 使用自定义日志拦截器，可过滤心跳接口
 			interceptor.AuthStreamInterceptor(),    // 使用自定义认证拦截器，可跳过心跳接口
 			grpcrecovery.StreamServerInterceptor(),
 		)),
 		grpc.UnaryInterceptor(grpcmiddleware.ChainUnaryServer(
+			// 注意顺序：先 trace（提取和传播 trace context），再 tags，再 logging，再 auth，最后 recovery
+			inject.UnaryServerInterceptor(), // OpenTelemetry trace interceptor
 			grpcctxtags.UnaryServerInterceptor(),
 			interceptor.LoggingUnaryInterceptor(), // 使用自定义日志拦截器，可过滤心跳接口
 			interceptor.AuthUnaryInterceptor(),    // 使用自定义认证拦截器，可跳过心跳接口

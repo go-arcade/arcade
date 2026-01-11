@@ -47,29 +47,31 @@ func AccessLogFormat(httpConfig *Http) fiber.Handler {
 		// 计算延迟
 		latency := time.Since(start)
 
-		// 构建查询字符串
+		// 收集日志数据（同步部分，快速完成）
+		method := c.Method()
+		path := c.Path()
 		query := c.Context().QueryArgs().String()
 		queryStr := ""
 		if query != "" {
 			queryStr = "?" + query
 		}
+		statusCode := c.Response().StatusCode()
+		ip := c.IP()
+		userAgent := c.Get("User-Agent")
 
-		body := c.Body()
-		bodyStr := ""
-		if body != nil {
-			bodyStr = string(body)
-		}
+		// 异步记录日志（不阻塞请求处理）
+		go func() {
 
-		log.Infow("HTTP request",
-			"method", c.Method(),
-			"path", c.Path(),
-			"query", queryStr,
-			"body", bodyStr,
-			"latency", latency.String(),
-			"status", c.Response().StatusCode(),
-			"ip", c.IP(),
-			"user-agent", c.Get("User-Agent"),
-		)
+			log.Infow("HTTP request",
+				"method", method,
+				"path", path,
+				"query", queryStr,
+				"latency", latency.String(),
+				"status", statusCode,
+				"ip", ip,
+				"user-agent", userAgent,
+			)
+		}()
 
 		return err
 	}

@@ -16,7 +16,6 @@ package context
 
 import (
 	"context"
-	"runtime"
 	"sync"
 
 	"github.com/go-arcade/arcade/pkg/num"
@@ -25,7 +24,6 @@ import (
 )
 
 const bucketsSize = 128
-const armSystem = "arm64"
 
 type (
 	contextBucket struct {
@@ -49,9 +47,6 @@ func init() {
 
 // GetContext .
 func GetContext() context.Context {
-	if runtime.GOARCH == armSystem {
-		return context.Background()
-	}
 	god := routine.Goid()
 	idx := god % bucketsSize
 	bucket := goroutineContext.buckets[idx]
@@ -63,9 +58,6 @@ func GetContext() context.Context {
 
 // SetContext .
 func SetContext(ctx context.Context) {
-	if runtime.GOARCH == armSystem {
-		return
-	}
 	god := routine.Goid()
 	idx := god % bucketsSize
 	bucket := goroutineContext.buckets[idx]
@@ -76,9 +68,6 @@ func SetContext(ctx context.Context) {
 
 // ClearContext .
 func ClearContext() {
-	if runtime.GOARCH == armSystem {
-		return
-	}
 	god := routine.Goid()
 	idx := god % bucketsSize
 	bucket := goroutineContext.buckets[idx]

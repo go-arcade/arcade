@@ -13,6 +13,8 @@ func RequestMiddleware() fiber.Handler {
 			requestId = []byte(uuid.New().String())
 		}
 		c.Request().Header.Set("X-Request-Id", string(requestId))
+		c.Set("X-Request-Id", string(requestId))
+		c.Locals("request_id", string(requestId))
 		return c.Next()
 	}
 }

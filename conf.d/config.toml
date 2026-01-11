@@ -18,6 +18,29 @@ port = 8083
 # pprof server request path prefix, default: "/debug/pprof"
 path = "/debug/pprof"
 
+[trace]
+# enable trace, false or true
+enabled = true
+# trace exporter type: "jaeger", "otlp-grpc", "otlp-http", or "none"
+exporterType = "otlp-grpc"
+# trace endpoint
+endpoint = "openobserv.go-arcade.io:4317"
+# trace insecure
+insecure = true
+# trace headers
+headers = {}
+
+# trace batch config
+[trace.batch]
+maxQueueSize = 2048
+# trace batch timeout (duration string, e.g., "5s", "10s", or number as seconds)
+batchTimeout = "5s"
+# trace batch export timeout (duration string, e.g., "30s", "60s", or number as seconds)
+# Increase this if you see "context deadline exceeded" errors
+exportTimeout = "60s"
+# trace batch export size
+maxExportBatchSize = 512
+
 [log]
 # support stdout, file, kafka
 output = "stdout"
