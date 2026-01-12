@@ -21,9 +21,9 @@ import (
 	"testing"
 	"time"
 
+	pipelinev1 "github.com/go-arcade/arcade/api/pipeline/v1"
 	"github.com/go-arcade/arcade/internal/pkg/pipeline/spec"
 	"github.com/go-arcade/arcade/pkg/log"
-	"github.com/go-arcade/arcade/pkg/statemachine"
 )
 
 func TestLRUCache(t *testing.T) {
@@ -214,7 +214,7 @@ func TestResetForReuse(t *testing.T) {
 	ctx.Store("store1", "value1")
 	ctx.Error(fmt.Errorf("test error"))
 	ctx.SetCurrentJob(&spec.Job{Name: "job1"}, 0)
-	ctx.TransitionTo(statemachine.PipelineRunning)
+	ctx.TransitionTo(pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING)
 
 	// Reset for reuse
 	ctx.ResetForReuse(context.Background(), pipeline2, execCtx)
@@ -238,7 +238,7 @@ func TestResetForReuse(t *testing.T) {
 	if ctx.CurrentJob() != nil {
 		t.Error("expected currentJob to be cleared")
 	}
-	if ctx.Status() != statemachine.PipelinePending {
+	if ctx.Status() != pipelinev1.PipelineStatus_PIPELINE_STATUS_PENDING {
 		t.Errorf("expected status PENDING, got %v", ctx.Status())
 	}
 }

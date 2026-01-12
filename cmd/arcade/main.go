@@ -19,7 +19,6 @@ import (
 
 	"github.com/go-arcade/arcade/internal/engine/bootstrap"
 	_ "github.com/go-arcade/arcade/pkg/plugins/git"
-	_ "github.com/go-arcade/arcade/pkg/plugins/stdout"
 	_ "github.com/go-arcade/arcade/pkg/plugins/svn"
 )
 

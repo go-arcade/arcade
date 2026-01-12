@@ -19,9 +19,9 @@ import (
 	"testing"
 	"time"
 
+	pipelinev1 "github.com/go-arcade/arcade/api/pipeline/v1"
 	"github.com/go-arcade/arcade/internal/pkg/pipeline/spec"
 	"github.com/go-arcade/arcade/pkg/log"
-	"github.com/go-arcade/arcade/pkg/statemachine"
 )
 
 // testContextKey is a custom type for context keys in tests
@@ -50,7 +50,7 @@ func TestNewContextContext(t *testing.T) {
 		t.Error("pipeline not set correctly")
 	}
 	// Test initial state is PENDING
-	if ctx.Status() != statemachine.PipelinePending {
+	if ctx.Status() != pipelinev1.PipelineStatus_PIPELINE_STATUS_PENDING {
 		t.Errorf("expected initial status PENDING, got %v", ctx.Status())
 	}
 }
@@ -169,7 +169,7 @@ func TestAbort(t *testing.T) {
 		t.Error("context should be aborted after Abort()")
 	}
 	// Test that Abort transitions to CANCELED state
-	if ctx.Status() != statemachine.PipelineCanceled {
+	if ctx.Status() != pipelinev1.PipelineStatus_PIPELINE_STATUS_CANCELLED {
 		t.Errorf("expected status CANCELED after Abort(), got %v", ctx.Status())
 	}
 
@@ -183,7 +183,7 @@ func TestAbort(t *testing.T) {
 		t.Error("abort error not set correctly")
 	}
 	// Test that AbortWithError transitions to CANCELED state
-	if ctx2.Status() != statemachine.PipelineCanceled {
+	if ctx2.Status() != pipelinev1.PipelineStatus_PIPELINE_STATUS_CANCELLED {
 		t.Errorf("expected status CANCELED after AbortWithError(), got %v", ctx2.Status())
 	}
 }
@@ -337,8 +337,8 @@ func TestToMap(t *testing.T) {
 		t.Errorf("projectId = %v, want project-456", m["projectId"])
 	}
 	// Test that status is included in ToMap
-	if m["status"] != string(statemachine.PipelinePending) {
-		t.Errorf("status = %v, want %v", m["status"], statemachine.PipelinePending)
+	if m["status"] != string(pipelinev1.PipelineStatus_PIPELINE_STATUS_PENDING) {
+		t.Errorf("status = %v, want %v", m["status"], pipelinev1.PipelineStatus_PIPELINE_STATUS_PENDING)
 	}
 }
 
@@ -347,7 +347,7 @@ func TestWithContext(t *testing.T) {
 	ctx1.Set("key1", "value1")
 	ctx1.SetBuildId("build-1")
 	// Transition to RUNNING state
-	_ = ctx1.TransitionTo(statemachine.PipelineRunning)
+	_ = ctx1.TransitionTo(pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING)
 
 	ctxKey := testContextKey("ctxKey")
 	ctx2 := context.WithValue(context.Background(), ctxKey, "ctxValue")
@@ -366,7 +366,7 @@ func TestWithContext(t *testing.T) {
 	}
 
 	// Test that state is preserved
-	if ctx3.Status() != statemachine.PipelineRunning {
+	if ctx3.Status() != pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING {
 		t.Errorf("expected status RUNNING, got %v", ctx3.Status())
 	}
 }
@@ -375,23 +375,23 @@ func TestStatusManagement(t *testing.T) {
 	ctx := NewContext(context.Background(), &spec.Pipeline{}, nil)
 
 	// Test initial status
-	if ctx.Status() != statemachine.PipelinePending {
+	if ctx.Status() != pipelinev1.PipelineStatus_PIPELINE_STATUS_PENDING {
 		t.Errorf("expected initial status PENDING, got %v", ctx.Status())
 	}
 
 	// Test transition to RUNNING
-	if err := ctx.TransitionTo(statemachine.PipelineRunning); err != nil {
+	if err := ctx.TransitionTo(pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING); err != nil {
 		t.Errorf("transition to RUNNING failed: %v", err)
 	}
-	if ctx.Status() != statemachine.PipelineRunning {
+	if ctx.Status() != pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING {
 		t.Errorf("expected status RUNNING, got %v", ctx.Status())
 	}
 
 	// Test transition to SUCCESS
-	if err := ctx.TransitionTo(statemachine.PipelineSuccess); err != nil {
+	if err := ctx.TransitionTo(pipelinev1.PipelineStatus_PIPELINE_STATUS_SUCCESS); err != nil {
 		t.Errorf("transition to SUCCESS failed: %v", err)
 	}
-	if ctx.Status() != statemachine.PipelineSuccess {
+	if ctx.Status() != pipelinev1.PipelineStatus_PIPELINE_STATUS_SUCCESS {
 		t.Errorf("expected status SUCCESS, got %v", ctx.Status())
 	}
 
@@ -405,20 +405,20 @@ func TestStatusTransitionValidation(t *testing.T) {
 	ctx := NewContext(context.Background(), &spec.Pipeline{}, nil)
 
 	// Test invalid transition (PENDING -> SUCCESS is not allowed)
-	if err := ctx.TransitionTo(statemachine.PipelineSuccess); err == nil {
+	if err := ctx.TransitionTo(pipelinev1.PipelineStatus_PIPELINE_STATUS_SUCCESS); err == nil {
 		t.Error("expected error for invalid transition PENDING -> SUCCESS")
 	}
 
 	// Test valid transition
-	if err := ctx.TransitionTo(statemachine.PipelineRunning); err != nil {
+	if err := ctx.TransitionTo(pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING); err != nil {
 		t.Errorf("valid transition should succeed: %v", err)
 	}
 
 	// Test CanTransitionTo
-	if !ctx.CanTransitionTo(statemachine.PipelineSuccess) {
+	if !ctx.CanTransitionTo(pipelinev1.PipelineStatus_PIPELINE_STATUS_SUCCESS) {
 		t.Error("should be able to transition from RUNNING to SUCCESS")
 	}
-	if ctx.CanTransitionTo(statemachine.PipelinePending) {
+	if ctx.CanTransitionTo(pipelinev1.PipelineStatus_PIPELINE_STATUS_PENDING) {
 		t.Error("should not be able to transition from RUNNING to PENDING")
 	}
 }
@@ -427,14 +427,14 @@ func TestSetStatus(t *testing.T) {
 	ctx := NewContext(context.Background(), &spec.Pipeline{}, nil)
 
 	// Test SetStatus for initialization/recovery
-	ctx.SetStatus(statemachine.PipelineRunning)
-	if ctx.Status() != statemachine.PipelineRunning {
+	ctx.SetStatus(pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING)
+	if ctx.Status() != pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING {
 		t.Errorf("expected status RUNNING after SetStatus, got %v", ctx.Status())
 	}
 
 	// SetStatus bypasses validation, so we can set any state
-	ctx.SetStatus(statemachine.PipelineSuccess)
-	if ctx.Status() != statemachine.PipelineSuccess {
+	ctx.SetStatus(pipelinev1.PipelineStatus_PIPELINE_STATUS_SUCCESS)
+	if ctx.Status() != pipelinev1.PipelineStatus_PIPELINE_STATUS_SUCCESS {
 		t.Errorf("expected status SUCCESS after SetStatus, got %v", ctx.Status())
 	}
 }
@@ -443,8 +443,8 @@ func TestStateMachineHistory(t *testing.T) {
 	ctx := NewContext(context.Background(), &spec.Pipeline{}, nil)
 
 	// Perform some transitions
-	_ = ctx.TransitionTo(statemachine.PipelineRunning)
-	_ = ctx.TransitionTo(statemachine.PipelineSuccess)
+	_ = ctx.TransitionTo(pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING)
+	_ = ctx.TransitionTo(pipelinev1.PipelineStatus_PIPELINE_STATUS_SUCCESS)
 
 	// Check history
 	history := ctx.StateMachine().History()
@@ -453,12 +453,12 @@ func TestStateMachineHistory(t *testing.T) {
 	}
 
 	// Verify first transition
-	if history[0].From != statemachine.PipelinePending || history[0].To != statemachine.PipelineRunning {
+	if history[0].From != pipelinev1.PipelineStatus_PIPELINE_STATUS_PENDING || history[0].To != pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING {
 		t.Errorf("unexpected first transition: %v -> %v", history[0].From, history[0].To)
 	}
 
 	// Verify second transition
-	if history[1].From != statemachine.PipelineRunning || history[1].To != statemachine.PipelineSuccess {
+	if history[1].From != pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING || history[1].To != pipelinev1.PipelineStatus_PIPELINE_STATUS_SUCCESS {
 		t.Errorf("unexpected second transition: %v -> %v", history[1].From, history[1].To)
 	}
 

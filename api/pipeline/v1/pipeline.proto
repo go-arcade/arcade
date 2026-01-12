@@ -48,6 +48,7 @@ enum PipelineStatus {
   PIPELINE_STATUS_FAILED = 4;     // Failed
   PIPELINE_STATUS_CANCELLED = 5;  // Cancelled
   PIPELINE_STATUS_PARTIAL = 6;    // Partial success
+  PIPELINE_STATUS_PAUSED = 7;    // Paused
 }
 
 // Trigger type enum

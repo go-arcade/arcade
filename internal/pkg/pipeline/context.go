@@ -22,6 +22,7 @@ import (
 	"sync"
 	"time"
 
+	pipelinev1 "github.com/go-arcade/arcade/api/pipeline/v1"
 	"github.com/go-arcade/arcade/internal/pkg/pipeline/builtin"
 	"github.com/go-arcade/arcade/internal/pkg/pipeline/spec"
 	"github.com/go-arcade/arcade/pkg/log"
@@ -43,7 +44,7 @@ type Context struct {
 	cancel       context.CancelFunc
 	pipeline     *spec.Pipeline
 	execCtx      *ExecutionContext
-	stateMachine *statemachine.StateMachine[statemachine.PipelineStatus]
+	stateMachine *statemachine.StateMachine[pipelinev1.PipelineStatus]
 	currentJob   *spec.Job
 	currentStep  *spec.Step
 	abortError   error
@@ -89,12 +90,12 @@ func NewContext(ctx context.Context, pipeline *spec.Pipeline, execCtx *Execution
 	}
 
 	// Create state machine with initial state PENDING
-	sm := statemachine.NewWithState(statemachine.PipelinePending)
+	sm := statemachine.NewWithState(pipelinev1.PipelineStatus_PIPELINE_STATUS_PENDING)
 	// Define state transition rules
-	sm.Allow(statemachine.PipelinePending, statemachine.PipelineRunning, statemachine.PipelineCanceled).
-		Allow(statemachine.PipelineRunning, statemachine.PipelineSuccess, statemachine.PipelineFailed, statemachine.PipelineCanceled, statemachine.PipelinePaused).
-		Allow(statemachine.PipelineFailed, statemachine.PipelineRunning).                               // Support retry
-		Allow(statemachine.PipelinePaused, statemachine.PipelineRunning, statemachine.PipelineCanceled) // Support pause and resume
+	sm.Allow(pipelinev1.PipelineStatus_PIPELINE_STATUS_PENDING, pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING, pipelinev1.PipelineStatus_PIPELINE_STATUS_CANCELLED).
+		Allow(pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING, pipelinev1.PipelineStatus_PIPELINE_STATUS_SUCCESS, pipelinev1.PipelineStatus_PIPELINE_STATUS_FAILED, pipelinev1.PipelineStatus_PIPELINE_STATUS_CANCELLED, pipelinev1.PipelineStatus_PIPELINE_STATUS_PAUSED).
+		Allow(pipelinev1.PipelineStatus_PIPELINE_STATUS_FAILED, pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING).                                                     // Support retry
+		Allow(pipelinev1.PipelineStatus_PIPELINE_STATUS_PAUSED, pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING, pipelinev1.PipelineStatus_PIPELINE_STATUS_CANCELLED) // Support pause and resume
 
 	pc := &Context{
 		ctx:          ctx,
@@ -111,7 +112,7 @@ func NewContext(ctx context.Context, pipeline *spec.Pipeline, execCtx *Execution
 	}
 
 	// Register hooks for terminal states to set endTime
-	sm.OnEnter(statemachine.PipelineSuccess, func(state statemachine.PipelineStatus) error {
+	sm.OnEnter(pipelinev1.PipelineStatus_PIPELINE_STATUS_SUCCESS, func(state pipelinev1.PipelineStatus) error {
 		pc.mu.Lock()
 		if pc.endTime == nil {
 			now := time.Now()
@@ -120,7 +121,7 @@ func NewContext(ctx context.Context, pipeline *spec.Pipeline, execCtx *Execution
 		pc.mu.Unlock()
 		return nil
 	})
-	sm.OnEnter(statemachine.PipelineFailed, func(state statemachine.PipelineStatus) error {
+	sm.OnEnter(pipelinev1.PipelineStatus_PIPELINE_STATUS_FAILED, func(state pipelinev1.PipelineStatus) error {
 		pc.mu.Lock()
 		if pc.endTime == nil {
 			now := time.Now()
@@ -129,7 +130,7 @@ func NewContext(ctx context.Context, pipeline *spec.Pipeline, execCtx *Execution
 		pc.mu.Unlock()
 		return nil
 	})
-	sm.OnEnter(statemachine.PipelineCanceled, func(state statemachine.PipelineStatus) error {
+	sm.OnEnter(pipelinev1.PipelineStatus_PIPELINE_STATUS_CANCELLED, func(state pipelinev1.PipelineStatus) error {
 		pc.mu.Lock()
 		if pc.endTime == nil {
 			now := time.Now()
@@ -153,10 +154,10 @@ func (c *Context) WithContext(ctx context.Context) *Context {
 	currentState := c.Status()
 	sm := statemachine.NewWithState(currentState)
 	// Define state transition rules
-	sm.Allow(statemachine.PipelinePending, statemachine.PipelineRunning, statemachine.PipelineCanceled).
-		Allow(statemachine.PipelineRunning, statemachine.PipelineSuccess, statemachine.PipelineFailed, statemachine.PipelineCanceled, statemachine.PipelinePaused).
-		Allow(statemachine.PipelineFailed, statemachine.PipelineRunning).
-		Allow(statemachine.PipelinePaused, statemachine.PipelineRunning, statemachine.PipelineCanceled)
+	sm.Allow(pipelinev1.PipelineStatus_PIPELINE_STATUS_PENDING, pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING, pipelinev1.PipelineStatus_PIPELINE_STATUS_CANCELLED).
+		Allow(pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING, pipelinev1.PipelineStatus_PIPELINE_STATUS_SUCCESS, pipelinev1.PipelineStatus_PIPELINE_STATUS_FAILED, pipelinev1.PipelineStatus_PIPELINE_STATUS_CANCELLED, pipelinev1.PipelineStatus_PIPELINE_STATUS_PAUSED).
+		Allow(pipelinev1.PipelineStatus_PIPELINE_STATUS_FAILED, pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING).
+		Allow(pipelinev1.PipelineStatus_PIPELINE_STATUS_PAUSED, pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING, pipelinev1.PipelineStatus_PIPELINE_STATUS_CANCELLED)
 
 	newCtx := &Context{
 		ctx:          ctx,
@@ -184,7 +185,7 @@ func (c *Context) WithContext(ctx context.Context) *Context {
 	}
 
 	// Register hooks for terminal states
-	sm.OnEnter(statemachine.PipelineSuccess, func(state statemachine.PipelineStatus) error {
+	sm.OnEnter(pipelinev1.PipelineStatus_PIPELINE_STATUS_SUCCESS, func(state pipelinev1.PipelineStatus) error {
 		newCtx.mu.Lock()
 		if newCtx.endTime == nil {
 			now := time.Now()
@@ -193,7 +194,7 @@ func (c *Context) WithContext(ctx context.Context) *Context {
 		newCtx.mu.Unlock()
 		return nil
 	})
-	sm.OnEnter(statemachine.PipelineFailed, func(state statemachine.PipelineStatus) error {
+	sm.OnEnter(pipelinev1.PipelineStatus_PIPELINE_STATUS_FAILED, func(state pipelinev1.PipelineStatus) error {
 		newCtx.mu.Lock()
 		if newCtx.endTime == nil {
 			now := time.Now()
@@ -202,7 +203,7 @@ func (c *Context) WithContext(ctx context.Context) *Context {
 		newCtx.mu.Unlock()
 		return nil
 	})
-	sm.OnEnter(statemachine.PipelineCanceled, func(state statemachine.PipelineStatus) error {
+	sm.OnEnter(pipelinev1.PipelineStatus_PIPELINE_STATUS_CANCELLED, func(state pipelinev1.PipelineStatus) error {
 		newCtx.mu.Lock()
 		if newCtx.endTime == nil {
 			now := time.Now()
@@ -479,7 +480,7 @@ func (c *Context) Abort() {
 		cancel()
 	}
 	// Transition to CANCELED state (must be outside lock to avoid deadlock with hooks)
-	_ = c.stateMachine.TransitionTo(statemachine.PipelineCanceled)
+	_ = c.stateMachine.TransitionTo(pipelinev1.PipelineStatus_PIPELINE_STATUS_CANCELLED)
 }
 
 // AbortWithError aborts the pipeline execution with a specific error
@@ -493,7 +494,7 @@ func (c *Context) AbortWithError(err error) {
 	c.mu.Unlock()
 
 	// Transition to CANCELED state (must be outside lock to avoid deadlock with hooks)
-	_ = c.stateMachine.TransitionTo(statemachine.PipelineCanceled)
+	_ = c.stateMachine.TransitionTo(pipelinev1.PipelineStatus_PIPELINE_STATUS_CANCELLED)
 }
 
 // IsAborted returns whether the pipeline is aborted
@@ -661,22 +662,22 @@ func (c *Context) SendNotification(ctx context.Context, item *spec.NotifyItem, s
 }
 
 // Status returns the current pipeline status
-func (c *Context) Status() statemachine.PipelineStatus {
+func (c *Context) Status() pipelinev1.PipelineStatus {
 	if c.stateMachine == nil {
-		return statemachine.PipelinePending
+		return pipelinev1.PipelineStatus_PIPELINE_STATUS_PENDING
 	}
 	return c.stateMachine.Current()
 }
 
 // SetStatus sets the pipeline status (for initialization or recovery)
-func (c *Context) SetStatus(status statemachine.PipelineStatus) {
+func (c *Context) SetStatus(status pipelinev1.PipelineStatus) {
 	if c.stateMachine != nil {
 		c.stateMachine.SetCurrent(status)
 	}
 }
 
 // TransitionTo transitions the pipeline to a new status
-func (c *Context) TransitionTo(status statemachine.PipelineStatus) error {
+func (c *Context) TransitionTo(status pipelinev1.PipelineStatus) error {
 	if c.stateMachine == nil {
 		return fmt.Errorf("state machine not initialized")
 	}
@@ -684,7 +685,7 @@ func (c *Context) TransitionTo(status statemachine.PipelineStatus) error {
 }
 
 // CanTransitionTo checks if a transition to the target status is valid
-func (c *Context) CanTransitionTo(status statemachine.PipelineStatus) bool {
+func (c *Context) CanTransitionTo(status pipelinev1.PipelineStatus) bool {
 	if c.stateMachine == nil {
 		return false
 	}
@@ -692,7 +693,7 @@ func (c *Context) CanTransitionTo(status statemachine.PipelineStatus) bool {
 }
 
 // StateMachine returns the underlying state machine
-func (c *Context) StateMachine() *statemachine.StateMachine[statemachine.PipelineStatus] {
+func (c *Context) StateMachine() *statemachine.StateMachine[pipelinev1.PipelineStatus] {
 	return c.stateMachine
 }
 

@@ -20,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	pipelinev1 "github.com/go-arcade/arcade/api/pipeline/v1"
 	"github.com/go-arcade/arcade/internal/pkg/pipeline/spec"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/statemachine"
@@ -570,23 +571,23 @@ func (p *ContextPool) createNewContext(ctx context.Context, pipeline *spec.Pipel
 
 	// Create or reset state machine
 	if pc.stateMachine == nil {
-		sm := statemachine.NewWithState(statemachine.PipelinePending)
-		sm.Allow(statemachine.PipelinePending, statemachine.PipelineRunning, statemachine.PipelineCanceled).
-			Allow(statemachine.PipelineRunning, statemachine.PipelineSuccess, statemachine.PipelineFailed, statemachine.PipelineCanceled, statemachine.PipelinePaused).
-			Allow(statemachine.PipelineFailed, statemachine.PipelineRunning).
-			Allow(statemachine.PipelinePaused, statemachine.PipelineRunning, statemachine.PipelineCanceled)
+		sm := statemachine.NewWithState(pipelinev1.PipelineStatus_PIPELINE_STATUS_PENDING)
+		sm.Allow(pipelinev1.PipelineStatus_PIPELINE_STATUS_PENDING, pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING, pipelinev1.PipelineStatus_PIPELINE_STATUS_CANCELLED).
+			Allow(pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING, pipelinev1.PipelineStatus_PIPELINE_STATUS_SUCCESS, pipelinev1.PipelineStatus_PIPELINE_STATUS_FAILED, pipelinev1.PipelineStatus_PIPELINE_STATUS_CANCELLED, pipelinev1.PipelineStatus_PIPELINE_STATUS_PAUSED).
+			Allow(pipelinev1.PipelineStatus_PIPELINE_STATUS_FAILED, pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING).
+			Allow(pipelinev1.PipelineStatus_PIPELINE_STATUS_PAUSED, pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING, pipelinev1.PipelineStatus_PIPELINE_STATUS_CANCELLED)
 		pc.stateMachine = sm
 		p.registerStateMachineHooks(pc, sm)
 	} else {
-		pc.stateMachine.SetCurrent(statemachine.PipelinePending)
+		pc.stateMachine.SetCurrent(pipelinev1.PipelineStatus_PIPELINE_STATUS_PENDING)
 	}
 
 	return pc
 }
 
 // registerStateMachineHooks registers hooks for terminal states
-func (p *ContextPool) registerStateMachineHooks(pc *Context, sm *statemachine.StateMachine[statemachine.PipelineStatus]) {
-	sm.OnEnter(statemachine.PipelineSuccess, func(state statemachine.PipelineStatus) error {
+func (p *ContextPool) registerStateMachineHooks(pc *Context, sm *statemachine.StateMachine[pipelinev1.PipelineStatus]) {
+	sm.OnEnter(pipelinev1.PipelineStatus_PIPELINE_STATUS_SUCCESS, func(state pipelinev1.PipelineStatus) error {
 		pc.mu.Lock()
 		if pc.endTime == nil {
 			now := time.Now()
@@ -595,7 +596,7 @@ func (p *ContextPool) registerStateMachineHooks(pc *Context, sm *statemachine.St
 		pc.mu.Unlock()
 		return nil
 	})
-	sm.OnEnter(statemachine.PipelineFailed, func(state statemachine.PipelineStatus) error {
+	sm.OnEnter(pipelinev1.PipelineStatus_PIPELINE_STATUS_FAILED, func(state pipelinev1.PipelineStatus) error {
 		pc.mu.Lock()
 		if pc.endTime == nil {
 			now := time.Now()
@@ -604,7 +605,7 @@ func (p *ContextPool) registerStateMachineHooks(pc *Context, sm *statemachine.St
 		pc.mu.Unlock()
 		return nil
 	})
-	sm.OnEnter(statemachine.PipelineCanceled, func(state statemachine.PipelineStatus) error {
+	sm.OnEnter(pipelinev1.PipelineStatus_PIPELINE_STATUS_CANCELLED, func(state pipelinev1.PipelineStatus) error {
 		pc.mu.Lock()
 		if pc.endTime == nil {
 			now := time.Now()
@@ -721,18 +722,18 @@ func (pc *Context) ResetForReuse(ctx context.Context, pipeline *spec.Pipeline, e
 
 	// Reset state machine
 	if pc.stateMachine != nil {
-		pc.stateMachine.SetCurrent(statemachine.PipelinePending)
+		pc.stateMachine.SetCurrent(pipelinev1.PipelineStatus_PIPELINE_STATUS_PENDING)
 	} else {
-		sm := statemachine.NewWithState(statemachine.PipelinePending)
-		sm.Allow(statemachine.PipelinePending, statemachine.PipelineRunning, statemachine.PipelineCanceled).
-			Allow(statemachine.PipelineRunning, statemachine.PipelineSuccess, statemachine.PipelineFailed, statemachine.PipelineCanceled, statemachine.PipelinePaused).
-			Allow(statemachine.PipelineFailed, statemachine.PipelineRunning).
-			Allow(statemachine.PipelinePaused, statemachine.PipelineRunning, statemachine.PipelineCanceled)
+		sm := statemachine.NewWithState(pipelinev1.PipelineStatus_PIPELINE_STATUS_PENDING)
+		sm.Allow(pipelinev1.PipelineStatus_PIPELINE_STATUS_PENDING, pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING, pipelinev1.PipelineStatus_PIPELINE_STATUS_CANCELLED).
+			Allow(pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING, pipelinev1.PipelineStatus_PIPELINE_STATUS_SUCCESS, pipelinev1.PipelineStatus_PIPELINE_STATUS_FAILED, pipelinev1.PipelineStatus_PIPELINE_STATUS_CANCELLED, pipelinev1.PipelineStatus_PIPELINE_STATUS_PAUSED).
+			Allow(pipelinev1.PipelineStatus_PIPELINE_STATUS_FAILED, pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING).
+			Allow(pipelinev1.PipelineStatus_PIPELINE_STATUS_PAUSED, pipelinev1.PipelineStatus_PIPELINE_STATUS_RUNNING, pipelinev1.PipelineStatus_PIPELINE_STATUS_CANCELLED)
 		pc.stateMachine = sm
 	}
 
 	// Re-register hooks
-	pc.stateMachine.OnEnter(statemachine.PipelineSuccess, func(state statemachine.PipelineStatus) error {
+	pc.stateMachine.OnEnter(pipelinev1.PipelineStatus_PIPELINE_STATUS_SUCCESS, func(state pipelinev1.PipelineStatus) error {
 		pc.mu.Lock()
 		if pc.endTime == nil {
 			now := time.Now()
@@ -741,7 +742,7 @@ func (pc *Context) ResetForReuse(ctx context.Context, pipeline *spec.Pipeline, e
 		pc.mu.Unlock()
 		return nil
 	})
-	pc.stateMachine.OnEnter(statemachine.PipelineFailed, func(state statemachine.PipelineStatus) error {
+	pc.stateMachine.OnEnter(pipelinev1.PipelineStatus_PIPELINE_STATUS_FAILED, func(state pipelinev1.PipelineStatus) error {
 		pc.mu.Lock()
 		if pc.endTime == nil {
 			now := time.Now()
@@ -750,7 +751,7 @@ func (pc *Context) ResetForReuse(ctx context.Context, pipeline *spec.Pipeline, e
 		pc.mu.Unlock()
 		return nil
 	})
-	pc.stateMachine.OnEnter(statemachine.PipelineCanceled, func(state statemachine.PipelineStatus) error {
+	pc.stateMachine.OnEnter(pipelinev1.PipelineStatus_PIPELINE_STATUS_CANCELLED, func(state pipelinev1.PipelineStatus) error {
 		pc.mu.Lock()
 		if pc.endTime == nil {
 			now := time.Now()

@@ -77,6 +77,17 @@ func (m *Manager) registerBuiltins() {
 	}, map[string]ActionHandler{
 		"dotenv": m.handleReportsDotenv,
 	})
+
+	// Register stdout builtin
+	m.registerBuiltin("stdout", &Info{
+		Name:        "stdout",
+		Description: "Print messages to stdout",
+		Actions:     []string{"send", "send.template", "send.batch"},
+	}, map[string]ActionHandler{
+		"send":          m.handleStdoutSend,
+		"send.template": m.handleStdoutSendTemplate,
+		"send.batch":    m.handleStdoutSendBatch,
+	})
 }
 
 // registerBuiltin registers a builtin function
