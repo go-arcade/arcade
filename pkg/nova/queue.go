@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-arcade/arcade/pkg/safe"
 	"github.com/google/uuid"
 )
 
@@ -300,10 +301,10 @@ func (q *TaskQueueImpl) Start(handler IHandler) error {
 
 	// Start consumption goroutine
 	q.wg.Add(1)
-	go func() {
+	safe.Go(func() {
 		defer q.wg.Done()
 		_ = q.broker.Subscribe(q.ctx, topics, q.handleMessage)
-	}()
+	})
 
 	return nil
 }
@@ -352,10 +353,10 @@ func (q *TaskQueueImpl) StartBatch(handler IBatchHandler, agg IAggregator) error
 
 	// Start batch consumption goroutine
 	q.wg.Add(1)
-	go func() {
+	safe.Go(func() {
 		defer q.wg.Done()
 		_ = q.broker.Subscribe(q.ctx, topics, q.handleBatchMessage)
-	}()
+	})
 
 	return nil
 }

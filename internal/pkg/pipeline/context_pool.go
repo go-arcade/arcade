@@ -23,6 +23,7 @@ import (
 	pipelinev1 "github.com/go-arcade/arcade/api/pipeline/v1"
 	"github.com/go-arcade/arcade/internal/pkg/pipeline/spec"
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/safe"
 	"github.com/go-arcade/arcade/pkg/statemachine"
 )
 
@@ -642,13 +643,13 @@ func (p *ContextPool) handleEvictedContext(ctx context.Context, pc *Context) {
 	}
 
 	// Store to cold storage (async to avoid blocking)
-	go func() {
+	safe.Go(func() {
 		// In a real implementation, serialize pc properly
 		// For now, we'll just mark it as stored
 		_ = p.config.StorageStrategy.Save(ctx, pipelineId, nil)
 		// After storing, return to sync.Pool
 		p.returnToSyncPool(pc)
-	}()
+	})
 
 	p.mu.Lock()
 	p.totalCount--

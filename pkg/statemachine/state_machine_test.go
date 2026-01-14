@@ -19,6 +19,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/go-arcade/arcade/pkg/safe"
 )
 
 // 定义测试用状态
@@ -292,15 +294,15 @@ func TestStateMachine_Concurrency(t *testing.T) {
 	done := make(chan bool, 100)
 
 	for i := 0; i < 50; i++ {
-		go func() {
+		safe.Go(func() {
 			// 并发切换时可能出现非法转移错误，这里只验证不会死锁/崩溃
 			_ = sm.TransitTo(OrderPaid)
 			done <- true
-		}()
-		go func() {
+		})
+		safe.Go(func() {
 			_ = sm.TransitionTo(OrderCreated)
 			done <- true
-		}()
+		})
 	}
 
 	for i := 0; i < 100; i++ {

@@ -22,6 +22,7 @@ import (
 	"sync"
 
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/safe"
 	"github.com/hashicorp/go-metrics"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
@@ -243,12 +244,12 @@ func (s *Server) Start() error {
 		Handler: mux,
 	}
 
-	go func() {
+	safe.Go(func() {
 		log.Infow("Metrics server started", "address", addr)
 		if err := s.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			panic(err)
 		}
-	}()
+	})
 
 	return nil
 }

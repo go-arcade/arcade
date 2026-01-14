@@ -275,12 +275,13 @@ func TestConcurrentLogging(t *testing.T) {
 	done := make(chan bool, 100)
 
 	for i := 0; i < 100; i++ {
-		go func(n int) {
+		n := i
+		go func() {
 			Infow("concurrent message", "number", n)
 			Debugw("debug message", "number", n)
 			Warnw("warn message", "number", n)
 			done <- true
-		}(i)
+		}()
 	}
 
 	// 等待所有 goroutine 完成

@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 	"time"
+
+	"github.com/go-arcade/arcade/pkg/safe"
 )
 
 func TestDo_Success(t *testing.T) {
@@ -183,10 +185,10 @@ func TestDo_ContextCancellation(t *testing.T) {
 	attempts := 0
 
 	// Cancel after a short delay
-	go func() {
+	safe.Go(func() {
 		time.Sleep(50 * time.Millisecond)
 		cancel()
-	}()
+	})
 
 	err := Do(ctx, func(ctx context.Context) error {
 		attempts++
@@ -356,10 +358,10 @@ func TestDo_ContextCancellationDuringBackoff(t *testing.T) {
 	attempts := 0
 
 	// Cancel during backoff
-	go func() {
+	safe.Go(func() {
 		time.Sleep(30 * time.Millisecond)
 		cancel()
-	}()
+	})
 
 	err := Do(ctx, func(ctx context.Context) error {
 		attempts++

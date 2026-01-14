@@ -23,6 +23,7 @@ import (
 
 	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/safe"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -97,7 +98,7 @@ func (s *ServerWrapper) Start(cfg Conf) error {
 		return fmt.Errorf("failed to listen: %w", err)
 	}
 
-	go func() {
+	safe.Go(func() {
 		log.Infow("gRPC listener started",
 			"address", addr,
 		)
@@ -107,7 +108,7 @@ func (s *ServerWrapper) Start(cfg Conf) error {
 				"error", err,
 			)
 		}
-	}()
+	})
 
 	// 优雅退出
 	ch := make(chan os.Signal, 1)

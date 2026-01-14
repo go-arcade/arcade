@@ -29,6 +29,7 @@ import (
 	"github.com/go-arcade/arcade/pkg/http/jwt"
 	"github.com/go-arcade/arcade/pkg/id"
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/safe"
 	"github.com/go-arcade/arcade/pkg/util"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -142,7 +143,7 @@ func (ul *UserService) Login(login *usermodel.Login, auth http.Auth) (*usermodel
 		CreateAt: createAt,
 	}
 
-	go func() {
+	safe.Go(func() {
 		if err = ul.userRepo.SetLoginRespInfo(auth.AccessExpire, resp); err != nil {
 			log.Errorw("failed to set login response info", "userId", userInfo.UserId, "error", err)
 			return
@@ -154,7 +155,7 @@ func (ul *UserService) Login(login *usermodel.Login, auth http.Auth) (*usermodel
 				log.Warnw("failed to update last login time", "userId", userInfo.UserId, "error", err)
 			}
 		}
-	}()
+	})
 
 	return resp, nil
 }

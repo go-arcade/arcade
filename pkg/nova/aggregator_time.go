@@ -17,6 +17,8 @@ package nova
 import (
 	"sync"
 	"time"
+
+	"github.com/go-arcade/arcade/pkg/safe"
 )
 
 // TimeAggregator aggregates tasks based on time window
@@ -68,14 +70,14 @@ func (a *TimeAggregator) startTimer() {
 
 	// Create new timer
 	a.flushTimer = time.NewTimer(a.timeWindow)
-	go func() {
+	safe.Go(func() {
 		select {
 		case <-a.flushTimer.C:
 			a.checkTimeWindow()
 		case <-a.stopCh:
 			return
 		}
-	}()
+	})
 }
 
 // Add adds a task to the aggregator
@@ -139,14 +141,14 @@ func (a *TimeAggregator) resetTimerAfterFlush() {
 
 	// Create new timer
 	a.flushTimer = time.NewTimer(a.timeWindow)
-	go func() {
+	safe.Go(func() {
 		select {
 		case <-a.flushTimer.C:
 			a.checkTimeWindow()
 		case <-a.stopCh:
 			return
 		}
-	}()
+	})
 }
 
 // checkTimeWindow checks the time window (called in timer callback)

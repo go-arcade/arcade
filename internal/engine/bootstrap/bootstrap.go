@@ -34,6 +34,7 @@ import (
 	"github.com/go-arcade/arcade/pkg/metrics"
 	"github.com/go-arcade/arcade/pkg/plugin"
 	"github.com/go-arcade/arcade/pkg/pprof"
+	"github.com/go-arcade/arcade/pkg/safe"
 	"github.com/go-arcade/arcade/pkg/shutdown"
 	"github.com/go-arcade/arcade/pkg/trace"
 	"github.com/gofiber/fiber/v2"
@@ -204,11 +205,11 @@ func Run(app *App, cleanup func()) {
 
 	// start gRPC server
 	if app.GrpcServer != nil && appConf.Grpc.Port > 0 {
-		go func() {
+		safe.Go(func() {
 			if err := app.GrpcServer.Start(appConf.Grpc); err != nil {
 				log.Errorw("gRPC server failed: %v", err)
 			}
-		}()
+		})
 	}
 
 	// set signal listener (graceful shutdown)
@@ -216,7 +217,7 @@ func Run(app *App, cleanup func()) {
 	signal.Notify(quit, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	// start HTTP server (async)
-	go func() {
+	safe.Go(func() {
 		addr := appConf.Http.Host + ":" + fmt.Sprintf("%d", appConf.Http.Port)
 		log.Infow("HTTP listener started",
 			"address", addr,
@@ -227,7 +228,7 @@ func Run(app *App, cleanup func()) {
 				zap.Error(err),
 			)
 		}
-	}()
+	})
 
 	// wait for exit signal (either from OS signal or HTTP shutdown endpoint)
 	select {

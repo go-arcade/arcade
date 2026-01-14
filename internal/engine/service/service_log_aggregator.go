@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/safe"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
@@ -177,12 +178,12 @@ func (la *LogAggregator) flushStream(stream *LogStream) error {
 	stream.lastFlush = time.Now()
 
 	// 异步写入，避免阻塞
-	go func() {
+	safe.Go(func() {
 		// 写入 ClickHouse
 		if err := la.writeToClickHouse(logs); err != nil {
 			log.Errorw("failed to write logs to clickhouse", "logCount", len(logs), "error", err)
 		}
-	}()
+	})
 
 	return nil
 }
@@ -369,10 +370,10 @@ func (la *LogAggregator) Subscribe(ctx context.Context, stepRunID string) <-chan
 	la.mu.Unlock()
 
 	// 清理订阅
-	go func() {
+	safe.Go(func() {
 		<-ctx.Done()
 		la.unsubscribe(stepRunID, logChan)
-	}()
+	})
 
 	return logChan
 }

@@ -22,6 +22,7 @@ import (
 
 	streamv1 "github.com/go-arcade/arcade/api/stream/v1"
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/safe"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
 	"gorm.io/gorm"
@@ -269,7 +270,8 @@ func (s *StreamServiceImpl) notifySubscribers(stepRunID string, logChunk *stream
 
 	// 异步通知所有订阅者
 	for _, sub := range subs {
-		go func(subscriber *LogSubscriber) {
+		subscriber := sub
+		safe.Go(func() {
 			err := subscriber.Stream.Send(&streamv1.StreamStepRunLogResponse{
 				StepRunId:  stepRunID,
 				LogChunk:   logChunk,
@@ -278,6 +280,6 @@ func (s *StreamServiceImpl) notifySubscribers(stepRunID string, logChunk *stream
 			if err != nil {
 				log.Errorw("failed to send log to subscriber", "stepRunId", stepRunID, "error", err)
 			}
-		}(sub)
+		})
 	}
 }

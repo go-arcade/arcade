@@ -18,6 +18,8 @@ import (
 	"reflect"
 	"sync"
 	"testing"
+
+	"github.com/go-arcade/arcade/pkg/safe"
 )
 
 func TestNew(t *testing.T) {
@@ -349,26 +351,28 @@ func TestMap_Concurrent(t *testing.T) {
 		// concurrent writes
 		wg.Add(workers)
 		for i := 0; i < workers; i++ {
-			go func(id int) {
+			id := i
+			safe.Go(func() {
 				defer wg.Done()
 				for j := 0; j < opsPerWorker; j++ {
 					key := string(rune('a'+id)) + string(rune('0'+j))
 					m.Set(key, id*opsPerWorker+j)
 				}
-			}(i)
+			})
 		}
 		wg.Wait()
 
 		// concurrent reads
 		wg.Add(workers)
 		for i := 0; i < workers; i++ {
-			go func(id int) {
+			id := i
+			safe.Go(func() {
 				defer wg.Done()
 				for j := 0; j < opsPerWorker; j++ {
 					key := string(rune('a'+id)) + string(rune('0'+j))
 					_, _ = m.Get(key)
 				}
-			}(i)
+			})
 		}
 		wg.Wait()
 
@@ -390,7 +394,7 @@ func TestMap_Concurrent(t *testing.T) {
 		wg.Add(workers)
 
 		for i := 0; i < workers; i++ {
-			go func() {
+			safe.Go(func() {
 				defer wg.Done()
 				count := 0
 				m.ForEach(func(k string, v any) {
@@ -399,7 +403,7 @@ func TestMap_Concurrent(t *testing.T) {
 				if count != 50 {
 					t.Errorf("Concurrent ForEach() count = %d, want 50", count)
 				}
-			}()
+			})
 		}
 		wg.Wait()
 	})
@@ -415,21 +419,21 @@ func TestMap_Concurrent(t *testing.T) {
 		wg.Add(workers * 2)
 
 		for i := 0; i < workers; i++ {
-			go func() {
+			safe.Go(func() {
 				defer wg.Done()
 				keys := m.Keys()
 				if len(keys) != 50 {
 					t.Errorf("Concurrent Keys() length = %d, want 50", len(keys))
 				}
-			}()
+			})
 
-			go func() {
+			safe.Go(func() {
 				defer wg.Done()
 				slice := m.ToSlice()
 				if len(slice) != 50 {
 					t.Errorf("Concurrent ToSlice() length = %d, want 50", len(slice))
 				}
-			}()
+			})
 		}
 		wg.Wait()
 	})

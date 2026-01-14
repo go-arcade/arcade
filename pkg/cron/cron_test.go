@@ -18,6 +18,8 @@ import (
 	"sort"
 	"testing"
 	"time"
+
+	"github.com/go-arcade/arcade/pkg/safe"
 )
 
 func TestNew(t *testing.T) {
@@ -321,10 +323,10 @@ func TestRun(t *testing.T) {
 
 	// Run in goroutine since it blocks
 	done := make(chan bool)
-	go func() {
+	safe.Go(func() {
 		c.Run()
 		done <- true
-	}()
+	})
 
 	// Wait for job to execute - use select with timeout
 	// Give enough time for Run() to initialize and job to execute

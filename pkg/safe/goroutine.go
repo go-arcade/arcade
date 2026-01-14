@@ -25,11 +25,26 @@ func Go(f func()) {
 	go do(f)
 }
 
+// GoWith runs the given function f with the given argument arg safely.
+func GoWith[T any](f func(T), arg T) {
+	go doWith(f, arg)
+}
+
+// doWith runs the given function f with the given argument arg safely.
+func doWith[T any](f func(T), arg T) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorw("recovered from panic", "error", r, "stack", string(debug.Stack()))
+		}
+	}()
+	f(arg)
+}
+
 // Do runs the given function f and recovers from any panic, printing the stack trace.
 func do(f func()) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Fatalw("recovered from panic", "error", r, "stack", string(debug.Stack()))
+			log.Errorw("recovered from panic", "error", r, "stack", string(debug.Stack()))
 		}
 	}()
 	f()

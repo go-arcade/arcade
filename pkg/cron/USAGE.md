@@ -31,10 +31,10 @@ defer c.Stop() // 或 c.Close()
 ctx, cancel := context.WithCancel(context.Background())
 defer cancel()
 
-go func() {
+safe.Go(func() {
     <-ctx.Done()
     c.Stop()
-}()
+})
 ```
 
 ## 3. Redis 分布式锁（可选）
@@ -193,13 +193,13 @@ c.AddOnceFunc("@every 1h", func() {
 
 ```go
 // ✅ 可以在多个 goroutine 中安全调用
-go func() {
+safe.Go(func() {
     c.AddFunc("0 * * * *", func() {}, "task1")
-}()
+})
 
-go func() {
+safe.Go(func() {
     c.AddFunc("0 * * * *", func() {}, "task2")
-}()
+})
 ```
 
 ## 12. 性能考虑

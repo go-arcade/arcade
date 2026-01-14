@@ -22,6 +22,7 @@ import (
 	"net/http/pprof"
 
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/safe"
 )
 
 // PprofConfig holds pprof server configuration
@@ -90,12 +91,12 @@ func (s *Server) Start() error {
 		Handler: mux,
 	}
 
-	go func() {
+	safe.Go(func() {
 		log.Infow("Pprof server started", "address", addr)
 		if err := s.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			panic(err)
 		}
-	}()
+	})
 
 	return nil
 }

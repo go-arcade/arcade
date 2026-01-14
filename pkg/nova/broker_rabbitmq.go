@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-arcade/arcade/pkg/safe"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -279,7 +280,7 @@ func (b *rabbitmqBroker) Subscribe(ctx context.Context, topics []string, handler
 		}
 
 		// Start consumption goroutine
-		go func() {
+		safe.Go(func() {
 			for {
 				select {
 				case <-ctx.Done():
@@ -314,7 +315,7 @@ func (b *rabbitmqBroker) Subscribe(ctx context.Context, topics []string, handler
 					_ = msg.Ack(false)
 				}
 			}
-		}()
+		})
 	}
 
 	// Wait for context cancellation

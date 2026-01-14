@@ -18,6 +18,8 @@ import (
 	"container/list"
 	"sync"
 	"time"
+
+	"github.com/go-arcade/arcade/pkg/safe"
 )
 
 // TimerWheel is a timer wheel for managing delayed tasks
@@ -189,13 +191,13 @@ func (tw *TimerWheel) tick() {
 
 	// Execute tasks (execute callbacks outside lock to avoid blocking timer wheel)
 	if len(tasksToExecute) > 0 {
-		go func() {
+		safe.Go(func() {
 			for _, timerTask := range tasksToExecute {
 				if timerTask.Callback != nil {
 					timerTask.Callback(timerTask.Task)
 				}
 			}
-		}()
+		})
 	}
 
 	// Move to next slot

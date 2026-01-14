@@ -21,6 +21,7 @@ import (
 
 	"github.com/bytedance/sonic"
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/safe"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 )
@@ -86,7 +87,7 @@ func (h *LogStreamHandler) Upgrade() fiber.Handler {
 
 		// 启动接收消息的goroutine
 		messageChan := make(chan *LogStreamRequest, 10)
-		go func() {
+		safe.Go(func() {
 			for {
 				_, message, err := conn.ReadMessage()
 				if err != nil {
@@ -107,7 +108,7 @@ func (h *LogStreamHandler) Upgrade() fiber.Handler {
 
 				messageChan <- &req
 			}
-		}()
+		})
 
 		// 主循环
 		for {
@@ -136,7 +137,7 @@ func (h *LogStreamHandler) Upgrade() fiber.Handler {
 					log.Infow("client subscribing to step run", "stepRunId", req.StepRunID, "fromLine", req.FromLine)
 
 					// 先发送历史日志
-					go func() {
+					safe.Go(func() {
 						historicalLogs, err := h.logAggregator.GetLogsByStepRunID(req.StepRunID, req.FromLine, 1000)
 						if err != nil {
 							log.Errorw("failed to get historical logs", "stepRunId", req.StepRunID, "error", err)
@@ -166,7 +167,7 @@ func (h *LogStreamHandler) Upgrade() fiber.Handler {
 							StepRunID: req.StepRunID,
 							Message:   "historical logs loaded",
 						})
-					}()
+					})
 
 					// 订阅实时日志
 					activeSubscription = h.logAggregator.Subscribe(ctx, req.StepRunID)

@@ -28,6 +28,7 @@ import (
 	"github.com/containerd/containerd/namespaces"
 	"github.com/containerd/containerd/oci"
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/safe"
 	specs "github.com/opencontainers/runtime-spec/specs-go"
 	"golang.org/x/sys/unix"
 )
@@ -373,10 +374,10 @@ func (s *ContainerdSandbox) Stop(ctx context.Context, containerID string, timeou
 
 	// Wait for task to exit with timeout
 	done := make(chan error, 1)
-	go func() {
+	safe.Go(func() {
 		_, err := task.Wait(ctx)
 		done <- err
-	}()
+	})
 
 	select {
 	case err := <-done:

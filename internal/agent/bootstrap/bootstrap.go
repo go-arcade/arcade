@@ -32,6 +32,7 @@ import (
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/metrics"
 	"github.com/go-arcade/arcade/pkg/pprof"
+	"github.com/go-arcade/arcade/pkg/safe"
 	"github.com/go-arcade/arcade/pkg/shutdown"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
@@ -176,7 +177,7 @@ func Run(app *Agent, cleanup func()) {
 
 	// start gRPC client
 	if app.GrpcClient != nil {
-		go func() {
+		safe.Go(func() {
 			if err := app.GrpcClient.Start(grpcclient.ClientConf{
 				ServerAddr:           appConf.Grpc.ServerAddr,
 				Token:                appConf.Grpc.Token,
@@ -186,20 +187,22 @@ func Run(app *Agent, cleanup func()) {
 			}); err != nil {
 				log.Errorw("gRPC client failed", "error", err)
 			}
-		}()
+		})
 
 		// 等待 gRPC 客户端连接成功后，检查是否已注册，如果已注册则启动心跳
 		// 心跳将在注册成功后启动，而不是在启动时检查配置
-		go app.waitForRegistrationAndStartHeartbeat()
+		safe.Go(func() {
+			app.waitForRegistrationAndStartHeartbeat()
+		})
 	}
 
 	// start queue client (Agent 作为 worker 执行步骤执行)
 	if app.QueueClient != nil {
-		go func() {
+		safe.Go(func() {
 			if err := app.QueueClient.Start(); err != nil {
 				log.Errorw("Queue client failed", "error", err)
 			}
-		}()
+		})
 		log.Info("Queue client started")
 	}
 
@@ -208,7 +211,7 @@ func Run(app *Agent, cleanup func()) {
 	signal.Notify(quit, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	// start HTTP server (async)
-	go func() {
+	safe.Go(func() {
 		addr := appConf.Http.Host + ":" + fmt.Sprintf("%d", appConf.Http.Port)
 		log.Infow("HTTP listener started",
 			"address", addr,
@@ -219,7 +222,7 @@ func Run(app *Agent, cleanup func()) {
 				"error", err,
 			)
 		}
-	}()
+	})
 
 	// wait for exit signal (either from OS signal or HTTP shutdown endpoint)
 	select {

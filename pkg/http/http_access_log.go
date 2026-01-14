@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/go-arcade/arcade/pkg/log"
+	"github.com/go-arcade/arcade/pkg/safe"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -60,7 +61,7 @@ func AccessLogFormat(httpConfig *Http) fiber.Handler {
 		userAgent := c.Get("User-Agent")
 
 		// 异步记录日志（不阻塞请求处理）
-		go func() {
+		safe.Go(func() {
 
 			log.Infow("HTTP request",
 				"method", method,
@@ -71,7 +72,7 @@ func AccessLogFormat(httpConfig *Http) fiber.Handler {
 				"ip", ip,
 				"user-agent", userAgent,
 			)
-		}()
+		})
 
 		return err
 	}
