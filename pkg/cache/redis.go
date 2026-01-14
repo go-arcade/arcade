@@ -23,22 +23,8 @@ import (
 
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/trace/inject"
-	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
 )
-
-// ProviderSet 提供缓存相关的依赖（支持单节点、Sentinel 和集群模式）
-var ProviderSet = wire.NewSet(ProvideRedisCmdable, ProvideICache)
-
-// ProvideRedisCmdable 提供 Redis 实例（支持单节点、Sentinel 和集群模式）
-func ProvideRedisCmdable(conf Redis) (redis.Cmdable, error) {
-	return NewRedisCmdable(conf)
-}
-
-// ProvideICache 提供 ICache 接口实例（支持单节点、Sentinel 和集群模式）
-func ProvideICache(cmdable redis.Cmdable) ICache {
-	return NewRedisCache(cmdable)
-}
 
 type Redis struct {
 	Mode             string
