@@ -15,21 +15,21 @@
 package safe
 
 import (
-	"fmt"
 	"runtime/debug"
+
+	"github.com/go-arcade/arcade/pkg/log"
 )
 
 // Go starts a new goroutine to run the given function f safely.
 func Go(f func()) {
-	go Do(f)
+	go do(f)
 }
 
 // Do runs the given function f and recovers from any panic, printing the stack trace.
-func Do(f func()) {
+func do(f func()) {
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Printf("recovered from panic: %v\n", r)
-			debug.PrintStack()
+			log.Fatalw("recovered from panic", "error", r, "stack", string(debug.Stack()))
 		}
 	}()
 	f()

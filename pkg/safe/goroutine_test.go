@@ -27,7 +27,7 @@ func TestDo(t *testing.T) {
 		}
 	}()
 
-	Do(panicFunc)
+	do(panicFunc)
 }
 
 func TestGo(t *testing.T) {
