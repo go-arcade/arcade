@@ -17,6 +17,7 @@ package inject
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	tracecontext "github.com/go-arcade/arcade/pkg/trace/context"
@@ -73,6 +74,10 @@ func (h *RedisHook) BeforeProcess(ctx context.Context, cmd redis.Cmder) (context
 	}
 
 	span.SetAttributes(attrs...)
+
+	if statement := redisStatementFromCmd(cmd); statement != "" {
+		span.SetAttributes(attribute.String("db.statement", statement))
+	}
 
 	// Set command arguments if enabled and available
 	if h.WithArgs && len(cmd.Args()) > 1 {
@@ -145,6 +150,10 @@ func (h *RedisHook) BeforeProcessPipeline(ctx context.Context, cmds []redis.Cmde
 		attribute.Int("db.redis.pipeline.commands", len(cmds)),
 	}
 	span.SetAttributes(attrs...)
+
+	if statement := redisStatementFromPipeline(cmds); statement != "" {
+		span.SetAttributes(attribute.String("db.statement", statement))
+	}
 
 	// Set command names if enabled and available
 	if h.WithArgs && len(cmds) > 0 {
@@ -247,6 +256,32 @@ func stringSliceFromArgs(args []interface{}) []string {
 		}
 	}
 	return result
+}
+
+func redisStatementFromCmd(cmd redis.Cmder) string {
+	if cmd == nil {
+		return ""
+	}
+	return cmd.String()
+}
+
+func redisStatementFromPipeline(cmds []redis.Cmder) string {
+	if len(cmds) == 0 {
+		return ""
+	}
+	statements := make([]string, 0, len(cmds))
+	for _, cmd := range cmds {
+		if cmd == nil {
+			continue
+		}
+		if statement := cmd.String(); statement != "" {
+			statements = append(statements, statement)
+		}
+	}
+	if len(statements) == 0 {
+		return ""
+	}
+	return strings.Join(statements, "; ")
 }
 
 // RegisterRedisHook registers the OpenTelemetry hook to Redis client

@@ -42,6 +42,7 @@ require (
 )
 
 require (
+	github.com/VictoriaMetrics/fastcache v1.13.2
 	github.com/apache/rocketmq-client-go/v2 v2.1.2
 	github.com/confluentinc/confluent-kafka-go/v2 v2.3.0
 	github.com/containerd/containerd v1.7.29
@@ -70,7 +71,6 @@ require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.17.1 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/Microsoft/hcsshim v0.11.7 // indirect
-	github.com/VictoriaMetrics/fastcache v1.13.2 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.2 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.10 // indirect

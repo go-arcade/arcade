@@ -15,7 +15,7 @@
 package router
 
 import (
-	agentmodel "github.com/go-arcade/arcade/internal/engine/model"
+	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/gofiber/fiber/v2"
@@ -36,7 +36,7 @@ func (rt *Router) agentRouter(r fiber.Router, auth fiber.Handler) {
 
 // createAgent POST /agent - create a new agent
 func (rt *Router) createAgent(c *fiber.Ctx) error {
-	var createAgentReq *agentmodel.CreateAgentReq
+	var createAgentReq *model.CreateAgentReq
 	agentLogic := rt.Services.Agent
 
 	if err := c.BodyParser(&createAgentReq); err != nil {
@@ -121,7 +121,7 @@ func (rt *Router) updateAgent(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "agent id is required", c.Path())
 	}
 
-	var updateReq *agentmodel.UpdateAgentReq
+	var updateReq *model.UpdateAgentReq
 	if err := c.BodyParser(&updateReq); err != nil {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid request body", c.Path())
 	}

@@ -22,8 +22,8 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
-	identitymodel "github.com/go-arcade/arcade/internal/engine/model"
-	identityservice "github.com/go-arcade/arcade/internal/engine/service"
+	"github.com/go-arcade/arcade/internal/engine/model"
+	"github.com/go-arcade/arcade/internal/engine/service"
 	httpx "github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/go-arcade/arcade/pkg/log"
@@ -101,7 +101,7 @@ func (rt *Router) callback(c *fiber.Ctx) error {
 
 	// 自动登录：使用 Login 方法（密码为空时跳过密码验证）
 	userService := rt.Services.User
-	loginReq := &identitymodel.Login{
+	loginReq := &model.Login{
 		Username: userInfo.Username,
 		Email:    userInfo.Email,
 		Password: "", // OAuth 登录不需要密码
@@ -196,7 +196,7 @@ func (rt *Router) listProviders(c *fiber.Ctx) error {
 
 	var response []ProviderResponse
 	switch v := integrations.(type) {
-	case []identitymodel.Identity:
+	case []model.Identity:
 		for _, integration := range v {
 			response = append(response, ProviderResponse{
 				ProviderId:   integration.ProviderId,
@@ -253,7 +253,7 @@ func (rt *Router) ldapLogin(c *fiber.Ctx) error {
 		return httpx.WithRepErrMsg(c, httpx.ProviderIsRequired.Code, httpx.ProviderIsRequired.Msg, c.Path())
 	}
 
-	var req identityservice.LDAPLoginRequest
+	var req service.LDAPLoginRequest
 	if err := c.BodyParser(&req); err != nil {
 		return httpx.WithRepErrMsg(c, httpx.BadRequest.Code, httpx.BadRequest.Msg, c.Path())
 	}
@@ -271,7 +271,7 @@ func (rt *Router) ldapLogin(c *fiber.Ctx) error {
 	// Step 2 & 3: Generate Arcade token using Login method (password empty for LDAP)
 	// This follows the unified flow: verify identity → map/create user → generate Arcade token
 	userService := rt.Services.User
-	loginReq := &identitymodel.Login{
+	loginReq := &model.Login{
 		Username: userInfo.Username,
 		Email:    userInfo.Email,
 		Password: "", // LDAP login: password already verified, use empty for token generation
@@ -291,7 +291,7 @@ func (rt *Router) ldapLogin(c *fiber.Ctx) error {
 func (rt *Router) createProvider(c *fiber.Ctx) error {
 	identityService := rt.Services.Identity
 
-	var provider identitymodel.Identity
+	var provider model.Identity
 	if err := c.BodyParser(&provider); err != nil {
 		return httpx.WithRepErrMsg(c, httpx.BadRequest.Code, "invalid request parameters", c.Path())
 	}
@@ -319,7 +319,7 @@ func (rt *Router) updateProvider(c *fiber.Ctx) error {
 		return httpx.WithRepErrMsg(c, httpx.ProviderIsRequired.Code, httpx.ProviderIsRequired.Msg, c.Path())
 	}
 
-	var provider identitymodel.Identity
+	var provider model.Identity
 	if err := c.BodyParser(&provider); err != nil {
 		return httpx.WithRepErrMsg(c, httpx.BadRequest.Code, "invalid request parameters", c.Path())
 	}

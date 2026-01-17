@@ -17,7 +17,7 @@ package router
 import (
 	"strconv"
 
-	projectmodel "github.com/go-arcade/arcade/internal/engine/model"
+	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/pkg/auth"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
@@ -66,7 +66,7 @@ func (rt *Router) projectRouter(r fiber.Router, auth fiber.Handler) {
 
 // createProject 创建项目
 func (rt *Router) createProject(c *fiber.Ctx) error {
-	var req projectmodel.CreateProjectReq
+	var req model.CreateProjectReq
 	if err := c.BodyParser(&req); err != nil {
 		log.Errorw("create project failed", "error", err)
 		return http.WithRepErrMsg(c, http.RequestParameterParsingFailed.Code, http.RequestParameterParsingFailed.Msg, c.Path())
@@ -98,7 +98,7 @@ func (rt *Router) updateProject(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "project id is required", c.Path())
 	}
 
-	var req projectmodel.UpdateProjectReq
+	var req model.UpdateProjectReq
 	if err := c.BodyParser(&req); err != nil {
 		log.Errorw("update project failed", "error", err)
 		return http.WithRepErrMsg(c, http.RequestParameterParsingFailed.Code, http.RequestParameterParsingFailed.Msg, c.Path())
@@ -155,7 +155,7 @@ func (rt *Router) getProjectById(c *fiber.Ctx) error {
 
 // listProjects 查询项目列表
 func (rt *Router) listProjects(c *fiber.Ctx) error {
-	var query projectmodel.ProjectQueryReq
+	var query model.ProjectQueryReq
 
 	// 解析查询参数
 	query.OrgId = c.Query("orgId")
@@ -320,7 +320,7 @@ func (rt *Router) updateProjectStatistics(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "project id is required", c.Path())
 	}
 
-	var req projectmodel.ProjectStatisticsReq
+	var req model.ProjectStatisticsReq
 	if err := c.BodyParser(&req); err != nil {
 		log.Errorw("update project statistics failed", "error", err)
 		return http.WithRepErrMsg(c, http.RequestParameterParsingFailed.Code, http.RequestParameterParsingFailed.Msg, c.Path())
@@ -379,7 +379,7 @@ func (rt *Router) addProjectMember(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.RequestParameterParsingFailed.Code, http.RequestParameterParsingFailed.Msg, c.Path())
 	}
 
-	member := &projectmodel.ProjectMember{
+	member := &model.ProjectMember{
 		ProjectId: projectId,
 		UserId:    req.UserId,
 		RoleId:    req.RoleId,

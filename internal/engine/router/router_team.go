@@ -17,7 +17,7 @@ package router
 import (
 	"strconv"
 
-	teammodel "github.com/go-arcade/arcade/internal/engine/model"
+	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/pkg/auth"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
@@ -63,7 +63,7 @@ func (rt *Router) teamRouter(r fiber.Router, auth fiber.Handler) {
 
 // createTeam 创建团队
 func (rt *Router) createTeam(c *fiber.Ctx) error {
-	var req teammodel.CreateTeamReq
+	var req model.CreateTeamReq
 	if err := c.BodyParser(&req); err != nil {
 		log.Errorw("create team failed", "error", err)
 		return http.WithRepErrMsg(c, http.RequestParameterParsingFailed.Code, http.RequestParameterParsingFailed.Msg, c.Path())
@@ -95,7 +95,7 @@ func (rt *Router) updateTeam(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.TeamIdIsEmpty.Code, http.TeamIdIsEmpty.Msg, c.Path())
 	}
 
-	var req teammodel.UpdateTeamReq
+	var req model.UpdateTeamReq
 	if err := c.BodyParser(&req); err != nil {
 		log.Errorw("update team failed", "error", err)
 		return http.WithRepErrMsg(c, http.RequestParameterParsingFailed.Code, http.RequestParameterParsingFailed.Msg, c.Path())
@@ -152,7 +152,7 @@ func (rt *Router) getTeamById(c *fiber.Ctx) error {
 
 // listTeams 查询团队列表
 func (rt *Router) listTeams(c *fiber.Ctx) error {
-	var query teammodel.TeamQueryReq
+	var query model.TeamQueryReq
 
 	// 解析查询参数
 	query.OrgId = c.Query("orgId")

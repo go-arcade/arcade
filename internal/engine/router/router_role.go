@@ -15,7 +15,7 @@
 package router
 
 import (
-	rolemodel "github.com/go-arcade/arcade/internal/engine/model"
+	"github.com/go-arcade/arcade/internal/engine/model"
 	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/gofiber/fiber/v2"
@@ -35,7 +35,7 @@ func (rt *Router) roleRouter(r fiber.Router, auth fiber.Handler) {
 
 // createRole POST /role - create a new role
 func (rt *Router) createRole(c *fiber.Ctx) error {
-	var createRoleReq *rolemodel.CreateRoleReq
+	var createRoleReq *model.CreateRoleReq
 	roleLogic := rt.Services.Role
 
 	if err := c.BodyParser(&createRoleReq); err != nil {
@@ -102,7 +102,7 @@ func (rt *Router) updateRole(c *fiber.Ctx) error {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "role id is required", c.Path())
 	}
 
-	var updateReq *rolemodel.UpdateRoleReq
+	var updateReq *model.UpdateRoleReq
 	if err := c.BodyParser(&updateReq); err != nil {
 		return http.WithRepErrMsg(c, http.BadRequest.Code, "invalid request body", c.Path())
 	}

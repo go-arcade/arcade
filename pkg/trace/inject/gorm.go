@@ -104,8 +104,10 @@ func (p *GormPlugin) beforeCallback(db *gorm.DB) {
 	}
 
 	// Set SQL query if enabled and not empty
-	if p.WithQuery && db.Statement != nil && db.Statement.SQL.String() != "" {
-		attrs = append(attrs, attribute.String("db.statement", db.Statement.SQL.String()))
+	if p.WithQuery {
+		if statement := gormStatementFromDB(db); statement != "" {
+			attrs = append(attrs, attribute.String("db.statement", statement))
+		}
 	}
 
 	// Set table name if available and not empty
@@ -140,6 +142,13 @@ func (p *GormPlugin) afterCallback(db *gorm.DB) {
 	// Set rows affected if enabled
 	if p.WithRows && db.Statement.RowsAffected > 0 {
 		span.SetAttributes(attribute.Int64("db.rows_affected", db.Statement.RowsAffected))
+	}
+
+	// Ensure SQL statement is recorded after execution
+	if p.WithQuery {
+		if statement := gormStatementFromDB(db); statement != "" {
+			span.SetAttributes(attribute.String("db.statement", statement))
+		}
 	}
 
 	// Set error status if operation failed
@@ -181,6 +190,20 @@ func getOperationName(db *gorm.DB) string {
 	}
 
 	return "query"
+}
+
+func gormStatementFromDB(db *gorm.DB) string {
+	if db == nil || db.Statement == nil {
+		return ""
+	}
+	sql := db.Statement.SQL.String()
+	if sql == "" {
+		return ""
+	}
+	if db.Dialector != nil {
+		return db.Dialector.Explain(sql, db.Statement.Vars...)
+	}
+	return sql
 }
 
 // RegisterGormPlugin registers the OpenTelemetry plugin to GORM database instance
