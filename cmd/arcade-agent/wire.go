@@ -26,7 +26,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/cache"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/metrics"
-	"github.com/go-arcade/arcade/pkg/pprof"
 	"github.com/google/wire"
 )
 
@@ -42,8 +41,6 @@ func initAgent(configPath string) (*bootstrap.Agent, func(), error) {
 		queue.AgentProviderSet,
 		// 指标层（依赖 config）
 		metrics.ProviderSet,
-		// pprof层（依赖 config, log）
-		pprof.ProviderSet,
 		// gRPC 客户端层（依赖 config 和 log）
 		grpc.ProviderSet,
 		router.ProviderSet,

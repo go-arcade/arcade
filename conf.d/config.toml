@@ -8,16 +8,6 @@ port = 8082
 # metrics server request path, default: "/metrics"
 path = "/metrics"
 
-[pprof]
-# enable pprof server, false or true
-enable = true
-# pprof server host
-host = "0.0.0.0"
-# pprof server port
-port = 8083
-# pprof server request path prefix, default: "/debug/pprof"
-path = "/debug/pprof"
-
 [trace]
 # enable trace, false or true
 enabled = true

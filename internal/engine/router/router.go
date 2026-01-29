@@ -21,7 +21,7 @@ import (
 
 	"github.com/go-arcade/arcade/internal/engine/service"
 	"github.com/go-arcade/arcade/pkg/cache"
-	httpx "github.com/go-arcade/arcade/pkg/http"
+	"github.com/go-arcade/arcade/pkg/http"
 	"github.com/go-arcade/arcade/pkg/http/middleware"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/shutdown"
@@ -30,12 +30,13 @@ import (
 	fiberi18n "github.com/gofiber/contrib/fiberi18n/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/pprof"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"golang.org/x/text/language"
 )
 
 type Router struct {
-	Http        *httpx.Http
+	Http        *http.Http
 	Cache       cache.ICache
 	Services    *service.Services
 	ShutdownMgr *shutdown.Manager
@@ -50,7 +51,7 @@ const (
 var localizeFS embed.FS
 
 func NewRouter(
-	httpConf *httpx.Http,
+	httpConf *http.Http,
 	cache cache.ICache,
 	services *service.Services,
 	shutdownMgr *shutdown.Manager,
@@ -88,7 +89,7 @@ func (rt *Router) Router() *fiber.App {
 		recover.New(),
 		cors.New(),
 		middleware.UnifiedResponseMiddleware(),
-		httpx.AccessLogFormat(rt.Http),
+		middleware.AccessLogMiddleware(rt.Http),
 	)
 
 	// Configure i18n middleware with embedded filesystem
@@ -103,6 +104,10 @@ func (rt *Router) Router() *fiber.App {
 		Loader:          &fiberi18n.EmbedLoader{FS: localizeFS},
 	}))
 
+	// pprof
+	// path: /debug/pprof
+	app.Use(pprof.New())
+
 	// 健康检查 - 在下线时返回 503，用于 Kubernetes readiness probe
 	app.Get("/health", func(c *fiber.Ctx) error {
 		if rt.ShutdownMgr != nil && rt.ShutdownMgr.IsShuttingDown() {
@@ -115,16 +120,16 @@ func (rt *Router) Router() *fiber.App {
 	app.Post("/shutdown", func(c *fiber.Ctx) error {
 		if rt.ShutdownMgr == nil {
 			return c.Status(fiber.StatusInternalServerError).
-				JSON(httpx.WithRepErr(c, fiber.StatusInternalServerError, "shutdown manager not initialized", c.Path()))
+				JSON(http.WithRepErr(c, fiber.StatusInternalServerError, "shutdown manager not initialized", c.Path()))
 		}
 
 		if rt.ShutdownMgr.Shutdown() {
 			log.Info("Graceful shutdown triggered via HTTP endpoint")
-			return c.JSON(httpx.WithRepDetail(c, fiber.StatusOK, "shutdown initiated", nil))
+			return c.JSON(http.WithRepDetail(c, fiber.StatusOK, "shutdown initiated", nil))
 		}
 
 		return c.Status(fiber.StatusConflict).
-			JSON(httpx.WithRepErr(c, fiber.StatusConflict, "shutdown already in progress", c.Path()))
+			JSON(http.WithRepErr(c, fiber.StatusConflict, "shutdown already in progress", c.Path()))
 	})
 
 	// API路由
@@ -148,7 +153,7 @@ func (rt *Router) Router() *fiber.App {
 	// 找不到路径时的处理 - 必须在所有路由注册之后
 	app.Use(func(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).
-			JSON(httpx.WithRepErr(c, fiber.StatusNotFound, "request path not found", c.Path()))
+			JSON(http.WithRepErr(c, fiber.StatusNotFound, "request path not found", c.Path()))
 	})
 
 	return app

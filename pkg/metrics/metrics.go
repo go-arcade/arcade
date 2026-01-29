@@ -245,7 +245,7 @@ func (s *Server) Start() error {
 	}
 
 	safe.Go(func() {
-		log.Infow("Metrics server started", "address", addr)
+		log.Infow("Metrics listener started", "address", addr)
 		if err := s.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			panic(err)
 		}

@@ -31,7 +31,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/cron"
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/metrics"
-	"github.com/go-arcade/arcade/pkg/pprof"
 	"github.com/go-arcade/arcade/pkg/safe"
 	"github.com/go-arcade/arcade/pkg/shutdown"
 	"github.com/gofiber/fiber/v2"
@@ -44,7 +43,6 @@ type Agent struct {
 	GrpcClient    *grpcclient.ClientWrapper
 	QueueClient   *queue.Client // 队列客户端（任务执行者）
 	MetricsServer *metrics.Server
-	PprofServer   *pprof.Server
 	Logger        *log.Logger
 	AgentConf     *config.AgentConfig
 	AgentService  *service.AgentService
@@ -59,7 +57,6 @@ func NewAgent(
 	grpcClient *grpcclient.ClientWrapper,
 	queueClient *queue.Client,
 	metricsServer *metrics.Server,
-	pprofServer *pprof.Server,
 	logger *log.Logger,
 	agentConf *config.AgentConfig,
 	pipelineHandler *queue.PipelineTaskHandler,
@@ -84,16 +81,6 @@ func NewAgent(
 		if queueClient != nil {
 			log.Info("Shutting down queue client...")
 			queueClient.Shutdown()
-		}
-
-		// stop pprof server
-		if pprofServer != nil {
-			log.Info("Shutting down pprof server...")
-			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			if err := pprofServer.Stop(shutdownCtx); err != nil {
-				log.Error("Failed to stop pprof server", zap.Error(err))
-			}
 		}
 
 		// stop metrics server
@@ -122,7 +109,6 @@ func NewAgent(
 		GrpcClient:    grpcClient,
 		QueueClient:   queueClient,
 		MetricsServer: metricsServer,
-		PprofServer:   pprofServer,
 		Logger:        logger,
 		AgentConf:     agentConf,
 		AgentService:  agentService,
@@ -165,13 +151,6 @@ func Run(app *Agent, cleanup func()) {
 	if app.MetricsServer != nil {
 		if err := app.MetricsServer.Start(); err != nil {
 			log.Errorw("Metrics server failed", "error", err)
-		}
-	}
-
-	// start pprof server
-	if app.PprofServer != nil {
-		if err := app.PprofServer.Start(); err != nil {
-			log.Errorw("Pprof server failed", "error", err)
 		}
 	}
 

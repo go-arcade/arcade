@@ -33,7 +33,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/metrics"
 	"github.com/go-arcade/arcade/pkg/plugin"
-	"github.com/go-arcade/arcade/pkg/pprof"
 	"github.com/go-arcade/arcade/pkg/safe"
 	"github.com/go-arcade/arcade/pkg/shutdown"
 	"github.com/go-arcade/arcade/pkg/trace"
@@ -48,7 +47,6 @@ type App struct {
 	GrpcServer    *grpc.ServerWrapper
 	QueueServer   *queue.Server // 队列服务器（任务发布者）
 	MetricsServer *metrics.Server
-	PprofServer   *pprof.Server
 	Logger        *log.Logger
 	Storage       storage.StorageProvider
 	AppConf       *config.AppConfig
@@ -66,7 +64,6 @@ func NewApp(
 	grpcServer *grpc.ServerWrapper,
 	queueServer *queue.Server,
 	metricsServer *metrics.Server,
-	pprofServer *pprof.Server,
 	storage storage.StorageProvider,
 	clickHouse *gorm.DB,
 	appConf *config.AppConfig,
@@ -86,7 +83,6 @@ func NewApp(
 		GrpcServer:    grpcServer,
 		QueueServer:   queueServer,
 		MetricsServer: metricsServer,
-		PprofServer:   pprofServer,
 		Logger:        logger,
 		Storage:       storage,
 		AppConf:       appConf,
@@ -98,16 +94,6 @@ func NewApp(
 		// stop queue server
 		if queueServer != nil {
 			queueServer.Shutdown()
-		}
-
-		// stop pprof server
-		if pprofServer != nil {
-			log.Info("Shutting down pprof server...")
-			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			if err := pprofServer.Stop(shutdownCtx); err != nil {
-				log.Errorw("Failed to stop pprof server", zap.Error(err))
-			}
 		}
 
 		// stop metrics server
@@ -193,13 +179,6 @@ func Run(app *App, cleanup func()) {
 	if app.MetricsServer != nil {
 		if err := app.MetricsServer.Start(); err != nil {
 			log.Errorw("Metrics server failed: %v", err)
-		}
-	}
-
-	// start pprof server
-	if app.PprofServer != nil {
-		if err := app.PprofServer.Start(); err != nil {
-			log.Errorw("Pprof server failed: %v", err)
 		}
 	}
 

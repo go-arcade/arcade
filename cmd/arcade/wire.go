@@ -33,7 +33,6 @@ import (
 	"github.com/go-arcade/arcade/pkg/log"
 	"github.com/go-arcade/arcade/pkg/metrics"
 	"github.com/go-arcade/arcade/pkg/plugin"
-	"github.com/go-arcade/arcade/pkg/pprof"
 	"github.com/google/wire"
 )
 
@@ -62,8 +61,6 @@ func initApp(configPath string) (*bootstrap.App, func(), error) {
 		queue.ProviderSet,
 		// 指标层（依赖 config, queue）
 		metrics.ProviderSet,
-		// pprof层（依赖 config, log）
-		pprof.ProviderSet,
 		// 仓储层（依赖 database）
 		repo.ProviderSet,
 		// 存储层（依赖 repo）

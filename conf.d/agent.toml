@@ -105,17 +105,6 @@ port = 8084
 # metrics server request path, default: "/metrics"
 path = "/metrics"
 
-# pprof configuration
-[pprof]
-# enable pprof server, false or true
-enable = true
-# pprof server host
-host = "0.0.0.0"
-# pprof server port
-port = 8085
-# pprof server request path prefix, default: "/debug/pprof"
-path = "/debug/pprof"
-
 # log configuration
 [log]
 # support stdout, file, kafka
