@@ -62,8 +62,11 @@ func sleepUntilCtxDone(d time.Duration, ctx context.Context) (abort bool) {
 		return false
 	}
 
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+
 	select {
-	case <-time.After(d):
+	case <-timer.C:
 		return false
 	case <-ctx.Done():
 		return true
